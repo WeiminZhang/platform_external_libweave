@@ -1,11 +1,5 @@
 {
   "base": {
-    "reboot": {
-      "parameters": {
-      },
-      "results": {
-      }
-    },
     "_jump": {
       "parameters": {
         "_height":"integer"
