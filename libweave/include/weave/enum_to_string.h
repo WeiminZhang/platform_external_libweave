@@ -5,11 +5,9 @@
 #ifndef LIBWEAVE_INCLUDE_WEAVE_ENUM_TO_STRING_H_
 #define LIBWEAVE_INCLUDE_WEAVE_ENUM_TO_STRING_H_
 
-#include <base/logging.h>
-
 #include <string>
 
-#include <weave/export.h>
+#include <base/logging.h>
 
 namespace weave {
 
@@ -32,7 +30,7 @@ class EnumToStringMap final {
     const char* const name;
   };
 
-  LIBWEAVE_EXPORT EnumToStringMap();
+  EnumToStringMap();
 
   const Map* begin() const { return begin_; }
   const Map* end() const { return end_; }
