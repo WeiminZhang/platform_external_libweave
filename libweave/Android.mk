@@ -35,13 +35,11 @@ libweaveCommonCppFlags := \
 libweaveCommonCIncludes := \
 	$(LOCAL_PATH)/.. \
 	$(LOCAL_PATH)/include \
+	$(LOCAL_PATH)/third_party/modp_b64/modp_b64 \
 	external/gtest/include \
 
 libweaveSharedLibraries := \
 	libchrome \
-	libchromeos \
-	libchromeos-http \
-	libchromeos-stream \
 	libexpat \
 	libcrypto \
 
@@ -63,6 +61,7 @@ LOCAL_SRC_FILES := \
 	external/crypto/p224.cc \
 	external/crypto/p224_spake.cc \
 	external/crypto/sha2.cc \
+	third_party/modp_b64/modp_b64.cc \
 
 include $(BUILD_STATIC_LIBRARY)
 
@@ -81,8 +80,8 @@ LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 
 LOCAL_SRC_FILES := \
+	src/backoff_entry.cc \
 	src/base_api_handler.cc \
-	src/buffet_config.cc \
 	src/commands/cloud_command_proxy.cc \
 	src/commands/command_definition.cc \
 	src/commands/command_dictionary.cc \
@@ -96,9 +95,13 @@ LOCAL_SRC_FILES := \
 	src/commands/schema_constants.cc \
 	src/commands/schema_utils.cc \
 	src/commands/user_role.cc \
+	src/config.cc \
+	src/data_encoding.cc \
 	src/device_manager.cc \
 	src/device_registration_info.cc \
+	src/error.cc \
 	src/http_constants.cc \
+	src/json_error_codes.cc \
 	src/notification/notification_parser.cc \
 	src/notification/pull_channel.cc \
 	src/notification/xml_node.cc \
@@ -121,7 +124,7 @@ LOCAL_SRC_FILES := \
 	src/states/state_change_queue.cc \
 	src/states/state_manager.cc \
 	src/states/state_package.cc \
-	src/storage_impls.cc \
+	src/string_utils.cc \
 	src/utils.cc \
 
 include $(BUILD_STATIC_LIBRARY)
@@ -195,8 +198,11 @@ LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 
 LOCAL_SRC_FILES := \
+	external/crypto/p224_spake_unittest.cc \
+	external/crypto/p224_unittest.cc \
+	external/crypto/sha2_unittest.cc \
+	src/backoff_entry_unittest.cc \
 	src/base_api_handler_unittest.cc \
-	src/buffet_config_unittest.cc \
 	src/commands/cloud_command_proxy_unittest.cc \
 	src/commands/command_definition_unittest.cc \
 	src/commands/command_dictionary_unittest.cc \
@@ -205,7 +211,10 @@ LOCAL_SRC_FILES := \
 	src/commands/command_queue_unittest.cc \
 	src/commands/object_schema_unittest.cc \
 	src/commands/schema_utils_unittest.cc \
+	src/config_unittest.cc \
+	src/data_encoding_unittest.cc \
 	src/device_registration_info_unittest.cc \
+	src/error_unittest.cc \
 	src/notification/notification_parser_unittest.cc \
 	src/notification/xml_node_unittest.cc \
 	src/notification/xmpp_channel_unittest.cc \
@@ -217,6 +226,7 @@ LOCAL_SRC_FILES := \
 	src/states/state_change_queue_unittest.cc \
 	src/states/state_manager_unittest.cc \
 	src/states/state_package_unittest.cc \
+	src/string_utils_unittest.cc \
 	src/weave_testrunner.cc \
 
 include $(BUILD_NATIVE_TEST)
