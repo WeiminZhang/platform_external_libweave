@@ -22,7 +22,7 @@ ifeq ($(HOST_OS),linux)
 # ========================================================
 
 libweaveCommonCppExtension := .cc
-libweaveCommonCFlags := -D__BRILLO__ -Wall -Werror \
+libweaveCommonCFlags := -Wall -Werror \
 	-Wno-char-subscripts -Wno-missing-field-initializers \
 	-Wno-unused-function -Wno-unused-parameter
 
