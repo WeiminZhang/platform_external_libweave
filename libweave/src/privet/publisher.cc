@@ -84,10 +84,14 @@ void Publisher::ExposeService() {
   if (!cloud_->GetDescription().empty())
     txt_record.emplace("note", cloud_->GetDescription());
 
+  is_publishing_ = true;
   mdns_->PublishService(kPrivetServiceType, port, txt_record);
 }
 
 void Publisher::RemoveService() {
+  if (!is_publishing_)
+    return;
+  is_publishing_ = false;
   VLOG(1) << "Stopping service publishing.";
   mdns_->StopPublishing(kPrivetServiceType);
 }
