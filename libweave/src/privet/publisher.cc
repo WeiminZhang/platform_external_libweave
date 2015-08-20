@@ -21,7 +21,9 @@ namespace privet {
 namespace {
 
 // The name of the service we'll expose via peerd.
-const char kPrivetServiceId[] = "privet";
+// TODO(rginda): This should become the proper mdns service, "_privet._tcp"
+// if we drop peerd on ChromeOS.
+const char kPrivetServiceType[] = "privet";
 
 }  // namespace
 
@@ -82,12 +84,12 @@ void Publisher::ExposeService() {
   if (!cloud_->GetDescription().empty())
     txt_record.emplace("note", cloud_->GetDescription());
 
-  mdns_->PublishService(kPrivetServiceId, port, txt_record);
+  mdns_->PublishService(kPrivetServiceType, port, txt_record);
 }
 
 void Publisher::RemoveService() {
   VLOG(1) << "Stopping service publishing.";
-  mdns_->StopPublishing(kPrivetServiceId);
+  mdns_->StopPublishing(kPrivetServiceType);
 }
 
 }  // namespace privet

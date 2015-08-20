@@ -16,12 +16,12 @@ class Mdns {
  public:
   // Publishes new service on mDns or updates existing one.
   virtual void PublishService(
-      const std::string& service_name,
+      const std::string& service_type,
       uint16_t port,
       const std::map<std::string, std::string>& txt) = 0;
 
   // Stops publishing service.
-  virtual void StopPublishing(const std::string& service_name) = 0;
+  virtual void StopPublishing(const std::string& service_type) = 0;
 
   // Returns permanent device ID.
   // TODO(vitalybuka): Find better place for this information.
