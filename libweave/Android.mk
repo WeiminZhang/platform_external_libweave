@@ -147,9 +147,10 @@ LOCAL_RTTI_FLAG := -frtti
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 LOCAL_SRC_FILES := \
-	src/commands/mock_command.cc \
-	src/commands/unittest_utils.cc \
-	src/mock_http_client.cc \
+	src/test/mock_command.cc \
+	src/test/mock_http_client.cc \
+	src/test/mock_task_runner.cc \
+	src/test/unittest_utils.cc \
 
 include $(BUILD_STATIC_LIBRARY)
 
@@ -227,7 +228,8 @@ LOCAL_SRC_FILES := \
 	src/states/state_manager_unittest.cc \
 	src/states/state_package_unittest.cc \
 	src/string_utils_unittest.cc \
-	src/weave_testrunner.cc \
+	src/test/weave_testrunner.cc \
+	src/weave_unittest.cc \
 
 include $(BUILD_NATIVE_TEST)
 
