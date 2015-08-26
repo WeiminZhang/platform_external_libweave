@@ -26,7 +26,7 @@ namespace privet {
 namespace {
 
 const int kMaxSetupRetries = 5;
-const int kFirstRetryTimeoutSec = 1;
+const int kFirstRetryTimeoutSec = 2;
 
 Command* ReturnNotFound(const std::string& command_id, ErrorPtr* error) {
   Error::AddToPrintf(error, FROM_HERE, errors::kDomain, errors::kNotFound,
