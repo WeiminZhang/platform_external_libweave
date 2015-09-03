@@ -10,9 +10,9 @@
       ],
     },
     'include_dirs': [
-      '.',
-      '../libweave/include',
-      '../libweave/third_party/modp_b64/modp_b64/',
+      '<(platform2_root)/../weave/libweave',
+      '<(platform2_root)/../weave/libweave/libweave/include',
+      '<(platform2_root)/../weave/libweave/libweave/third_party/modp_b64/modp_b64/',
     ],
   },
   'targets': [
@@ -39,7 +39,7 @@
         ],
       },
       'includes': [
-        '../common-mk/deps.gypi',
+        '../../../platform2/common-mk/deps.gypi',
       ],
       'dependencies': [
         'libweave_common',
@@ -60,7 +60,7 @@
       'sources': [
         '<@(weave_test_sources)',
       ],
-      'includes': ['../common-mk/deps.gypi'],
+      'includes': ['../../../platform2/common-mk/deps.gypi'],
     },
     {
       'target_name': 'libweave_base_common',
@@ -87,7 +87,7 @@
         '../libweave/external',
       ],
       'includes': [
-        '../common-mk/deps.gypi',
+        '../../../platform2/common-mk/deps.gypi',
       ],
       'dependencies': [
         'libweave_base_common',
@@ -106,7 +106,7 @@
       'sources': [
         '<@(weave_test_sources)',
       ],
-      'includes': ['../common-mk/deps.gypi'],
+      'includes': ['../../../platform2/common-mk/deps.gypi'],
     },
   ],
   'conditions': [
@@ -124,7 +124,7 @@
             'libweave_common',
             'libweave-test-<(libbase_ver)',
           ],
-          'includes': ['../common-mk/common_test.gypi'],
+          'includes': ['../../../platform2/common-mk/common_test.gypi'],
           'sources': [
             '<@(weave_unittest_sources)',
           ],
@@ -140,7 +140,7 @@
             'libweave_base_common',
             'libweave_base-test',
           ],
-          'includes': ['../common-mk/common_test.gypi'],
+          'includes': ['../../../platform2/common-mk/common_test.gypi'],
           'sources': [
             '<@(weave_unittest_sources)',
             '<@(base_unittests)',
@@ -158,7 +158,7 @@
             'libweave-<(libbase_ver)',
             'libweave-test-<(libbase_ver)',
           ],
-          'includes': ['../common-mk/common_test.gypi'],
+          'includes': ['../../../platform2/common-mk/common_test.gypi'],
           'sources': [
             '<@(weave_exports_unittest_sources)',
           ],
@@ -174,7 +174,7 @@
             'libweave_base',
             'libweave_base-test',
           ],
-          'includes': ['../common-mk/common_test.gypi'],
+          'includes': ['../../../platform2/common-mk/common_test.gypi'],
           'sources': [
             '<@(weave_exports_unittest_sources)',
           ],
