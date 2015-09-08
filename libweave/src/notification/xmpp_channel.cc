@@ -387,8 +387,8 @@ void XmppChannel::Connect(const std::string& host,
     stream_ = raw_socket_.get();
     callback.Run();
   } else {
-    VLOG(1) << "Delaying connection to XMPP server " << host << " for "
-            << backoff_entry_.GetTimeUntilRelease();
+    LOG(INFO) << "Delaying connection to XMPP server " << host << " for "
+              << backoff_entry_.GetTimeUntilRelease();
     task_runner_->PostDelayedTask(
         FROM_HERE,
         base::Bind(&XmppChannel::Connect, task_ptr_factory_.GetWeakPtr(), host,
@@ -410,7 +410,7 @@ void XmppChannel::AddChannelParameters(base::DictionaryValue* channel_json) {
 }
 
 void XmppChannel::Restart() {
-  VLOG(1) << "Restarting XMPP";
+  LOG(INFO) << "Restarting XMPP";
   Stop();
   Start(delegate_);
 }
