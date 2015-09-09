@@ -5,8 +5,8 @@
 #ifndef LIBWEAVE_INCLUDE_WEAVE_MDNS_H_
 #define LIBWEAVE_INCLUDE_WEAVE_MDNS_H_
 
-#include <map>
 #include <string>
+#include <vector>
 
 #include <base/callback.h>
 
@@ -15,12 +15,9 @@ namespace weave {
 class Mdns {
  public:
   // Publishes new service on mDns or updates existing one.
-  // TODO(vitlaybuka): txt -> vector<string>
-  // TODO(vitlaybuka): service_name -> service_type
-  virtual void PublishService(
-      const std::string& service_type,
-      uint16_t port,
-      const std::map<std::string, std::string>& txt) = 0;
+  virtual void PublishService(const std::string& service_type,
+                              uint16_t port,
+                              const std::vector<std::string>& txt) = 0;
 
   // Stops publishing service.
   virtual void StopPublishing(const std::string& service_type) = 0;

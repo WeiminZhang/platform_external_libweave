@@ -7,8 +7,8 @@
 
 #include <weave/mdns.h>
 
-#include <map>
 #include <string>
+#include <vector>
 
 #include <gmock/gmock.h>
 
@@ -20,7 +20,7 @@ class MockMdns : public Mdns {
   MOCK_METHOD3(PublishService,
                void(const std::string&,
                     uint16_t,
-                    const std::map<std::string, std::string>&));
+                    const std::vector<std::string>&));
   MOCK_METHOD1(StopPublishing, void(const std::string&));
   MOCK_CONST_METHOD0(GetId, std::string());
 };

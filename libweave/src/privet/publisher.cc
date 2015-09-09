@@ -20,10 +20,8 @@ namespace privet {
 
 namespace {
 
-// The name of the service we'll expose via peerd.
-// TODO(rginda): This should become the proper mdns service, "_privet._tcp"
-// if we drop peerd on ChromeOS.
-const char kPrivetServiceType[] = "privet";
+// The service type we'll expose via mdns.
+const char kPrivetServiceType[] = "_privet._tcp";
 
 }  // namespace
 
@@ -69,20 +67,20 @@ void Publisher::ExposeService() {
     services += "_";
   services += Join(",_", cloud_->GetServices());
 
-  std::map<std::string, std::string> txt_record{
-      {"txtvers", "3"},
-      {"ty", name},
-      {"services", services},
-      {"id", GetId()},
-      {"mmid", model_id},
-      {"flags", WifiSsidGenerator{cloud_, wifi_}.GenerateFlags()},
+  std::vector<std::string> txt_record{
+      {"txtvers=3"},
+      {"ty=" + name},
+      {"services=" + services},
+      {"id=" + GetId()},
+      {"mmid=" + model_id},
+      {"flags=" + WifiSsidGenerator{cloud_, wifi_}.GenerateFlags()},
   };
 
   if (!cloud_->GetCloudId().empty())
-    txt_record.emplace("gcd_id", cloud_->GetCloudId());
+    txt_record.emplace_back("gcd_id=" + cloud_->GetCloudId());
 
   if (!cloud_->GetDescription().empty())
-    txt_record.emplace("note", cloud_->GetDescription());
+    txt_record.emplace_back("note=" + cloud_->GetDescription());
 
   is_publishing_ = true;
   mdns_->PublishService(kPrivetServiceType, port, txt_record);
