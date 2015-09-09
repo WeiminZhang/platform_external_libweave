@@ -39,160 +39,11 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
   NOTREACHED();
 }
 
-class SocketStream : public Stream {
- public:
-  explicit SocketStream(TaskRunner* task_runner) : task_runner_{task_runner} {}
-
-  ~SocketStream() { CloseBlocking(nullptr); }
-
-  void RunDelayedTask(const base::Closure& success_callback) {
-    success_callback.Run();
-  }
-
-  bool ReadAsync(void* buffer,
-                 size_t size_to_read,
-                 const base::Callback<void(size_t)>& success_callback,
-                 const base::Callback<void(const Error*)>& error_callback,
-                 ErrorPtr* error) {
-    if (socket_fd_ < 0) {
-      Error::AddTo(error, FROM_HERE, "socket", "invalid_socket",
-                   strerror(errno));
-      return false;
-    }
-    int size_read = recv(socket_fd_, buffer, size_to_read, MSG_DONTWAIT);
-    if (size_read > 0) {
-      task_runner_->PostDelayedTask(
-          FROM_HERE, base::Bind(&SocketStream::RunDelayedTask,
-                                weak_ptr_factory_.GetWeakPtr(),
-                                base::Bind(success_callback, size_read)),
-          {});
-      return true;
-    }
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-      task_runner_->PostDelayedTask(
-          FROM_HERE,
-          base::Bind(base::IgnoreResult(&SocketStream::ReadAsync),
-                     weak_ptr_factory_.GetWeakPtr(), buffer, size_to_read,
-                     success_callback, error_callback, nullptr),
-          base::TimeDelta::FromMilliseconds(200));
-      return true;
-    }
-
-    ErrorPtr recv_error;
-    Error::AddTo(&recv_error, FROM_HERE, "socket", "socket_recv_failed",
-                 strerror(errno));
-    task_runner_->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(error_callback, base::Owned(recv_error.release())), {});
-    return true;
-  }
-
-  bool WriteAllAsync(const void* buffer,
-                     size_t size_to_write,
-                     const base::Closure& success_callback,
-                     const base::Callback<void(const Error*)>& error_callback,
-                     ErrorPtr* error) {
-    if (socket_fd_ < 0) {
-      Error::AddTo(error, FROM_HERE, "socket", "invalid_socket",
-                   strerror(errno));
-      return false;
-    }
-    const char* buffer_ptr = static_cast<const char*>(buffer);
-    do {
-      int size_sent = send(socket_fd_, buffer_ptr, size_to_write, 0);
-      if (size_sent <= 0) {
-        ErrorPtr send_error;
-        Error::AddTo(&send_error, FROM_HERE, "socket", "socket_send_failed",
-                     strerror(errno));
-        task_runner_->PostDelayedTask(
-            FROM_HERE,
-            base::Bind(error_callback, base::Owned(send_error.release())), {});
-        // Still true as we return error with callback.
-        return true;
-      }
-      size_to_write -= size_sent;
-      buffer_ptr += size_sent;
-    } while (size_to_write > 0);
-
-    task_runner_->PostDelayedTask(FROM_HERE, success_callback, {});
-    return true;
-  }
-  bool FlushBlocking(ErrorPtr* error) { return true; }
-
-  bool CloseBlocking(ErrorPtr* error) {
-    weak_ptr_factory_.InvalidateWeakPtrs();
-    if (socket_fd_ >= 0) {
-      close(socket_fd_);
-      socket_fd_ = -1;
-    }
-  }
-
-  void CancelPendingAsyncOperations() {
-    weak_ptr_factory_.InvalidateWeakPtrs();
-  }
-
-  bool Connect(const std::string& host, uint16_t port) {
-    std::string service = std::to_string(port);
-    addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM};
-    addrinfo* result = nullptr;
-    if (getaddrinfo(host.c_str(), service.c_str(), &hints, &result)) {
-      LOG(ERROR) << "Failed to resolve host name: " << host;
-      return false;
-    }
-    std::unique_ptr<addrinfo, decltype(&freeaddrinfo)> result_deleter{
-        result, &freeaddrinfo};
-
-    for (const addrinfo* info = result; info != nullptr; info = info->ai_next) {
-      socket_fd_ =
-          socket(info->ai_family, info->ai_socktype, info->ai_protocol);
-      if (socket_fd_ < 0)
-        continue;
-
-      int flags = fcntl(socket_fd_, F_GETFL, 0);
-      if (flags == -1)
-        flags = 0;
-      fcntl(socket_fd_, F_SETFL, flags | O_NONBLOCK);
-
-      LOG(INFO) << "Connecting...";
-      if (connect(socket_fd_, info->ai_addr, info->ai_addrlen) == 0)
-        break;  // Success.
-
-      if (errno == EINPROGRESS) {
-        fd_set write_fds;
-        FD_ZERO(&write_fds);
-        FD_SET(socket_fd_, &write_fds);
-
-        struct timeval tv;
-        tv.tv_sec = 5;
-        tv.tv_usec = 0;
-
-        int select_ret = select(socket_fd_ + 1, NULL, &write_fds, NULL, &tv);
-        if (select_ret != -1 && select_ret != 0) {
-          break;
-        }
-      }
-
-      LOG(ERROR) << "Failed to connect";
-      CloseBlocking(nullptr);
-    }
-
-    return socket_fd_ >= 0;
-  }
-
-  int GetFd() const { return socket_fd_; }
-
- private:
-  TaskRunner* task_runner_{nullptr};
-  int socket_fd_{-1};
-
-  base::WeakPtrFactory<SocketStream> weak_ptr_factory_{this};
-};
-
 class SSLStream : public Stream {
  public:
   explicit SSLStream(TaskRunner* task_runner) : task_runner_{task_runner} {}
 
-  ~SSLStream() { weak_ptr_factory_.InvalidateWeakPtrs(); }
+  ~SSLStream() { CancelPendingAsyncOperations(); }
 
   void RunDelayedTask(const base::Closure& success_callback) {
     success_callback.Run();
@@ -289,33 +140,27 @@ class SSLStream : public Stream {
     return true;
   }
 
-  bool FlushBlocking(ErrorPtr* error) { return true; }
-
-  bool CloseBlocking(ErrorPtr* error) {
-    weak_ptr_factory_.InvalidateWeakPtrs();
-    return true;
-  }
-
   void CancelPendingAsyncOperations() {
     weak_ptr_factory_.InvalidateWeakPtrs();
   }
 
-  bool Init() {
+  bool Init(const std::string& host, uint16_t port) {
     ctx_.reset(SSL_CTX_new(TLSv1_2_client_method()));
     CHECK(ctx_);
     ssl_.reset(SSL_new(ctx_.get()));
 
-    char endpoint[] = "talk.google.com:5223";
-    stream_bio_ = BIO_new_connect(endpoint);
-    CHECK(stream_bio_);
-    BIO_set_nbio(stream_bio_, 1);
+    char end_point[255];
+    snprintf(end_point, sizeof(end_point), "%s:%u", host.c_str(), port);
+    BIO* stream_bio = BIO_new_connect(end_point);
+    CHECK(stream_bio);
+    BIO_set_nbio(stream_bio, 1);
 
-    while (BIO_do_connect(stream_bio_) != 1) {
-      CHECK(BIO_should_retry(stream_bio_));
+    while (BIO_do_connect(stream_bio) != 1) {
+      CHECK(BIO_should_retry(stream_bio));
       sleep(1);
     }
 
-    SSL_set_bio(ssl_.get(), stream_bio_, stream_bio_);
+    SSL_set_bio(ssl_.get(), stream_bio, stream_bio);
     SSL_set_connect_state(ssl_.get());
 
     for (;;) {
@@ -339,7 +184,6 @@ class SSLStream : public Stream {
   TaskRunner* task_runner_{nullptr};
   std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)> ctx_{nullptr, SSL_CTX_free};
   std::unique_ptr<SSL, decltype(&SSL_free)> ssl_{nullptr, SSL_free};
-  BIO* stream_bio_{nullptr};
 
   base::WeakPtrFactory<SSLStream> weak_ptr_factory_{this};
 };
@@ -504,23 +348,15 @@ void NetworkImpl::NotifyNetworkChanged() {
     i.Run(online);
 }
 
-std::unique_ptr<Stream> NetworkImpl::OpenSocketBlocking(const std::string& host,
-                                                        uint16_t port) {
-  std::unique_ptr<SocketStream> stream{new SocketStream{task_runner_}};
-  if (!stream->Connect(host, port))
-    return nullptr;
-  return std::move(stream);
-}
-
-void NetworkImpl::CreateTlsStream(
-    std::unique_ptr<Stream> stream,
+void NetworkImpl::OpenSslSocket(
     const std::string& host,
+    uint16_t port,
     const base::Callback<void(std::unique_ptr<Stream>)>& success_callback,
     const base::Callback<void(const Error*)>& error_callback) {
   // Connect to SSL port instead of upgrading to TLS.
   std::unique_ptr<SSLStream> tls_stream{new SSLStream{task_runner_}};
 
-  if (tls_stream->Init()) {
+  if (tls_stream->Init(host, port)) {
     task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(success_callback, base::Passed(&tls_stream)), {});
   } else {

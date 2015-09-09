@@ -75,7 +75,7 @@ const BackoffEntry::Policy kDefaultBackoffPolicy = {
 };
 
 const char kDefaultXmppHost[] = "talk.google.com";
-const uint16_t kDefaultXmppPort = 5222;
+const uint16_t kDefaultXmppPort = 5223;
 
 // Used for keeping connection alive.
 const int kRegularPingIntervalSeconds = 60;
@@ -152,20 +152,6 @@ void XmppChannel::HandleStanza(std::unique_ptr<XmlNode> stanza) {
 
   switch (state_) {
     case XmppState::kConnected:
-      if (stanza->name() == "stream:features" &&
-          stanza->FindFirstChild("starttls/required", false)) {
-        state_ = XmppState::kTlsStarted;
-        SendMessage("<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>");
-        return;
-      }
-      break;
-    case XmppState::kTlsStarted:
-      if (stanza->name() == "proceed") {
-        StartTlsHandshake();
-        return;
-      }
-      break;
-    case XmppState::kTlsCompleted:
       if (stanza->name() == "stream:features") {
         auto children = stanza->FindChildren("mechanisms/mechanism", false);
         for (const auto& child : children) {
@@ -217,7 +203,7 @@ void XmppChannel::HandleStanza(std::unique_ptr<XmlNode> stanza) {
   }
   // Something bad happened. Close the stream and start over.
   LOG(ERROR) << "Error condition occurred handling stanza: "
-             << stanza->ToString();
+             << stanza->ToString() << " in state: " << static_cast<int>(state_);
   CloseStream();
 }
 
@@ -290,25 +276,37 @@ void XmppChannel::HandleMessageStanza(std::unique_ptr<XmlNode> stanza) {
     ParseNotificationJson(*json_dict, delegate_);
 }
 
-void XmppChannel::StartTlsHandshake() {
-  raw_socket_->CancelPendingAsyncOperations();
-  network_->CreateTlsStream(
-      std::move(raw_socket_), host_,
-      base::Bind(&XmppChannel::OnTlsHandshakeComplete,
+void XmppChannel::CreateSslSocket() {
+  CHECK(!stream_);
+  state_ = XmppState::kConnecting;
+  LOG(INFO) << "Starting XMPP connection to " << kDefaultXmppHost << ":" << kDefaultXmppPort;
+
+  network_->OpenSslSocket(
+      kDefaultXmppHost, kDefaultXmppPort,
+      base::Bind(&XmppChannel::OnSslSocketReady,
                  task_ptr_factory_.GetWeakPtr()),
-      base::Bind(&XmppChannel::OnTlsError, task_ptr_factory_.GetWeakPtr()));
+      base::Bind(&XmppChannel::OnSslError, task_ptr_factory_.GetWeakPtr()));
 }
 
-void XmppChannel::OnTlsHandshakeComplete(std::unique_ptr<Stream> tls_stream) {
-  tls_stream_ = std::move(tls_stream);
-  stream_ = tls_stream_.get();
-  state_ = XmppState::kTlsCompleted;
+void XmppChannel::OnSslSocketReady(std::unique_ptr<Stream> stream) {
+  CHECK(XmppState::kConnecting == state_);
+  backoff_entry_.InformOfRequest(true);
+  stream_ = std::move(stream);
+  state_ = XmppState::kConnected;
   RestartXmppStream();
+  ScheduleRegularPing();
 }
 
-void XmppChannel::OnTlsError(const Error* error) {
+void XmppChannel::OnSslError(const Error* error) {
   LOG(ERROR) << "TLS handshake failed. Restarting XMPP connection";
-  Restart();
+  backoff_entry_.InformOfRequest(false);
+
+  LOG(INFO) << "Delaying connection to XMPP server for "
+            << backoff_entry_.GetTimeUntilRelease();
+  task_runner_->PostDelayedTask(
+      FROM_HERE,
+      base::Bind(&XmppChannel::CreateSslSocket, task_ptr_factory_.GetWeakPtr()),
+      backoff_entry_.GetTimeUntilRelease());
 }
 
 void XmppChannel::SendMessage(const std::string& message) {
@@ -336,10 +334,6 @@ void XmppChannel::SendMessage(const std::string& message) {
 void XmppChannel::OnMessageSent() {
   ErrorPtr error;
   write_pending_ = false;
-  if (!stream_->FlushBlocking(&error)) {
-    OnWriteError(error.get());
-    return;
-  }
   if (queued_write_data_.empty()) {
     WaitForMessage();
   } else {
@@ -373,30 +367,6 @@ void XmppChannel::OnWriteError(const Error* error) {
   Restart();
 }
 
-void XmppChannel::Connect(const std::string& host,
-                          uint16_t port,
-                          const base::Closure& callback) {
-  state_ = XmppState::kConnecting;
-  LOG(INFO) << "Starting XMPP connection to " << host << ":" << port;
-  raw_socket_ = network_->OpenSocketBlocking(host, port);
-
-  backoff_entry_.InformOfRequest(raw_socket_ != nullptr);
-  if (raw_socket_) {
-    host_ = host;
-    port_ = port;
-    stream_ = raw_socket_.get();
-    callback.Run();
-  } else {
-    LOG(INFO) << "Delaying connection to XMPP server " << host << " for "
-              << backoff_entry_.GetTimeUntilRelease();
-    task_runner_->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(&XmppChannel::Connect, task_ptr_factory_.GetWeakPtr(), host,
-                   port, callback),
-        backoff_entry_.GetTimeUntilRelease());
-  }
-}
-
 std::string XmppChannel::GetName() const {
   return "xmpp";
 }
@@ -419,9 +389,7 @@ void XmppChannel::Start(NotificationDelegate* delegate) {
   CHECK(state_ == XmppState::kNotStarted);
   delegate_ = delegate;
 
-  Connect(
-      kDefaultXmppHost, kDefaultXmppPort,
-      base::Bind(&XmppChannel::OnConnected, task_ptr_factory_.GetWeakPtr()));
+  CreateSslSocket();
 }
 
 void XmppChannel::Stop() {
@@ -431,23 +399,8 @@ void XmppChannel::Stop() {
   task_ptr_factory_.InvalidateWeakPtrs();
   ping_ptr_factory_.InvalidateWeakPtrs();
 
-  if (tls_stream_) {
-    tls_stream_->CloseBlocking(nullptr);
-    tls_stream_.reset();
-  }
-  if (raw_socket_) {
-    raw_socket_->CloseBlocking(nullptr);
-    raw_socket_.reset();
-  }
-  stream_ = nullptr;
+  stream_.reset();
   state_ = XmppState::kNotStarted;
-}
-
-void XmppChannel::OnConnected() {
-  CHECK(XmppState::kConnecting == state_);
-  state_ = XmppState::kConnected;
-  RestartXmppStream();
-  ScheduleRegularPing();
 }
 
 void XmppChannel::RestartXmppStream() {
