@@ -48,14 +48,9 @@ class Network {
   virtual void DisableAccessPoint() = 0;
 
   // Opens bidirectional sockets and returns attached stream.
-  // TODO(vitalybuka): Make async.
-  virtual std::unique_ptr<Stream> OpenSocketBlocking(const std::string& host,
-                                                     uint16_t port) = 0;
-
-  // Replaces stream with version with TLS support.
-  virtual void CreateTlsStream(
-      std::unique_ptr<Stream> socket,
+  virtual void OpenSslSocket(
       const std::string& host,
+      uint16_t port,
       const base::Callback<void(std::unique_ptr<Stream>)>& success_callback,
       const base::Callback<void(const Error*)>& error_callback) = 0;
 

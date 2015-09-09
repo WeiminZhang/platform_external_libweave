@@ -30,10 +30,6 @@ class Stream {
       const base::Callback<void(const Error*)>& error_callback,
       ErrorPtr* error) = 0;
 
-  virtual bool FlushBlocking(ErrorPtr* error) = 0;
-
-  virtual bool CloseBlocking(ErrorPtr* error) = 0;
-
   virtual void CancelPendingAsyncOperations() = 0;
 };
 

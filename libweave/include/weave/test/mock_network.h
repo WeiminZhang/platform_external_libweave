@@ -30,22 +30,11 @@ class MockNetwork : public Network {
   MOCK_METHOD1(EnableAccessPoint, void(const std::string&));
   MOCK_METHOD0(DisableAccessPoint, void());
 
-  MOCK_METHOD2(MockOpenSocketBlocking, Stream*(const std::string&, uint16_t));
-  MOCK_METHOD2(MockCreateTlsStream, Stream*(Stream*, const std::string&));
-
-  std::unique_ptr<Stream> OpenSocketBlocking(const std::string& host,
-                                             uint16_t port) override {
-    return std::unique_ptr<Stream>{MockOpenSocketBlocking(host, port)};
-  }
-
-  void CreateTlsStream(
-      std::unique_ptr<Stream> socket,
-      const std::string& host,
-      const base::Callback<void(std::unique_ptr<Stream>)>& success_callback,
-      const base::Callback<void(const Error*)>& error_callback) override {
-    success_callback.Run(
-        std::unique_ptr<Stream>{MockCreateTlsStream(socket.get(), host)});
-  }
+  MOCK_METHOD4(OpenSslSocket,
+               void(const std::string&,
+                    uint16_t,
+                    const base::Callback<void(std::unique_ptr<Stream>)>&,
+                    const base::Callback<void(const Error*)>&));
 };
 
 }  // namespace test

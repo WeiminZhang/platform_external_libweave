@@ -61,8 +61,6 @@ class XmppChannel : public NotificationChannel,
     kNotStarted,
     kConnecting,
     kConnected,
-    kTlsStarted,
-    kTlsCompleted,
     kAuthenticationStarted,
     kAuthenticationFailed,
     kStreamRestartedPostAuthentication,
@@ -75,20 +73,13 @@ class XmppChannel : public NotificationChannel,
  protected:
   // These methods are internal helpers that can be overloaded by unit tests
   // to help provide unit-test-specific functionality.
-  virtual void Connect(const std::string& host,
-                       uint16_t port,
-                       const base::Closure& callback);
   virtual void SchedulePing(base::TimeDelta interval, base::TimeDelta timeout);
   void ScheduleRegularPing();
   void ScheduleFastPing();
 
-  XmppState state_{XmppState::kNotStarted};
-
-  // The connection socket stream to the XMPP server.
-  Stream* stream_{nullptr};
-
  private:
   friend class IqStanzaHandler;
+  friend class FakeXmppChannel;
 
   // Overrides from XmppStreamParser::Delegate.
   void OnStreamStart(const std::string& node_name,
@@ -103,13 +94,12 @@ class XmppChannel : public NotificationChannel,
   void HandleMessageStanza(std::unique_ptr<XmlNode> stanza);
   void RestartXmppStream();
 
-  void StartTlsHandshake();
-  void OnTlsHandshakeComplete(std::unique_ptr<Stream> tls_stream);
-  void OnTlsError(const Error* error);
+  void CreateSslSocket();
+  void OnSslSocketReady(std::unique_ptr<Stream> stream);
+  void OnSslError(const Error* error);
 
   void WaitForMessage();
 
-  void OnConnected();
   void OnMessageRead(size_t size);
   void OnMessageSent();
   void OnReadError(const Error* error);
@@ -130,6 +120,8 @@ class XmppChannel : public NotificationChannel,
 
   void OnConnectivityChanged(bool online);
 
+  XmppState state_{XmppState::kNotStarted};
+
   // Robot account name for the device.
   std::string account_;
 
@@ -140,8 +132,7 @@ class XmppChannel : public NotificationChannel,
   std::string access_token_;
 
   Network* network_{nullptr};
-  std::unique_ptr<Stream> raw_socket_;
-  std::unique_ptr<Stream> tls_stream_;  // Must follow |raw_socket_|.
+  std::unique_ptr<Stream> stream_;
 
   // Read buffer for incoming message packets.
   std::vector<char> read_socket_data_;
