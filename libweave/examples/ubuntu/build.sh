@@ -16,12 +16,13 @@ fi
 
 export BUILD_TARGET=$*
 if [ -z "$BUILD_TARGET" ]; then
-   export BUILD_TARGET="weave libweave_testrunner"
+   export BUILD_TARGET="weave libweave_testrunner libweave_exports_testrunner"
 fi
 
 export CORES=`cat /proc/cpuinfo | grep processor | wc -l`
 ninja -j $CORES -C out/${BUILD_CONFIG} $BUILD_TARGET || exit 1
 
 if [[ $BUILD_TARGET == *"libweave_testrunner"* ]]; then
-  out/${BUILD_CONFIG}/libweave_testrunner
+  out/${BUILD_CONFIG}/libweave_testrunner || exit 1
+  out/${BUILD_CONFIG}/libweave_exports_testrunner || exit 1
 fi

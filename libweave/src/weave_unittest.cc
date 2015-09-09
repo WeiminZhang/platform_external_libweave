@@ -153,6 +153,14 @@ const char kStateDefs[] = R"({"power": {"battery_level":"integer"}})";
 
 const char kStateDefaults[] = R"({"power": {"battery_level":44}})";
 
+MATCHER_P(MatchTxt, txt, "") {
+  std::vector<std::string> txt_copy = txt;
+  std::sort(txt_copy.begin(), txt_copy.end());
+  std::vector<std::string> arg_copy = arg;
+  std::sort(arg_copy.begin(), arg_copy.end());
+  return (arg_copy == txt_copy);
+}
+
 class WeaveTest : public ::testing::Test {
  protected:
   void SetUp() override { device_ = weave::Device::Create(); }
@@ -223,27 +231,28 @@ class WeaveTest : public ::testing::Test {
   void InitMdns() {
     EXPECT_CALL(mdns_, GetId()).WillRepeatedly(Return("TEST_ID"));
     InitMdnsPublishing(false);
-    EXPECT_CALL(mdns_, StopPublishing("privet")).WillOnce(Return());
+    EXPECT_CALL(mdns_, StopPublishing("_privet._tcp")).WillOnce(Return());
   }
 
   void InitMdnsPublishing(bool registered) {
-    std::map<std::string, std::string> txt{
-        {"id", "TEST_ID"},     {"flags", "DB"},  {"mmid", "ABCDE"},
-        {"services", "_base"}, {"txtvers", "3"}, {"ty", "DEVICE_NAME"}};
+    std::vector<std::string> txt{{"id=TEST_ID"}, {"flags=DB"},
+                                 {"mmid=ABCDE"}, {"services=_base"},
+                                 {"txtvers=3"},  {"ty=DEVICE_NAME"}};
     if (registered) {
-      txt["gcd_id"] = "DEVICE_ID";
+      txt.push_back("gcd_id=DEVICE_ID");
 
       // During registration device may announce itself twice:
       // 1. with GCD ID but not connected (DB)
       // 2. with GCD ID and connected (BB)
-      EXPECT_CALL(mdns_, PublishService("privet", 11, txt))
+      EXPECT_CALL(mdns_, PublishService("_privet._tcp", 11, MatchTxt(txt)))
           .Times(AtMost(1))
           .WillOnce(Return());
 
-      txt["flags"] = "BB";
+      txt[1] = "flags=BB";
     }
 
-    EXPECT_CALL(mdns_, PublishService("privet", 11, txt)).WillOnce(Return());
+    EXPECT_CALL(mdns_, PublishService("_privet._tcp", 11, MatchTxt(txt)))
+        .WillOnce(Return());
   }
 
   void InitHttpServer() {

@@ -23,9 +23,9 @@ class MdnsImpl : public Mdns {
   MdnsImpl();
 
   ~MdnsImpl() override;
-  void PublishService(const std::string& service_name,
+  void PublishService(const std::string& service_type,
                       uint16_t port,
-                      const std::map<std::string, std::string>& txt) override;
+                      const std::vector<std::string>& txt) override;
   void StopPublishing(const std::string& service_name) override;
   std::string GetId() const override;
 
