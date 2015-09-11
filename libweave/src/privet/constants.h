@@ -8,9 +8,6 @@
 namespace weave {
 namespace privet {
 
-// Time to reply on privet HTTP.
-const int kSetupDelaySeconds = 1;
-
 namespace errors {
 
 extern const char kDomain[];
