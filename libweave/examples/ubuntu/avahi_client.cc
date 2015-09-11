@@ -37,8 +37,7 @@ MdnsImpl::MdnsImpl() {
   avahi_threaded_poll_start(thread_pool_.get());
 
   group_.reset(avahi_entry_group_new(client_.get(), GroupCallback, nullptr));
-
-  CHECK(group_);
+  CHECK(group_) << avahi_strerror(avahi_client_errno(client_.get()));
 }
 
 MdnsImpl::~MdnsImpl() {
