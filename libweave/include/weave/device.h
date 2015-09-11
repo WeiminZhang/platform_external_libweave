@@ -9,6 +9,7 @@
 #include <set>
 #include <string>
 
+#include <weave/bluetooth.h>
 #include <weave/cloud.h>
 #include <weave/commands.h>
 #include <weave/config_store.h>
@@ -41,7 +42,8 @@ class Device {
                      HttpClient* http_client,
                      Network* network,
                      Mdns* mdns,
-                     HttpServer* http_server) = 0;
+                     HttpServer* http_server,
+                     Bluetooth* bluetooth) = 0;
 
   virtual Commands* GetCommands() = 0;
   virtual State* GetState() = 0;

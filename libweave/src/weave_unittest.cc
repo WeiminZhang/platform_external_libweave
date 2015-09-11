@@ -6,6 +6,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <weave/test/mock_bluetooth.h>
 #include <weave/test/mock_config_store.h>
 #include <weave/test/mock_http_client.h>
 #include <weave/test/mock_http_server.h>
@@ -293,7 +294,7 @@ class WeaveTest : public ::testing::Test {
     options.xmpp_enabled = false;
 
     device_->Start(options, &config_store_, &task_runner_, &http_client_,
-                   &network_, &mdns_, &http_server_);
+                   &network_, &mdns_, &http_server_, &bluetooth_);
 
     cloud_ = device_->GetCloud();
     ASSERT_TRUE(cloud_);
@@ -321,6 +322,7 @@ class WeaveTest : public ::testing::Test {
   StrictMock<test::MockNetwork> network_;
   StrictMock<test::MockMdns> mdns_;
   StrictMock<test::MockHttpServer> http_server_;
+  StrictMock<test::MockBluetooth> bluetooth_;
 
   std::vector<Network::OnConnectionChangedCallback> network_callbacks_;
 
@@ -341,7 +343,7 @@ TEST_F(WeaveTest, StartMinimal) {
 
   InitConfigStore();
   device_->Start(options, &config_store_, &task_runner_, &http_client_,
-                 &network_, nullptr, nullptr);
+                 &network_, nullptr, nullptr, nullptr);
 }
 
 class WeaveBasicTest : public WeaveTest {
