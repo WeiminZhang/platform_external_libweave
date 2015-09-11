@@ -35,7 +35,8 @@ void DeviceManager::Start(const Options& options,
                           HttpClient* http_client,
                           Network* network,
                           Mdns* mdns,
-                          HttpServer* http_server) {
+                          HttpServer* http_server,
+                          Bluetooth* bluetooth) {
   command_manager_ = std::make_shared<CommandManager>();
   command_manager_->Startup(config_store);
   state_change_queue_.reset(new StateChangeQueue(kMaxStateChangeQueueSize));
@@ -56,7 +57,7 @@ void DeviceManager::Start(const Options& options,
   device_info_->Start();
 
   if (!options.disable_privet) {
-    StartPrivet(options, task_runner, network, mdns, http_server);
+    StartPrivet(options, task_runner, network, mdns, http_server, bluetooth);
   } else {
     CHECK(!http_server);
     CHECK(!mdns);
@@ -87,7 +88,8 @@ void DeviceManager::StartPrivet(const Options& options,
                                 TaskRunner* task_runner,
                                 Network* network,
                                 Mdns* mdns,
-                                HttpServer* http_server) {
+                                HttpServer* http_server,
+                                Bluetooth* bluetooth) {
   privet_.reset(new privet::Manager{});
   privet_->Start(options, task_runner, network, mdns, http_server,
                  device_info_.get(), command_manager_.get(),

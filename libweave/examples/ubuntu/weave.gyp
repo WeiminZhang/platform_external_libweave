@@ -12,6 +12,7 @@
         'network_manager.cc',
         'avahi_client.cc',
         'event_http_server.cc',
+        'bluez_client.cc',
       ],
       'dependencies': [
         '../../libweave_standalone.gyp:libweave',

@@ -5,6 +5,7 @@
 #include <weave/device.h>
 
 #include "libweave/examples/ubuntu/avahi_client.h"
+#include "libweave/examples/ubuntu/bluez_client.h"
 #include "libweave/examples/ubuntu/curl_http_client.h"
 #include "libweave/examples/ubuntu/event_http_server.h"
 #include "libweave/examples/ubuntu/event_task_runner.h"
@@ -18,6 +19,7 @@ int main() {
   weave::examples::NetworkImpl network{&task_runner};
   weave::examples::MdnsImpl mdns;
   weave::examples::HttpServerImpl http_server{task_runner.GetEventBase()};
+  weave::examples::BluetoothImpl bluetooth;
 
   auto device = weave::Device::Create();
   weave::Device::Options opts;
@@ -26,7 +28,7 @@ int main() {
   opts.disable_security = false;
   opts.enable_ping = true;
   device->Start(opts, &config_store, &task_runner, &http_client, &network,
-                &mdns, &http_server);
+                &mdns, &http_server, &bluetooth);
 
   task_runner.Run();
 

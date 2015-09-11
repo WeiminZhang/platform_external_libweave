@@ -32,7 +32,8 @@ class DeviceManager final : public Device {
              HttpClient* http_client,
              Network* network,
              Mdns* mdns,
-             HttpServer* http_server) override;
+             HttpServer* http_server,
+             Bluetooth* bluetooth) override;
 
   Commands* GetCommands() override;
   State* GetState() override;
@@ -46,7 +47,8 @@ class DeviceManager final : public Device {
                    TaskRunner* task_runner,
                    Network* network,
                    Mdns* mdns,
-                   HttpServer* http_server);
+                   HttpServer* http_server,
+                   Bluetooth* bluetooth);
 
   void OnWiFiBootstrapStateChanged(weave::WifiSetupState state);
 
