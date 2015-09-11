@@ -17,9 +17,9 @@ namespace weave {
 namespace privet {
 
 namespace {
-const int kConnectTimeoutSeconds = 60;
-const int kBootstrapTimeoutSeconds = 600;
-const int kMonitorTimeoutSeconds = 120;
+const int kConnectTimeoutMinutes = 3;
+const int kBootstrapTimeoutMinutes = 10;
+const int kMonitorTimeoutMinutes = 2;
 }
 
 WifiBootstrapManager::WifiBootstrapManager(
@@ -81,7 +81,7 @@ void WifiBootstrapManager::StartBootstrapping() {
     task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(&WifiBootstrapManager::OnBootstrapTimeout,
                               tasks_weak_factory_.GetWeakPtr()),
-        base::TimeDelta::FromSeconds(kBootstrapTimeoutSeconds));
+        base::TimeDelta::FromMinutes(kBootstrapTimeoutMinutes));
   }
   // TODO(vitalybuka): Add SSID probing.
   privet_ssid_ = GenerateSsid();
@@ -104,7 +104,7 @@ void WifiBootstrapManager::StartConnecting(const std::string& ssid,
   task_runner_->PostDelayedTask(
       FROM_HERE, base::Bind(&WifiBootstrapManager::OnConnectTimeout,
                             tasks_weak_factory_.GetWeakPtr()),
-      base::TimeDelta::FromSeconds(kConnectTimeoutSeconds));
+      base::TimeDelta::FromMinutes(kConnectTimeoutMinutes));
   network_->ConnectToService(ssid, passphrase,
                              base::Bind(&WifiBootstrapManager::OnConnectSuccess,
                                         tasks_weak_factory_.GetWeakPtr(), ssid),
@@ -179,12 +179,13 @@ bool WifiBootstrapManager::ConfigureCredentials(const std::string& ssid,
                                                 const std::string& passphrase,
                                                 ErrorPtr* error) {
   setup_state_ = SetupState{SetupState::kInProgress};
-  // TODO(vitalybuka): Find more reliable way to finish request or move delay
-  // into PrivetHandler as it's very HTTP specific.
+  // Since we are changing network, we need to let the web server send out the
+  // response to the HTTP request leading to this action. So, we are waiting
+  // a bit before mocking with network set up.
   task_runner_->PostDelayedTask(
       FROM_HERE, base::Bind(&WifiBootstrapManager::StartConnecting,
                             tasks_weak_factory_.GetWeakPtr(), ssid, passphrase),
-      base::TimeDelta::FromSeconds(kSetupDelaySeconds));
+      base::TimeDelta::FromSeconds(1));
   return true;
 }
 
@@ -247,7 +248,7 @@ void WifiBootstrapManager::OnConnectivityChange(bool is_connected) {
       task_runner_->PostDelayedTask(
           FROM_HERE, base::Bind(&WifiBootstrapManager::OnMonitorTimeout,
                                 tasks_weak_factory_.GetWeakPtr()),
-          base::TimeDelta::FromSeconds(kMonitorTimeoutSeconds));
+          base::TimeDelta::FromMinutes(kMonitorTimeoutMinutes));
     }
   }
 }

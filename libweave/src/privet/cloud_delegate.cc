@@ -14,6 +14,7 @@
 #include <weave/error.h>
 #include <weave/task_runner.h>
 
+#include "libweave/src/backoff_entry.h"
 #include "libweave/src/commands/command_manager.h"
 #include "libweave/src/config.h"
 #include "libweave/src/device_registration_info.h"
@@ -25,8 +26,10 @@ namespace privet {
 
 namespace {
 
-const int kMaxSetupRetries = 5;
-const int kFirstRetryTimeoutSec = 2;
+const BackoffEntry::Policy register_backoff_policy =
+    { 0, 1000, 2.0, 0.2, 5000, -1, false };
+
+const int kMaxDeviceRegistrationTimeMinutes = 5;
 
 Command* ReturnNotFound(const std::string& command_id, ErrorPtr* error) {
   Error::AddToPrintf(error, FROM_HERE, errors::kDomain, errors::kNotFound,
@@ -141,11 +144,15 @@ class CloudDelegateImpl : public CloudDelegate {
             << ", user:" << user;
     setup_state_ = SetupState(SetupState::kInProgress);
     setup_weak_factory_.InvalidateWeakPtrs();
+    backoff_entry_.Reset();
+    base::Time deadline = base::Time::Now();
+    deadline += base::TimeDelta::FromMinutes(kMaxDeviceRegistrationTimeMinutes);
     task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
-                              setup_weak_factory_.GetWeakPtr(), ticket_id, 0),
-        base::TimeDelta::FromSeconds(kSetupDelaySeconds));
-    // Return true because we tried setup.
+                              setup_weak_factory_.GetWeakPtr(), ticket_id,
+                              deadline),
+        {});
+    // Return true because we initiated setup.
     return true;
   }
 
@@ -278,31 +285,34 @@ class CloudDelegateImpl : public CloudDelegate {
     NotifyOnCommandDefsChanged();
   }
 
-  void RetryRegister(const std::string& ticket_id, int retries, Error* error) {
-    if (retries >= kMaxSetupRetries) {
-      ErrorPtr new_error{error ? error->Clone() : nullptr};
-      Error::AddTo(&new_error, FROM_HERE, errors::kDomain,
-                   errors::kInvalidState, "Failed to register device");
-      setup_state_ = SetupState{std::move(new_error)};
-      return;
-    }
-    task_runner_->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
-                   setup_weak_factory_.GetWeakPtr(), ticket_id, retries + 1),
-        base::TimeDelta::FromSeconds(kFirstRetryTimeoutSec << retries));
-  }
-
   void OnRegisterSuccess(const std::string& device_id) {
     VLOG(1) << "Device registered: " << device_id;
     setup_state_ = SetupState(SetupState::kSuccess);
   }
 
-  void CallManagerRegisterDevice(const std::string& ticket_id, int retries) {
+  void CallManagerRegisterDevice(const std::string& ticket_id,
+                                 const base::Time& deadline) {
     ErrorPtr error;
-    if (device_->RegisterDevice(ticket_id, &error).empty())
-      return RetryRegister(ticket_id, retries, error.get());
-    setup_state_ = SetupState(SetupState::kSuccess);
+    if (base::Time::Now() > deadline) {
+      Error::AddTo(&error, FROM_HERE, errors::kDomain,
+                   errors::kInvalidState, "Failed to register device");
+      setup_state_ = SetupState{std::move(error)};
+      return;
+    }
+
+    if (!device_->RegisterDevice(ticket_id, &error).empty()) {
+      backoff_entry_.InformOfRequest(true);
+      setup_state_ = SetupState(SetupState::kSuccess);
+      return;
+    }
+
+    // Registration failed. Retry with backoff.
+    backoff_entry_.InformOfRequest(false);
+    task_runner_->PostDelayedTask(
+        FROM_HERE,
+        base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
+                    setup_weak_factory_.GetWeakPtr(), ticket_id, deadline),
+        backoff_entry_.GetTimeUntilRelease());
   }
 
   Command* GetCommandInternal(const std::string& command_id,
@@ -358,6 +368,9 @@ class CloudDelegateImpl : public CloudDelegate {
 
   // Map of command IDs to user IDs.
   std::map<std::string, uint64_t> command_owners_;
+
+  // Backoff entry for retrying device registration.
+  BackoffEntry backoff_entry_{&register_backoff_policy};
 
   // |setup_weak_factory_| tracks the lifetime of callbacks used in connection
   // with a particular invocation of Setup().
