@@ -13,7 +13,6 @@
 #include <memory>
 #include <vector>
 
-#include "base/atomic_ref_count.h"
 #include "base/base_export.h"
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
@@ -51,7 +50,7 @@ class BindStateBase {
   void AddRef();
   void Release();
 
-  AtomicRefCount ref_count_;
+  std::atomic<int32_t> ref_count_;
 
   // Pointer to a function that will properly destroy |this|.
   void (*destructor_)(BindStateBase*);
