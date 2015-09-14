@@ -43,29 +43,29 @@ JSONReader::~JSONReader() {
 }
 
 // static
-Value* JSONReader::DeprecatedRead(const StringPiece& json) {
+Value* JSONReader::DeprecatedRead(const std::string& json) {
   return Read(json).release();
 }
 
 // static
-scoped_ptr<Value> JSONReader::Read(const StringPiece& json) {
+scoped_ptr<Value> JSONReader::Read(const std::string& json) {
   internal::JSONParser parser(JSON_PARSE_RFC);
   return make_scoped_ptr(parser.Parse(json));
 }
 
 // static
-Value* JSONReader::DeprecatedRead(const StringPiece& json, int options) {
+Value* JSONReader::DeprecatedRead(const std::string& json, int options) {
   return Read(json, options).release();
 }
 
 // static
-scoped_ptr<Value> JSONReader::Read(const StringPiece& json, int options) {
+scoped_ptr<Value> JSONReader::Read(const std::string& json, int options) {
   internal::JSONParser parser(options);
   return make_scoped_ptr(parser.Parse(json));
 }
 
 // static
-Value* JSONReader::DeprecatedReadAndReturnError(const StringPiece& json,
+Value* JSONReader::DeprecatedReadAndReturnError(const std::string& json,
                                                 int options,
                                                 int* error_code_out,
                                                 std::string* error_msg_out) {
@@ -74,7 +74,7 @@ Value* JSONReader::DeprecatedReadAndReturnError(const StringPiece& json,
 }
 
 // static
-scoped_ptr<Value> JSONReader::ReadAndReturnError(const StringPiece& json,
+scoped_ptr<Value> JSONReader::ReadAndReturnError(const std::string& json,
                                                  int options,
                                                  int* error_code_out,
                                                  std::string* error_msg_out) {
