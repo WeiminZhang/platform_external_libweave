@@ -10,11 +10,11 @@ namespace base {
 namespace internal {
 
 void BindStateBase::AddRef() {
-  AtomicRefCountInc(&ref_count_);
+  ++ref_count_;
 }
 
 void BindStateBase::Release() {
-  if (!AtomicRefCountDec(&ref_count_))
+  if (--ref_count_ == 0)
     destructor_(this);
 }
 
