@@ -33,7 +33,6 @@
 #include "base/base_export.h"
 #include "base/basictypes.h"
 #include "base/memory/scoped_ptr.h"
-#include "base/strings/string_piece.h"
 
 namespace base {
 
@@ -94,27 +93,27 @@ class BASE_EXPORT JSONReader {
 
   // Reads and parses |json|, returning a Value. The caller owns the returned
   // instance. If |json| is not a properly formed JSON string, returns NULL.
-  static scoped_ptr<Value> Read(const StringPiece& json);
+  static scoped_ptr<Value> Read(const std::string& json);
   // TODO(estade): remove this bare pointer version.
-  static Value* DeprecatedRead(const StringPiece& json);
+  static Value* DeprecatedRead(const std::string& json);
 
   // Reads and parses |json|, returning a Value owned by the caller. The
   // parser respects the given |options|. If the input is not properly formed,
   // returns NULL.
-  static scoped_ptr<Value> Read(const StringPiece& json, int options);
+  static scoped_ptr<Value> Read(const std::string& json, int options);
   // TODO(estade): remove this bare pointer version.
-  static Value* DeprecatedRead(const StringPiece& json, int options);
+  static Value* DeprecatedRead(const std::string& json, int options);
 
   // Reads and parses |json| like Read(). |error_code_out| and |error_msg_out|
   // are optional. If specified and NULL is returned, they will be populated
   // an error code and a formatted error message (including error location if
   // appropriate). Otherwise, they will be unmodified.
-  static scoped_ptr<Value> ReadAndReturnError(const StringPiece& json,
+  static scoped_ptr<Value> ReadAndReturnError(const std::string& json,
                                               int options,  // JSONParserOptions
                                               int* error_code_out,
                                               std::string* error_msg_out);
   // TODO(estade): remove this bare pointer version.
-  static Value* DeprecatedReadAndReturnError(const StringPiece& json,
+  static Value* DeprecatedReadAndReturnError(const std::string& json,
                                              int options,  // JSONParserOptions
                                              int* error_code_out,
                                              std::string* error_msg_out);
