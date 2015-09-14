@@ -5,10 +5,10 @@
 #ifndef BASE_MEMORY_REF_COUNTED_H_
 #define BASE_MEMORY_REF_COUNTED_H_
 
+#include <atomic>
 #include <cassert>
 #include <iosfwd>
 
-#include "base/atomic_ref_count.h"
 #include "base/base_export.h"
 #include "base/build/build_config.h"
 #include "base/compiler_specific.h"
@@ -83,7 +83,7 @@ class BASE_EXPORT RefCountedThreadSafeBase {
   bool Release() const;
 
  private:
-  mutable AtomicRefCount ref_count_;
+  mutable std::atomic<int32_t> ref_count_;
 #ifndef NDEBUG
   mutable bool in_dtor_;
 #endif

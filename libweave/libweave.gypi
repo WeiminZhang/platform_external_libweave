@@ -124,7 +124,6 @@
       'external/base/values.cc',
     ],
     'base_unittests': [
-      'external/base/atomicops_unittest.cc',
       'external/base/bind_unittest.cc',
       'external/base/callback_list_unittest.cc',
       'external/base/callback_unittest.cc',
