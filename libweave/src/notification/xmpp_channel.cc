@@ -108,8 +108,12 @@ XmppChannel::XmppChannel(const std::string& account,
 
 void XmppChannel::OnMessageRead(size_t size) {
   std::string msg(read_socket_data_.data(), size);
-  VLOG(2) << "Received XMPP packet: " << msg;
+  VLOG(2) << "Received XMPP packet: '" << msg << "'";
   read_pending_ = false;
+
+  if (!size)
+    return Restart();
+
   stream_parser_.ParseData(msg);
   WaitForMessage();
 }
