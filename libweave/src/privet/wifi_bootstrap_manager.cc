@@ -29,14 +29,9 @@ WifiBootstrapManager::WifiBootstrapManager(
       last_configured_ssid_{last_configured_ssid},
       test_privet_ssid_{test_privet_ssid},
       ble_setup_enabled_{ble_setup_enabled} {
-  cloud_observer_.Add(gcd);
 }
 
 void WifiBootstrapManager::Init() {
-  CHECK(!is_initialized_);
-  std::string ssid = GenerateSsid();
-  if (ssid.empty())
-    return;  // Delay initialization until ssid_generator_ is ready.
   UpdateConnectionState();
   network_->AddOnConnectionChangedCallback(
       base::Bind(&WifiBootstrapManager::OnConnectivityChange,
@@ -46,7 +41,6 @@ void WifiBootstrapManager::Init() {
   } else {
     StartMonitoring();
   }
-  is_initialized_ = true;
 }
 
 void WifiBootstrapManager::RegisterStateListener(
@@ -208,12 +202,6 @@ std::string WifiBootstrapManager::GetHostedSsid() const {
 std::set<WifiType> WifiBootstrapManager::GetTypes() const {
   // TODO(wiley) This should do some system work to figure this out.
   return {WifiType::kWifi24};
-}
-
-void WifiBootstrapManager::OnDeviceInfoChanged() {
-  // Initialization was delayed until dependencies are ready.
-  if (!is_initialized_)
-    Init();
 }
 
 void WifiBootstrapManager::OnConnectSuccess(const std::string& ssid) {

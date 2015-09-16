@@ -65,22 +65,12 @@ class CloudDelegateImpl : public CloudDelegate {
 
   ~CloudDelegateImpl() override = default;
 
-  bool GetModelId(std::string* id, ErrorPtr* error) const override {
-    if (device_->GetConfig().model_id().size() != 5) {
-      Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidState, "Model ID is invalid: %s",
-                         device_->GetConfig().model_id().c_str());
-      return false;
-    }
-    *id = device_->GetConfig().model_id();
-    return true;
+  std::string GetModelId() const override {
+    CHECK_EQ(5, device_->GetConfig().model_id().size());
+    return device_->GetConfig().model_id();
   }
 
-  // TODO(vitalybuka): Remove error.
-  bool GetName(std::string* name, ErrorPtr* error) const override {
-    *name = device_->GetConfig().name();
-    return true;
-  }
+  std::string GetName() const override { return device_->GetConfig().name(); }
 
   std::string GetDescription() const override {
     return device_->GetConfig().description();

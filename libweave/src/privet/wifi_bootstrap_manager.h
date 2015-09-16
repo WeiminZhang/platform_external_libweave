@@ -13,8 +13,9 @@
 #include <base/macros.h>
 #include <base/memory/weak_ptr.h>
 #include <base/scoped_observer.h>
+#include <base/time/time.h>
+#include <weave/privet.h>
 
-#include "libweave/src/privet/cloud_delegate.h"
 #include "libweave/src/privet/privet_types.h"
 #include "libweave/src/privet/wifi_delegate.h"
 #include "libweave/src/privet/wifi_ssid_generator.h"
@@ -22,14 +23,14 @@
 namespace weave {
 
 class Network;
+class TaskRunner;
 
 namespace privet {
 
 class CloudDelegate;
 class DeviceDelegate;
 
-class WifiBootstrapManager : public WifiDelegate,
-                             public CloudDelegate::Observer {
+class WifiBootstrapManager : public WifiDelegate {
  public:
   using State = WifiSetupState;
 
@@ -54,9 +55,6 @@ class WifiBootstrapManager : public WifiDelegate,
   std::string GetCurrentlyConnectedSsid() const override;
   std::string GetHostedSsid() const override;
   std::set<WifiType> GetTypes() const override;
-
-  // Overrides from CloudDelegate::Observer.
-  void OnDeviceInfoChanged() override;
 
  private:
   // These Start* tasks:
@@ -91,8 +89,6 @@ class WifiBootstrapManager : public WifiDelegate,
   void OnMonitorTimeout();
   void UpdateConnectionState();
 
-  // Initialization could be delayed if ssid_generator_ is not ready.
-  bool is_initialized_{false};
   State state_{State::kDisabled};
   // Setup state is the temporal state of the most recent bootstrapping attempt.
   // It is not persisted to disk.
@@ -109,8 +105,6 @@ class WifiBootstrapManager : public WifiDelegate,
   std::string test_privet_ssid_;
   std::string privet_ssid_;
   bool ble_setup_enabled_{false};
-
-  ScopedObserver<CloudDelegate, CloudDelegate::Observer> cloud_observer_{this};
 
   // Helps to reset irrelevant tasks switching state.
   base::WeakPtrFactory<WifiBootstrapManager> tasks_weak_factory_{this};

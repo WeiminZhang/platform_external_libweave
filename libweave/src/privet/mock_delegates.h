@@ -139,8 +139,8 @@ class MockWifiDelegate : public WifiDelegate {
 
 class MockCloudDelegate : public CloudDelegate {
  public:
-  MOCK_CONST_METHOD2(GetModelId, bool(std::string*, ErrorPtr*));
-  MOCK_CONST_METHOD2(GetName, bool(std::string*, ErrorPtr*));
+  MOCK_CONST_METHOD0(GetModelId, std::string());
+  MOCK_CONST_METHOD0(GetName, std::string());
   MOCK_CONST_METHOD0(GetDescription, std::string());
   MOCK_CONST_METHOD0(GetLocation, std::string());
   MOCK_METHOD5(UpdateDeviceInfo,
@@ -180,10 +180,8 @@ class MockCloudDelegate : public CloudDelegate {
                     const ErrorCallback&));
 
   MockCloudDelegate() {
-    EXPECT_CALL(*this, GetModelId(_, _))
-        .WillRepeatedly(DoAll(SetArgPointee<0>("ABMID"), Return(true)));
-    EXPECT_CALL(*this, GetName(_, _))
-        .WillRepeatedly(DoAll(SetArgPointee<0>("TestDevice"), Return(true)));
+    EXPECT_CALL(*this, GetModelId()).WillRepeatedly(Return("ABMID"));
+    EXPECT_CALL(*this, GetName()).WillRepeatedly(Return("TestDevice"));
     EXPECT_CALL(*this, GetDescription()).WillRepeatedly(Return(""));
     EXPECT_CALL(*this, GetLocation()).WillRepeatedly(Return(""));
     EXPECT_CALL(*this, UpdateDeviceInfo(_, _, _, _, _))
