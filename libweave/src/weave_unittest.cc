@@ -427,6 +427,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
       .WillOnce(InvokeWithoutArgs([this, offline_from]() {
         EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                   base::TimeDelta::FromMinutes(1));
+        task_runner_.Break();
       }));
   task_runner_.Run();
 }
@@ -472,6 +473,23 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
   for (const auto& cb : network_callbacks_)
     task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, true), {});
   task_runner_.Run();
+}
+
+TEST_F(WeaveWiFiSetupTest, StartOfflineWithSsid) {
+  EXPECT_CALL(config_store_, LoadSettings())
+      .WillRepeatedly(Return(R"({"last_configured_ssid": "TEST_ssid"})"));
+  EXPECT_CALL(network_, GetConnectionState())
+      .WillRepeatedly(Return(NetworkState::kOffline));
+
+  auto offline_from = task_runner_.GetClock()->Now();
+  EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+      .WillOnce(InvokeWithoutArgs([this, &offline_from]() {
+        EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
+                  base::TimeDelta::FromMinutes(1));
+        task_runner_.Break();
+      }));
+
+  StartDevice();
 }
 
 }  // namespace weave
