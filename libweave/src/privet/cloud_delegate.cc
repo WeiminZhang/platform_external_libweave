@@ -66,18 +66,18 @@ class CloudDelegateImpl : public CloudDelegate {
   ~CloudDelegateImpl() override = default;
 
   std::string GetModelId() const override {
-    CHECK_EQ(5, device_->GetConfig().model_id().size());
-    return device_->GetConfig().model_id();
+    CHECK_EQ(5u, device_->GetSettings().model_id.size());
+    return device_->GetSettings().model_id;
   }
 
-  std::string GetName() const override { return device_->GetConfig().name(); }
+  std::string GetName() const override { return device_->GetSettings().name; }
 
   std::string GetDescription() const override {
-    return device_->GetConfig().description();
+    return device_->GetSettings().description;
   }
 
   std::string GetLocation() const override {
-    return device_->GetConfig().location();
+    return device_->GetSettings().location;
   }
 
   void UpdateDeviceInfo(const std::string& name,
@@ -92,11 +92,11 @@ class CloudDelegateImpl : public CloudDelegate {
   }
 
   std::string GetOemName() const override {
-    return device_->GetConfig().oem_name();
+    return device_->GetSettings().oem_name;
   }
 
   std::string GetModelName() const override {
-    return device_->GetConfig().model_name();
+    return device_->GetSettings().model_name;
   }
 
   std::set<std::string> GetServices() const override {
@@ -110,7 +110,7 @@ class CloudDelegateImpl : public CloudDelegate {
 
   AuthScope GetAnonymousMaxScope() const override {
     AuthScope scope;
-    if (StringToEnum(device_->GetConfig().local_anonymous_access_role(),
+    if (StringToEnum(device_->GetSettings().local_anonymous_access_role,
                      &scope)) {
       return scope;
     }
@@ -148,7 +148,7 @@ class CloudDelegateImpl : public CloudDelegate {
   }
 
   std::string GetCloudId() const override {
-    return device_->GetConfig().device_id();
+    return device_->GetSettings().device_id;
   }
 
   const base::DictionaryValue& GetState() const override { return state_; }

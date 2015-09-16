@@ -101,7 +101,7 @@ void DeviceManager::StartPrivet(const Options& options,
 void DeviceManager::OnWiFiBootstrapStateChanged(
     weave::privet::WifiBootstrapManager::State state) {
   const std::string& ssid = privet_->GetCurrentlyConnectedSsid();
-  if (ssid != device_info_->GetConfig().last_configured_ssid()) {
+  if (ssid != device_info_->GetSettings().last_configured_ssid) {
     weave::Config::Transaction change{device_info_->GetMutableConfig()};
     change.set_last_configured_ssid(ssid);
   }

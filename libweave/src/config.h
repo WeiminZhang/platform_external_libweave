@@ -89,49 +89,6 @@ class Config final {
     bool save_{true};
   };
 
-  const std::string& client_id() const { return settings_.client_id; }
-  const std::string& client_secret() const { return settings_.client_secret; }
-  const std::string& api_key() const { return settings_.api_key; }
-  const std::string& oauth_url() const { return settings_.oauth_url; }
-  const std::string& service_url() const { return settings_.service_url; }
-  const std::string& oem_name() const { return settings_.oem_name; }
-  const std::string& model_name() const { return settings_.model_name; }
-  const std::string& model_id() const { return settings_.model_id; }
-  const std::string& firmware_version() const {
-    return settings_.firmware_version;
-  }
-  base::TimeDelta polling_period() const { return settings_.polling_period; }
-  base::TimeDelta backup_polling_period() const {
-    return settings_.backup_polling_period;
-  }
-
-  bool wifi_auto_setup_enabled() const {
-    return settings_.wifi_auto_setup_enabled;
-  }
-  bool ble_setup_enabled() const { return settings_.ble_setup_enabled; }
-  const std::set<PairingType>& pairing_modes() const {
-    return settings_.pairing_modes;
-  }
-  const std::string& embedded_code() const { return settings_.embedded_code; }
-
-  const std::string& name() const { return settings_.name; }
-  const std::string& description() const { return settings_.description; }
-  const std::string& location() const { return settings_.location; }
-  const std::string& local_anonymous_access_role() const {
-    return settings_.local_anonymous_access_role;
-  }
-  bool local_pairing_enabled() const { return settings_.local_pairing_enabled; }
-  bool local_discovery_enabled() const {
-    return settings_.local_discovery_enabled;
-  }
-
-  const std::string& device_id() const { return settings_.device_id; }
-  const std::string& refresh_token() const { return settings_.refresh_token; }
-  const std::string& robot_account() const { return settings_.robot_account; }
-  const std::string& last_configured_ssid() const {
-    return settings_.last_configured_ssid;
-  }
-
  private:
   void Save();
 
