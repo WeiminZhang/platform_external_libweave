@@ -69,13 +69,9 @@ std::string WifiSsidGenerator::GenerateFlags() const {
 }
 
 std::string WifiSsidGenerator::GenerateSsid() const {
-  std::string name;
-  std::string model_id;
-  if (!gcd_ || !gcd_->GetName(&name, nullptr) ||
-      !gcd_->GetModelId(&model_id, nullptr)) {
-    return std::string();
-  }
-  std::string idx{base::IntToString(get_random_.Run())};
+  std::string name = gcd_->GetName();
+  std::string model_id = gcd_->GetModelId();
+  std::string idx = base::IntToString(get_random_.Run());
   name = name.substr(0, kDeviceNameSize - idx.size() - 1);
   CHECK_EQ(5u, model_id.size());
 

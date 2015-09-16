@@ -49,10 +49,10 @@ class CloudDelegate {
   };
 
   // Returns the model ID of the device.
-  virtual bool GetModelId(std::string* id, ErrorPtr* error) const = 0;
+  virtual std::string GetModelId() const = 0;
 
   // Returns the name of device.
-  virtual bool GetName(std::string* name, ErrorPtr* error) const = 0;
+  virtual std::string GetName() const = 0;
 
   // Returns the description of the device.
   virtual std::string GetDescription() const = 0;

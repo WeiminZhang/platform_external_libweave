@@ -50,12 +50,8 @@ void Publisher::Update() {
 }
 
 void Publisher::ExposeService() {
-  std::string name;
-  std::string model_id;
-  if (!cloud_->GetName(&name, nullptr) ||
-      !cloud_->GetModelId(&model_id, nullptr)) {
-    return;
-  }
+  std::string name{cloud_->GetName()};
+  std::string model_id{cloud_->GetModelId()};
   DCHECK_EQ(model_id.size(), 5U);
 
   VLOG(1) << "Starting peerd advertising.";

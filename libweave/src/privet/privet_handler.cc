@@ -476,14 +476,8 @@ void PrivetHandler::HandleInfo(const base::DictionaryValue&,
                                const RequestCallback& callback) {
   base::DictionaryValue output;
 
-  ErrorPtr error;
-
-  std::string name;
-  std::string model_id;
-  if (!cloud_->GetName(&name, &error) ||
-      !cloud_->GetModelId(&model_id, &error)) {
-    return ReturnError(*error, callback);
-  }
+  std::string name = cloud_->GetName();
+  std::string model_id = cloud_->GetModelId();
 
   output.SetString(kInfoVersionKey, kInfoVersionValue);
   output.SetString(kInfoIdKey, identity_->GetId());
@@ -660,10 +654,7 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
 void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
                                      const UserInfo& user_info,
                                      const RequestCallback& callback) {
-  std::string name;
-  ErrorPtr error;
-  if (!cloud_->GetName(&name, &error))
-    return ReturnError(*error, callback);
+  std::string name{cloud_->GetName()};
   input.GetString(kNameKey, &name);
 
   std::string description{cloud_->GetDescription()};
@@ -680,12 +671,14 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
   const base::DictionaryValue* wifi = nullptr;
   if (input.GetDictionary(kWifiKey, &wifi)) {
     if (!wifi_ || wifi_->GetTypes().empty()) {
+      ErrorPtr error;
       Error::AddTo(&error, FROM_HERE, errors::kDomain,
                    errors::kSetupUnavailable, "WiFi setup unavailible");
       return ReturnError(*error, callback);
     }
     wifi->GetString(kSetupStartSsidKey, &ssid);
     if (ssid.empty()) {
+      ErrorPtr error;
       Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                          errors::kInvalidParams, kInvalidParamValueFormat,
                          kSetupStartSsidKey, "");
@@ -698,6 +691,7 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
   if (input.GetDictionary(kGcdKey, &registration)) {
     registration->GetString(kSetupStartTicketIdKey, &ticket);
     if (ticket.empty()) {
+      ErrorPtr error;
       Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                          errors::kInvalidParams, kInvalidParamValueFormat,
                          kSetupStartTicketIdKey, "");
