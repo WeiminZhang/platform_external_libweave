@@ -109,10 +109,12 @@ void WifiBootstrapManager::StartMonitoring() {
   UpdateState(State::kMonitoring);
 
   if (network_->GetConnectionState() == NetworkState::kConnected) {
-    monitor_until_ = base::Time::Max();
+    monitor_until_ = {};
   } else {
-    if (monitor_until_ == base::Time::Max())
+    if (monitor_until_.is_null()) {
       monitor_until_ = base::Time::Now() + base::TimeDelta::FromMinutes(2);
+      VLOG(2) << "Waiting for connection until: " << monitor_until_;
+    }
 
     // Schedule timeout timer taking into account already offline time.
     task_runner_->PostDelayedTask(
