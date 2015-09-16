@@ -30,7 +30,6 @@ class MockTaskRunner : public TaskRunner {
 
   bool RunOnce();
   void Run();
-  void Break();
   base::Clock* GetClock();
 
  private:
@@ -46,7 +45,6 @@ class MockTaskRunner : public TaskRunner {
     }
   };
 
-  bool break_{false};
   size_t counter_{0};  // Keeps order of tasks with the same time.
 
   class TestClock;

@@ -76,7 +76,6 @@ class CloudDelegateImpl : public CloudDelegate {
     return true;
   }
 
-  // TODO(vitalybuka): Remove error.
   bool GetName(std::string* name, ErrorPtr* error) const override {
     *name = device_->GetConfig().name();
     return true;

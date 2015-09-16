@@ -40,13 +40,8 @@ bool MockTaskRunner::RunOnce() {
 }
 
 void MockTaskRunner::Run() {
-  break_ = false;
-  while (!break_ && RunOnce()) {
+  while (RunOnce()) {
   }
-}
-
-void MockTaskRunner::Break() {
-  break_ = true;
 }
 
 base::Clock* MockTaskRunner::GetClock() {

@@ -221,18 +221,11 @@ class WeaveTest : public ::testing::Test {
 
   void InitNetwork() {
     EXPECT_CALL(network_, AddOnConnectionChangedCallback(_))
-        .WillRepeatedly(
-            Invoke([this](const Network::OnConnectionChangedCallback& cb) {
-              network_callbacks_.push_back(cb);
-            }));
+        .WillRepeatedly(Return());
     EXPECT_CALL(network_, GetConnectionState())
         .WillRepeatedly(Return(NetworkState::kOffline));
-  }
-
-  void IgnoreMdns() {
-    EXPECT_CALL(mdns_, GetId()).WillRepeatedly(Return("TEST_ID"));
-    EXPECT_CALL(mdns_, PublishService(_, _, _)).WillRepeatedly(Return());
-    EXPECT_CALL(mdns_, StopPublishing("_privet._tcp")).WillOnce(Return());
+    EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+        .WillOnce(Return());
   }
 
   void InitMdns() {
@@ -279,16 +272,12 @@ class WeaveTest : public ::testing::Test {
             }));
   }
 
-  void InitDefaultExpectations() {
+  void StartDevice() {
     InitConfigStore();
     InitNetwork();
-    EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
-        .WillOnce(Return());
     InitHttpServer();
     InitMdns();
-  }
 
-  void StartDevice() {
     weave::Device::Options options;
     options.xmpp_enabled = false;
 
@@ -322,8 +311,6 @@ class WeaveTest : public ::testing::Test {
   StrictMock<test::MockMdns> mdns_;
   StrictMock<test::MockHttpServer> http_server_;
 
-  std::vector<Network::OnConnectionChangedCallback> network_callbacks_;
-
   weave::Cloud* cloud_{nullptr};
 
   std::unique_ptr<weave::Device> device_;
@@ -344,19 +331,11 @@ TEST_F(WeaveTest, StartMinimal) {
                  &network_, nullptr, nullptr);
 }
 
-class WeaveBasicTest : public WeaveTest {
- public:
-  void SetUp() override {
-    WeaveTest::SetUp();
-    InitDefaultExpectations();
-  }
-};
-
-TEST_F(WeaveBasicTest, Start) {
+TEST_F(WeaveTest, Start) {
   StartDevice();
 }
 
-TEST_F(WeaveBasicTest, Register) {
+TEST_F(WeaveTest, Register) {
   StartDevice();
 
   auto draft = CreateDictionaryValue(kDeviceResource);
@@ -382,96 +361,6 @@ TEST_F(WeaveBasicTest, Register) {
   InitMdnsPublishing(true);
 
   EXPECT_EQ("DEVICE_ID", cloud_->RegisterDevice("TEST_ID", nullptr));
-}
-
-class WeaveWiFiSetupTest : public WeaveTest {
- public:
-  void SetUp() override {
-    WeaveTest::SetUp();
-
-    InitConfigStore();
-    InitHttpServer();
-    InitNetwork();
-    IgnoreMdns();
-
-    EXPECT_CALL(network_, GetConnectionState())
-        .WillRepeatedly(Return(NetworkState::kConnected));
-  }
-};
-
-TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
-  StartDevice();
-
-  // Short disconnect.
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kOffline));
-  for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, false), {});
-  }
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kConnected));
-  for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, true),
-                                 base::TimeDelta::FromSeconds(10));
-  }
-  task_runner_.Run();
-
-  // Long disconnect.
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kOffline));
-  for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, false), {});
-  }
-  auto offline_from = task_runner_.GetClock()->Now();
-  EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
-      .WillOnce(InvokeWithoutArgs([this, offline_from]() {
-        EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
-                  base::TimeDelta::FromMinutes(1));
-      }));
-  task_runner_.Run();
-}
-
-// If device has previously configured WiFi it will run AP for limited time
-// after which it will try to re-connect.
-TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
-  EXPECT_CALL(config_store_, LoadSettings())
-      .WillRepeatedly(Return(R"({"last_configured_ssid": "TEST_ssid"})"));
-  StartDevice();
-
-  // Long disconnect.
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kOffline));
-  for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, false), {});
-  }
-
-  for (int i = 0; i < 5; ++i) {
-    auto offline_from = task_runner_.GetClock()->Now();
-    // Temporarily offline mode.
-    EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
-        .WillOnce(InvokeWithoutArgs([this, &offline_from]() {
-          EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
-                    base::TimeDelta::FromMinutes(1));
-          task_runner_.Break();
-        }));
-    task_runner_.Run();
-
-    // Try to reconnect again.
-    offline_from = task_runner_.GetClock()->Now();
-    EXPECT_CALL(network_, DisableAccessPoint())
-        .WillOnce(InvokeWithoutArgs([this, offline_from]() {
-          EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
-                    base::TimeDelta::FromMinutes(5));
-          task_runner_.Break();
-        }));
-    task_runner_.Run();
-  }
-
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kConnected));
-  for (const auto& cb : network_callbacks_)
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, true), {});
-  task_runner_.Run();
 }
 
 }  // namespace weave

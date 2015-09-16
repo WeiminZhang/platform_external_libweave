@@ -101,7 +101,6 @@ class WifiBootstrapManager : public WifiDelegate,
   TaskRunner* task_runner_{nullptr};
   Network* network_{nullptr};
   WifiSsidGenerator ssid_generator_;
-  base::Time monitor_until_;
 
   std::vector<StateListener> state_listeners_;
   bool currently_online_{false};
