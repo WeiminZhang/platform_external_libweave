@@ -16,19 +16,17 @@ class Stream {
  public:
   virtual ~Stream() = default;
 
-  virtual bool ReadAsync(
+  virtual void ReadAsync(
       void* buffer,
       size_t size_to_read,
       const base::Callback<void(size_t)>& success_callback,
-      const base::Callback<void(const Error*)>& error_callback,
-      ErrorPtr* error) = 0;
+      const base::Callback<void(const Error*)>& error_callback) = 0;
 
-  virtual bool WriteAllAsync(
+  virtual void WriteAllAsync(
       const void* buffer,
       size_t size_to_write,
       const base::Closure& success_callback,
-      const base::Callback<void(const Error*)>& error_callback,
-      ErrorPtr* error) = 0;
+      const base::Callback<void(const Error*)>& error_callback) = 0;
 
   virtual void CancelPendingAsyncOperations() = 0;
 };
