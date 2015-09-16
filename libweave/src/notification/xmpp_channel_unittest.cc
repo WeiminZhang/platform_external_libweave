@@ -93,32 +93,31 @@ class FakeStream : public Stream {
     read_data_ += data;
   }
 
-  bool ReadAsync(void* buffer,
-                 size_t size_to_read,
-                 const base::Callback<void(size_t)>& success_callback,
-                 const base::Callback<void(const Error*)>& error_callback,
-                 ErrorPtr* error) override {
+  void ReadAsync(
+      void* buffer,
+      size_t size_to_read,
+      const base::Callback<void(size_t)>& success_callback,
+      const base::Callback<void(const Error*)>& error_callback) override {
     if (read_data_.empty()) {
       task_runner_->PostDelayedTask(
-          FROM_HERE, base::Bind(base::IgnoreResult(&FakeStream::ReadAsync),
-                                base::Unretained(this), buffer, size_to_read,
-                                success_callback, error_callback, nullptr),
+          FROM_HERE,
+          base::Bind(&FakeStream::ReadAsync, base::Unretained(this), buffer,
+                     size_to_read, success_callback, error_callback),
           base::TimeDelta::FromSeconds(0));
-      return true;
+      return;
     }
     size_t size = std::min(size_to_read, read_data_.size());
     memcpy(buffer, read_data_.data(), size);
     read_data_ = read_data_.substr(size);
     task_runner_->PostDelayedTask(FROM_HERE, base::Bind(success_callback, size),
                                   base::TimeDelta::FromSeconds(0));
-    return true;
   }
 
-  bool WriteAllAsync(const void* buffer,
-                     size_t size_to_write,
-                     const base::Closure& success_callback,
-                     const base::Callback<void(const Error*)>& error_callback,
-                     ErrorPtr* error) override {
+  void WriteAllAsync(
+      const void* buffer,
+      size_t size_to_write,
+      const base::Closure& success_callback,
+      const base::Callback<void(const Error*)>& error_callback) override {
     size_t size = std::min(size_to_write, write_data_.size());
     EXPECT_EQ(
         write_data_.substr(0, size),
@@ -126,7 +125,6 @@ class FakeStream : public Stream {
     write_data_ = write_data_.substr(size);
     task_runner_->PostDelayedTask(FROM_HERE, success_callback,
                                   base::TimeDelta::FromSeconds(0));
-    return true;
   }
 
  private:

@@ -321,18 +321,13 @@ void XmppChannel::SendMessage(const std::string& message) {
   }
   write_socket_data_ = queued_write_data_ + message;
   queued_write_data_.clear();
-  ErrorPtr error;
   VLOG(2) << "Sending XMPP message: " << message;
 
   write_pending_ = true;
-  bool ok = stream_->WriteAllAsync(
+  stream_->WriteAllAsync(
       write_socket_data_.data(), write_socket_data_.size(),
       base::Bind(&XmppChannel::OnMessageSent, task_ptr_factory_.GetWeakPtr()),
-      base::Bind(&XmppChannel::OnWriteError, task_ptr_factory_.GetWeakPtr()),
-      &error);
-
-  if (!ok)
-    OnWriteError(error.get());
+      base::Bind(&XmppChannel::OnWriteError, task_ptr_factory_.GetWeakPtr()));
 }
 
 void XmppChannel::OnMessageSent() {
@@ -349,16 +344,11 @@ void XmppChannel::WaitForMessage() {
   if (read_pending_ || !stream_)
     return;
 
-  ErrorPtr error;
   read_pending_ = true;
-  bool ok = stream_->ReadAsync(
+  stream_->ReadAsync(
       read_socket_data_.data(), read_socket_data_.size(),
       base::Bind(&XmppChannel::OnMessageRead, task_ptr_factory_.GetWeakPtr()),
-      base::Bind(&XmppChannel::OnReadError, task_ptr_factory_.GetWeakPtr()),
-      &error);
-
-  if (!ok)
-    OnReadError(error.get());
+      base::Bind(&XmppChannel::OnReadError, task_ptr_factory_.GetWeakPtr()));
 }
 
 void XmppChannel::OnReadError(const Error* error) {

@@ -49,11 +49,10 @@ class SSLStream : public Stream {
     success_callback.Run();
   }
 
-  bool ReadAsync(void* buffer,
+  void ReadAsync(void* buffer,
                  size_t size_to_read,
                  const base::Callback<void(size_t)>& success_callback,
-                 const base::Callback<void(const Error*)>& error_callback,
-                 ErrorPtr* error) {
+                 const base::Callback<void(const Error*)>& error_callback) {
     int res = SSL_read(ssl_.get(), buffer, size_to_read);
     if (res > 0) {
       task_runner_->PostDelayedTask(
@@ -61,7 +60,7 @@ class SSLStream : public Stream {
           base::Bind(&SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
                      base::Bind(success_callback, res)),
           {});
-      return true;
+      return;
     }
 
     int err = SSL_get_error(ssl_.get(), res);
@@ -69,11 +68,10 @@ class SSLStream : public Stream {
     if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
       task_runner_->PostDelayedTask(
           FROM_HERE,
-          base::Bind(base::IgnoreResult(&SSLStream::ReadAsync),
-                     weak_ptr_factory_.GetWeakPtr(), buffer, size_to_read,
-                     success_callback, error_callback, nullptr),
+          base::Bind(&SSLStream::ReadAsync, weak_ptr_factory_.GetWeakPtr(),
+                     buffer, size_to_read, success_callback, error_callback),
           base::TimeDelta::FromSeconds(1));
-      return true;
+      return;
     }
 
     ErrorPtr weave_error;
@@ -85,14 +83,13 @@ class SSLStream : public Stream {
             &SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
             base::Bind(error_callback, base::Owned(weave_error.release()))),
         {});
-    return true;
+    return;
   }
 
-  bool WriteAllAsync(const void* buffer,
+  void WriteAllAsync(const void* buffer,
                      size_t size_to_write,
                      const base::Closure& success_callback,
-                     const base::Callback<void(const Error*)>& error_callback,
-                     ErrorPtr* error) {
+                     const base::Callback<void(const Error*)>& error_callback) {
     int res = SSL_write(ssl_.get(), buffer, size_to_write);
     if (res > 0) {
       buffer = static_cast<const char*>(buffer) + res;
@@ -103,17 +100,16 @@ class SSLStream : public Stream {
             base::Bind(&SSLStream::RunDelayedTask,
                        weak_ptr_factory_.GetWeakPtr(), success_callback),
             {});
-        return true;
+        return;
       }
 
       task_runner_->PostDelayedTask(
           FROM_HERE,
-          base::Bind(base::IgnoreResult(&SSLStream::WriteAllAsync),
-                     weak_ptr_factory_.GetWeakPtr(), buffer, size_to_write,
-                     success_callback, error_callback, nullptr),
+          base::Bind(&SSLStream::WriteAllAsync, weak_ptr_factory_.GetWeakPtr(),
+                     buffer, size_to_write, success_callback, error_callback),
           base::TimeDelta::FromSeconds(1));
 
-      return true;
+      return;
     }
 
     int err = SSL_get_error(ssl_.get(), res);
@@ -121,11 +117,10 @@ class SSLStream : public Stream {
     if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
       task_runner_->PostDelayedTask(
           FROM_HERE,
-          base::Bind(base::IgnoreResult(&SSLStream::WriteAllAsync),
-                     weak_ptr_factory_.GetWeakPtr(), buffer, size_to_write,
-                     success_callback, error_callback, nullptr),
+          base::Bind(&SSLStream::WriteAllAsync, weak_ptr_factory_.GetWeakPtr(),
+                     buffer, size_to_write, success_callback, error_callback),
           base::TimeDelta::FromSeconds(1));
-      return true;
+      return;
     }
 
     ErrorPtr weave_error;
@@ -137,7 +132,7 @@ class SSLStream : public Stream {
             &SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
             base::Bind(error_callback, base::Owned(weave_error.release()))),
         {});
-    return true;
+    return;
   }
 
   void CancelPendingAsyncOperations() {
