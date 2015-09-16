@@ -54,6 +54,7 @@ cd libevent || exit 1
 ./autogen.sh || exit 1
 ./configure --disable-shared || exit 1
 make || exit 1
+echo -e "\n\nTesting libevent...\nCan take several minutes.\n"
 make verify || exit 1
 cp -rf include/* $ROOT_DIR/third_party/include/ || exit 1
 cp -rf .libs/lib* $ROOT_DIR/third_party/lib/ || exit 1
