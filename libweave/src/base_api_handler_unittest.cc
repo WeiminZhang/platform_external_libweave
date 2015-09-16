@@ -115,7 +115,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
     }
   })");
 
-  Config& config = *dev_reg_->GetMutableConfig();
+  const Settings& settings = dev_reg_->GetSettings();
 
   AddCommand(R"({
     'name' : 'base.updateBaseConfiguration',
@@ -125,9 +125,9 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'localPairingEnabled': false
     }
   })");
-  EXPECT_EQ("none", config.local_anonymous_access_role());
-  EXPECT_FALSE(config.local_discovery_enabled());
-  EXPECT_FALSE(config.local_pairing_enabled());
+  EXPECT_EQ("none", settings.local_anonymous_access_role);
+  EXPECT_FALSE(settings.local_discovery_enabled);
+  EXPECT_FALSE(settings.local_pairing_enabled);
 
   auto expected = R"({
     'base': {
@@ -148,9 +148,9 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'localPairingEnabled': true
     }
   })");
-  EXPECT_EQ("user", config.local_anonymous_access_role());
-  EXPECT_TRUE(config.local_discovery_enabled());
-  EXPECT_TRUE(config.local_pairing_enabled());
+  EXPECT_EQ("user", settings.local_anonymous_access_role);
+  EXPECT_TRUE(settings.local_discovery_enabled);
+  EXPECT_TRUE(settings.local_pairing_enabled);
   expected = R"({
     'base': {
       'firmwareVersion': '123123',
@@ -163,7 +163,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
   EXPECT_JSON_EQ(expected, *state_manager_->GetStateValuesAsJson());
 
   {
-    Config::Transaction change{&config};
+    Config::Transaction change{dev_reg_->GetMutableConfig()};
     change.set_local_anonymous_access_role("viewer");
   }
   expected = R"({
@@ -204,10 +204,10 @@ TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
     }
   })");
 
-  const Config& config = dev_reg_->GetConfig();
-  EXPECT_EQ("testName", config.name());
-  EXPECT_EQ("testDescription", config.description());
-  EXPECT_EQ("testLocation", config.location());
+  const Settings& config = dev_reg_->GetSettings();
+  EXPECT_EQ("testName", config.name);
+  EXPECT_EQ("testDescription", config.description);
+  EXPECT_EQ("testLocation", config.location);
 
   AddCommand(R"({
     'name' : 'base.updateDeviceInfo',
@@ -216,9 +216,9 @@ TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
     }
   })");
 
-  EXPECT_EQ("testName", config.name());
-  EXPECT_EQ("testDescription", config.description());
-  EXPECT_EQ("newLocation", config.location());
+  EXPECT_EQ("testName", config.name);
+  EXPECT_EQ("testDescription", config.description);
+  EXPECT_EQ("newLocation", config.location);
 }
 
 }  // namespace weave

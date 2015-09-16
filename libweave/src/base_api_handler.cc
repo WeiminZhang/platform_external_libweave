@@ -28,10 +28,10 @@ BaseApiHandler::BaseApiHandler(
   device_info_->AddOnConfigChangedCallback(base::Bind(
       &BaseApiHandler::OnConfigChanged, weak_ptr_factory_.GetWeakPtr()));
 
-  const Config& config = device_info_->GetConfig();
+  const auto& settings = device_info_->GetSettings();
   base::DictionaryValue state;
   state.SetStringWithoutPathExpansion(kBaseStateFirmwareVersion,
-                                      config.firmware_version());
+                                      settings.firmware_version);
   CHECK(state_manager_->SetProperties(state, nullptr));
 
   command_manager->AddOnCommandAddedCallback(base::Bind(
@@ -52,10 +52,10 @@ void BaseApiHandler::OnCommandAdded(Command* command) {
 void BaseApiHandler::UpdateBaseConfiguration(Command* command) {
   command->SetProgress(base::DictionaryValue{}, nullptr);
 
-  const Config& config = device_info_->GetConfig();
-  std::string anonymous_access_role{config.local_anonymous_access_role()};
-  bool discovery_enabled{config.local_discovery_enabled()};
-  bool pairing_enabled{config.local_pairing_enabled()};
+  const auto& settings = device_info_->GetSettings();
+  std::string anonymous_access_role{settings.local_anonymous_access_role};
+  bool discovery_enabled{settings.local_discovery_enabled};
+  bool pairing_enabled{settings.local_pairing_enabled};
 
   auto parameters = command->GetParameters();
   parameters->GetString("localAnonymousAccessMaxRole", &anonymous_access_role);
@@ -84,10 +84,10 @@ void BaseApiHandler::OnConfigChanged(const Settings& settings) {
 void BaseApiHandler::UpdateDeviceInfo(Command* command) {
   command->SetProgress(base::DictionaryValue{}, nullptr);
 
-  const Config& config = device_info_->GetConfig();
-  std::string name{config.name()};
-  std::string description{config.description()};
-  std::string location{config.location()};
+  const auto& settings = device_info_->GetSettings();
+  std::string name{settings.name};
+  std::string description{settings.description};
+  std::string location{settings.location};
 
   auto parameters = command->GetParameters();
   parameters->GetString("name", &name);

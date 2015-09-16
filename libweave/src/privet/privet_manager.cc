@@ -49,17 +49,17 @@ void Manager::Start(const Device::Options& options,
   cloud_ = CloudDelegate::CreateDefault(task_runner, device, command_manager,
                                         state_manager);
   cloud_observer_.Add(cloud_.get());
-  security_.reset(new SecurityManager(device->GetConfig().pairing_modes(),
-                                      device->GetConfig().embedded_code(),
+  security_.reset(new SecurityManager(device->GetSettings().pairing_modes,
+                                      device->GetSettings().embedded_code,
                                       disable_security_, task_runner));
   network->AddOnConnectionChangedCallback(
       base::Bind(&Manager::OnConnectivityChanged, base::Unretained(this)));
 
-  if (device->GetConfig().wifi_auto_setup_enabled()) {
+  if (device->GetSettings().wifi_auto_setup_enabled) {
     VLOG(1) << "Enabling WiFi bootstrapping.";
     wifi_bootstrap_manager_.reset(new WifiBootstrapManager(
-        device->GetConfig().last_configured_ssid(), options.test_privet_ssid,
-        device->GetConfig().ble_setup_enabled(), task_runner, network,
+        device->GetSettings().last_configured_ssid, options.test_privet_ssid,
+        device->GetSettings().ble_setup_enabled, task_runner, network,
         cloud_.get()));
     wifi_bootstrap_manager_->Init();
   }

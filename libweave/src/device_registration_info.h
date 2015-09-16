@@ -132,7 +132,7 @@ class DeviceRegistrationInfo : public Cloud,
                      const base::Closure& on_error) override;
 
   // TODO(vitalybuka): remove getters and pass config to dependent code.
-  const Config& GetConfig() const { return *config_; }
+  const Settings& GetSettings() const { return config_->GetSettings(); }
   Config* GetMutableConfig() { return config_.get(); }
 
  private:

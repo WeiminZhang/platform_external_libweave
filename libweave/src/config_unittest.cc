@@ -29,6 +29,10 @@ class ConfigTest : public ::testing::Test {
         base::Bind(&ConfigTest::OnConfigChanged, base::Unretained(this)));
   }
 
+  const Settings& GetSettings() const { return config_->GetSettings(); }
+
+  const Settings& GetDefaultSettings() const { return default_.GetSettings(); }
+
   MOCK_METHOD1(OnConfigChanged, void(const Settings&));
 
   test::MockConfigStore config_store_;
@@ -43,33 +47,34 @@ TEST_F(ConfigTest, NoStorage) {
 }
 
 TEST_F(ConfigTest, Defaults) {
-  EXPECT_EQ("58855907228.apps.googleusercontent.com", config_->client_id());
-  EXPECT_EQ("eHSAREAHrIqPsHBxCE9zPPBi", config_->client_secret());
-  EXPECT_EQ("AIzaSyDSq46gG-AxUnC3zoqD9COIPrjolFsMfMA", config_->api_key());
-  EXPECT_EQ("https://accounts.google.com/o/oauth2/", config_->oauth_url());
+  EXPECT_EQ("58855907228.apps.googleusercontent.com", GetSettings().client_id);
+  EXPECT_EQ("eHSAREAHrIqPsHBxCE9zPPBi", GetSettings().client_secret);
+  EXPECT_EQ("AIzaSyDSq46gG-AxUnC3zoqD9COIPrjolFsMfMA", GetSettings().api_key);
+  EXPECT_EQ("https://accounts.google.com/o/oauth2/", GetSettings().oauth_url);
   EXPECT_EQ("https://www.googleapis.com/clouddevices/v1/",
-            config_->service_url());
-  EXPECT_EQ("Chromium", config_->oem_name());
-  EXPECT_EQ("Brillo", config_->model_name());
-  EXPECT_EQ("AAAAA", config_->model_id());
-  EXPECT_EQ("", config_->firmware_version());
-  EXPECT_EQ(base::TimeDelta::FromSeconds(7), config_->polling_period());
-  EXPECT_EQ(base::TimeDelta::FromMinutes(30), config_->backup_polling_period());
-  EXPECT_TRUE(config_->wifi_auto_setup_enabled());
-  EXPECT_FALSE(config_->ble_setup_enabled());
+            GetSettings().service_url);
+  EXPECT_EQ("Chromium", GetSettings().oem_name);
+  EXPECT_EQ("Brillo", GetSettings().model_name);
+  EXPECT_EQ("AAAAA", GetSettings().model_id);
+  EXPECT_EQ("", GetSettings().firmware_version);
+  EXPECT_EQ(base::TimeDelta::FromSeconds(7), GetSettings().polling_period);
+  EXPECT_EQ(base::TimeDelta::FromMinutes(30),
+            GetSettings().backup_polling_period);
+  EXPECT_TRUE(GetSettings().wifi_auto_setup_enabled);
+  EXPECT_FALSE(GetSettings().ble_setup_enabled);
   EXPECT_EQ(std::set<PairingType>{PairingType::kPinCode},
-            config_->pairing_modes());
-  EXPECT_EQ("", config_->embedded_code());
-  EXPECT_EQ("Developer device", config_->name());
-  EXPECT_EQ("", config_->description());
-  EXPECT_EQ("", config_->location());
-  EXPECT_EQ("viewer", config_->local_anonymous_access_role());
-  EXPECT_TRUE(config_->local_pairing_enabled());
-  EXPECT_TRUE(config_->local_discovery_enabled());
-  EXPECT_EQ("", config_->device_id());
-  EXPECT_EQ("", config_->refresh_token());
-  EXPECT_EQ("", config_->robot_account());
-  EXPECT_EQ("", config_->last_configured_ssid());
+            GetSettings().pairing_modes);
+  EXPECT_EQ("", GetSettings().embedded_code);
+  EXPECT_EQ("Developer device", GetSettings().name);
+  EXPECT_EQ("", GetSettings().description);
+  EXPECT_EQ("", GetSettings().location);
+  EXPECT_EQ("viewer", GetSettings().local_anonymous_access_role);
+  EXPECT_TRUE(GetSettings().local_pairing_enabled);
+  EXPECT_TRUE(GetSettings().local_discovery_enabled);
+  EXPECT_EQ("", GetSettings().device_id);
+  EXPECT_EQ("", GetSettings().refresh_token);
+  EXPECT_EQ("", GetSettings().robot_account);
+  EXPECT_EQ("", GetSettings().last_configured_ssid);
 }
 
 TEST_F(ConfigTest, LoadState) {
@@ -95,92 +100,94 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
   config_->Load();
 
-  EXPECT_EQ("state_client_id", config_->client_id());
-  EXPECT_EQ("state_client_secret", config_->client_secret());
-  EXPECT_EQ("state_api_key", config_->api_key());
-  EXPECT_EQ("state_oauth_url", config_->oauth_url());
-  EXPECT_EQ("state_service_url", config_->service_url());
-  EXPECT_EQ(default_.oem_name(), config_->oem_name());
-  EXPECT_EQ(default_.model_name(), config_->model_name());
-  EXPECT_EQ(default_.model_id(), config_->model_id());
-  EXPECT_EQ(default_.polling_period(), config_->polling_period());
-  EXPECT_EQ(default_.backup_polling_period(), config_->backup_polling_period());
-  EXPECT_EQ(default_.wifi_auto_setup_enabled(),
-            config_->wifi_auto_setup_enabled());
-  EXPECT_EQ(default_.ble_setup_enabled(), config_->ble_setup_enabled());
-  EXPECT_EQ(default_.pairing_modes(), config_->pairing_modes());
-  EXPECT_EQ(default_.embedded_code(), config_->embedded_code());
-  EXPECT_EQ("state_name", config_->name());
-  EXPECT_EQ("state_description", config_->description());
-  EXPECT_EQ("state_location", config_->location());
-  EXPECT_EQ("user", config_->local_anonymous_access_role());
-  EXPECT_FALSE(config_->local_pairing_enabled());
-  EXPECT_FALSE(config_->local_discovery_enabled());
-  EXPECT_EQ("state_device_id", config_->device_id());
-  EXPECT_EQ("state_refresh_token", config_->refresh_token());
-  EXPECT_EQ("state_robot_account", config_->robot_account());
-  EXPECT_EQ("state_last_configured_ssid", config_->last_configured_ssid());
+  EXPECT_EQ("state_client_id", GetSettings().client_id);
+  EXPECT_EQ("state_client_secret", GetSettings().client_secret);
+  EXPECT_EQ("state_api_key", GetSettings().api_key);
+  EXPECT_EQ("state_oauth_url", GetSettings().oauth_url);
+  EXPECT_EQ("state_service_url", GetSettings().service_url);
+  EXPECT_EQ(GetDefaultSettings().oem_name, GetSettings().oem_name);
+  EXPECT_EQ(GetDefaultSettings().model_name, GetSettings().model_name);
+  EXPECT_EQ(GetDefaultSettings().model_id, GetSettings().model_id);
+  EXPECT_EQ(GetDefaultSettings().polling_period, GetSettings().polling_period);
+  EXPECT_EQ(GetDefaultSettings().backup_polling_period,
+            GetSettings().backup_polling_period);
+  EXPECT_EQ(GetDefaultSettings().wifi_auto_setup_enabled,
+            GetSettings().wifi_auto_setup_enabled);
+  EXPECT_EQ(GetDefaultSettings().ble_setup_enabled,
+            GetSettings().ble_setup_enabled);
+  EXPECT_EQ(GetDefaultSettings().pairing_modes, GetSettings().pairing_modes);
+  EXPECT_EQ(GetDefaultSettings().embedded_code, GetSettings().embedded_code);
+  EXPECT_EQ("state_name", GetSettings().name);
+  EXPECT_EQ("state_description", GetSettings().description);
+  EXPECT_EQ("state_location", GetSettings().location);
+  EXPECT_EQ("user", GetSettings().local_anonymous_access_role);
+  EXPECT_FALSE(GetSettings().local_pairing_enabled);
+  EXPECT_FALSE(GetSettings().local_discovery_enabled);
+  EXPECT_EQ("state_device_id", GetSettings().device_id);
+  EXPECT_EQ("state_refresh_token", GetSettings().refresh_token);
+  EXPECT_EQ("state_robot_account", GetSettings().robot_account);
+  EXPECT_EQ("state_last_configured_ssid", GetSettings().last_configured_ssid);
 }
 
 TEST_F(ConfigTest, Setters) {
   Config::Transaction change{config_.get()};
 
   change.set_client_id("set_client_id");
-  EXPECT_EQ("set_client_id", config_->client_id());
+  EXPECT_EQ("set_client_id", GetSettings().client_id);
 
   change.set_client_secret("set_client_secret");
-  EXPECT_EQ("set_client_secret", config_->client_secret());
+  EXPECT_EQ("set_client_secret", GetSettings().client_secret);
 
   change.set_api_key("set_api_key");
-  EXPECT_EQ("set_api_key", config_->api_key());
+  EXPECT_EQ("set_api_key", GetSettings().api_key);
 
   change.set_oauth_url("set_oauth_url");
-  EXPECT_EQ("set_oauth_url", config_->oauth_url());
+  EXPECT_EQ("set_oauth_url", GetSettings().oauth_url);
 
   change.set_service_url("set_service_url");
-  EXPECT_EQ("set_service_url", config_->service_url());
+  EXPECT_EQ("set_service_url", GetSettings().service_url);
 
   change.set_name("set_name");
-  EXPECT_EQ("set_name", config_->name());
+  EXPECT_EQ("set_name", GetSettings().name);
 
   change.set_description("set_description");
-  EXPECT_EQ("set_description", config_->description());
+  EXPECT_EQ("set_description", GetSettings().description);
 
   change.set_location("set_location");
-  EXPECT_EQ("set_location", config_->location());
+  EXPECT_EQ("set_location", GetSettings().location);
 
   change.set_local_anonymous_access_role("viewer");
-  EXPECT_EQ("viewer", config_->local_anonymous_access_role());
+  EXPECT_EQ("viewer", GetSettings().local_anonymous_access_role);
 
   change.set_local_anonymous_access_role("none");
-  EXPECT_EQ("none", config_->local_anonymous_access_role());
+  EXPECT_EQ("none", GetSettings().local_anonymous_access_role);
 
   change.set_local_anonymous_access_role("user");
-  EXPECT_EQ("user", config_->local_anonymous_access_role());
+  EXPECT_EQ("user", GetSettings().local_anonymous_access_role);
 
   change.set_local_discovery_enabled(false);
-  EXPECT_FALSE(config_->local_discovery_enabled());
+  EXPECT_FALSE(GetSettings().local_discovery_enabled);
 
   change.set_local_pairing_enabled(false);
-  EXPECT_FALSE(config_->local_pairing_enabled());
+  EXPECT_FALSE(GetSettings().local_pairing_enabled);
 
   change.set_local_discovery_enabled(true);
-  EXPECT_TRUE(config_->local_discovery_enabled());
+  EXPECT_TRUE(GetSettings().local_discovery_enabled);
 
   change.set_local_pairing_enabled(true);
-  EXPECT_TRUE(config_->local_pairing_enabled());
+  EXPECT_TRUE(GetSettings().local_pairing_enabled);
 
   change.set_device_id("set_id");
-  EXPECT_EQ("set_id", config_->device_id());
+  EXPECT_EQ("set_id", GetSettings().device_id);
 
   change.set_refresh_token("set_token");
-  EXPECT_EQ("set_token", config_->refresh_token());
+  EXPECT_EQ("set_token", GetSettings().refresh_token);
 
   change.set_robot_account("set_account");
-  EXPECT_EQ("set_account", config_->robot_account());
+  EXPECT_EQ("set_account", GetSettings().robot_account);
 
   change.set_last_configured_ssid("set_last_configured_ssid");
-  EXPECT_EQ("set_last_configured_ssid", config_->last_configured_ssid());
+  EXPECT_EQ("set_last_configured_ssid", GetSettings().last_configured_ssid);
 
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
 

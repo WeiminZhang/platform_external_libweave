@@ -249,21 +249,21 @@ DeviceRegistrationInfo::~DeviceRegistrationInfo() = default;
 std::string DeviceRegistrationInfo::GetServiceURL(
     const std::string& subpath,
     const WebParamList& params) const {
-  return BuildURL(config_->service_url(), subpath, params);
+  return BuildURL(GetSettings().service_url, subpath, params);
 }
 
 std::string DeviceRegistrationInfo::GetDeviceURL(
     const std::string& subpath,
     const WebParamList& params) const {
-  CHECK(!config_->device_id().empty()) << "Must have a valid device ID";
-  return BuildURL(config_->service_url(),
-                  "devices/" + config_->device_id() + "/" + subpath, params);
+  CHECK(!GetSettings().device_id.empty()) << "Must have a valid device ID";
+  return BuildURL(GetSettings().service_url,
+                  "devices/" + GetSettings().device_id + "/" + subpath, params);
 }
 
 std::string DeviceRegistrationInfo::GetOAuthURL(
     const std::string& subpath,
     const WebParamList& params) const {
-  return BuildURL(config_->oauth_url(), subpath, params);
+  return BuildURL(GetSettings().oauth_url, subpath, params);
 }
 
 void DeviceRegistrationInfo::Start() {
@@ -291,8 +291,9 @@ void DeviceRegistrationInfo::ScheduleCloudConnection(
 }
 
 bool DeviceRegistrationInfo::HaveRegistrationCredentials() const {
-  return !config_->refresh_token().empty() && !config_->device_id().empty() &&
-         !config_->robot_account().empty();
+  return !GetSettings().refresh_token.empty() &&
+         !GetSettings().device_id.empty() &&
+         !GetSettings().robot_account.empty();
 }
 
 bool DeviceRegistrationInfo::VerifyRegistrationCredentials(
@@ -365,9 +366,9 @@ void DeviceRegistrationInfo::RefreshAccessToken(
 
   RequestSender sender{http::kPost, GetOAuthURL("token"), http_client_};
   sender.SetFormData({
-      {"refresh_token", config_->refresh_token()},
-      {"client_id", config_->client_id()},
-      {"client_secret", config_->client_secret()},
+      {"refresh_token", GetSettings().refresh_token},
+      {"client_id", GetSettings().client_id},
+      {"client_secret", GetSettings().client_secret},
       {"grant_type", "refresh_token"},
   });
   int request_id = sender.Send(
@@ -452,7 +453,7 @@ void DeviceRegistrationInfo::StartNotificationChannel() {
   // call back to OnConnected() and at that time we'll switch to use the
   // primary channel and switch periodic poll into much more infrequent backup
   // poll mode.
-  const base::TimeDelta pull_interval = config_->polling_period();
+  const base::TimeDelta pull_interval = GetSettings().polling_period;
   if (!pull_channel_) {
     pull_channel_.reset(new PullChannel{pull_interval, task_runner_});
     pull_channel_->Start(this);
@@ -468,7 +469,7 @@ void DeviceRegistrationInfo::StartNotificationChannel() {
 
   notification_channel_starting_ = true;
   primary_notification_channel_.reset(new XmppChannel{
-      config_->robot_account(), access_token_, task_runner_, network_});
+      GetSettings().robot_account, access_token_, task_runner_, network_});
   primary_notification_channel_->Start(this);
 }
 
@@ -497,14 +498,14 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
   CHECK(state);
 
   std::unique_ptr<base::DictionaryValue> resource{new base::DictionaryValue};
-  if (!config_->device_id().empty())
-    resource->SetString("id", config_->device_id());
-  resource->SetString("name", config_->name());
-  if (!config_->description().empty())
-    resource->SetString("description", config_->description());
-  if (!config_->location().empty())
-    resource->SetString("location", config_->location());
-  resource->SetString("modelManifestId", config_->model_id());
+  if (!GetSettings().device_id.empty())
+    resource->SetString("id", GetSettings().device_id);
+  resource->SetString("name", GetSettings().name);
+  if (!GetSettings().description.empty())
+    resource->SetString("description", GetSettings().description);
+  if (!GetSettings().location.empty())
+    resource->SetString("location", GetSettings().location);
+  resource->SetString("modelManifestId", GetSettings().model_id);
   std::unique_ptr<base::DictionaryValue> channel{new base::DictionaryValue};
   if (current_notification_channel_) {
     channel->SetString("supportedType",
@@ -542,11 +543,11 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
 
   base::DictionaryValue req_json;
   req_json.SetString("id", ticket_id);
-  req_json.SetString("oauthClientId", config_->client_id());
+  req_json.SetString("oauthClientId", GetSettings().client_id);
   req_json.Set("deviceDraft", device_draft.release());
 
   auto url = GetServiceURL("registrationTickets/" + ticket_id,
-                           {{"key", config_->api_key()}});
+                           {{"key", GetSettings().api_key}});
 
   RequestSender sender{http::kPatch, url, http_client_};
   sender.SetJsonData(req_json);
@@ -563,7 +564,7 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
   }
 
   url = GetServiceURL("registrationTickets/" + ticket_id + "/finalize",
-                      {{"key", config_->api_key()}});
+                      {{"key", GetSettings().api_key}});
   response = RequestSender{http::kPost, url, http_client_}.SendAndBlock(error);
   if (!response)
     return std::string();
@@ -594,8 +595,8 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
   RequestSender sender2{http::kPost, GetOAuthURL("token"), http_client_};
   sender2.SetFormData(
       {{"code", auth_code},
-       {"client_id", config_->client_id()},
-       {"client_secret", config_->client_secret()},
+       {"client_id", GetSettings().client_id},
+       {"client_secret", GetSettings().client_secret},
        {"redirect_uri", "oob"},
        {"scope", "https://www.googleapis.com/auth/clouddevices"},
        {"grant_type", "authorization_code"}});
@@ -1041,10 +1042,9 @@ void DeviceRegistrationInfo::FetchCommands(
   fetch_commands_request_queued_ = false;
   DoCloudRequest(
       http::kGet,
-      GetServiceURL("commands/queue", {{"deviceId", config_->device_id()}}),
-      nullptr,
-      base::Bind(&DeviceRegistrationInfo::OnFetchCommandsSuccess, AsWeakPtr(),
-                 on_success),
+      GetServiceURL("commands/queue", {{"deviceId", GetSettings().device_id}}),
+      nullptr, base::Bind(&DeviceRegistrationInfo::OnFetchCommandsSuccess,
+                          AsWeakPtr(), on_success),
       base::Bind(&DeviceRegistrationInfo::OnFetchCommandsError, AsWeakPtr(),
                  on_failure));
 }
@@ -1230,7 +1230,7 @@ void DeviceRegistrationInfo::OnConnected(const std::string& channel_name) {
             << channel_name;
   CHECK_EQ(primary_notification_channel_->GetName(), channel_name);
   notification_channel_starting_ = false;
-  pull_channel_->UpdatePullInterval(config_->backup_polling_period());
+  pull_channel_->UpdatePullInterval(GetSettings().backup_polling_period);
   current_notification_channel_ = primary_notification_channel_.get();
 
   // If we have not successfully connected to the cloud server and we have not
@@ -1254,7 +1254,7 @@ void DeviceRegistrationInfo::OnDisconnected() {
   if (!HaveRegistrationCredentials() || !connected_to_cloud_)
     return;
 
-  pull_channel_->UpdatePullInterval(config_->polling_period());
+  pull_channel_->UpdatePullInterval(GetSettings().polling_period);
   current_notification_channel_ = pull_channel_.get();
   UpdateDeviceResource(base::Bind(&base::DoNothing),
                        base::Bind(&IgnoreCloudError));
@@ -1286,7 +1286,7 @@ void DeviceRegistrationInfo::OnCommandCreated(
 }
 
 void DeviceRegistrationInfo::OnDeviceDeleted(const std::string& device_id) {
-  if (device_id != config_->device_id()) {
+  if (device_id != GetSettings().device_id) {
     LOG(WARNING) << "Unexpected device deletion notification for device ID '"
                  << device_id << "'";
     return;
