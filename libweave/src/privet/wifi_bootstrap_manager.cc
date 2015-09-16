@@ -16,12 +16,6 @@
 namespace weave {
 namespace privet {
 
-namespace {
-const int kConnectTimeoutMinutes = 3;
-const int kBootstrapTimeoutMinutes = 10;
-const int kMonitorTimeoutMinutes = 2;
-}
-
 WifiBootstrapManager::WifiBootstrapManager(
     const std::string& last_configured_ssid,
     const std::string& test_privet_ssid,
@@ -81,7 +75,7 @@ void WifiBootstrapManager::StartBootstrapping() {
     task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(&WifiBootstrapManager::OnBootstrapTimeout,
                               tasks_weak_factory_.GetWeakPtr()),
-        base::TimeDelta::FromMinutes(kBootstrapTimeoutMinutes));
+        base::TimeDelta::FromMinutes(10));
   }
   // TODO(vitalybuka): Add SSID probing.
   privet_ssid_ = GenerateSsid();
@@ -104,7 +98,7 @@ void WifiBootstrapManager::StartConnecting(const std::string& ssid,
   task_runner_->PostDelayedTask(
       FROM_HERE, base::Bind(&WifiBootstrapManager::OnConnectTimeout,
                             tasks_weak_factory_.GetWeakPtr()),
-      base::TimeDelta::FromMinutes(kConnectTimeoutMinutes));
+      base::TimeDelta::FromMinutes(3));
   network_->ConnectToService(ssid, passphrase,
                              base::Bind(&WifiBootstrapManager::OnConnectSuccess,
                                         tasks_weak_factory_.GetWeakPtr(), ssid),
@@ -119,6 +113,19 @@ void WifiBootstrapManager::StartMonitoring() {
   // We already have a callback in place with |network_| to update our
   // connectivity state.  See OnConnectivityChange().
   UpdateState(State::kMonitoring);
+
+  if (network_->GetConnectionState() == NetworkState::kConnected) {
+    monitor_until_ = base::Time::Max();
+  } else {
+    if (monitor_until_ == base::Time::Max())
+      monitor_until_ = base::Time::Now() + base::TimeDelta::FromMinutes(2);
+
+    // Schedule timeout timer taking into account already offline time.
+    task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(&WifiBootstrapManager::OnMonitorTimeout,
+                              tasks_weak_factory_.GetWeakPtr()),
+        monitor_until_ - base::Time::Now());
+  }
 }
 
 void WifiBootstrapManager::EndMonitoring() {
@@ -234,22 +241,9 @@ void WifiBootstrapManager::OnConnectivityChange(bool is_connected) {
   VLOG(3) << "ConnectivityChanged: " << is_connected;
   UpdateConnectionState();
 
-  if (state_ == State::kBootstrapping && is_connected) {
+  if (state_ == State::kMonitoring ||  // Reset monitoring timeout.
+      (state_ == State::kDisabled && is_connected)) {
     StartMonitoring();
-    return;
-  }
-  if (state_ == State::kMonitoring) {
-    if (is_connected) {
-      tasks_weak_factory_.InvalidateWeakPtrs();
-    } else {
-      // Tasks queue may have more than one OnMonitorTimeout enqueued. The
-      // first one could be executed as it would change the state and abort the
-      // rest.
-      task_runner_->PostDelayedTask(
-          FROM_HERE, base::Bind(&WifiBootstrapManager::OnMonitorTimeout,
-                                tasks_weak_factory_.GetWeakPtr()),
-          base::TimeDelta::FromMinutes(kMonitorTimeoutMinutes));
-    }
   }
 }
 
