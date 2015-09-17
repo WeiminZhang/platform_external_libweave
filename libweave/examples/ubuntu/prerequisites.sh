@@ -6,7 +6,7 @@
 DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 ROOT_DIR=$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)
 
-sudo apt-get install \
+sudo apt-get install -y \
   autoconf \
   automake \
   binutils \
@@ -18,7 +18,7 @@ sudo apt-get install \
   libtool \
   ninja-build \
 
-mkdir $ROOT_DIR/third_party/lib $ROOT_DIR/third_party/include 2> /dev/null
+mkdir -p $ROOT_DIR/third_party/lib $ROOT_DIR/third_party/include 2> /dev/null
 
 # Make gtest and gmock
 cd $ROOT_DIR/third_party
