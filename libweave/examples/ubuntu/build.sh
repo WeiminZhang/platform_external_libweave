@@ -8,7 +8,7 @@ ROOT_DIR=$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)
 
 cd $ROOT_DIR
 
-gyp -Ilibweave_common.gypi --toplevel-dir=. -f ninja $DIR/weave.gyp
+gyp -Ilibweave_common.gypi --toplevel-dir=. --depth=. -f ninja $DIR/weave.gyp
 
 if [ -z "$BUILD_CONFIG" ]; then
    export BUILD_CONFIG=Debug
