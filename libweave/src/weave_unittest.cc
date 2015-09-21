@@ -238,12 +238,11 @@ class WeaveTest : public ::testing::Test {
 
   void InitMdns() {
     EXPECT_CALL(mdns_, GetId()).WillRepeatedly(Return("TEST_ID"));
-    InitMdnsPublishing(false);
     EXPECT_CALL(mdns_, StopPublishing("_privet._tcp")).WillOnce(Return());
   }
 
-  void InitMdnsPublishing(bool registered) {
-    std::vector<std::string> txt{{"id=TEST_ID"}, {"flags=DB"},
+  void InitMdnsPublishing(bool registered, const std::string& flags) {
+    std::vector<std::string> txt{{"id=TEST_ID"}, {"flags=" + flags},
                                  {"mmid=ABCDE"}, {"services=_base"},
                                  {"txtvers=3"},  {"ty=DEVICE_NAME"}};
     if (registered) {
@@ -306,11 +305,17 @@ class WeaveTest : public ::testing::Test {
           EXPECT_TRUE(error->HasError("gcd", "device_not_registered"));
         }));
 
-    for (const auto& cb : http_server_changed_cb_) {
+    for (const auto& cb : http_server_changed_cb_)
       cb.Run(http_server_);
-    }
 
     task_runner_.Run();
+  }
+
+  void NotifyNetworkChanged(NetworkState state, base::TimeDelta delay) {
+    EXPECT_CALL(network_, GetConnectionState()).WillRepeatedly(Return(state));
+    for (const auto& cb : network_callbacks_) {
+      task_runner_.PostDelayedTask(FROM_HERE, cb, delay);
+    }
   }
 
   std::vector<HttpServer::OnStateChangedCallback> http_server_changed_cb_;
@@ -350,7 +355,9 @@ class WeaveBasicTest : public WeaveTest {
  public:
   void SetUp() override {
     WeaveTest::SetUp();
+
     InitDefaultExpectations();
+    InitMdnsPublishing(false, "DB");
   }
 };
 
@@ -381,7 +388,7 @@ TEST_F(WeaveBasicTest, Register) {
   ExpectRequest("POST", "https://accounts.google.com/o/oauth2/token",
                 kAuthTokenResponse);
 
-  InitMdnsPublishing(true);
+  InitMdnsPublishing(true, "DB");
 
   EXPECT_EQ("DEVICE_ID", cloud_->RegisterDevice("TEST_ID", nullptr));
 }
@@ -405,25 +412,13 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
   StartDevice();
 
   // Short disconnect.
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kOffline));
-  for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb), {});
-  }
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kConnected));
-  for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb),
-                                 base::TimeDelta::FromSeconds(10));
-  }
+  NotifyNetworkChanged(NetworkState::kOffline, {});
+  NotifyNetworkChanged(NetworkState::kConnected,
+                       base::TimeDelta::FromSeconds(10));
   task_runner_.Run();
 
   // Long disconnect.
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kOffline));
-  for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb), {});
-  }
+  NotifyNetworkChanged(NetworkState::kOffline, {});
   auto offline_from = task_runner_.GetClock()->Now();
   EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
       .WillOnce(InvokeWithoutArgs([this, offline_from]() {
@@ -442,11 +437,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
   StartDevice();
 
   // Long disconnect.
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kOffline));
-  for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb), {});
-  }
+  NotifyNetworkChanged(NetworkState::kOffline, {});
 
   for (int i = 0; i < 5; ++i) {
     auto offline_from = task_runner_.GetClock()->Now();
@@ -470,10 +461,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
     task_runner_.Run();
   }
 
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kConnected));
-  for (const auto& cb : network_callbacks_)
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb), {});
+  NotifyNetworkChanged(NetworkState::kConnected, {});
   task_runner_.Run();
 }
 
