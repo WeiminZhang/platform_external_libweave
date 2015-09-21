@@ -24,7 +24,7 @@ void GroupCallback(AvahiEntryGroup* g,
 }  // namespace
 
 MdnsImpl::MdnsImpl() {
-  CHECK_EQ(0, std::system("service avahi-daemon status | grep process || "
+  CHECK_EQ(0, std::system("service avahi-daemon status | grep running || "
                           "service avahi-daemon start"));
   thread_pool_.reset(avahi_threaded_poll_new());
   CHECK(thread_pool_);
