@@ -19,12 +19,14 @@
 namespace weave {
 namespace examples {
 
+class EventTaskRunner;
+
 // HTTP/HTTPS server implemented with libevent.
 class HttpServerImpl : public HttpServer {
  public:
   class RequestImpl;
 
-  explicit HttpServerImpl(event_base* base);
+  explicit HttpServerImpl(EventTaskRunner* task_runner);
 
   void AddOnStateChangedCallback(
       const OnStateChangedCallback& callback) override;
@@ -57,10 +59,11 @@ class HttpServerImpl : public HttpServer {
   std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)> ctx_{nullptr,
                                                          &SSL_CTX_free};
   std::vector<uint8_t> cert_fingerprint_;
-  event_base* base_{nullptr};
+  EventTaskRunner* task_runner_{nullptr};
   std::unique_ptr<evhttp, decltype(&evhttp_free)> httpd_{nullptr, &evhttp_free};
   std::unique_ptr<evhttp, decltype(&evhttp_free)> httpsd_{nullptr,
                                                           &evhttp_free};
+
   base::WeakPtrFactory<HttpServerImpl> weak_ptr_factory_{this};
 };
 
