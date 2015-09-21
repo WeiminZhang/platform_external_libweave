@@ -17,6 +17,7 @@ sudo apt-get install -y \
   libexpat1-dev \
   libtool \
   ninja-build \
+  || exit 1
 
 mkdir -p $ROOT_DIR/third_party/lib $ROOT_DIR/third_party/include 2> /dev/null
 
