@@ -52,6 +52,7 @@ class Manager : public Privet, public CloudDelegate::Observer {
              Network* network,
              Mdns* mdns,
              HttpServer* http_server,
+             Wifi* wifi,
              DeviceRegistrationInfo* device,
              CommandManager* command_manager,
              StateManager* state_manager);

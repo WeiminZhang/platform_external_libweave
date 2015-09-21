@@ -11,6 +11,7 @@
 #include <base/memory/weak_ptr.h>
 #include <base/time/time.h>
 #include <weave/network.h>
+#include <weave/wifi.h>
 
 namespace weave {
 
@@ -20,7 +21,7 @@ namespace examples {
 
 // Basic weave::Network implementation.
 // Production version of SSL socket needs secure server certificate check.
-class NetworkImpl : public Network {
+class NetworkImpl : public Network, public Wifi {
  public:
   explicit NetworkImpl(TaskRunner* task_runner, bool force_bootstrapping);
   ~NetworkImpl();

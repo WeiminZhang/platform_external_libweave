@@ -21,6 +21,7 @@
 #include <weave/privet.h>
 #include <weave/state.h>
 #include <weave/task_runner.h>
+#include <weave/wifi.h>
 
 namespace weave {
 
@@ -43,6 +44,7 @@ class Device {
                      Network* network,
                      Mdns* mdns,
                      HttpServer* http_server,
+                     Wifi* wifi,
                      Bluetooth* bluetooth) = 0;
 
   virtual Commands* GetCommands() = 0;

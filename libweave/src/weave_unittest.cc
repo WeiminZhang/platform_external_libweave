@@ -13,6 +13,7 @@
 #include <weave/test/mock_mdns.h>
 #include <weave/test/mock_network.h>
 #include <weave/test/mock_task_runner.h>
+#include <weave/test/mock_wifi.h>
 #include <weave/test/unittest_utils.h>
 
 #include "libweave/src/bind_lambda.h"
@@ -282,7 +283,7 @@ class WeaveTest : public ::testing::Test {
   void InitDefaultExpectations() {
     InitConfigStore();
     InitNetwork();
-    EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+    EXPECT_CALL(wifi_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
         .WillOnce(Return());
     InitHttpServer();
     InitMdns();
@@ -293,7 +294,7 @@ class WeaveTest : public ::testing::Test {
     options.xmpp_enabled = false;
 
     device_->Start(options, &config_store_, &task_runner_, &http_client_,
-                   &network_, &mdns_, &http_server_, &bluetooth_);
+                   &network_, &mdns_, &http_server_, &wifi_, &bluetooth_);
 
     cloud_ = device_->GetCloud();
     ASSERT_TRUE(cloud_);
@@ -327,6 +328,7 @@ class WeaveTest : public ::testing::Test {
   StrictMock<test::MockNetwork> network_;
   StrictMock<test::MockMdns> mdns_;
   StrictMock<test::MockHttpServer> http_server_;
+  StrictMock<test::MockWifi> wifi_;
   StrictMock<test::MockBluetooth> bluetooth_;
 
   std::vector<Network::OnConnectionChangedCallback> network_callbacks_;
@@ -348,7 +350,24 @@ TEST_F(WeaveTest, StartMinimal) {
 
   InitConfigStore();
   device_->Start(options, &config_store_, &task_runner_, &http_client_,
-                 &network_, nullptr, nullptr, nullptr);
+                 &network_, nullptr, nullptr, &wifi_, nullptr);
+}
+
+TEST_F(WeaveTest, StartNoWifi) {
+  InitConfigStore();
+  InitNetwork();
+  InitHttpServer();
+  InitMdns();
+  InitMdnsPublishing(false, "CB");
+
+  weave::Device::Options options;
+  device_->Start(options, &config_store_, &task_runner_, &http_client_,
+                 &network_, &mdns_, &http_server_, nullptr, &bluetooth_);
+
+  for (const auto& cb : http_server_changed_cb_)
+    cb.Run(http_server_);
+
+  task_runner_.Run();
 }
 
 class WeaveBasicTest : public WeaveTest {
@@ -420,7 +439,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
   // Long disconnect.
   NotifyNetworkChanged(NetworkState::kOffline, {});
   auto offline_from = task_runner_.GetClock()->Now();
-  EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+  EXPECT_CALL(wifi_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
       .WillOnce(InvokeWithoutArgs([this, offline_from]() {
         EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                   base::TimeDelta::FromMinutes(1));
@@ -442,7 +461,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
   for (int i = 0; i < 5; ++i) {
     auto offline_from = task_runner_.GetClock()->Now();
     // Temporarily offline mode.
-    EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+    EXPECT_CALL(wifi_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
         .WillOnce(InvokeWithoutArgs([this, &offline_from]() {
           EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                     base::TimeDelta::FromMinutes(1));
@@ -452,7 +471,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
 
     // Try to reconnect again.
     offline_from = task_runner_.GetClock()->Now();
-    EXPECT_CALL(network_, DisableAccessPoint())
+    EXPECT_CALL(wifi_, DisableAccessPoint())
         .WillOnce(InvokeWithoutArgs([this, offline_from]() {
           EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                     base::TimeDelta::FromMinutes(5));
@@ -472,7 +491,7 @@ TEST_F(WeaveWiFiSetupTest, StartOfflineWithSsid) {
       .WillRepeatedly(Return(NetworkState::kOffline));
 
   auto offline_from = task_runner_.GetClock()->Now();
-  EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+  EXPECT_CALL(wifi_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
       .WillOnce(InvokeWithoutArgs([this, &offline_from]() {
         EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                   base::TimeDelta::FromMinutes(1));

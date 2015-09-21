@@ -9,6 +9,7 @@
 #include <weave/enum_to_string.h>
 #include <weave/network.h>
 #include <weave/task_runner.h>
+#include <weave/wifi.h>
 
 #include "libweave/src/bind_lambda.h"
 #include "libweave/src/privet/constants.h"
@@ -22,13 +23,18 @@ WifiBootstrapManager::WifiBootstrapManager(
     bool ble_setup_enabled,
     TaskRunner* task_runner,
     Network* network,
+    Wifi* wifi,
     CloudDelegate* gcd)
     : task_runner_{task_runner},
       network_{network},
+      wifi_{wifi},
       ssid_generator_{gcd, this},
       last_configured_ssid_{last_configured_ssid},
       test_privet_ssid_{test_privet_ssid},
       ble_setup_enabled_{ble_setup_enabled} {
+  CHECK(network_);
+  CHECK(task_runner_);
+  CHECK(wifi_);
 }
 
 void WifiBootstrapManager::Init() {
@@ -74,13 +80,13 @@ void WifiBootstrapManager::StartBootstrapping() {
   // TODO(vitalybuka): Add SSID probing.
   privet_ssid_ = GenerateSsid();
   CHECK(!privet_ssid_.empty());
-  network_->EnableAccessPoint(privet_ssid_);
+  wifi_->EnableAccessPoint(privet_ssid_);
   LOG_IF(INFO, ble_setup_enabled_) << "BLE Bootstrap start: not implemented.";
 }
 
 void WifiBootstrapManager::EndBootstrapping() {
   LOG_IF(INFO, ble_setup_enabled_) << "BLE Bootstrap stop: not implemented.";
-  network_->DisableAccessPoint();
+  wifi_->DisableAccessPoint();
   privet_ssid_.clear();
 }
 
@@ -93,10 +99,10 @@ void WifiBootstrapManager::StartConnecting(const std::string& ssid,
       FROM_HERE, base::Bind(&WifiBootstrapManager::OnConnectTimeout,
                             tasks_weak_factory_.GetWeakPtr()),
       base::TimeDelta::FromMinutes(3));
-  network_->ConnectToService(ssid, passphrase,
-                             base::Bind(&WifiBootstrapManager::OnConnectSuccess,
-                                        tasks_weak_factory_.GetWeakPtr(), ssid),
-                             nullptr);
+  wifi_->ConnectToService(ssid, passphrase,
+                          base::Bind(&WifiBootstrapManager::OnConnectSuccess,
+                                     tasks_weak_factory_.GetWeakPtr(), ssid),
+                          nullptr);
 }
 
 void WifiBootstrapManager::EndConnecting() {
