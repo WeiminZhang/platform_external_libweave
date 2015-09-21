@@ -21,15 +21,7 @@ class MockNetwork : public Network {
 
   MOCK_METHOD1(AddOnConnectionChangedCallback,
                void(const OnConnectionChangedCallback&));
-  MOCK_METHOD4(ConnectToService,
-               bool(const std::string&,
-                    const std::string&,
-                    const base::Closure&,
-                    ErrorPtr*));
   MOCK_CONST_METHOD0(GetConnectionState, NetworkState());
-  MOCK_METHOD1(EnableAccessPoint, void(const std::string&));
-  MOCK_METHOD0(DisableAccessPoint, void());
-
   MOCK_METHOD4(OpenSslSocket,
                void(const std::string&,
                     uint16_t,

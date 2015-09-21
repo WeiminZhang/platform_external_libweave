@@ -5,7 +5,6 @@
 #ifndef LIBWEAVE_INCLUDE_WEAVE_NETWORK_H_
 #define LIBWEAVE_INCLUDE_WEAVE_NETWORK_H_
 
-#include <map>
 #include <string>
 
 #include <base/callback.h>
@@ -31,21 +30,8 @@ class Network {
   virtual void AddOnConnectionChangedCallback(
       const OnConnectionChangedCallback& listener) = 0;
 
-  // Implementation should attempt to connect to the given network with the
-  // given passphrase. This is accomplished by:
-  // Returns false on immediate failures with some descriptive codes in |error|.
-  virtual bool ConnectToService(const std::string& ssid,
-                                const std::string& passphrase,
-                                const base::Closure& on_success,
-                                ErrorPtr* error) = 0;
-
+  // Returns current Internet connectivity state
   virtual NetworkState GetConnectionState() const = 0;
-
-  // Starts WiFi access point for wifi setup.
-  virtual void EnableAccessPoint(const std::string& ssid) = 0;
-
-  // Stops WiFi access point.
-  virtual void DisableAccessPoint() = 0;
 
   // Opens bidirectional sockets and returns attached stream.
   virtual void OpenSslSocket(

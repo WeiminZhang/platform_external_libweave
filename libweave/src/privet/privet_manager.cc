@@ -40,6 +40,7 @@ void Manager::Start(const Device::Options& options,
                     Network* network,
                     Mdns* mdns,
                     HttpServer* http_server,
+                    Wifi* wifi,
                     DeviceRegistrationInfo* device,
                     CommandManager* command_manager,
                     StateManager* state_manager) {
@@ -55,11 +56,11 @@ void Manager::Start(const Device::Options& options,
   network->AddOnConnectionChangedCallback(
       base::Bind(&Manager::OnConnectivityChanged, base::Unretained(this)));
 
-  if (device->GetSettings().wifi_auto_setup_enabled) {
+  if (wifi && device->GetSettings().wifi_auto_setup_enabled) {
     VLOG(1) << "Enabling WiFi bootstrapping.";
     wifi_bootstrap_manager_.reset(new WifiBootstrapManager(
         device->GetSettings().last_configured_ssid, options.test_privet_ssid,
-        device->GetSettings().ble_setup_enabled, task_runner, network,
+        device->GetSettings().ble_setup_enabled, task_runner, network, wifi,
         cloud_.get()));
     wifi_bootstrap_manager_->Init();
   }

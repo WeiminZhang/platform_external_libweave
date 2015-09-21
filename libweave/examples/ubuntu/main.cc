@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   opts.disable_security = false;
   opts.enable_ping = true;
   device->Start(opts, &config_store, &task_runner, &http_client, &network,
-                &mdns, &http_server, &bluetooth);
+                &mdns, &http_server, &network, &bluetooth);
 
   task_runner.Run();
 
