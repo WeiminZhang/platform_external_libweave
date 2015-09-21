@@ -338,9 +338,8 @@ void NetworkImpl::DisableAccessPoint() {
 }
 
 void NetworkImpl::NotifyNetworkChanged() {
-  bool online = GetConnectionState() == NetworkState::kConnected;
   for (const auto& i : callbacks_)
-    i.Run(online);
+    i.Run();
 }
 
 void NetworkImpl::OpenSslSocket(

@@ -457,7 +457,7 @@ void XmppChannel::OnPingTimeout(base::Time sent_time) {
   Restart();
 }
 
-void XmppChannel::OnConnectivityChanged(bool online) {
+void XmppChannel::OnConnectivityChanged() {
   if (state_ == XmppState::kNotStarted)
     return;
 

@@ -408,12 +408,12 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
   EXPECT_CALL(network_, GetConnectionState())
       .WillRepeatedly(Return(NetworkState::kOffline));
   for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, false), {});
+    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb), {});
   }
   EXPECT_CALL(network_, GetConnectionState())
       .WillRepeatedly(Return(NetworkState::kConnected));
   for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, true),
+    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb),
                                  base::TimeDelta::FromSeconds(10));
   }
   task_runner_.Run();
@@ -422,7 +422,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
   EXPECT_CALL(network_, GetConnectionState())
       .WillRepeatedly(Return(NetworkState::kOffline));
   for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, false), {});
+    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb), {});
   }
   auto offline_from = task_runner_.GetClock()->Now();
   EXPECT_CALL(network_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
@@ -445,7 +445,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
   EXPECT_CALL(network_, GetConnectionState())
       .WillRepeatedly(Return(NetworkState::kOffline));
   for (const auto& cb : network_callbacks_) {
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, false), {});
+    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb), {});
   }
 
   for (int i = 0; i < 5; ++i) {
@@ -473,7 +473,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
   EXPECT_CALL(network_, GetConnectionState())
       .WillRepeatedly(Return(NetworkState::kConnected));
   for (const auto& cb : network_callbacks_)
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb, true), {});
+    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(cb), {});
   task_runner_.Run();
 }
 
