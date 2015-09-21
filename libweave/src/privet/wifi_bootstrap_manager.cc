@@ -233,7 +233,7 @@ void WifiBootstrapManager::OnConnectivityChange() {
   UpdateConnectionState();
 
   if (state_ == State::kMonitoring ||  // Reset monitoring timeout.
-      (state_ == State::kDisabled &&
+      (state_ != State::kDisabled &&
        network_->GetConnectionState() == NetworkState::kConnected)) {
     StartMonitoring();
   }
