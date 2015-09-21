@@ -185,11 +185,13 @@ class SSLStream : public Stream {
 
 }  // namespace
 
-NetworkImpl::NetworkImpl(TaskRunner* task_runner) : task_runner_{task_runner} {
+NetworkImpl::NetworkImpl(TaskRunner* task_runner, bool force_bootstrapping)
+    : task_runner_{task_runner}, force_bootstrapping_{force_bootstrapping} {
   SSL_load_error_strings();
   SSL_library_init();
 
   DisableAccessPoint();
+  UpdateNetworkState();
 }
 NetworkImpl::~NetworkImpl() {
   DisableAccessPoint();
@@ -220,13 +222,8 @@ void NetworkImpl::TryToConnect(const std::string& ssid,
       essid.resize(wreq.u.essid.length);
       close(sockf_d);
 
-      if (ssid == essid) {
-        task_runner_->PostDelayedTask(
-            FROM_HERE, base::Bind(&NetworkImpl::NotifyNetworkChanged,
-                                  weak_ptr_factory_.GetWeakPtr()),
-            {});
+      if (ssid == essid)
         return task_runner_->PostDelayedTask(FROM_HERE, on_success, {});
-      }
       pid = 0;  // Try again.
     }
   }
@@ -236,13 +233,8 @@ void NetworkImpl::TryToConnect(const std::string& ssid,
                   {"dev", "wifi", "connect", ssid, "password", passphrase});
   }
 
-  if (base::Time::Now() >= until) {
-    task_runner_->PostDelayedTask(FROM_HERE,
-                                  base::Bind(&NetworkImpl::NotifyNetworkChanged,
-                                             weak_ptr_factory_.GetWeakPtr()),
-                                  {});
+  if (base::Time::Now() >= until)
     return;
-  }
 
   task_runner_->PostDelayedTask(
       FROM_HERE,
@@ -255,6 +247,7 @@ bool NetworkImpl::ConnectToService(const std::string& ssid,
                                    const std::string& passphrase,
                                    const base::Closure& on_success,
                                    ErrorPtr* error) {
+  force_bootstrapping_ = false;
   CHECK(!hostapd_started_);
   if (hostapd_started_) {
     Error::AddTo(error, FROM_HERE, "wifi", "busy", "Running Access Point.");
@@ -265,25 +258,36 @@ bool NetworkImpl::ConnectToService(const std::string& ssid,
                base::Time::Now() + base::TimeDelta::FromMinutes(1), on_success);
 }
 
-NetworkState NetworkImpl::GetConnectionState() const {
-  // Forced soft AP.
-  return NetworkState::kOffline;
-
+void NetworkImpl::UpdateNetworkState() {
+  network_state_ = NetworkState::kOffline;
+  if (force_bootstrapping_)
+    return;
   if (std::system("ping talk.google.com -c 1") == 0)
-    return NetworkState::kConnected;
+    network_state_ = NetworkState::kConnected;
+  else if (std::system("nmcli dev"))
+    network_state_ = NetworkState::kFailure;
+  else if (std::system("nmcli dev | grep connecting") == 0)
+    network_state_ = NetworkState::kConnecting;
 
-  if (std::system("nmcli dev"))
-    return NetworkState::kFailure;
+  task_runner_->PostDelayedTask(FROM_HERE,
+                                base::Bind(&NetworkImpl::UpdateNetworkState,
+                                           weak_ptr_factory_.GetWeakPtr()),
+                                base::TimeDelta::FromSeconds(10));
 
-  if (std::system("nmcli dev | grep connecting") == 0)
-    return NetworkState::kConnecting;
+  bool online = GetConnectionState() == NetworkState::kConnected;
+  for (const auto& cb : callbacks_)
+    cb.Run();
+}
 
-  return NetworkState::kOffline;
+NetworkState NetworkImpl::GetConnectionState() const {
+  return network_state_;
 }
 
 void NetworkImpl::EnableAccessPoint(const std::string& ssid) {
   if (hostapd_started_)
     return;
+
+  network_state_ = NetworkState::kOffline;
 
   // Release wlan0 interface.
   CHECK_EQ(0, std::system("nmcli nm wifi off"));
@@ -319,10 +323,6 @@ void NetworkImpl::EnableAccessPoint(const std::string& ssid) {
   }
 
   CHECK_EQ(0, std::system(("dnsmasq --conf-file=" + dnsmasq_conf).c_str()));
-  task_runner_->PostDelayedTask(FROM_HERE,
-                                base::Bind(&NetworkImpl::NotifyNetworkChanged,
-                                           weak_ptr_factory_.GetWeakPtr()),
-                                {});
 }
 
 void NetworkImpl::DisableAccessPoint() {
@@ -330,16 +330,6 @@ void NetworkImpl::DisableAccessPoint() {
   res = std::system("pkill -f hostapd.*/tmp/weave");
   CHECK_EQ(0, std::system("nmcli nm wifi on"));
   hostapd_started_ = false;
-
-  task_runner_->PostDelayedTask(FROM_HERE,
-                                base::Bind(&NetworkImpl::NotifyNetworkChanged,
-                                           weak_ptr_factory_.GetWeakPtr()),
-                                {});
-}
-
-void NetworkImpl::NotifyNetworkChanged() {
-  for (const auto& i : callbacks_)
-    i.Run();
 }
 
 void NetworkImpl::OpenSslSocket(
