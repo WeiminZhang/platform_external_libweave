@@ -22,7 +22,7 @@ namespace examples {
 // Production version of SSL socket needs secure server certificate check.
 class NetworkImpl : public Network {
  public:
-  explicit NetworkImpl(TaskRunner* task_runner);
+  explicit NetworkImpl(TaskRunner* task_runner, bool force_bootstrapping);
   ~NetworkImpl();
 
   void AddOnConnectionChangedCallback(
@@ -46,11 +46,13 @@ class NetworkImpl : public Network {
                     int pid,
                     base::Time until,
                     const base::Closure& on_success);
-  void NotifyNetworkChanged();
+  void UpdateNetworkState();
 
+  bool force_bootstrapping_{false};
   bool hostapd_started_{false};
   TaskRunner* task_runner_{nullptr};
   std::vector<OnConnectionChangedCallback> callbacks_;
+  NetworkState network_state_{NetworkState::kOffline};
 
   base::WeakPtrFactory<NetworkImpl> weak_ptr_factory_{this};
 };
