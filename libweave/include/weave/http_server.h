@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <base/callback.h>
+#include <weave/stream.h>
 
 namespace weave {
 
@@ -19,6 +20,7 @@ class HttpServer {
     virtual const std::string& GetPath() const = 0;
     virtual std::string GetFirstHeader(const std::string& name) const = 0;
     virtual const std::vector<uint8_t>& GetData() const = 0;
+    virtual std::unique_ptr<Stream> GetDataStream() const = 0;
 
    protected:
     virtual ~Request() = default;

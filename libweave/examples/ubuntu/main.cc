@@ -18,7 +18,7 @@ int main() {
   weave::examples::CurlHttpClient http_client{&task_runner};
   weave::examples::NetworkImpl network{&task_runner};
   weave::examples::MdnsImpl mdns;
-  weave::examples::HttpServerImpl http_server{task_runner.GetEventBase()};
+  weave::examples::HttpServerImpl http_server{&task_runner};
   weave::examples::BluetoothImpl bluetooth;
 
   auto device = weave::Device::Create();
