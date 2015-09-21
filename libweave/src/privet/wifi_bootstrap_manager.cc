@@ -96,13 +96,22 @@ void WifiBootstrapManager::StartConnecting(const std::string& ssid,
           << ", pass=" << passphrase << ").";
   UpdateState(State::kConnecting);
   task_runner_->PostDelayedTask(
-      FROM_HERE, base::Bind(&WifiBootstrapManager::OnConnectTimeout,
-                            tasks_weak_factory_.GetWeakPtr()),
+      FROM_HERE, base::Bind(&WifiBootstrapManager::OnConnectError,
+                            tasks_weak_factory_.GetWeakPtr(), nullptr),
       base::TimeDelta::FromMinutes(3));
   wifi_->ConnectToService(ssid, passphrase,
                           base::Bind(&WifiBootstrapManager::OnConnectSuccess,
                                      tasks_weak_factory_.GetWeakPtr(), ssid),
-                          nullptr);
+                          base::Bind(&WifiBootstrapManager::OnConnectError,
+                                     tasks_weak_factory_.GetWeakPtr()));
+}
+
+void WifiBootstrapManager::OnConnectError(const Error* error) {
+  ErrorPtr new_error = error ? error->Clone() : nullptr;
+  Error::AddTo(&new_error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+               "Failed to connect to provided network");
+  setup_state_ = SetupState{std::move(new_error)};
+  StartBootstrapping();
 }
 
 void WifiBootstrapManager::EndConnecting() {
@@ -222,15 +231,6 @@ void WifiBootstrapManager::OnConnectSuccess(const std::string& ssid) {
 void WifiBootstrapManager::OnBootstrapTimeout() {
   VLOG(1) << "Bootstrapping has timed out.";
   StartMonitoring();
-}
-
-void WifiBootstrapManager::OnConnectTimeout() {
-  VLOG(1) << "Wifi timed out while connecting";
-  ErrorPtr error;
-  Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
-               "Failed to connect to provided network");
-  setup_state_ = SetupState{std::move(error)};
-  StartBootstrapping();
 }
 
 void WifiBootstrapManager::OnConnectivityChange() {

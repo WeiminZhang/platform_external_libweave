@@ -20,10 +20,10 @@ class MockWifi : public Wifi {
   ~MockWifi() override = default;
 
   MOCK_METHOD4(ConnectToService,
-               bool(const std::string&,
+               void(const std::string&,
                     const std::string&,
                     const base::Closure&,
-                    ErrorPtr*));
+                    const base::Callback<void(const Error*)>&));
   MOCK_METHOD1(EnableAccessPoint, void(const std::string&));
   MOCK_METHOD0(DisableAccessPoint, void());
 };
