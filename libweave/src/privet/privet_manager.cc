@@ -154,7 +154,7 @@ void Manager::OnChanged() {
     publisher_->Update();
 }
 
-void Manager::OnConnectivityChanged(bool online) {
+void Manager::OnConnectivityChanged() {
   OnChanged();
 }
 

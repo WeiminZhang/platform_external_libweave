@@ -80,7 +80,7 @@ class Manager : public Privet, public CloudDelegate::Observer {
                          const HttpServer::OnReplyCallback& callback);
 
   void OnChanged();
-  void OnConnectivityChanged(bool online);
+  void OnConnectivityChanged();
 
   void OnHttpServerStatusChanged(const HttpServer& server);
 

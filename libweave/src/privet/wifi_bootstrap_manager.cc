@@ -227,12 +227,14 @@ void WifiBootstrapManager::OnConnectTimeout() {
   StartBootstrapping();
 }
 
-void WifiBootstrapManager::OnConnectivityChange(bool is_connected) {
-  VLOG(3) << "ConnectivityChanged: " << is_connected;
+void WifiBootstrapManager::OnConnectivityChange() {
+  VLOG(3) << "ConnectivityChanged: "
+          << EnumToString(network_->GetConnectionState());
   UpdateConnectionState();
 
   if (state_ == State::kMonitoring ||  // Reset monitoring timeout.
-      (state_ == State::kDisabled && is_connected)) {
+      (state_ == State::kDisabled &&
+       network_->GetConnectionState() == NetworkState::kConnected)) {
     StartMonitoring();
   }
 }

@@ -85,7 +85,7 @@ class WifiBootstrapManager : public WifiDelegate {
   void OnBootstrapTimeout();
   void OnConnectTimeout();
   void OnConnectSuccess(const std::string& ssid);
-  void OnConnectivityChange(bool is_connected);
+  void OnConnectivityChange();
   void OnMonitorTimeout();
   void UpdateConnectionState();
 

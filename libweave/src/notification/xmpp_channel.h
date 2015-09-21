@@ -118,7 +118,7 @@ class XmppChannel : public NotificationChannel,
   void OnPingResponse(base::Time sent_time, std::unique_ptr<XmlNode> reply);
   void OnPingTimeout(base::Time sent_time);
 
-  void OnConnectivityChanged(bool online);
+  void OnConnectivityChanged();
 
   XmppState state_{XmppState::kNotStarted};
 

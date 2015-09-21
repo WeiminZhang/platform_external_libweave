@@ -24,9 +24,9 @@ enum class NetworkState {
 class Network {
  public:
   // A callback that interested parties can register to be notified of
-  // transitions from online to offline and vice versa.  The boolean
-  // parameter will be true if we're online, and false if we're offline.
-  using OnConnectionChangedCallback = base::Callback<void(bool)>;
+  // connectivity changes. Changes may include but not limited: interface
+  // up or down, new IP is assigned, cable is disconnected.
+  using OnConnectionChangedCallback = base::Callback<void()>;
 
   virtual void AddOnConnectionChangedCallback(
       const OnConnectionChangedCallback& listener) = 0;
