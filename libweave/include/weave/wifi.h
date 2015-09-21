@@ -17,10 +17,11 @@ class Wifi {
   // Implementation should attempt to connect to the given network with the
   // given passphrase. Implementation should run either of callback.
   // Callback should be posted.
-  virtual bool ConnectToService(const std::string& ssid,
-                                const std::string& passphrase,
-                                const base::Closure& success_callback,
-                                ErrorPtr* error) = 0;
+  virtual void ConnectToService(
+      const std::string& ssid,
+      const std::string& passphrase,
+      const base::Closure& success_callback,
+      const base::Callback<void(const Error*)>& error_callback) = 0;
 
   // Starts WiFi access point for wifi setup.
   virtual void EnableAccessPoint(const std::string& ssid) = 0;

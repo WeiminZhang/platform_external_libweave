@@ -202,11 +202,13 @@ void NetworkImpl::AddOnConnectionChangedCallback(
   callbacks_.push_back(listener);
 }
 
-void NetworkImpl::TryToConnect(const std::string& ssid,
-                               const std::string& passphrase,
-                               int pid,
-                               base::Time until,
-                               const base::Closure& on_success) {
+void NetworkImpl::TryToConnect(
+    const std::string& ssid,
+    const std::string& passphrase,
+    int pid,
+    base::Time until,
+    const base::Closure& success_callback,
+    const base::Callback<void(const Error*)>& error_callback) {
   if (pid) {
     int status = 0;
     if (pid == waitpid(pid, &status, WNOWAIT)) {
@@ -223,7 +225,7 @@ void NetworkImpl::TryToConnect(const std::string& ssid,
       close(sockf_d);
 
       if (ssid == essid)
-        return task_runner_->PostDelayedTask(FROM_HERE, on_success, {});
+        return task_runner_->PostDelayedTask(FROM_HERE, success_callback, {});
       pid = 0;  // Try again.
     }
   }
@@ -233,29 +235,42 @@ void NetworkImpl::TryToConnect(const std::string& ssid,
                   {"dev", "wifi", "connect", ssid, "password", passphrase});
   }
 
-  if (base::Time::Now() >= until)
+  if (base::Time::Now() >= until) {
+    ErrorPtr error;
+    Error::AddTo(&error, FROM_HERE, "wifi", "timeout",
+                 "Timeout connecting to WiFI network.");
+    task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(error_callback, base::Owned(error.release())),
+        {});
     return;
+  }
 
   task_runner_->PostDelayedTask(
-      FROM_HERE,
-      base::Bind(&NetworkImpl::TryToConnect, weak_ptr_factory_.GetWeakPtr(),
-                 ssid, passphrase, pid, until, on_success),
+      FROM_HERE, base::Bind(&NetworkImpl::TryToConnect,
+                            weak_ptr_factory_.GetWeakPtr(), ssid, passphrase,
+                            pid, until, success_callback, error_callback),
       base::TimeDelta::FromSeconds(1));
 }
 
-bool NetworkImpl::ConnectToService(const std::string& ssid,
-                                   const std::string& passphrase,
-                                   const base::Closure& on_success,
-                                   ErrorPtr* error) {
+void NetworkImpl::ConnectToService(
+    const std::string& ssid,
+    const std::string& passphrase,
+    const base::Closure& success_callback,
+    const base::Callback<void(const Error*)>& error_callback) {
   force_bootstrapping_ = false;
   CHECK(!hostapd_started_);
   if (hostapd_started_) {
-    Error::AddTo(error, FROM_HERE, "wifi", "busy", "Running Access Point.");
-    return false;
+    ErrorPtr error;
+    Error::AddTo(&error, FROM_HERE, "wifi", "busy", "Running Access Point.");
+    task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(error_callback, base::Owned(error.release())),
+        {});
+    return;
   }
 
   TryToConnect(ssid, passphrase, 0,
-               base::Time::Now() + base::TimeDelta::FromMinutes(1), on_success);
+               base::Time::Now() + base::TimeDelta::FromMinutes(1),
+               success_callback, error_callback);
 }
 
 void NetworkImpl::UpdateNetworkState() {

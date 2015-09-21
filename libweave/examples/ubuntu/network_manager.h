@@ -26,27 +26,32 @@ class NetworkImpl : public Network, public Wifi {
   explicit NetworkImpl(TaskRunner* task_runner, bool force_bootstrapping);
   ~NetworkImpl();
 
+  // Network implementation
   void AddOnConnectionChangedCallback(
       const OnConnectionChangedCallback& listener) override;
-  bool ConnectToService(const std::string& ssid,
-                        const std::string& passphrase,
-                        const base::Closure& on_success,
-                        ErrorPtr* error) override;
   NetworkState GetConnectionState() const override;
-  void EnableAccessPoint(const std::string& ssid) override;
-  void DisableAccessPoint() override;
   void OpenSslSocket(
       const std::string& host,
       uint16_t port,
       const base::Callback<void(std::unique_ptr<Stream>)>& success_callback,
       const base::Callback<void(const Error*)>& error_callback) override;
 
+  // Wifi implementation
+  void ConnectToService(
+      const std::string& ssid,
+      const std::string& passphrase,
+      const base::Closure& success_callback,
+      const base::Callback<void(const Error*)>& error_callback) override;
+  void EnableAccessPoint(const std::string& ssid) override;
+  void DisableAccessPoint() override;
+
  private:
   void TryToConnect(const std::string& ssid,
                     const std::string& passphrase,
                     int pid,
                     base::Time until,
-                    const base::Closure& on_success);
+                    const base::Closure& success_callback,
+                    const base::Callback<void(const Error*)>& error_callback);
   void UpdateNetworkState();
 
   bool force_bootstrapping_{false};
