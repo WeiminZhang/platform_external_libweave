@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <base/bind.h>
+#include <base/values.h>
 #include <weave/device.h>
 
 #include "libweave/examples/ubuntu/avahi_client.h"
@@ -19,7 +21,29 @@ void ShowUsage(const std::string& name) {
              << "\t-h,--help             Show this help message\n"
              << "\t-b,--bootstrapping    Force WiFi bootstrapping\n";
 }
+
+class CommandHandler {
+ public:
+  explicit CommandHandler(weave::Device* device) {
+    device->GetCommands()->AddOnCommandAddedCallback(
+        base::Bind(&CommandHandler::OnNewCommand, weak_ptr_factory_.GetWeakPtr()));
+  }
+
+ private:
+  void OnNewCommand(weave::Command* cmd) {
+    LOG(INFO) << "received command: " << cmd->GetName();
+    if (cmd->GetName() == "base.identify") {
+      cmd->SetProgress(base::DictionaryValue{}, nullptr);
+      LOG(INFO) << "base.identify command: completed";
+      cmd->Done();
+    } else {
+      LOG(INFO) << "unimplemented command: ignored";
+    }
+  }
+  base::WeakPtrFactory<CommandHandler> weak_ptr_factory_{this};
+};
 }
+
 
 int main(int argc, char** argv) {
   bool force_bootstrapping = false;
@@ -52,6 +76,7 @@ int main(int argc, char** argv) {
       &http_server,
       weave::examples::NetworkImpl::HasWifiCapability() ? &network : nullptr,
       &bluetooth);
+  CommandHandler handler(device.get());
 
   task_runner.Run();
 
