@@ -5,19 +5,16 @@
 #include "libweave/examples/ubuntu/network_manager.h"
 
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <linux/wireless.h>
-#include <netdb.h>
-#include <openssl/ssl.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
 
-#include <cstdlib>
 #include <fstream>
 
 #include <base/bind.h>
 #include <weave/task_runner.h>
+
+#include "libweave/examples/ubuntu/ssl_stream.h"
 
 namespace weave {
 namespace examples {
@@ -38,150 +35,6 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
   execvp(path.c_str(), const_cast<char**>(args_vector.data()));
   NOTREACHED();
 }
-
-class SSLStream : public Stream {
- public:
-  explicit SSLStream(TaskRunner* task_runner) : task_runner_{task_runner} {}
-
-  ~SSLStream() { CancelPendingAsyncOperations(); }
-
-  void RunDelayedTask(const base::Closure& success_callback) {
-    success_callback.Run();
-  }
-
-  void ReadAsync(void* buffer,
-                 size_t size_to_read,
-                 const base::Callback<void(size_t)>& success_callback,
-                 const base::Callback<void(const Error*)>& error_callback) {
-    int res = SSL_read(ssl_.get(), buffer, size_to_read);
-    if (res > 0) {
-      task_runner_->PostDelayedTask(
-          FROM_HERE,
-          base::Bind(&SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
-                     base::Bind(success_callback, res)),
-          {});
-      return;
-    }
-
-    int err = SSL_get_error(ssl_.get(), res);
-
-    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
-      task_runner_->PostDelayedTask(
-          FROM_HERE,
-          base::Bind(&SSLStream::ReadAsync, weak_ptr_factory_.GetWeakPtr(),
-                     buffer, size_to_read, success_callback, error_callback),
-          base::TimeDelta::FromSeconds(1));
-      return;
-    }
-
-    ErrorPtr weave_error;
-    Error::AddTo(&weave_error, FROM_HERE, "ssl", "socket_read_failed",
-                 "SSL error");
-    task_runner_->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(
-            &SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
-            base::Bind(error_callback, base::Owned(weave_error.release()))),
-        {});
-    return;
-  }
-
-  void WriteAllAsync(const void* buffer,
-                     size_t size_to_write,
-                     const base::Closure& success_callback,
-                     const base::Callback<void(const Error*)>& error_callback) {
-    int res = SSL_write(ssl_.get(), buffer, size_to_write);
-    if (res > 0) {
-      buffer = static_cast<const char*>(buffer) + res;
-      size_to_write -= res;
-      if (size_to_write == 0) {
-        task_runner_->PostDelayedTask(
-            FROM_HERE,
-            base::Bind(&SSLStream::RunDelayedTask,
-                       weak_ptr_factory_.GetWeakPtr(), success_callback),
-            {});
-        return;
-      }
-
-      task_runner_->PostDelayedTask(
-          FROM_HERE,
-          base::Bind(&SSLStream::WriteAllAsync, weak_ptr_factory_.GetWeakPtr(),
-                     buffer, size_to_write, success_callback, error_callback),
-          base::TimeDelta::FromSeconds(1));
-
-      return;
-    }
-
-    int err = SSL_get_error(ssl_.get(), res);
-
-    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
-      task_runner_->PostDelayedTask(
-          FROM_HERE,
-          base::Bind(&SSLStream::WriteAllAsync, weak_ptr_factory_.GetWeakPtr(),
-                     buffer, size_to_write, success_callback, error_callback),
-          base::TimeDelta::FromSeconds(1));
-      return;
-    }
-
-    ErrorPtr weave_error;
-    Error::AddTo(&weave_error, FROM_HERE, "ssl", "socket_write_failed",
-                 "SSL error");
-    task_runner_->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(
-            &SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
-            base::Bind(error_callback, base::Owned(weave_error.release()))),
-        {});
-    return;
-  }
-
-  void CancelPendingAsyncOperations() {
-    weak_ptr_factory_.InvalidateWeakPtrs();
-  }
-
-  bool Init(const std::string& host, uint16_t port) {
-    ctx_.reset(SSL_CTX_new(TLSv1_2_client_method()));
-    CHECK(ctx_);
-    ssl_.reset(SSL_new(ctx_.get()));
-
-    char end_point[255];
-    snprintf(end_point, sizeof(end_point), "%s:%u", host.c_str(), port);
-    BIO* stream_bio = BIO_new_connect(end_point);
-    CHECK(stream_bio);
-    BIO_set_nbio(stream_bio, 1);
-
-    while (BIO_do_connect(stream_bio) != 1) {
-      CHECK(BIO_should_retry(stream_bio));
-      sleep(1);
-    }
-
-    SSL_set_bio(ssl_.get(), stream_bio, stream_bio);
-    SSL_set_connect_state(ssl_.get());
-
-    for (;;) {
-      int res = SSL_do_handshake(ssl_.get());
-      if (res) {
-        return true;
-      }
-
-      res = SSL_get_error(ssl_.get(), res);
-
-      if (res != SSL_ERROR_WANT_READ || res != SSL_ERROR_WANT_WRITE) {
-        return false;
-      }
-
-      sleep(1);
-    }
-    return false;
-  }
-
- private:
-  TaskRunner* task_runner_{nullptr};
-  std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)> ctx_{nullptr, SSL_CTX_free};
-  std::unique_ptr<SSL, decltype(&SSL_free)> ssl_{nullptr, SSL_free};
-
-  base::WeakPtrFactory<SSLStream> weak_ptr_factory_{this};
-};
 
 }  // namespace
 
