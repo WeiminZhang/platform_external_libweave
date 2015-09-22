@@ -200,6 +200,10 @@ void NetworkImpl::DisableAccessPoint() {
   hostapd_started_ = false;
 }
 
+bool NetworkImpl::HasWifiCapability() {
+  return std::system("nmcli dev | grep ^wlan0") == 0;
+}
+
 void NetworkImpl::OpenSslSocket(
     const std::string& host,
     uint16_t port,

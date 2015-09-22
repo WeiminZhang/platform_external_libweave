@@ -45,6 +45,8 @@ class NetworkImpl : public Network, public Wifi {
   void EnableAccessPoint(const std::string& ssid) override;
   void DisableAccessPoint() override;
 
+  static bool HasWifiCapability();
+
  private:
   void TryToConnect(const std::string& ssid,
                     const std::string& passphrase,
