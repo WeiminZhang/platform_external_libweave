@@ -35,9 +35,20 @@ class CommandHandler {
  private:
   void OnNewCommand(weave::Command* cmd) {
     LOG(INFO) << "received command: " << cmd->GetName();
-    if (cmd->GetName() == "base.identify") {
+    if (cmd->GetName() == "_greeter._greet") {
+      std::string name;
+      cmd->GetParameters()->GetString("_name", &name);
+      if (name.empty()) {
+        name = cmd->GetOrigin() == weave::CommandOrigin::kCloud
+            ? "cloud user"
+            : "local user";
+      }
+      LOG(INFO) << "vendor _greeter._greet command: in progress";
       cmd->SetProgress(base::DictionaryValue{}, nullptr);
-      LOG(INFO) << "base.identify command: completed";
+      base::DictionaryValue result;
+      result.SetString("_greeting", "Hello " + name);
+      cmd->SetResults(result, nullptr);
+      LOG(INFO) << "vendor _greeter._greet command: finished";
       cmd->Done();
     } else {
       LOG(INFO) << "unimplemented command: ignored";
