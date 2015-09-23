@@ -83,7 +83,7 @@ class FakeStream : public Stream {
  public:
   explicit FakeStream(TaskRunner* task_runner) : task_runner_{task_runner} {}
 
-  void CancelPendingAsyncOperations() override {}
+  void CancelPendingOperations() override {}
 
   void ExpectWritePacketString(base::TimeDelta, const std::string& data) {
     write_data_ += data;
@@ -93,7 +93,7 @@ class FakeStream : public Stream {
     read_data_ += data;
   }
 
-  void ReadAsync(
+  void Read(
       void* buffer,
       size_t size_to_read,
       const base::Callback<void(size_t)>& success_callback,
@@ -101,7 +101,7 @@ class FakeStream : public Stream {
     if (read_data_.empty()) {
       task_runner_->PostDelayedTask(
           FROM_HERE,
-          base::Bind(&FakeStream::ReadAsync, base::Unretained(this), buffer,
+          base::Bind(&FakeStream::Read, base::Unretained(this), buffer,
                      size_to_read, success_callback, error_callback),
           base::TimeDelta::FromSeconds(0));
       return;
@@ -113,7 +113,7 @@ class FakeStream : public Stream {
                                   base::TimeDelta::FromSeconds(0));
   }
 
-  void WriteAllAsync(
+  void Write(
       const void* buffer,
       size_t size_to_write,
       const base::Closure& success_callback,

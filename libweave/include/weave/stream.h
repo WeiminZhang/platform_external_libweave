@@ -12,23 +12,45 @@
 
 namespace weave {
 
-class Stream {
+// Interface for async input streaming.
+class InputStream {
  public:
-  virtual ~Stream() = default;
+  virtual ~InputStream() = default;
 
-  virtual void ReadAsync(
+  // Implementation should return immediately and post either success_callback
+  // or error_callback. Caller guarantees that buffet is alive until either of
+  // callback is called.
+  virtual void Read(
       void* buffer,
       size_t size_to_read,
       const base::Callback<void(size_t)>& success_callback,
       const base::Callback<void(const Error*)>& error_callback) = 0;
+};
 
-  virtual void WriteAllAsync(
+// Interface for async input streaming.
+class OutputStream {
+ public:
+  virtual ~OutputStream() = default;
+
+  // Implementation should return immediately and post either success_callback
+  // or error_callback. Caller guarantees that buffet is alive until either of
+  // callback is called.
+  // Success callback must be called only after all data is written.
+  virtual void Write(
       const void* buffer,
       size_t size_to_write,
       const base::Closure& success_callback,
       const base::Callback<void(const Error*)>& error_callback) = 0;
+};
 
-  virtual void CancelPendingAsyncOperations() = 0;
+// Interface for async bi-directional streaming.
+class Stream : public InputStream, public OutputStream {
+ public:
+  ~Stream() override = default;
+
+  // Cancels all pending read or write requests. Canceled operations must not
+  // call any callbacks.
+  virtual void CancelPendingOperations() = 0;
 };
 
 }  // namespace weave

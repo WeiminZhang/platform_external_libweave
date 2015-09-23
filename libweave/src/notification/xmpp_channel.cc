@@ -324,7 +324,7 @@ void XmppChannel::SendMessage(const std::string& message) {
   VLOG(2) << "Sending XMPP message: " << message;
 
   write_pending_ = true;
-  stream_->WriteAllAsync(
+  stream_->Write(
       write_socket_data_.data(), write_socket_data_.size(),
       base::Bind(&XmppChannel::OnMessageSent, task_ptr_factory_.GetWeakPtr()),
       base::Bind(&XmppChannel::OnWriteError, task_ptr_factory_.GetWeakPtr()));
@@ -345,7 +345,7 @@ void XmppChannel::WaitForMessage() {
     return;
 
   read_pending_ = true;
-  stream_->ReadAsync(
+  stream_->Read(
       read_socket_data_.data(), read_socket_data_.size(),
       base::Bind(&XmppChannel::OnMessageRead, task_ptr_factory_.GetWeakPtr()),
       base::Bind(&XmppChannel::OnReadError, task_ptr_factory_.GetWeakPtr()));
@@ -399,7 +399,7 @@ void XmppChannel::Stop() {
 
 void XmppChannel::RestartXmppStream() {
   stream_parser_.Reset();
-  stream_->CancelPendingAsyncOperations();
+  stream_->CancelPendingOperations();
   read_pending_ = false;
   write_pending_ = false;
   SendMessage(BuildXmppStartStreamCommand());

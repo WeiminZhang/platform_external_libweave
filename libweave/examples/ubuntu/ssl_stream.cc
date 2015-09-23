@@ -13,14 +13,14 @@ namespace examples {
 SSLStream::SSLStream(TaskRunner* task_runner) : task_runner_{task_runner} {}
 
 SSLStream::~SSLStream() {
-  CancelPendingAsyncOperations();
+  CancelPendingOperations();
 }
 
 void SSLStream::RunDelayedTask(const base::Closure& success_callback) {
   success_callback.Run();
 }
 
-void SSLStream::ReadAsync(
+void SSLStream::Read(
     void* buffer,
     size_t size_to_read,
     const base::Callback<void(size_t)>& success_callback,
@@ -40,7 +40,7 @@ void SSLStream::ReadAsync(
   if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
     task_runner_->PostDelayedTask(
         FROM_HERE,
-        base::Bind(&SSLStream::ReadAsync, weak_ptr_factory_.GetWeakPtr(),
+        base::Bind(&SSLStream::Read, weak_ptr_factory_.GetWeakPtr(),
                    buffer, size_to_read, success_callback, error_callback),
         base::TimeDelta::FromSeconds(1));
     return;
@@ -58,7 +58,7 @@ void SSLStream::ReadAsync(
   return;
 }
 
-void SSLStream::WriteAllAsync(
+void SSLStream::Write(
     const void* buffer,
     size_t size_to_write,
     const base::Closure& success_callback,
@@ -78,7 +78,7 @@ void SSLStream::WriteAllAsync(
 
     task_runner_->PostDelayedTask(
         FROM_HERE,
-        base::Bind(&SSLStream::WriteAllAsync, weak_ptr_factory_.GetWeakPtr(),
+        base::Bind(&SSLStream::Write, weak_ptr_factory_.GetWeakPtr(),
                    buffer, size_to_write, success_callback, error_callback),
         base::TimeDelta::FromSeconds(1));
 
@@ -90,7 +90,7 @@ void SSLStream::WriteAllAsync(
   if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
     task_runner_->PostDelayedTask(
         FROM_HERE,
-        base::Bind(&SSLStream::WriteAllAsync, weak_ptr_factory_.GetWeakPtr(),
+        base::Bind(&SSLStream::Write, weak_ptr_factory_.GetWeakPtr(),
                    buffer, size_to_write, success_callback, error_callback),
         base::TimeDelta::FromSeconds(1));
     return;
@@ -108,7 +108,7 @@ void SSLStream::WriteAllAsync(
   return;
 }
 
-void SSLStream::CancelPendingAsyncOperations() {
+void SSLStream::CancelPendingOperations() {
   weak_ptr_factory_.InvalidateWeakPtrs();
 }
 
