@@ -91,6 +91,13 @@ std::map<std::string, std::string> FileConfigStore::LoadCommandDefs() {
       "updateBaseConfiguration": {},
       "identify": {},
       "updateDeviceInfo": {}
+    },
+    "_greeter": {
+      "_greet": {
+        "minimalRole": "user",
+        "parameters": { "_name": "string"},
+        "results": { "_greeting": "string" }
+      }
     }
   })"}};
 }
