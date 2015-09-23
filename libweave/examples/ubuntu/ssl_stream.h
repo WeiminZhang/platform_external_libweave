@@ -22,19 +22,19 @@ class SSLStream : public Stream {
 
   ~SSLStream() override;
 
-  void ReadAsync(
+  void Read(
       void* buffer,
       size_t size_to_read,
       const base::Callback<void(size_t)>& success_callback,
       const base::Callback<void(const Error*)>& error_callback) override;
 
-  void WriteAllAsync(
+  void Write(
       const void* buffer,
       size_t size_to_write,
       const base::Closure& success_callback,
       const base::Callback<void(const Error*)>& error_callback) override;
 
-  void CancelPendingAsyncOperations() override;
+  void CancelPendingOperations() override;
 
   bool Init(const std::string& host, uint16_t port);
 
