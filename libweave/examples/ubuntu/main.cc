@@ -5,6 +5,7 @@
 #include <base/bind.h>
 #include <base/values.h>
 #include <weave/device.h>
+#include <weave/error.h>
 
 #include "libweave/examples/ubuntu/avahi_client.h"
 #include "libweave/examples/ubuntu/bluez_client.h"
@@ -18,8 +19,10 @@ namespace {
 void ShowUsage(const std::string& name) {
   LOG(ERROR) << "\nUsage: " << name << " <option(s)>"
              << "\nOptions:\n"
-             << "\t-h,--help             Show this help message\n"
-             << "\t-b,--bootstrapping    Force WiFi bootstrapping\n";
+             << "\t-h,--help                    Show this help message\n"
+             << "\t-b,--bootstrapping           Force WiFi bootstrapping\n"
+             << "\t--disable_security           Disable privet security\n"
+             << "\t--registration_ticket=TICKET Register device with the given ticket\n";
 }
 
 class CommandHandler {
@@ -47,14 +50,28 @@ class CommandHandler {
 
 int main(int argc, char** argv) {
   bool force_bootstrapping = false;
+  bool disable_security = false;
+  std::string registration_ticket;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     if (arg == "-h" || arg == "--help") {
       ShowUsage(argv[0]);
       return 0;
-    }
-    if (arg == "-b" || arg == "--bootstrapping")
+    } else if (arg == "-b" || arg == "--bootstrapping") {
       force_bootstrapping = true;
+    } else if (arg == "--disable_security") {
+      disable_security = true;
+    } else if  (arg.find("--registration_ticket") != std::string::npos) {
+      auto pos = arg.find("=");
+      if (pos == std::string::npos) {
+        ShowUsage(argv[0]);
+        return 1;
+      }
+      registration_ticket = arg.substr(pos+1);
+    } else {
+      ShowUsage(argv[0]);
+      return 1;
+    }
   }
 
   weave::examples::FileConfigStore config_store;
@@ -69,15 +86,25 @@ int main(int argc, char** argv) {
   weave::Device::Options opts;
   opts.xmpp_enabled = true;
   opts.disable_privet = false;
-  opts.disable_security = false;
+  opts.disable_security = disable_security;
   opts.enable_ping = true;
   device->Start(
       opts, &config_store, &task_runner, &http_client, &network, &mdns,
       &http_server,
       weave::examples::NetworkImpl::HasWifiCapability() ? &network : nullptr,
       &bluetooth);
-  CommandHandler handler(device.get());
 
+  if (!registration_ticket.empty()) {
+    weave::ErrorPtr error;
+    auto device_id = device->GetCloud()->RegisterDevice(registration_ticket, &error);
+    if (error != nullptr) {
+      LOG(ERROR) << "Fail to register device: " << error->GetMessage();
+    } else {
+      LOG(INFO) << "Device registered: " << device_id;
+    }
+  }
+
+  CommandHandler handler(device.get());
   task_runner.Run();
 
   LOG(INFO) << "exit";
