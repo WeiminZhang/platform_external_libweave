@@ -12,7 +12,6 @@ PropValue::PropValue(const PropType& type) : type_{type.Clone()} {}
 
 PropValue::PropValue(const PropValue& other) : PropValue{*other.type_} {}
 
-PropValue::~PropValue() {
-}
+PropValue::~PropValue() {}
 
 }  // namespace weave

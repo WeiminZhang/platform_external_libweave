@@ -40,11 +40,9 @@ class DeviceDelegateImpl : public DeviceDelegate {
 
 }  // namespace
 
-DeviceDelegate::DeviceDelegate() {
-}
+DeviceDelegate::DeviceDelegate() {}
 
-DeviceDelegate::~DeviceDelegate() {
-}
+DeviceDelegate::~DeviceDelegate() {}
 
 // static
 std::unique_ptr<DeviceDelegate> DeviceDelegate::CreateDefault() {

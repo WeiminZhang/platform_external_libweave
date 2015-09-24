@@ -275,13 +275,10 @@ const EnumToStringMap<base::Value::Type>::Map kMap[] = {
 }  // anonymous namespace
 
 template <>
-EnumToStringMap<base::Value::Type>::EnumToStringMap()
-    : EnumToStringMap(kMap) {}
+EnumToStringMap<base::Value::Type>::EnumToStringMap() : EnumToStringMap(kMap) {}
 
-ObjectSchema::ObjectSchema() {
-}
-ObjectSchema::~ObjectSchema() {
-}
+ObjectSchema::ObjectSchema() {}
+ObjectSchema::~ObjectSchema() {}
 
 std::unique_ptr<ObjectSchema> ObjectSchema::Clone() const {
   std::unique_ptr<ObjectSchema> cloned{new ObjectSchema};

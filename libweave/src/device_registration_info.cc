@@ -99,8 +99,7 @@ void IgnoreCloudErrorWithCallback(const base::Closure& cb, const Error*) {
   cb.Run();
 }
 
-void IgnoreCloudResult(const base::DictionaryValue&) {
-}
+void IgnoreCloudResult(const base::DictionaryValue&) {}
 
 void IgnoreCloudResultWithCallback(const base::Closure& cb,
                                    const base::DictionaryValue&) {
@@ -286,8 +285,7 @@ void DeviceRegistrationInfo::ScheduleCloudConnection(
     return;  // Assume we're in test
   task_runner_->PostDelayedTask(
       FROM_HERE,
-      base::Bind(&DeviceRegistrationInfo::ConnectToCloud, AsWeakPtr()),
-      delay);
+      base::Bind(&DeviceRegistrationInfo::ConnectToCloud, AsWeakPtr()), delay);
 }
 
 bool DeviceRegistrationInfo::HaveRegistrationCredentials() const {
@@ -1263,9 +1261,9 @@ void DeviceRegistrationInfo::OnDisconnected() {
 void DeviceRegistrationInfo::OnPermanentFailure() {
   LOG(ERROR) << "Failed to establish notification channel.";
   notification_channel_starting_ = false;
-  RefreshAccessToken(base::Bind(&base::DoNothing),
-                     base::Bind(&DeviceRegistrationInfo::CheckAccessTokenError,
-                                AsWeakPtr()));
+  RefreshAccessToken(
+      base::Bind(&base::DoNothing),
+      base::Bind(&DeviceRegistrationInfo::CheckAccessTokenError, AsWeakPtr()));
 }
 
 void DeviceRegistrationInfo::OnCommandCreated(

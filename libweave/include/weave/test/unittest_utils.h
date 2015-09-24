@@ -32,8 +32,8 @@ inline bool IsEqualValue(const base::Value& val1, const base::Value& val2) {
 }  // namespace test
 }  // namespace weave
 
-#define EXPECT_JSON_EQ(expected, actual)       \
-  EXPECT_PRED2(weave::test::IsEqualValue, \
-               *weave::test::CreateValue(expected), actual)
+#define EXPECT_JSON_EQ(expected, actual)                                       \
+  EXPECT_PRED2(weave::test::IsEqualValue, *weave::test::CreateValue(expected), \
+               actual)
 
 #endif  // LIBWEAVE_INCLUDE_WEAVE_TEST_UNITTEST_UTILS_H_

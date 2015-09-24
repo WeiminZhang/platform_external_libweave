@@ -605,12 +605,11 @@ TEST(CommandSchema, ObjectPropType_ToJson) {
   EXPECT_JSON_EQ(expected, *prop3.ToJson(true, false));
 
   ObjectPropType prop4;
-  ASSERT_TRUE(
-      prop4.FromJson(CreateDictionaryValue(
-                         "{'additionalProperties':true,"
-                         "'default':{'expires':3,'password':'abracadabra'}}")
-                         .get(),
-                     &prop2, nullptr));
+  ASSERT_TRUE(prop4.FromJson(
+      CreateDictionaryValue("{'additionalProperties':true,"
+                            "'default':{'expires':3,'password':'abracadabra'}}")
+          .get(),
+      &prop2, nullptr));
   expected = R"({
     'additionalProperties': true,
     'default': {
@@ -661,12 +660,11 @@ TEST(CommandSchema, ObjectPropType_FromJson) {
   EXPECT_EQ(ValueType::Int, prop->GetType());
 
   ObjectPropType prop2;
-  ASSERT_TRUE(
-      prop2.FromJson(CreateDictionaryValue(
-                         "{'properties':{'name':'string','age':'integer'},"
-                         "'default':{'name':'Bob','age':33}}")
-                         .get(),
-                     nullptr, nullptr));
+  ASSERT_TRUE(prop2.FromJson(
+      CreateDictionaryValue("{'properties':{'name':'string','age':'integer'},"
+                            "'default':{'name':'Bob','age':33}}")
+          .get(),
+      nullptr, nullptr));
   ASSERT_NE(nullptr, prop2.GetDefaultValue());
   const ObjectValue* defval = prop2.GetDefaultValue()->GetObject();
   ASSERT_NE(nullptr, defval);
@@ -677,11 +675,12 @@ TEST(CommandSchema, ObjectPropType_FromJson) {
 
 TEST(CommandSchema, ObjectPropType_Validate) {
   ObjectPropType prop;
-  prop.FromJson(CreateDictionaryValue(
-                    "{'properties':{'expires':'integer',"
-                    "'password':{'maxLength':100,'minLength':6}},"
-                    "'required':['expires','password']}").get(),
-                nullptr, nullptr);
+  prop.FromJson(
+      CreateDictionaryValue("{'properties':{'expires':'integer',"
+                            "'password':{'maxLength':100,'minLength':6}},"
+                            "'required':['expires','password']}")
+          .get(),
+      nullptr, nullptr);
   ErrorPtr error;
   EXPECT_TRUE(ValidateValue(
       prop, *CreateValue("{'expires':10,'password':'abcdef'}"), &error));
@@ -1476,8 +1475,8 @@ TEST(CommandSchema, RequiredProperties_Integral) {
                  *prop.ToJson(true, true));
 
   IntPropType prop2;
-  EXPECT_TRUE(prop2.FromJson(CreateDictionaryValue("{}").get(), &prop,
-                             nullptr));
+  EXPECT_TRUE(
+      prop2.FromJson(CreateDictionaryValue("{}").get(), &prop, nullptr));
   EXPECT_TRUE(prop2.IsRequired());
 
   EXPECT_TRUE(prop2.FromJson(
@@ -1643,8 +1642,8 @@ TEST(CommandSchema, ObjectSchema_UseRequired) {
     },
     'required':['param1','param3']
   })";
-  ASSERT_TRUE(prop.FromJson(CreateDictionaryValue(schema_str).get(), nullptr,
-                            nullptr));
+  ASSERT_TRUE(
+      prop.FromJson(CreateDictionaryValue(schema_str).get(), nullptr, nullptr));
 
   auto val_json = R"({
     'param1':10,
@@ -1684,8 +1683,8 @@ TEST(CommandSchema, ObjectSchema_UseRequired_Failure) {
     },
     'required':['param1','param3']
   })";
-  ASSERT_TRUE(prop.FromJson(CreateDictionaryValue(schema_str).get(), nullptr,
-                            nullptr));
+  ASSERT_TRUE(
+      prop.FromJson(CreateDictionaryValue(schema_str).get(), nullptr, nullptr));
 
   auto val_json = "{'param2':20}";
   ErrorPtr error;

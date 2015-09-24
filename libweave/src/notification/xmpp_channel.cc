@@ -283,7 +283,8 @@ void XmppChannel::HandleMessageStanza(std::unique_ptr<XmlNode> stanza) {
 void XmppChannel::CreateSslSocket() {
   CHECK(!stream_);
   state_ = XmppState::kConnecting;
-  LOG(INFO) << "Starting XMPP connection to " << kDefaultXmppHost << ":" << kDefaultXmppPort;
+  LOG(INFO) << "Starting XMPP connection to " << kDefaultXmppHost << ":"
+            << kDefaultXmppPort;
 
   network_->OpenSslSocket(
       kDefaultXmppHost, kDefaultXmppPort,

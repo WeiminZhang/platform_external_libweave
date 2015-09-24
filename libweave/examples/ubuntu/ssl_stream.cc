@@ -20,11 +20,10 @@ void SSLStream::RunDelayedTask(const base::Closure& success_callback) {
   success_callback.Run();
 }
 
-void SSLStream::Read(
-    void* buffer,
-    size_t size_to_read,
-    const base::Callback<void(size_t)>& success_callback,
-    const base::Callback<void(const Error*)>& error_callback) {
+void SSLStream::Read(void* buffer,
+                     size_t size_to_read,
+                     const base::Callback<void(size_t)>& success_callback,
+                     const base::Callback<void(const Error*)>& error_callback) {
   int res = SSL_read(ssl_.get(), buffer, size_to_read);
   if (res > 0) {
     task_runner_->PostDelayedTask(
@@ -40,8 +39,8 @@ void SSLStream::Read(
   if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
     task_runner_->PostDelayedTask(
         FROM_HERE,
-        base::Bind(&SSLStream::Read, weak_ptr_factory_.GetWeakPtr(),
-                   buffer, size_to_read, success_callback, error_callback),
+        base::Bind(&SSLStream::Read, weak_ptr_factory_.GetWeakPtr(), buffer,
+                   size_to_read, success_callback, error_callback),
         base::TimeDelta::FromSeconds(1));
     return;
   }
@@ -78,8 +77,8 @@ void SSLStream::Write(
 
     task_runner_->PostDelayedTask(
         FROM_HERE,
-        base::Bind(&SSLStream::Write, weak_ptr_factory_.GetWeakPtr(),
-                   buffer, size_to_write, success_callback, error_callback),
+        base::Bind(&SSLStream::Write, weak_ptr_factory_.GetWeakPtr(), buffer,
+                   size_to_write, success_callback, error_callback),
         base::TimeDelta::FromSeconds(1));
 
     return;
@@ -90,8 +89,8 @@ void SSLStream::Write(
   if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
     task_runner_->PostDelayedTask(
         FROM_HERE,
-        base::Bind(&SSLStream::Write, weak_ptr_factory_.GetWeakPtr(),
-                   buffer, size_to_write, success_callback, error_callback),
+        base::Bind(&SSLStream::Write, weak_ptr_factory_.GetWeakPtr(), buffer,
+                   size_to_write, success_callback, error_callback),
         base::TimeDelta::FromSeconds(1));
     return;
   }

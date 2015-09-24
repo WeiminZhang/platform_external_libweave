@@ -26,8 +26,8 @@ namespace privet {
 
 namespace {
 
-const BackoffEntry::Policy register_backoff_policy =
-    { 0, 1000, 2.0, 0.2, 5000, -1, false };
+const BackoffEntry::Policy register_backoff_policy = {0,    1000, 2.0,  0.2,
+                                                      5000, -1,   false};
 
 const int kMaxDeviceRegistrationTimeMinutes = 5;
 
@@ -139,9 +139,9 @@ class CloudDelegateImpl : public CloudDelegate {
     base::Time deadline = base::Time::Now();
     deadline += base::TimeDelta::FromMinutes(kMaxDeviceRegistrationTimeMinutes);
     task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
-                              setup_weak_factory_.GetWeakPtr(), ticket_id,
-                              deadline),
+        FROM_HERE,
+        base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
+                   setup_weak_factory_.GetWeakPtr(), ticket_id, deadline),
         {});
     // Return true because we initiated setup.
     return true;
@@ -285,8 +285,8 @@ class CloudDelegateImpl : public CloudDelegate {
                                  const base::Time& deadline) {
     ErrorPtr error;
     if (base::Time::Now() > deadline) {
-      Error::AddTo(&error, FROM_HERE, errors::kDomain,
-                   errors::kInvalidState, "Failed to register device");
+      Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+                   "Failed to register device");
       setup_state_ = SetupState{std::move(error)};
       return;
     }
@@ -302,7 +302,7 @@ class CloudDelegateImpl : public CloudDelegate {
     task_runner_->PostDelayedTask(
         FROM_HERE,
         base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
-                    setup_weak_factory_.GetWeakPtr(), ticket_id, deadline),
+                   setup_weak_factory_.GetWeakPtr(), ticket_id, deadline),
         backoff_entry_.GetTimeUntilRelease());
   }
 
@@ -372,11 +372,9 @@ class CloudDelegateImpl : public CloudDelegate {
 
 }  // namespace
 
-CloudDelegate::CloudDelegate() {
-}
+CloudDelegate::CloudDelegate() {}
 
-CloudDelegate::~CloudDelegate() {
-}
+CloudDelegate::~CloudDelegate() {}
 
 // static
 std::unique_ptr<CloudDelegate> CloudDelegate::CreateDefault(

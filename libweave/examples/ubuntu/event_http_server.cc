@@ -35,11 +35,10 @@ class MemoryReadStream : public Stream {
   MemoryReadStream(const std::vector<uint8_t>& data, TaskRunner* task_runner)
       : data_{data}, task_runner_{task_runner} {}
 
-  void Read(
-      void* buffer,
-      size_t size_to_read,
-      const base::Callback<void(size_t)>& success_callback,
-      const base::Callback<void(const Error*)>& error_callback) override {
+  void Read(void* buffer,
+            size_t size_to_read,
+            const base::Callback<void(size_t)>& success_callback,
+            const base::Callback<void(const Error*)>& error_callback) override {
     CHECK_LE(read_position_, data_.size());
     size_t size_read = std::min(size_to_read, data_.size() - read_position_);
     if (size_read > 0)

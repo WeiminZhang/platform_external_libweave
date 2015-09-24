@@ -141,11 +141,9 @@ bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
         }
       }
 
-      std::unique_ptr<CommandDefinition> command_def{
-          new CommandDefinition{category,
-                                std::move(parameters_schema),
-                                std::move(progress_schema),
-                                std::move(results_schema)}};
+      std::unique_ptr<CommandDefinition> command_def{new CommandDefinition{
+          category, std::move(parameters_schema), std::move(progress_schema),
+          std::move(results_schema)}};
       command_def->SetVisibility(visibility);
       command_def->SetMinimalRole(minimal_role);
       new_defs.emplace(full_command_name, std::move(command_def));

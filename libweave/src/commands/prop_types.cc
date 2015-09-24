@@ -19,11 +19,9 @@
 namespace weave {
 
 // PropType -------------------------------------------------------------------
-PropType::PropType() {
-}
+PropType::PropType() {}
 
-PropType::~PropType() {
-}
+PropType::~PropType() {}
 
 std::string PropType::GetTypeAsString() const {
   return GetTypeStringFromType(GetType());
@@ -138,10 +136,8 @@ bool PropType::FromJson(const base::DictionaryValue* value,
   // "default") to the list of "processed" keys so we do not complain about them
   // when we check for unknown/unexpected keys below.
   std::set<std::string> processed_keys{
-      commands::attributes::kType,
-      commands::attributes::kDisplayName,
-      commands::attributes::kDefault,
-      commands::attributes::kIsRequired,
+      commands::attributes::kType, commands::attributes::kDisplayName,
+      commands::attributes::kDefault, commands::attributes::kIsRequired,
   };
   if (!ObjectSchemaFromJson(value, base_schema, &processed_keys, error))
     return false;
@@ -241,12 +237,9 @@ bool PropType::ValidateConstraints(const PropValue& value,
 
 const PropType::TypeMap& PropType::GetTypeMap() {
   static TypeMap map = {
-      {ValueType::Int, "integer"},
-      {ValueType::Double, "number"},
-      {ValueType::String, "string"},
-      {ValueType::Boolean, "boolean"},
-      {ValueType::Object, "object"},
-      {ValueType::Array, "array"},
+      {ValueType::Int, "integer"},   {ValueType::Double, "number"},
+      {ValueType::String, "string"}, {ValueType::Boolean, "boolean"},
+      {ValueType::Object, "object"}, {ValueType::Array, "array"},
   };
   return map;
 }
@@ -452,8 +445,7 @@ int StringPropType::GetMaxLength() const {
 // ObjectPropType -------------------------------------------------------------
 
 ObjectPropType::ObjectPropType()
-    : object_schema_{ObjectSchema::Create(), false} {
-}
+    : object_schema_{ObjectSchema::Create(), false} {}
 
 bool ObjectPropType::HasOverriddenAttributes() const {
   return PropType::HasOverriddenAttributes() || !object_schema_.is_inherited;
@@ -582,8 +574,7 @@ void ObjectPropType::SetObjectSchema(
 
 // ArrayPropType -------------------------------------------------------------
 
-ArrayPropType::ArrayPropType() {
-}
+ArrayPropType::ArrayPropType() {}
 
 bool ArrayPropType::HasOverriddenAttributes() const {
   return PropType::HasOverriddenAttributes() || !item_type_.is_inherited;

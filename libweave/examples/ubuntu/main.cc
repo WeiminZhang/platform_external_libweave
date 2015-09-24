@@ -22,14 +22,15 @@ void ShowUsage(const std::string& name) {
              << "\t-h,--help                    Show this help message\n"
              << "\t-b,--bootstrapping           Force WiFi bootstrapping\n"
              << "\t--disable_security           Disable privet security\n"
-             << "\t--registration_ticket=TICKET Register device with the given ticket\n";
+             << "\t--registration_ticket=TICKET Register device with the given "
+                "ticket\n";
 }
 
 class CommandHandler {
  public:
   explicit CommandHandler(weave::Device* device) {
-    device->GetCommands()->AddOnCommandAddedCallback(
-        base::Bind(&CommandHandler::OnNewCommand, weak_ptr_factory_.GetWeakPtr()));
+    device->GetCommands()->AddOnCommandAddedCallback(base::Bind(
+        &CommandHandler::OnNewCommand, weak_ptr_factory_.GetWeakPtr()));
   }
 
  private:
@@ -39,9 +40,8 @@ class CommandHandler {
       std::string name;
       cmd->GetParameters()->GetString("_name", &name);
       if (name.empty()) {
-        name = cmd->GetOrigin() == weave::CommandOrigin::kCloud
-            ? "cloud user"
-            : "local user";
+        name = cmd->GetOrigin() == weave::CommandOrigin::kCloud ? "cloud user"
+                                                                : "local user";
       }
       LOG(INFO) << "vendor _greeter._greet command: in progress";
       cmd->SetProgress(base::DictionaryValue{}, nullptr);
@@ -58,7 +58,6 @@ class CommandHandler {
 };
 }
 
-
 int main(int argc, char** argv) {
   bool force_bootstrapping = false;
   bool disable_security = false;
@@ -72,13 +71,13 @@ int main(int argc, char** argv) {
       force_bootstrapping = true;
     } else if (arg == "--disable_security") {
       disable_security = true;
-    } else if  (arg.find("--registration_ticket") != std::string::npos) {
+    } else if (arg.find("--registration_ticket") != std::string::npos) {
       auto pos = arg.find("=");
       if (pos == std::string::npos) {
         ShowUsage(argv[0]);
         return 1;
       }
-      registration_ticket = arg.substr(pos+1);
+      registration_ticket = arg.substr(pos + 1);
     } else {
       ShowUsage(argv[0]);
       return 1;
@@ -107,7 +106,8 @@ int main(int argc, char** argv) {
 
   if (!registration_ticket.empty()) {
     weave::ErrorPtr error;
-    auto device_id = device->GetCloud()->RegisterDevice(registration_ticket, &error);
+    auto device_id =
+        device->GetCloud()->RegisterDevice(registration_ticket, &error);
     if (error != nullptr) {
       LOG(ERROR) << "Fail to register device: " << error->GetMessage();
     } else {
