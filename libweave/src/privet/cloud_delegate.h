@@ -74,7 +74,7 @@ class CloudDelegate {
   virtual std::string GetModelName() const = 0;
 
   // Returns the list of services supported by device.
-  // E.g. printer, scanner etc. Should match services published on mDNS.
+  // E.g. printer, scanner etc. Should match services published on DNS-SD.
   virtual std::set<std::string> GetServices() const = 0;
 
   // Returns max scope available for anonymous user.

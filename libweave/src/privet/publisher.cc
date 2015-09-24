@@ -6,8 +6,8 @@
 
 #include <map>
 
+#include <weave/dns_service_discovery_provider.h>
 #include <weave/error.h>
-#include <weave/mdns.h>
 
 #include "libweave/src/privet/cloud_delegate.h"
 #include "libweave/src/privet/device_delegate.h"
@@ -20,7 +20,7 @@ namespace privet {
 
 namespace {
 
-// The service type we'll expose via mdns.
+// The service type we'll expose via DNS-SD.
 const char kPrivetServiceType[] = "_privet._tcp";
 
 }  // namespace
@@ -28,11 +28,11 @@ const char kPrivetServiceType[] = "_privet._tcp";
 Publisher::Publisher(const DeviceDelegate* device,
                      const CloudDelegate* cloud,
                      const WifiDelegate* wifi,
-                     Mdns* mdns)
-    : mdns_{mdns}, device_{device}, cloud_{cloud}, wifi_{wifi} {
+                     DnsServiceDiscoveryProvider* dns_sd)
+    : dns_sd_{dns_sd}, device_{device}, cloud_{cloud}, wifi_{wifi} {
   CHECK(device_);
   CHECK(cloud_);
-  CHECK(mdns_);
+  CHECK(dns_sd_);
 }
 
 Publisher::~Publisher() {
@@ -40,7 +40,7 @@ Publisher::~Publisher() {
 }
 
 std::string Publisher::GetId() const {
-  return mdns_->GetId();
+  return dns_sd_->GetId();
 }
 
 void Publisher::Update() {
@@ -79,7 +79,7 @@ void Publisher::ExposeService() {
     txt_record.emplace_back("note=" + cloud_->GetDescription());
 
   is_publishing_ = true;
-  mdns_->PublishService(kPrivetServiceType, port, txt_record);
+  dns_sd_->PublishService(kPrivetServiceType, port, txt_record);
 }
 
 void Publisher::RemoveService() {
@@ -87,7 +87,7 @@ void Publisher::RemoveService() {
     return;
   is_publishing_ = false;
   VLOG(1) << "Stopping service publishing.";
-  mdns_->StopPublishing(kPrivetServiceType);
+  dns_sd_->StopPublishing(kPrivetServiceType);
 }
 
 }  // namespace privet

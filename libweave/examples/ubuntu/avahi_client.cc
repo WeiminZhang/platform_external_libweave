@@ -23,7 +23,7 @@ void GroupCallback(AvahiEntryGroup* g,
 
 }  // namespace
 
-MdnsImpl::MdnsImpl() {
+AvahiClient::AvahiClient() {
   CHECK_EQ(0, std::system("service avahi-daemon status | grep running || "
                           "service avahi-daemon start"));
   thread_pool_.reset(avahi_threaded_poll_new());
@@ -41,14 +41,14 @@ MdnsImpl::MdnsImpl() {
                 << ". Check avahi-daemon configuration";
 }
 
-MdnsImpl::~MdnsImpl() {
+AvahiClient::~AvahiClient() {
   if (thread_pool_)
     avahi_threaded_poll_stop(thread_pool_.get());
 }
 
-void MdnsImpl::PublishService(const std::string& service_type,
-                              uint16_t port,
-                              const std::vector<std::string>& txt) {
+void AvahiClient::PublishService(const std::string& service_type,
+                                 uint16_t port,
+                                 const std::vector<std::string>& txt) {
   LOG(INFO) << "Publishing service";
   CHECK(group_);
 
@@ -86,12 +86,12 @@ void MdnsImpl::PublishService(const std::string& service_type,
   }
 }
 
-void MdnsImpl::StopPublishing(const std::string& service_name) {
+void AvahiClient::StopPublishing(const std::string& service_name) {
   CHECK(group_);
   avahi_entry_group_reset(group_.get());
 }
 
-std::string MdnsImpl::GetId() const {
+std::string AvahiClient::GetId() const {
   return "WEAVE" + std::to_string(gethostid());
 }
 

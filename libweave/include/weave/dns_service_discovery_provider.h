@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_MDNS_H_
-#define LIBWEAVE_INCLUDE_WEAVE_MDNS_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_DNS_SERVICE_DISCOVERY_PROVIDER_H_
+#define LIBWEAVE_INCLUDE_WEAVE_DNS_SERVICE_DISCOVERY_PROVIDER_H_
 
 #include <string>
 #include <vector>
@@ -12,9 +12,9 @@
 
 namespace weave {
 
-class Mdns {
+class DnsServiceDiscoveryProvider {
  public:
-  // Publishes new service on mDns or updates existing one.
+  // Publishes new service using DNS-SD or updates existing one.
   virtual void PublishService(const std::string& service_type,
                               uint16_t port,
                               const std::vector<std::string>& txt) = 0;
@@ -27,9 +27,9 @@ class Mdns {
   virtual std::string GetId() const = 0;
 
  protected:
-  virtual ~Mdns() = default;
+  virtual ~DnsServiceDiscoveryProvider() = default;
 };
 
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_MDNS_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_DNS_SERVICE_DISCOVERY_PROVIDER_H_

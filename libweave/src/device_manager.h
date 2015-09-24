@@ -31,7 +31,7 @@ class DeviceManager final : public Device {
              TaskRunner* task_runner,
              HttpClient* http_client,
              NetworkProvider* network,
-             Mdns* mdns,
+             DnsServiceDiscoveryProvider* dns_sd,
              HttpServer* http_server,
              WifiProvider* wifi,
              Bluetooth* bluetooth) override;
@@ -47,7 +47,7 @@ class DeviceManager final : public Device {
   void StartPrivet(const Options& options,
                    TaskRunner* task_runner,
                    NetworkProvider* network,
-                   Mdns* mdns,
+                   DnsServiceDiscoveryProvider* dns_sd,
                    HttpServer* http_server,
                    WifiProvider* wifi,
                    Bluetooth* bluetooth);

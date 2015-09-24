@@ -8,9 +8,9 @@
 #include <gtest/gtest.h>
 #include <weave/test/mock_bluetooth.h>
 #include <weave/test/mock_config_store.h>
+#include <weave/test/mock_dns_service_discovery_provider.h>
 #include <weave/test/mock_http_client.h>
 #include <weave/test/mock_http_server.h>
-#include <weave/test/mock_mdns.h>
 #include <weave/test/mock_network_provider.h>
 #include <weave/test/mock_task_runner.h>
 #include <weave/test/mock_wifi_provider.h>
@@ -231,18 +231,13 @@ class WeaveTest : public ::testing::Test {
         .WillRepeatedly(Return(NetworkState::kOffline));
   }
 
-  void IgnoreMdns() {
-    EXPECT_CALL(mdns_, GetId()).WillRepeatedly(Return("TEST_ID"));
-    EXPECT_CALL(mdns_, PublishService(_, _, _)).WillRepeatedly(Return());
-    EXPECT_CALL(mdns_, StopPublishing("_privet._tcp")).WillOnce(Return());
+  void InitDnsSd() {
+    EXPECT_CALL(dns_sd_, GetId()).WillRepeatedly(Return("TEST_ID"));
+    EXPECT_CALL(dns_sd_, PublishService(_, _, _)).WillRepeatedly(Return());
+    EXPECT_CALL(dns_sd_, StopPublishing("_privet._tcp")).WillOnce(Return());
   }
 
-  void InitMdns() {
-    EXPECT_CALL(mdns_, GetId()).WillRepeatedly(Return("TEST_ID"));
-    EXPECT_CALL(mdns_, StopPublishing("_privet._tcp")).WillOnce(Return());
-  }
-
-  void InitMdnsPublishing(bool registered, const std::string& flags) {
+  void InitDnsSdPublishing(bool registered, const std::string& flags) {
     std::vector<std::string> txt{{"id=TEST_ID"}, {"flags=" + flags},
                                  {"mmid=ABCDE"}, {"services=_base"},
                                  {"txtvers=3"},  {"ty=DEVICE_NAME"}};
@@ -252,14 +247,14 @@ class WeaveTest : public ::testing::Test {
       // During registration device may announce itself twice:
       // 1. with GCD ID but not connected (DB)
       // 2. with GCD ID and connected (BB)
-      EXPECT_CALL(mdns_, PublishService("_privet._tcp", 11, MatchTxt(txt)))
+      EXPECT_CALL(dns_sd_, PublishService("_privet._tcp", 11, MatchTxt(txt)))
           .Times(AtMost(1))
           .WillOnce(Return());
 
       txt[1] = "flags=BB";
     }
 
-    EXPECT_CALL(mdns_, PublishService("_privet._tcp", 11, MatchTxt(txt)))
+    EXPECT_CALL(dns_sd_, PublishService("_privet._tcp", 11, MatchTxt(txt)))
         .WillOnce(Return());
   }
 
@@ -286,7 +281,7 @@ class WeaveTest : public ::testing::Test {
     EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
         .WillOnce(Return());
     InitHttpServer();
-    InitMdns();
+    InitDnsSd();
   }
 
   void StartDevice() {
@@ -294,7 +289,7 @@ class WeaveTest : public ::testing::Test {
     options.xmpp_enabled = false;
 
     device_->Start(options, &config_store_, &task_runner_, &http_client_,
-                   &network_, &mdns_, &http_server_, &wifi_, &bluetooth_);
+                   &network_, &dns_sd_, &http_server_, &wifi_, &bluetooth_);
 
     cloud_ = device_->GetCloud();
     ASSERT_TRUE(cloud_);
@@ -326,7 +321,7 @@ class WeaveTest : public ::testing::Test {
   StrictMock<test::MockTaskRunner> task_runner_;
   StrictMock<test::MockHttpClient> http_client_;
   StrictMock<test::MockNetworkProvider> network_;
-  StrictMock<test::MockMdns> mdns_;
+  StrictMock<test::MockDnsServiceDiscovery> dns_sd_;
   StrictMock<test::MockHttpServer> http_server_;
   StrictMock<test::MockWifiProvider> wifi_;
   StrictMock<test::MockBluetooth> bluetooth_;
@@ -357,12 +352,12 @@ TEST_F(WeaveTest, StartNoWifi) {
   InitConfigStore();
   InitNetwork();
   InitHttpServer();
-  InitMdns();
-  InitMdnsPublishing(false, "CB");
+  InitDnsSd();
+  InitDnsSdPublishing(false, "CB");
 
   weave::Device::Options options;
   device_->Start(options, &config_store_, &task_runner_, &http_client_,
-                 &network_, &mdns_, &http_server_, nullptr, &bluetooth_);
+                 &network_, &dns_sd_, &http_server_, nullptr, &bluetooth_);
 
   for (const auto& cb : http_server_changed_cb_)
     cb.Run(http_server_);
@@ -376,7 +371,7 @@ class WeaveBasicTest : public WeaveTest {
     WeaveTest::SetUp();
 
     InitDefaultExpectations();
-    InitMdnsPublishing(false, "DB");
+    InitDnsSdPublishing(false, "DB");
   }
 };
 
@@ -407,7 +402,7 @@ TEST_F(WeaveBasicTest, Register) {
   ExpectRequest("POST", "https://accounts.google.com/o/oauth2/token",
                 kAuthTokenResponse);
 
-  InitMdnsPublishing(true, "DB");
+  InitDnsSdPublishing(true, "DB");
 
   EXPECT_EQ("DEVICE_ID", cloud_->RegisterDevice("TEST_ID", nullptr));
 }
@@ -420,7 +415,7 @@ class WeaveWiFiSetupTest : public WeaveTest {
     InitConfigStore();
     InitHttpServer();
     InitNetwork();
-    IgnoreMdns();
+    InitDnsSd();
 
     EXPECT_CALL(network_, GetConnectionState())
         .WillRepeatedly(Return(NetworkState::kConnected));
