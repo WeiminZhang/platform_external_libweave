@@ -13,7 +13,7 @@
 #include <weave/test/mock_mdns.h>
 #include <weave/test/mock_network.h>
 #include <weave/test/mock_task_runner.h>
-#include <weave/test/mock_wifi.h>
+#include <weave/test/mock_wifi_provider.h>
 #include <weave/test/unittest_utils.h>
 
 #include "libweave/src/bind_lambda.h"
@@ -283,7 +283,7 @@ class WeaveTest : public ::testing::Test {
   void InitDefaultExpectations() {
     InitConfigStore();
     InitNetwork();
-    EXPECT_CALL(wifi_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+    EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
         .WillOnce(Return());
     InitHttpServer();
     InitMdns();
@@ -328,7 +328,7 @@ class WeaveTest : public ::testing::Test {
   StrictMock<test::MockNetwork> network_;
   StrictMock<test::MockMdns> mdns_;
   StrictMock<test::MockHttpServer> http_server_;
-  StrictMock<test::MockWifi> wifi_;
+  StrictMock<test::MockWifiProvider> wifi_;
   StrictMock<test::MockBluetooth> bluetooth_;
 
   std::vector<Network::OnConnectionChangedCallback> network_callbacks_;
@@ -439,7 +439,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
   // Long disconnect.
   NotifyNetworkChanged(NetworkState::kOffline, {});
   auto offline_from = task_runner_.GetClock()->Now();
-  EXPECT_CALL(wifi_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+  EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
       .WillOnce(InvokeWithoutArgs([this, offline_from]() {
         EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                   base::TimeDelta::FromMinutes(1));
@@ -461,7 +461,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
   for (int i = 0; i < 5; ++i) {
     auto offline_from = task_runner_.GetClock()->Now();
     // Temporarily offline mode.
-    EXPECT_CALL(wifi_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+    EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
         .WillOnce(InvokeWithoutArgs([this, &offline_from]() {
           EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                     base::TimeDelta::FromMinutes(1));
@@ -471,7 +471,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
 
     // Try to reconnect again.
     offline_from = task_runner_.GetClock()->Now();
-    EXPECT_CALL(wifi_, DisableAccessPoint())
+    EXPECT_CALL(wifi_, StopAccessPoint())
         .WillOnce(InvokeWithoutArgs([this, offline_from]() {
           EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                     base::TimeDelta::FromMinutes(5));
@@ -491,7 +491,7 @@ TEST_F(WeaveWiFiSetupTest, StartOfflineWithSsid) {
       .WillRepeatedly(Return(NetworkState::kOffline));
 
   auto offline_from = task_runner_.GetClock()->Now();
-  EXPECT_CALL(wifi_, EnableAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+  EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
       .WillOnce(InvokeWithoutArgs([this, &offline_from]() {
         EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                   base::TimeDelta::FromMinutes(1));

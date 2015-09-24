@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include <base/callback.h>
 #include <base/macros.h>
 #include <base/location.h>
 #include <base/compiler_specific.h>
@@ -124,6 +125,9 @@ class LIBWEAVE_EXPORT Error final {
  private:
   DISALLOW_COPY_AND_ASSIGN(Error);
 };
+
+using SuccessCallback = base::Closure;
+using ErrorCallback = base::Callback<void(const Error*)>;
 
 }  // namespace weave
 

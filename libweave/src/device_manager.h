@@ -33,7 +33,7 @@ class DeviceManager final : public Device {
              Network* network,
              Mdns* mdns,
              HttpServer* http_server,
-             Wifi* wifi,
+             WifiProvider* wifi,
              Bluetooth* bluetooth) override;
 
   Commands* GetCommands() override;
@@ -49,7 +49,7 @@ class DeviceManager final : public Device {
                    Network* network,
                    Mdns* mdns,
                    HttpServer* http_server,
-                   Wifi* wifi,
+                   WifiProvider* wifi,
                    Bluetooth* bluetooth);
 
   void OnWiFiBootstrapStateChanged(weave::WifiSetupState state);

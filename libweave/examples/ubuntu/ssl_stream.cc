@@ -22,8 +22,8 @@ void SSLStream::RunDelayedTask(const base::Closure& success_callback) {
 
 void SSLStream::Read(void* buffer,
                      size_t size_to_read,
-                     const base::Callback<void(size_t)>& success_callback,
-                     const base::Callback<void(const Error*)>& error_callback) {
+                     const ReadSuccessCallback& success_callback,
+                     const ErrorCallback& error_callback) {
   int res = SSL_read(ssl_.get(), buffer, size_to_read);
   if (res > 0) {
     task_runner_->PostDelayedTask(
@@ -57,11 +57,10 @@ void SSLStream::Read(void* buffer,
   return;
 }
 
-void SSLStream::Write(
-    const void* buffer,
-    size_t size_to_write,
-    const base::Closure& success_callback,
-    const base::Callback<void(const Error*)>& error_callback) {
+void SSLStream::Write(const void* buffer,
+                      size_t size_to_write,
+                      const SuccessCallback& success_callback,
+                      const ErrorCallback& error_callback) {
   int res = SSL_write(ssl_.get(), buffer, size_to_write);
   if (res > 0) {
     buffer = static_cast<const char*>(buffer) + res;

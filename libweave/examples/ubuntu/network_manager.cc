@@ -43,11 +43,11 @@ NetworkImpl::NetworkImpl(TaskRunner* task_runner, bool force_bootstrapping)
   SSL_load_error_strings();
   SSL_library_init();
 
-  DisableAccessPoint();
+  StopAccessPoint();
   UpdateNetworkState();
 }
 NetworkImpl::~NetworkImpl() {
-  DisableAccessPoint();
+  StopAccessPoint();
 }
 
 void NetworkImpl::AddOnConnectionChangedCallback(
@@ -105,11 +105,10 @@ void NetworkImpl::TryToConnect(
       base::TimeDelta::FromSeconds(1));
 }
 
-void NetworkImpl::ConnectToService(
-    const std::string& ssid,
-    const std::string& passphrase,
-    const base::Closure& success_callback,
-    const base::Callback<void(const Error*)>& error_callback) {
+void NetworkImpl::Connect(const std::string& ssid,
+                          const std::string& passphrase,
+                          const SuccessCallback& success_callback,
+                          const ErrorCallback& error_callback) {
   force_bootstrapping_ = false;
   CHECK(!hostapd_started_);
   if (hostapd_started_) {
@@ -151,7 +150,7 @@ NetworkState NetworkImpl::GetConnectionState() const {
   return network_state_;
 }
 
-void NetworkImpl::EnableAccessPoint(const std::string& ssid) {
+void NetworkImpl::StartAccessPoint(const std::string& ssid) {
   if (hostapd_started_)
     return;
 
@@ -193,7 +192,7 @@ void NetworkImpl::EnableAccessPoint(const std::string& ssid) {
   CHECK_EQ(0, std::system(("dnsmasq --conf-file=" + dnsmasq_conf).c_str()));
 }
 
-void NetworkImpl::DisableAccessPoint() {
+void NetworkImpl::StopAccessPoint() {
   int res = std::system("pkill -f dnsmasq.*/tmp/weave");
   res = std::system("pkill -f hostapd.*/tmp/weave");
   CHECK_EQ(0, std::system("nmcli nm wifi on"));

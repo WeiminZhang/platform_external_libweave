@@ -24,20 +24,20 @@ class SSLStream : public Stream {
 
   void Read(void* buffer,
             size_t size_to_read,
-            const base::Callback<void(size_t)>& success_callback,
-            const base::Callback<void(const Error*)>& error_callback) override;
+            const ReadSuccessCallback& success_callback,
+            const ErrorCallback& error_callback) override;
 
   void Write(const void* buffer,
              size_t size_to_write,
-             const base::Closure& success_callback,
-             const base::Callback<void(const Error*)>& error_callback) override;
+             const SuccessCallback& success_callback,
+             const ErrorCallback& error_callback) override;
 
   void CancelPendingOperations() override;
 
   bool Init(const std::string& host, uint16_t port);
 
  private:
-  void RunDelayedTask(const base::Closure& success_callback);
+  void RunDelayedTask(const base::Closure& task);
 
   TaskRunner* task_runner_{nullptr};
   std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)> ctx_{nullptr, SSL_CTX_free};
