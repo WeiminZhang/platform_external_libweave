@@ -127,7 +127,7 @@ class LIBWEAVE_EXPORT Error final {
 };
 
 using SuccessCallback = base::Closure;
-using ErrorCallback = base::Callback<void(const Error*)>;
+using ErrorCallback = base::Callback<void(const Error* error)>;
 
 }  // namespace weave
 
