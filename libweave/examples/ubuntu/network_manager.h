@@ -11,7 +11,7 @@
 #include <base/memory/weak_ptr.h>
 #include <base/time/time.h>
 #include <weave/network.h>
-#include <weave/wifi.h>
+#include <weave/wifi_provider.h>
 
 namespace weave {
 
@@ -21,7 +21,7 @@ namespace examples {
 
 // Basic weave::Network implementation.
 // Production version of SSL socket needs secure server certificate check.
-class NetworkImpl : public Network, public Wifi {
+class NetworkImpl : public Network, public WifiProvider {
  public:
   explicit NetworkImpl(TaskRunner* task_runner, bool force_bootstrapping);
   ~NetworkImpl();
@@ -37,13 +37,12 @@ class NetworkImpl : public Network, public Wifi {
       const base::Callback<void(const Error*)>& error_callback) override;
 
   // Wifi implementation
-  void ConnectToService(
-      const std::string& ssid,
-      const std::string& passphrase,
-      const base::Closure& success_callback,
-      const base::Callback<void(const Error*)>& error_callback) override;
-  void EnableAccessPoint(const std::string& ssid) override;
-  void DisableAccessPoint() override;
+  void Connect(const std::string& ssid,
+               const std::string& passphrase,
+               const SuccessCallback& success_callback,
+               const ErrorCallback& error_callback) override;
+  void StartAccessPoint(const std::string& ssid) override;
+  void StopAccessPoint() override;
 
   static bool HasWifiCapability();
 

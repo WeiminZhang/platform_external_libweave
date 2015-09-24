@@ -37,8 +37,8 @@ class MemoryReadStream : public Stream {
 
   void Read(void* buffer,
             size_t size_to_read,
-            const base::Callback<void(size_t)>& success_callback,
-            const base::Callback<void(const Error*)>& error_callback) override {
+            const ReadSuccessCallback& success_callback,
+            const ErrorCallback& error_callback) override {
     CHECK_LE(read_position_, data_.size());
     size_t size_read = std::min(size_to_read, data_.size() - read_position_);
     if (size_read > 0)
@@ -47,11 +47,10 @@ class MemoryReadStream : public Stream {
     success_callback.Run(size_read);
   }
 
-  void Write(
-      const void* buffer,
-      size_t size_to_write,
-      const base::Closure& success_callback,
-      const base::Callback<void(const Error*)>& error_callback) override {
+  void Write(const void* buffer,
+             size_t size_to_write,
+             const SuccessCallback& success_callback,
+             const ErrorCallback& error_callback) override {
     LOG(FATAL) << "Unsupported";
   }
 

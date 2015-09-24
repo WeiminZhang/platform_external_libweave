@@ -9,7 +9,7 @@
 #include <weave/enum_to_string.h>
 #include <weave/network.h>
 #include <weave/task_runner.h>
-#include <weave/wifi.h>
+#include <weave/wifi_provider.h>
 
 #include "libweave/src/bind_lambda.h"
 #include "libweave/src/privet/constants.h"
@@ -23,7 +23,7 @@ WifiBootstrapManager::WifiBootstrapManager(
     bool ble_setup_enabled,
     TaskRunner* task_runner,
     Network* network,
-    Wifi* wifi,
+    WifiProvider* wifi,
     CloudDelegate* gcd)
     : task_runner_{task_runner},
       network_{network},
@@ -80,13 +80,13 @@ void WifiBootstrapManager::StartBootstrapping() {
   // TODO(vitalybuka): Add SSID probing.
   privet_ssid_ = GenerateSsid();
   CHECK(!privet_ssid_.empty());
-  wifi_->EnableAccessPoint(privet_ssid_);
+  wifi_->StartAccessPoint(privet_ssid_);
   LOG_IF(INFO, ble_setup_enabled_) << "BLE Bootstrap start: not implemented.";
 }
 
 void WifiBootstrapManager::EndBootstrapping() {
   LOG_IF(INFO, ble_setup_enabled_) << "BLE Bootstrap stop: not implemented.";
-  wifi_->DisableAccessPoint();
+  wifi_->StopAccessPoint();
   privet_ssid_.clear();
 }
 
@@ -99,11 +99,11 @@ void WifiBootstrapManager::StartConnecting(const std::string& ssid,
       FROM_HERE, base::Bind(&WifiBootstrapManager::OnConnectError,
                             tasks_weak_factory_.GetWeakPtr(), nullptr),
       base::TimeDelta::FromMinutes(3));
-  wifi_->ConnectToService(ssid, passphrase,
-                          base::Bind(&WifiBootstrapManager::OnConnectSuccess,
-                                     tasks_weak_factory_.GetWeakPtr(), ssid),
-                          base::Bind(&WifiBootstrapManager::OnConnectError,
-                                     tasks_weak_factory_.GetWeakPtr()));
+  wifi_->Connect(ssid, passphrase,
+                 base::Bind(&WifiBootstrapManager::OnConnectSuccess,
+                            tasks_weak_factory_.GetWeakPtr(), ssid),
+                 base::Bind(&WifiBootstrapManager::OnConnectError,
+                            tasks_weak_factory_.GetWeakPtr()));
 }
 
 void WifiBootstrapManager::OnConnectError(const Error* error) {

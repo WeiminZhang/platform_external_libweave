@@ -24,7 +24,7 @@ namespace weave {
 
 class Network;
 class TaskRunner;
-class Wifi;
+class WifiProvider;
 
 namespace privet {
 
@@ -42,7 +42,7 @@ class WifiBootstrapManager : public WifiDelegate {
                        bool wifi_setup_enabled,
                        TaskRunner* task_runner,
                        Network* shill_client,
-                       Wifi* wifi,
+                       WifiProvider* wifi,
                        CloudDelegate* gcd);
   ~WifiBootstrapManager() override = default;
   virtual void Init();
@@ -98,7 +98,7 @@ class WifiBootstrapManager : public WifiDelegate {
   ConnectionState connection_state_{ConnectionState::kDisabled};
   TaskRunner* task_runner_{nullptr};
   Network* network_{nullptr};
-  Wifi* wifi_{nullptr};
+  WifiProvider* wifi_{nullptr};
   WifiSsidGenerator ssid_generator_;
   base::Time monitor_until_;
 

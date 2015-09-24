@@ -36,7 +36,7 @@ void DeviceManager::Start(const Options& options,
                           Network* network,
                           Mdns* mdns,
                           HttpServer* http_server,
-                          Wifi* wifi,
+                          WifiProvider* wifi,
                           Bluetooth* bluetooth) {
   command_manager_ = std::make_shared<CommandManager>();
   command_manager_->Startup(config_store);
@@ -91,7 +91,7 @@ void DeviceManager::StartPrivet(const Options& options,
                                 Network* network,
                                 Mdns* mdns,
                                 HttpServer* http_server,
-                                Wifi* wifi,
+                                WifiProvider* wifi,
                                 Bluetooth* bluetooth) {
   privet_.reset(new privet::Manager{});
   privet_->Start(options, task_runner, network, mdns, http_server, wifi,

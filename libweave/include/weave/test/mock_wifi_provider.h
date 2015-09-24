@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_WIFI_H_
-#define LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_WIFI_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_WIFI_PROVIDER_H_
+#define LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_WIFI_PROVIDER_H_
 
 #include <weave/network.h>
 
@@ -14,21 +14,21 @@
 namespace weave {
 namespace test {
 
-class MockWifi : public Wifi {
+class MockWifiProvider : public WifiProvider {
  public:
-  MockWifi() {}
-  ~MockWifi() override = default;
+  MockWifiProvider() {}
+  ~MockWifiProvider() override = default;
 
-  MOCK_METHOD4(ConnectToService,
+  MOCK_METHOD4(Connect,
                void(const std::string&,
                     const std::string&,
                     const base::Closure&,
                     const base::Callback<void(const Error*)>&));
-  MOCK_METHOD1(EnableAccessPoint, void(const std::string&));
-  MOCK_METHOD0(DisableAccessPoint, void());
+  MOCK_METHOD1(StartAccessPoint, void(const std::string&));
+  MOCK_METHOD0(StopAccessPoint, void());
 };
 
 }  // namespace test
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_WIFI_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_WIFI_PROVIDER_H_

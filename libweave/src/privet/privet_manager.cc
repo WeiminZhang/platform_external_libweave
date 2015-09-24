@@ -38,7 +38,7 @@ void Manager::Start(const Device::Options& options,
                     Network* network,
                     Mdns* mdns,
                     HttpServer* http_server,
-                    Wifi* wifi,
+                    WifiProvider* wifi,
                     DeviceRegistrationInfo* device,
                     CommandManager* command_manager,
                     StateManager* state_manager) {
