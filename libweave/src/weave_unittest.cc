@@ -11,7 +11,7 @@
 #include <weave/test/mock_http_client.h>
 #include <weave/test/mock_http_server.h>
 #include <weave/test/mock_mdns.h>
-#include <weave/test/mock_network.h>
+#include <weave/test/mock_network_provider.h>
 #include <weave/test/mock_task_runner.h>
 #include <weave/test/mock_wifi_provider.h>
 #include <weave/test/unittest_utils.h>
@@ -222,9 +222,9 @@ class WeaveTest : public ::testing::Test {
   }
 
   void InitNetwork() {
-    EXPECT_CALL(network_, AddOnConnectionChangedCallback(_))
-        .WillRepeatedly(
-            Invoke([this](const Network::OnConnectionChangedCallback& cb) {
+    EXPECT_CALL(network_, AddConnectionChangedCallback(_))
+        .WillRepeatedly(Invoke(
+            [this](const NetworkProvider::ConnectionChangedCallback& cb) {
               network_callbacks_.push_back(cb);
             }));
     EXPECT_CALL(network_, GetConnectionState())
@@ -325,13 +325,13 @@ class WeaveTest : public ::testing::Test {
   StrictMock<test::MockConfigStore> config_store_;
   StrictMock<test::MockTaskRunner> task_runner_;
   StrictMock<test::MockHttpClient> http_client_;
-  StrictMock<test::MockNetwork> network_;
+  StrictMock<test::MockNetworkProvider> network_;
   StrictMock<test::MockMdns> mdns_;
   StrictMock<test::MockHttpServer> http_server_;
   StrictMock<test::MockWifiProvider> wifi_;
   StrictMock<test::MockBluetooth> bluetooth_;
 
-  std::vector<Network::OnConnectionChangedCallback> network_callbacks_;
+  std::vector<NetworkProvider::ConnectionChangedCallback> network_callbacks_;
 
   weave::Cloud* cloud_{nullptr};
 

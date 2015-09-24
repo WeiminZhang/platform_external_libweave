@@ -17,7 +17,7 @@
 #include <weave/http_client.h>
 #include <weave/http_server.h>
 #include <weave/mdns.h>
-#include <weave/network.h>
+#include <weave/network_provider.h>
 #include <weave/privet.h>
 #include <weave/state.h>
 #include <weave/task_runner.h>
@@ -41,7 +41,7 @@ class Device {
                      ConfigStore* config_store,
                      TaskRunner* task_runner,
                      HttpClient* http_client,
-                     Network* network,
+                     NetworkProvider* network,
                      Mdns* mdns,
                      HttpServer* http_server,
                      WifiProvider* wifi,

@@ -30,7 +30,7 @@ class DeviceManager final : public Device {
              ConfigStore* config_store,
              TaskRunner* task_runner,
              HttpClient* http_client,
-             Network* network,
+             NetworkProvider* network,
              Mdns* mdns,
              HttpServer* http_server,
              WifiProvider* wifi,
@@ -46,7 +46,7 @@ class DeviceManager final : public Device {
  private:
   void StartPrivet(const Options& options,
                    TaskRunner* task_runner,
-                   Network* network,
+                   NetworkProvider* network,
                    Mdns* mdns,
                    HttpServer* http_server,
                    WifiProvider* wifi,

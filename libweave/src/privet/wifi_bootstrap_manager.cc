@@ -7,7 +7,7 @@
 #include <base/logging.h>
 #include <base/memory/weak_ptr.h>
 #include <weave/enum_to_string.h>
-#include <weave/network.h>
+#include <weave/network_provider.h>
 #include <weave/task_runner.h>
 #include <weave/wifi_provider.h>
 
@@ -22,7 +22,7 @@ WifiBootstrapManager::WifiBootstrapManager(
     const std::string& test_privet_ssid,
     bool ble_setup_enabled,
     TaskRunner* task_runner,
-    Network* network,
+    NetworkProvider* network,
     WifiProvider* wifi,
     CloudDelegate* gcd)
     : task_runner_{task_runner},
@@ -39,7 +39,7 @@ WifiBootstrapManager::WifiBootstrapManager(
 
 void WifiBootstrapManager::Init() {
   UpdateConnectionState();
-  network_->AddOnConnectionChangedCallback(
+  network_->AddConnectionChangedCallback(
       base::Bind(&WifiBootstrapManager::OnConnectivityChange,
                  lifetime_weak_factory_.GetWeakPtr()));
   if (last_configured_ssid_.empty()) {

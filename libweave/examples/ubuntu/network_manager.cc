@@ -50,9 +50,9 @@ NetworkImpl::~NetworkImpl() {
   StopAccessPoint();
 }
 
-void NetworkImpl::AddOnConnectionChangedCallback(
-    const OnConnectionChangedCallback& listener) {
-  callbacks_.push_back(listener);
+void NetworkImpl::AddConnectionChangedCallback(
+    const ConnectionChangedCallback& callback) {
+  callbacks_.push_back(callback);
 }
 
 void NetworkImpl::TryToConnect(
@@ -206,8 +206,8 @@ bool NetworkImpl::HasWifiCapability() {
 void NetworkImpl::OpenSslSocket(
     const std::string& host,
     uint16_t port,
-    const base::Callback<void(std::unique_ptr<Stream>)>& success_callback,
-    const base::Callback<void(const Error*)>& error_callback) {
+    const OpenSslSocketSuccessCallback& success_callback,
+    const ErrorCallback& error_callback) {
   // Connect to SSL port instead of upgrading to TLS.
   std::unique_ptr<SSLStream> tls_stream{new SSLStream{task_runner_}};
 

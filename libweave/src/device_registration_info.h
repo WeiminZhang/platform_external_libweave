@@ -39,7 +39,7 @@ class KeyValueStore;
 
 namespace weave {
 
-class Network;
+class NetworkProvider;
 class StateManager;
 class TaskRunner;
 
@@ -62,7 +62,7 @@ class DeviceRegistrationInfo : public Cloud,
                          TaskRunner* task_runner,
                          HttpClient* http_client,
                          bool notifications_enabled,
-                         weave::Network* network);
+                         NetworkProvider* network);
 
   ~DeviceRegistrationInfo() override;
 
@@ -337,7 +337,7 @@ class DeviceRegistrationInfo : public Cloud,
   NotificationChannel* current_notification_channel_{nullptr};
   bool notification_channel_starting_{false};
 
-  weave::Network* network_{nullptr};
+  NetworkProvider* network_{nullptr};
 
   // Tracks our current registration status.
   RegistrationStatus registration_status_{RegistrationStatus::kUnconfigured};

@@ -30,7 +30,7 @@ namespace weave {
 class CommandManager;
 class DeviceRegistrationInfo;
 class Mdns;
-class Network;
+class NetworkProvider;
 class StateManager;
 
 namespace privet {
@@ -49,7 +49,7 @@ class Manager : public Privet, public CloudDelegate::Observer {
 
   void Start(const weave::Device::Options& options,
              TaskRunner* task_runner,
-             Network* network,
+             NetworkProvider* network,
              Mdns* mdns,
              HttpServer* http_server,
              WifiProvider* wifi,

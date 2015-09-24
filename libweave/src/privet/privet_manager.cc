@@ -15,7 +15,7 @@
 #include <base/scoped_observer.h>
 #include <base/strings/string_number_conversions.h>
 #include <base/values.h>
-#include <weave/network.h>
+#include <weave/network_provider.h>
 
 #include "libweave/src/device_registration_info.h"
 #include "libweave/src/http_constants.h"
@@ -35,7 +35,7 @@ Manager::~Manager() {}
 
 void Manager::Start(const Device::Options& options,
                     TaskRunner* task_runner,
-                    Network* network,
+                    NetworkProvider* network,
                     Mdns* mdns,
                     HttpServer* http_server,
                     WifiProvider* wifi,
@@ -51,7 +51,7 @@ void Manager::Start(const Device::Options& options,
   security_.reset(new SecurityManager(device->GetSettings().pairing_modes,
                                       device->GetSettings().embedded_code,
                                       disable_security_, task_runner));
-  network->AddOnConnectionChangedCallback(
+  network->AddConnectionChangedCallback(
       base::Bind(&Manager::OnConnectivityChanged, base::Unretained(this)));
 
   if (wifi && device->GetSettings().wifi_auto_setup_enabled) {
