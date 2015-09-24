@@ -8,7 +8,7 @@
 #include <queue>
 
 #include <gtest/gtest.h>
-#include <weave/test/mock_network.h>
+#include <weave/test/mock_network_provider.h>
 #include <weave/test/mock_task_runner.h>
 
 #include "libweave/src/bind_lambda.h"
@@ -133,7 +133,8 @@ class FakeStream : public Stream {
 
 class FakeXmppChannel : public XmppChannel {
  public:
-  explicit FakeXmppChannel(TaskRunner* task_runner, weave::Network* network)
+  explicit FakeXmppChannel(TaskRunner* task_runner,
+                           weave::NetworkProvider* network)
       : XmppChannel{kAccountName, kAccessToken, task_runner, network},
         stream_{new FakeStream{task_runner_}},
         fake_stream_{stream_.get()} {}
@@ -161,10 +162,10 @@ class FakeXmppChannel : public XmppChannel {
   FakeStream* fake_stream_{nullptr};
 };
 
-class MockNetwork : public weave::test::MockNetwork {
+class MockNetworkProvider : public weave::test::MockNetworkProvider {
  public:
-  MockNetwork() {
-    EXPECT_CALL(*this, AddOnConnectionChangedCallback(_))
+  MockNetworkProvider() {
+    EXPECT_CALL(*this, AddConnectionChangedCallback(_))
         .WillRepeatedly(Return());
   }
 };
@@ -196,7 +197,7 @@ class XmppChannelTest : public ::testing::Test {
   }
 
   StrictMock<test::MockTaskRunner> task_runner_;
-  StrictMock<MockNetwork> network_;
+  StrictMock<MockNetworkProvider> network_;
   FakeXmppChannel xmpp_client_{&task_runner_, &network_};
 };
 

@@ -7,7 +7,7 @@
 #include <string>
 
 #include <base/bind.h>
-#include <weave/network.h>
+#include <weave/network_provider.h>
 #include <weave/task_runner.h>
 
 #include "libweave/src/backoff_entry.h"
@@ -92,7 +92,7 @@ const int kConnectingTimeoutAfterNetChangeSeconds = 30;
 XmppChannel::XmppChannel(const std::string& account,
                          const std::string& access_token,
                          TaskRunner* task_runner,
-                         Network* network)
+                         NetworkProvider* network)
     : account_{account},
       access_token_{access_token},
       network_{network},
@@ -101,7 +101,7 @@ XmppChannel::XmppChannel(const std::string& account,
       iq_stanza_handler_{new IqStanzaHandler{this, task_runner}} {
   read_socket_data_.resize(4096);
   if (network) {
-    network->AddOnConnectionChangedCallback(base::Bind(
+    network->AddConnectionChangedCallback(base::Bind(
         &XmppChannel::OnConnectivityChanged, weak_ptr_factory_.GetWeakPtr()));
   }
 }

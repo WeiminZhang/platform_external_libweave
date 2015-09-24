@@ -5,7 +5,7 @@
 #ifndef LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_WIFI_PROVIDER_H_
 #define LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_WIFI_PROVIDER_H_
 
-#include <weave/network.h>
+#include <weave/network_provider.h>
 
 #include <string>
 
@@ -16,9 +16,6 @@ namespace test {
 
 class MockWifiProvider : public WifiProvider {
  public:
-  MockWifiProvider() {}
-  ~MockWifiProvider() override = default;
-
   MOCK_METHOD4(Connect,
                void(const std::string&,
                     const std::string&,

@@ -22,7 +22,7 @@
 
 namespace weave {
 
-class Network;
+class NetworkProvider;
 class TaskRunner;
 
 // Simple interface to abstract XmppChannel's SendMessage() method.
@@ -44,7 +44,7 @@ class XmppChannel : public NotificationChannel,
   XmppChannel(const std::string& account,
               const std::string& access_token,
               TaskRunner* task_runner,
-              Network* network);
+              NetworkProvider* network);
   ~XmppChannel() override = default;
 
   // Overrides from NotificationChannel.
@@ -131,7 +131,7 @@ class XmppChannel : public NotificationChannel,
   // OAuth access token for the account. Expires fairly frequently.
   std::string access_token_;
 
-  Network* network_{nullptr};
+  NetworkProvider* network_{nullptr};
   std::unique_ptr<Stream> stream_;
 
   // Read buffer for incoming message packets.

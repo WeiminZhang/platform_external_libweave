@@ -16,7 +16,7 @@
 #include <base/strings/string_number_conversions.h>
 #include <base/values.h>
 #include <weave/http_client.h>
-#include <weave/network.h>
+#include <weave/network_provider.h>
 #include <weave/task_runner.h>
 
 #include "libweave/src/bind_lambda.h"
@@ -217,7 +217,7 @@ DeviceRegistrationInfo::DeviceRegistrationInfo(
     TaskRunner* task_runner,
     HttpClient* http_client,
     bool notifications_enabled,
-    Network* network)
+    NetworkProvider* network)
     : http_client_{http_client},
       task_runner_{task_runner},
       command_manager_{command_manager},
