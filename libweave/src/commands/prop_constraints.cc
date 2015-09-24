@@ -28,8 +28,7 @@ std::string PropValueToString(const PropValue& value) {
 }  // anonymous namespace
 
 // Constraint ----------------------------------------------------------------
-Constraint::~Constraint() {
-}
+Constraint::~Constraint() {}
 
 bool Constraint::ReportErrorLessThan(ErrorPtr* error,
                                      const std::string& val,
@@ -73,10 +72,8 @@ void Constraint::AddToJsonDict(base::DictionaryValue* dict,
 // ConstraintStringLength -----------------------------------------------------
 ConstraintStringLength::ConstraintStringLength(
     const InheritableAttribute<int>& limit)
-    : limit_(limit) {
-}
-ConstraintStringLength::ConstraintStringLength(int limit) : limit_(limit) {
-}
+    : limit_(limit) {}
+ConstraintStringLength::ConstraintStringLength(int limit) : limit_(limit) {}
 
 bool ConstraintStringLength::HasOverriddenAttributes() const {
   return !limit_.is_inherited;
@@ -89,11 +86,9 @@ std::unique_ptr<base::Value> ConstraintStringLength::ToJson() const {
 // ConstraintStringLengthMin --------------------------------------------------
 ConstraintStringLengthMin::ConstraintStringLengthMin(
     const InheritableAttribute<int>& limit)
-    : ConstraintStringLength(limit) {
-}
+    : ConstraintStringLength(limit) {}
 ConstraintStringLengthMin::ConstraintStringLengthMin(int limit)
-    : ConstraintStringLength(limit) {
-}
+    : ConstraintStringLength(limit) {}
 
 bool ConstraintStringLengthMin::Validate(const PropValue& value,
                                          ErrorPtr* error) const {
@@ -129,11 +124,9 @@ std::unique_ptr<Constraint> ConstraintStringLengthMin::CloneAsInherited()
 // ConstraintStringLengthMax --------------------------------------------------
 ConstraintStringLengthMax::ConstraintStringLengthMax(
     const InheritableAttribute<int>& limit)
-    : ConstraintStringLength(limit) {
-}
+    : ConstraintStringLength(limit) {}
 ConstraintStringLengthMax::ConstraintStringLengthMax(int limit)
-    : ConstraintStringLength(limit) {
-}
+    : ConstraintStringLength(limit) {}
 
 bool ConstraintStringLengthMax::Validate(const PropValue& value,
                                          ErrorPtr* error) const {

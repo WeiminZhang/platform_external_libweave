@@ -12,8 +12,7 @@ namespace weave {
 
 XmlNode::XmlNode(const std::string& name,
                  std::map<std::string, std::string> attributes)
-    : name_{name}, attributes_{std::move(attributes)} {
-}
+    : name_{name}, attributes_{std::move(attributes)} {}
 
 const std::string& XmlNode::name() const {
   return name_;

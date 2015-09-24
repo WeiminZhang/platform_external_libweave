@@ -7,8 +7,8 @@
 namespace weave {
 namespace examples {
 
-BluetoothImpl::BluetoothImpl() {};
-BluetoothImpl::~BluetoothImpl() {};
+BluetoothImpl::BluetoothImpl() {}
+BluetoothImpl::~BluetoothImpl() {}
 
 }  // namespace examples
 }  // namespace weave

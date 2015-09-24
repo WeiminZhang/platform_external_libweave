@@ -223,9 +223,9 @@ TEST_F(CommandInstanceTest, ToJson) {
   })").get());
 
   auto converted = instance->ToJson();
-  EXPECT_PRED2([](const base::Value& val1, const base::Value& val2) {
-    return val1.Equals(&val2);
-  }, *json, *converted);
+  EXPECT_PRED2([](const base::Value& val1,
+                  const base::Value& val2) { return val1.Equals(&val2); },
+               *json, *converted);
 }
 
 }  // namespace weave

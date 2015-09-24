@@ -174,8 +174,7 @@ std::unique_ptr<base::DictionaryValue> ErrorToJson(const Error& error) {
     std::unique_ptr<base::DictionaryValue> inner{ErrorInfoToJson(*it)};
     tracked_objects::Location location{it->GetLocation().function_name.c_str(),
                                        it->GetLocation().file_name.c_str(),
-                                       it->GetLocation().line_number,
-                                       nullptr};
+                                       it->GetLocation().line_number, nullptr};
     inner->SetString(kErrorDebugInfoKey, location.ToString());
     errors->Append(inner.release());
   }
@@ -394,8 +393,7 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
              AuthScope::kViewer);
 }
 
-PrivetHandler::~PrivetHandler() {
-}
+PrivetHandler::~PrivetHandler() {}
 
 void PrivetHandler::OnCommandDefsChanged() {
   ++command_defs_fingerprint_;

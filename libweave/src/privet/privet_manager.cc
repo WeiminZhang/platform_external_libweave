@@ -29,11 +29,9 @@
 namespace weave {
 namespace privet {
 
-Manager::Manager() {
-}
+Manager::Manager() {}
 
-Manager::~Manager() {
-}
+Manager::~Manager() {}
 
 void Manager::Start(const Device::Options& options,
                     TaskRunner* task_runner,

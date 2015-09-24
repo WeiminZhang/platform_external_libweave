@@ -360,9 +360,9 @@ TEST(CommandDictionary, GetCommandsAsJsonWithVisibility) {
   })";
   EXPECT_JSON_EQ(expected, *json);
 
-  json = dict.GetCommandsAsJson([](const CommandDefinition* def) {
-    return def->GetVisibility().local;
-  }, false, nullptr);
+  json = dict.GetCommandsAsJson(
+      [](const CommandDefinition* def) { return def->GetVisibility().local; },
+      false, nullptr);
   ASSERT_NE(nullptr, json.get());
   expected = R"({
     'test': {
@@ -374,9 +374,9 @@ TEST(CommandDictionary, GetCommandsAsJsonWithVisibility) {
   })";
   EXPECT_JSON_EQ(expected, *json);
 
-  json = dict.GetCommandsAsJson([](const CommandDefinition* def) {
-    return def->GetVisibility().cloud;
-  }, false, nullptr);
+  json = dict.GetCommandsAsJson(
+      [](const CommandDefinition* def) { return def->GetVisibility().cloud; },
+      false, nullptr);
   ASSERT_NE(nullptr, json.get());
   expected = R"({
     'test': {
@@ -388,9 +388,11 @@ TEST(CommandDictionary, GetCommandsAsJsonWithVisibility) {
   })";
   EXPECT_JSON_EQ(expected, *json);
 
-  json = dict.GetCommandsAsJson([](const CommandDefinition* def) {
-    return def->GetVisibility().local && def->GetVisibility().cloud;
-  }, false, nullptr);
+  json = dict.GetCommandsAsJson(
+      [](const CommandDefinition* def) {
+        return def->GetVisibility().local && def->GetVisibility().cloud;
+      },
+      false, nullptr);
   ASSERT_NE(nullptr, json.get());
   expected = R"({
     'test': {

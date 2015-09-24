@@ -114,8 +114,7 @@ void WifiBootstrapManager::OnConnectError(const Error* error) {
   StartBootstrapping();
 }
 
-void WifiBootstrapManager::EndConnecting() {
-}
+void WifiBootstrapManager::EndConnecting() {}
 
 void WifiBootstrapManager::StartMonitoring() {
   VLOG(1) << "Monitoring connectivity.";
@@ -139,8 +138,7 @@ void WifiBootstrapManager::StartMonitoring() {
   }
 }
 
-void WifiBootstrapManager::EndMonitoring() {
-}
+void WifiBootstrapManager::EndMonitoring() {}
 
 void WifiBootstrapManager::UpdateState(State new_state) {
   VLOG(3) << "Switching state from " << static_cast<int>(state_) << " to "

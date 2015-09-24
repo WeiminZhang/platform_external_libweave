@@ -93,11 +93,10 @@ class FakeStream : public Stream {
     read_data_ += data;
   }
 
-  void Read(
-      void* buffer,
-      size_t size_to_read,
-      const base::Callback<void(size_t)>& success_callback,
-      const base::Callback<void(const Error*)>& error_callback) override {
+  void Read(void* buffer,
+            size_t size_to_read,
+            const base::Callback<void(size_t)>& success_callback,
+            const base::Callback<void(const Error*)>& error_callback) override {
     if (read_data_.empty()) {
       task_runner_->PostDelayedTask(
           FROM_HERE,

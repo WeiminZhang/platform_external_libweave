@@ -14,8 +14,7 @@
 
 namespace weave {
 
-StatePackage::StatePackage(const std::string& name) : name_(name) {
-}
+StatePackage::StatePackage(const std::string& name) : name_(name) {}
 
 bool StatePackage::AddSchemaFromJson(const base::DictionaryValue* json,
                                      ErrorPtr* error) {
