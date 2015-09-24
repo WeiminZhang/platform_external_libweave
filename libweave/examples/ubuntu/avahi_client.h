@@ -12,17 +12,17 @@
 #include <avahi-client/publish.h>
 #include <avahi-common/thread-watch.h>
 
-#include <weave/mdns.h>
+#include <weave/dns_service_discovery_provider.h>
 
 namespace weave {
 namespace examples {
 
-// Example of weave::Mdns implemented with avahi.
-class MdnsImpl : public Mdns {
+// Example of weave::DnsServiceDiscoveryProvider implemented with avahi.
+class AvahiClient : public DnsServiceDiscoveryProvider {
  public:
-  MdnsImpl();
+  AvahiClient();
 
-  ~MdnsImpl() override;
+  ~AvahiClient() override;
   void PublishService(const std::string& service_type,
                       uint16_t port,
                       const std::vector<std::string>& txt) override;
@@ -35,7 +35,7 @@ class MdnsImpl : public Mdns {
   std::unique_ptr<AvahiThreadedPoll, decltype(&avahi_threaded_poll_free)>
       thread_pool_{nullptr, &avahi_threaded_poll_free};
 
-  std::unique_ptr<AvahiClient, decltype(&avahi_client_free)> client_{
+  std::unique_ptr<::AvahiClient, decltype(&avahi_client_free)> client_{
       nullptr, &avahi_client_free};
 
   std::unique_ptr<AvahiEntryGroup, decltype(&avahi_entry_group_free)> group_{

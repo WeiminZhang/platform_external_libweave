@@ -13,10 +13,10 @@
 #include <weave/cloud.h>
 #include <weave/commands.h>
 #include <weave/config_store.h>
+#include <weave/dns_service_discovery_provider.h>
 #include <weave/export.h>
 #include <weave/http_client.h>
 #include <weave/http_server.h>
-#include <weave/mdns.h>
 #include <weave/network_provider.h>
 #include <weave/privet.h>
 #include <weave/state.h>
@@ -42,7 +42,7 @@ class Device {
                      TaskRunner* task_runner,
                      HttpClient* http_client,
                      NetworkProvider* network,
-                     Mdns* mdns,
+                     DnsServiceDiscoveryProvider* dns_sd,
                      HttpServer* http_server,
                      WifiProvider* wifi,
                      Bluetooth* bluetooth) = 0;

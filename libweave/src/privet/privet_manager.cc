@@ -36,7 +36,7 @@ Manager::~Manager() {}
 void Manager::Start(const Device::Options& options,
                     TaskRunner* task_runner,
                     NetworkProvider* network,
-                    Mdns* mdns,
+                    DnsServiceDiscoveryProvider* dns_sd,
                     HttpServer* http_server,
                     WifiProvider* wifi,
                     DeviceRegistrationInfo* device,
@@ -64,7 +64,7 @@ void Manager::Start(const Device::Options& options,
   }
 
   publisher_.reset(new Publisher(device_.get(), cloud_.get(),
-                                 wifi_bootstrap_manager_.get(), mdns));
+                                 wifi_bootstrap_manager_.get(), dns_sd));
 
   privet_handler_.reset(
       new PrivetHandler(cloud_.get(), device_.get(), security_.get(),

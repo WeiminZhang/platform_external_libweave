@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
   weave::examples::EventTaskRunner task_runner;
   weave::examples::CurlHttpClient http_client{&task_runner};
   weave::examples::NetworkImpl network{&task_runner, force_bootstrapping};
-  weave::examples::MdnsImpl mdns;
+  weave::examples::AvahiClient dns_sd;
   weave::examples::HttpServerImpl http_server{&task_runner};
   weave::examples::BluetoothImpl bluetooth;
 
@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
   opts.disable_security = disable_security;
   opts.enable_ping = true;
   device->Start(
-      opts, &config_store, &task_runner, &http_client, &network, &mdns,
+      opts, &config_store, &task_runner, &http_client, &network, &dns_sd,
       &http_server,
       weave::examples::NetworkImpl::HasWifiCapability() ? &network : nullptr,
       &bluetooth);

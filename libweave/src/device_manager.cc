@@ -34,7 +34,7 @@ void DeviceManager::Start(const Options& options,
                           TaskRunner* task_runner,
                           HttpClient* http_client,
                           NetworkProvider* network,
-                          Mdns* mdns,
+                          DnsServiceDiscoveryProvider* dns_sd,
                           HttpServer* http_server,
                           WifiProvider* wifi,
                           Bluetooth* bluetooth) {
@@ -58,11 +58,11 @@ void DeviceManager::Start(const Options& options,
   device_info_->Start();
 
   if (!options.disable_privet) {
-    StartPrivet(options, task_runner, network, mdns, http_server, wifi,
+    StartPrivet(options, task_runner, network, dns_sd, http_server, wifi,
                 bluetooth);
   } else {
     CHECK(!http_server);
-    CHECK(!mdns);
+    CHECK(!dns_sd);
   }
 }
 
@@ -89,12 +89,12 @@ Privet* DeviceManager::GetPrivet() {
 void DeviceManager::StartPrivet(const Options& options,
                                 TaskRunner* task_runner,
                                 NetworkProvider* network,
-                                Mdns* mdns,
+                                DnsServiceDiscoveryProvider* dns_sd,
                                 HttpServer* http_server,
                                 WifiProvider* wifi,
                                 Bluetooth* bluetooth) {
   privet_.reset(new privet::Manager{});
-  privet_->Start(options, task_runner, network, mdns, http_server, wifi,
+  privet_->Start(options, task_runner, network, dns_sd, http_server, wifi,
                  device_info_.get(), command_manager_.get(),
                  state_manager_.get());
 
