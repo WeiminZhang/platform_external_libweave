@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/examples/ubuntu/network_manager.h"
+#include "examples/ubuntu/network_manager.h"
 
 #include <arpa/inet.h>
 #include <linux/wireless.h>
@@ -14,7 +14,7 @@
 #include <base/bind.h>
 #include <weave/provider/task_runner.h>
 
-#include "libweave/examples/ubuntu/ssl_stream.h"
+#include "examples/ubuntu/ssl_stream.h"
 
 namespace weave {
 namespace examples {

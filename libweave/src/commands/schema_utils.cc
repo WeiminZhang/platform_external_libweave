@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/commands/schema_utils.h"
+#include "src/commands/schema_utils.h"
 
 #include <algorithm>
 #include <set>
@@ -11,9 +11,9 @@
 #include <base/json/json_writer.h>
 #include <base/logging.h>
 
-#include "libweave/src/commands/object_schema.h"
-#include "libweave/src/commands/prop_types.h"
-#include "libweave/src/commands/prop_values.h"
+#include "src/commands/object_schema.h"
+#include "src/commands/prop_types.h"
+#include "src/commands/prop_values.h"
 
 namespace weave {
 namespace {

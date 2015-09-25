@@ -13,10 +13,10 @@
 #include <base/values.h>
 #include <weave/error.h>
 
-#include "libweave/src/commands/prop_values.h"
-#include "libweave/src/commands/schema_constants.h"
-#include "libweave/src/commands/schema_utils.h"
-#include "libweave/src/string_utils.h"
+#include "src/commands/prop_values.h"
+#include "src/commands/schema_constants.h"
+#include "src/commands/schema_utils.h"
+#include "src/string_utils.h"
 
 namespace weave {
 

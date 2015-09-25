@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/device_manager.h"
+#include "src/device_manager.h"
 
 #include <string>
 
 #include <base/bind.h>
 
-#include "libweave/src/base_api_handler.h"
-#include "libweave/src/commands/command_manager.h"
-#include "libweave/src/config.h"
-#include "libweave/src/device_registration_info.h"
-#include "libweave/src/privet/privet_manager.h"
-#include "libweave/src/states/state_change_queue.h"
-#include "libweave/src/states/state_manager.h"
+#include "src/base_api_handler.h"
+#include "src/commands/command_manager.h"
+#include "src/config.h"
+#include "src/device_registration_info.h"
+#include "src/privet/privet_manager.h"
+#include "src/states/state_change_queue.h"
+#include "src/states/state_manager.h"
 
 namespace weave {
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/privet/security_manager.h"
+#include "src/privet/security_manager.h"
 
 #include <algorithm>
 #include <cctype>
@@ -21,9 +21,9 @@
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>
 
-#include "libweave/external/crypto/p224_spake.h"
-#include "libweave/src/data_encoding.h"
-#include "libweave/src/privet/openssl_utils.h"
+#include "external/crypto/p224_spake.h"
+#include "src/data_encoding.h"
+#include "src/privet/openssl_utils.h"
 
 using testing::Eq;
 using testing::_;

@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/states/state_manager.h"
+#include "src/states/state_manager.h"
 
 #include <base/logging.h>
 #include <base/values.h>
 #include <weave/provider/config_store.h>
 
-#include "libweave/src/json_error_codes.h"
-#include "libweave/src/states/error_codes.h"
-#include "libweave/src/states/state_change_queue_interface.h"
-#include "libweave/src/string_utils.h"
-#include "libweave/src/utils.h"
+#include "src/json_error_codes.h"
+#include "src/states/error_codes.h"
+#include "src/states/state_change_queue_interface.h"
+#include "src/string_utils.h"
+#include "src/utils.h"
 
 namespace weave {
 

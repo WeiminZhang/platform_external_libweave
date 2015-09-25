@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/commands/cloud_command_proxy.h"
+#include "src/commands/cloud_command_proxy.h"
 
 #include <memory>
 #include <queue>
@@ -11,10 +11,10 @@
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>
 
-#include "libweave/src/commands/command_dictionary.h"
-#include "libweave/src/commands/command_instance.h"
-#include "libweave/src/commands/unittest_utils.h"
-#include "libweave/src/states/mock_state_change_queue_interface.h"
+#include "src/commands/command_dictionary.h"
+#include "src/commands/command_instance.h"
+#include "src/commands/unittest_utils.h"
+#include "src/states/mock_state_change_queue_interface.h"
 
 using testing::SaveArg;
 using testing::Invoke;

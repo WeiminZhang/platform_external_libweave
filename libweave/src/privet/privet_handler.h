@@ -13,7 +13,7 @@
 #include <base/memory/weak_ptr.h>
 #include <base/scoped_observer.h>
 
-#include "libweave/src/privet/cloud_delegate.h"
+#include "src/privet/cloud_delegate.h"
 
 namespace base {
 class Value;

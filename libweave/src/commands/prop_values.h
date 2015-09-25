@@ -11,7 +11,7 @@
 
 #include <weave/error.h>
 
-#include "libweave/src/commands/schema_utils.h"
+#include "src/commands/schema_utils.h"
 
 namespace base {
 class Value;

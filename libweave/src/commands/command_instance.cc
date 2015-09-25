@@ -2,20 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/commands/command_instance.h"
+#include "src/commands/command_instance.h"
 
 #include <base/values.h>
 #include <weave/enum_to_string.h>
 #include <weave/error.h>
 #include <weave/export.h>
 
-#include "libweave/src/commands/command_definition.h"
-#include "libweave/src/commands/command_dictionary.h"
-#include "libweave/src/commands/command_queue.h"
-#include "libweave/src/commands/prop_types.h"
-#include "libweave/src/commands/schema_constants.h"
-#include "libweave/src/commands/schema_utils.h"
-#include "libweave/src/json_error_codes.h"
+#include "src/commands/command_definition.h"
+#include "src/commands/command_dictionary.h"
+#include "src/commands/command_queue.h"
+#include "src/commands/prop_types.h"
+#include "src/commands/schema_constants.h"
+#include "src/commands/schema_utils.h"
+#include "src/json_error_codes.h"
 
 namespace weave {
 

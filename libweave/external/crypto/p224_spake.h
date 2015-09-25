@@ -9,8 +9,8 @@
 
 #include <base/gtest_prod_util.h>
 
-#include "libweave/external/crypto/p224.h"
-#include "libweave/external/crypto/sha2.h"
+#include "external/crypto/p224.h"
+#include "external/crypto/sha2.h"
 
 namespace weave {
 namespace crypto {

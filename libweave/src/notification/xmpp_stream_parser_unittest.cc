@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/notification/xmpp_stream_parser.h"
+#include "src/notification/xmpp_stream_parser.h"
 
 #include <memory>
 #include <vector>
 #include <gtest/gtest.h>
 
-#include "libweave/src/notification/xml_node.h"
+#include "src/notification/xml_node.h"
 
 namespace weave {
 namespace {

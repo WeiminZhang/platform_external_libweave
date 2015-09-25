@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/states/state_package.h"
+#include "src/states/state_package.h"
 
 #include <base/logging.h>
 #include <base/values.h>
 
-#include "libweave/src/commands/prop_types.h"
-#include "libweave/src/commands/prop_values.h"
-#include "libweave/src/commands/schema_utils.h"
-#include "libweave/src/states/error_codes.h"
+#include "src/commands/prop_types.h"
+#include "src/commands/prop_values.h"
+#include "src/commands/schema_utils.h"
+#include "src/states/error_codes.h"
 
 namespace weave {
 

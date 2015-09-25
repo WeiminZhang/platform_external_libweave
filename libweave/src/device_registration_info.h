@@ -19,15 +19,15 @@
 #include <weave/cloud.h>
 #include <weave/provider/http_client.h>
 
-#include "libweave/src/backoff_entry.h"
-#include "libweave/src/commands/cloud_command_update_interface.h"
-#include "libweave/src/commands/command_manager.h"
-#include "libweave/src/config.h"
-#include "libweave/src/data_encoding.h"
-#include "libweave/src/notification/notification_channel.h"
-#include "libweave/src/notification/notification_delegate.h"
-#include "libweave/src/notification/pull_channel.h"
-#include "libweave/src/states/state_change_queue_interface.h"
+#include "src/backoff_entry.h"
+#include "src/commands/cloud_command_update_interface.h"
+#include "src/commands/command_manager.h"
+#include "src/config.h"
+#include "src/data_encoding.h"
+#include "src/notification/notification_channel.h"
+#include "src/notification/notification_delegate.h"
+#include "src/notification/pull_channel.h"
+#include "src/states/state_change_queue_interface.h"
 
 namespace base {
 class DictionaryValue;

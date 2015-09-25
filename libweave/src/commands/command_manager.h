@@ -14,8 +14,8 @@
 #include <base/memory/weak_ptr.h>
 #include <weave/commands.h>
 
-#include "libweave/src/commands/command_dictionary.h"
-#include "libweave/src/commands/command_queue.h"
+#include "src/commands/command_dictionary.h"
+#include "src/commands/command_queue.h"
 
 namespace weave {
 

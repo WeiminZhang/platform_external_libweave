@@ -12,7 +12,7 @@
 #include <base/memory/weak_ptr.h>
 #include <base/time/time.h>
 
-#include "libweave/src/notification/notification_channel.h"
+#include "src/notification/notification_channel.h"
 
 namespace weave {
 

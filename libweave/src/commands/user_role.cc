@@ -8,7 +8,7 @@
 #include <weave/enum_to_string.h>
 #include <weave/export.h>
 
-#include "libweave/src/commands/schema_constants.h"
+#include "src/commands/schema_constants.h"
 
 namespace weave {
 

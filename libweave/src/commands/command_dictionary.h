@@ -14,7 +14,7 @@
 #include <base/macros.h>
 #include <weave/error.h>
 
-#include "libweave/src/commands/command_definition.h"
+#include "src/commands/command_definition.h"
 
 namespace base {
 class Value;

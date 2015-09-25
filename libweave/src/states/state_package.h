@@ -12,8 +12,8 @@
 #include <base/macros.h>
 #include <weave/error.h>
 
-#include "libweave/src/commands/object_schema.h"
-#include "libweave/src/commands/prop_values.h"
+#include "src/commands/object_schema.h"
+#include "src/commands/prop_values.h"
 
 namespace base {
 class DictionaryValue;

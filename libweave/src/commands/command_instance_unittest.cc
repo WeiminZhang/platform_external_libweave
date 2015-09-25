@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/commands/command_instance.h"
+#include "src/commands/command_instance.h"
 
 #include <gtest/gtest.h>
 
-#include "libweave/src/commands/command_dictionary.h"
-#include "libweave/src/commands/prop_types.h"
-#include "libweave/src/commands/schema_utils.h"
-#include "libweave/src/commands/unittest_utils.h"
+#include "src/commands/command_dictionary.h"
+#include "src/commands/prop_types.h"
+#include "src/commands/schema_utils.h"
+#include "src/commands/unittest_utils.h"
 
 namespace weave {
 

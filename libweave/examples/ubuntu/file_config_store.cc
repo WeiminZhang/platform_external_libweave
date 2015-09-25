@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/examples/ubuntu/file_config_store.h"
+#include "examples/ubuntu/file_config_store.h"
 
 #include <sys/stat.h>
 #include <sys/utsname.h>

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/examples/ubuntu/curl_http_client.h"
+#include "examples/ubuntu/curl_http_client.h"
 
 #include <base/bind.h>
 #include <curl/curl.h>

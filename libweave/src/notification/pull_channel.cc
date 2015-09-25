@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/notification/pull_channel.h"
+#include "src/notification/pull_channel.h"
 
 #include <base/bind.h>
 #include <base/location.h>
 #include <weave/provider/task_runner.h>
 
-#include "libweave/src/notification/notification_delegate.h"
+#include "src/notification/notification_delegate.h"
 
 namespace weave {
 

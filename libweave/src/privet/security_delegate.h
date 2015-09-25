@@ -12,7 +12,7 @@
 #include <base/time/time.h>
 #include <weave/privet.h>
 
-#include "libweave/src/privet/privet_types.h"
+#include "src/privet/privet_types.h"
 
 namespace weave {
 namespace privet {

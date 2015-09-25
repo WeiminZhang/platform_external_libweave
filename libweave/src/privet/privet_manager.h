@@ -14,9 +14,9 @@
 #include <base/scoped_observer.h>
 #include <weave/device.h>
 
-#include "libweave/src/privet/cloud_delegate.h"
-#include "libweave/src/privet/security_manager.h"
-#include "libweave/src/privet/wifi_bootstrap_manager.h"
+#include "src/privet/cloud_delegate.h"
+#include "src/privet/security_manager.h"
+#include "src/privet/wifi_bootstrap_manager.h"
 
 namespace libwebserv {
 class ProtocolHandler;

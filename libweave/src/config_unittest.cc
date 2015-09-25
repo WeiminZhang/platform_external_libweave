@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/config.h"
+#include "src/config.h"
 
 #include <set>
 
@@ -11,7 +11,7 @@
 #include <gtest/gtest.h>
 #include <weave/provider/test/mock_config_store.h>
 
-#include "libweave/src/commands/unittest_utils.h"
+#include "src/commands/unittest_utils.h"
 
 using testing::_;
 using testing::Invoke;

@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/utils.h"
+#include "src/utils.h"
 
 #include <base/bind_helpers.h>
 #include <base/json/json_reader.h>
 
-#include "libweave/src/json_error_codes.h"
+#include "src/json_error_codes.h"
 
 namespace weave {
 

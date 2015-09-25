@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/config.h"
+#include "src/config.h"
 
 #include <set>
 
@@ -14,8 +14,8 @@
 #include <base/values.h>
 #include <weave/enum_to_string.h>
 
-#include "libweave/src/privet/privet_types.h"
-#include "libweave/src/string_utils.h"
+#include "src/privet/privet_types.h"
+#include "src/string_utils.h"
 
 namespace weave {
 

@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/privet/wifi_ssid_generator.h"
+#include "src/privet/wifi_ssid_generator.h"
 
 #include <gtest/gtest.h>
 
-#include "libweave/src/privet/mock_delegates.h"
-#include "libweave/src/privet/openssl_utils.h"
+#include "src/privet/mock_delegates.h"
+#include "src/privet/openssl_utils.h"
 
 namespace weave {
 namespace privet {

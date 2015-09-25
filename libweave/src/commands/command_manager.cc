@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/commands/command_manager.h"
+#include "src/commands/command_manager.h"
 
 #include <base/values.h>
 #include <weave/enum_to_string.h>
 #include <weave/error.h>
 #include <weave/provider/config_store.h>
 
-#include "libweave/src/commands/schema_constants.h"
-#include "libweave/src/utils.h"
+#include "src/commands/schema_constants.h"
+#include "src/utils.h"
 
 namespace weave {
 

@@ -15,9 +15,9 @@
 #include <base/scoped_observer.h>
 #include <weave/command.h>
 
-#include "libweave/src/backoff_entry.h"
-#include "libweave/src/commands/cloud_command_update_interface.h"
-#include "libweave/src/states/state_change_queue_interface.h"
+#include "src/backoff_entry.h"
+#include "src/commands/cloud_command_update_interface.h"
+#include "src/states/state_change_queue_interface.h"
 
 namespace weave {
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/commands/command_manager.h"
+#include "src/commands/command_manager.h"
 
 #include <map>
 
@@ -10,8 +10,8 @@
 #include <gtest/gtest.h>
 #include <weave/provider/test/mock_config_store.h>
 
-#include "libweave/src/bind_lambda.h"
-#include "libweave/src/commands/unittest_utils.h"
+#include "src/bind_lambda.h"
+#include "src/commands/unittest_utils.h"
 
 using testing::Return;
 

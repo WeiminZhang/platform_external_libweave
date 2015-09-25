@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/data_encoding.h"
+#include "src/data_encoding.h"
 
 #include <memory>
 
@@ -10,8 +10,8 @@
 #include <base/strings/string_util.h>
 #include <base/strings/stringprintf.h>
 
-#include "libweave/src/string_utils.h"
-#include "libweave/third_party/modp_b64/modp_b64/modp_b64.h"
+#include "src/string_utils.h"
+#include "third_party/modp_b64/modp_b64/modp_b64.h"
 
 namespace weave {
 

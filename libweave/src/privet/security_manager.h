@@ -16,7 +16,7 @@
 #include <base/memory/weak_ptr.h>
 #include <weave/error.h>
 
-#include "libweave/src/privet/security_delegate.h"
+#include "src/privet/security_delegate.h"
 
 namespace crypto {
 class P224EncryptedKeyExchange;

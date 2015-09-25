@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/notification/xmpp_iq_stanza_handler.h"
+#include "src/notification/xmpp_iq_stanza_handler.h"
 
 #include <map>
 #include <memory>
@@ -11,10 +11,10 @@
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>
 
-#include "libweave/src/bind_lambda.h"
-#include "libweave/src/notification/xml_node.h"
-#include "libweave/src/notification/xmpp_channel.h"
-#include "libweave/src/notification/xmpp_stream_parser.h"
+#include "src/bind_lambda.h"
+#include "src/notification/xml_node.h"
+#include "src/notification/xmpp_channel.h"
+#include "src/notification/xmpp_stream_parser.h"
 
 using testing::_;
 

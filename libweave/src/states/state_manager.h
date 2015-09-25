@@ -17,8 +17,8 @@
 #include <weave/error.h>
 #include <weave/state.h>
 
-#include "libweave/src/states/state_change_queue_interface.h"
-#include "libweave/src/states/state_package.h"
+#include "src/states/state_change_queue_interface.h"
+#include "src/states/state_package.h"
 
 namespace base {
 class DictionaryValue;

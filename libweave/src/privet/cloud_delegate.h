@@ -13,8 +13,8 @@
 #include <base/memory/ref_counted.h>
 #include <base/observer_list.h>
 
-#include "libweave/src/privet/privet_types.h"
-#include "libweave/src/privet/security_delegate.h"
+#include "src/privet/privet_types.h"
+#include "src/privet/security_delegate.h"
 
 namespace base {
 class DictionaryValue;
