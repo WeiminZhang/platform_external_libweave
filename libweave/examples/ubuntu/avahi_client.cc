@@ -24,11 +24,10 @@ void GroupCallback(AvahiEntryGroup* g,
 }  // namespace
 
 AvahiClient::AvahiClient() {
-  CHECK_EQ(0, std::system("service avahi-daemon status | grep running || "
-                          "service avahi-daemon start"));
   thread_pool_.reset(avahi_threaded_poll_new());
   CHECK(thread_pool_);
 
+  LOG(INFO) << "connecting to avahi-daemon";
   int ret = 0;
   client_.reset(avahi_client_new(avahi_threaded_poll_get(thread_pool_.get()),
                                  {}, nullptr, this, &ret));
