@@ -13,11 +13,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "libweave/src/privet/cloud_delegate.h"
-#include "libweave/src/privet/device_delegate.h"
-#include "libweave/src/privet/identity_delegate.h"
-#include "libweave/src/privet/security_delegate.h"
-#include "libweave/src/privet/wifi_delegate.h"
+#include "src/privet/cloud_delegate.h"
+#include "src/privet/device_delegate.h"
+#include "src/privet/identity_delegate.h"
+#include "src/privet/security_delegate.h"
+#include "src/privet/wifi_delegate.h"
 
 using testing::_;
 using testing::Return;

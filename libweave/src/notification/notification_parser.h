@@ -9,7 +9,7 @@
 
 #include <base/values.h>
 
-#include "libweave/src/notification/notification_delegate.h"
+#include "src/notification/notification_delegate.h"
 
 namespace weave {
 

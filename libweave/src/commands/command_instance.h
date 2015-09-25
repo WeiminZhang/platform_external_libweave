@@ -15,8 +15,8 @@
 #include <weave/error.h>
 #include <weave/command.h>
 
-#include "libweave/src/commands/prop_values.h"
-#include "libweave/src/commands/schema_utils.h"
+#include "src/commands/prop_values.h"
+#include "src/commands/schema_utils.h"
 
 namespace base {
 class Value;

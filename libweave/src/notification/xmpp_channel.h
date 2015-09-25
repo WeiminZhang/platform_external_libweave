@@ -15,10 +15,10 @@
 #include <base/memory/weak_ptr.h>
 #include <weave/stream.h>
 
-#include "libweave/src/backoff_entry.h"
-#include "libweave/src/notification/notification_channel.h"
-#include "libweave/src/notification/xmpp_iq_stanza_handler.h"
-#include "libweave/src/notification/xmpp_stream_parser.h"
+#include "src/backoff_entry.h"
+#include "src/notification/notification_channel.h"
+#include "src/notification/xmpp_iq_stanza_handler.h"
+#include "src/notification/xmpp_stream_parser.h"
 
 namespace weave {
 

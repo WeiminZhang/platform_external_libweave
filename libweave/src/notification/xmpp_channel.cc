@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/notification/xmpp_channel.h"
+#include "src/notification/xmpp_channel.h"
 
 #include <string>
 
@@ -10,13 +10,13 @@
 #include <weave/provider/network.h>
 #include <weave/provider/task_runner.h>
 
-#include "libweave/src/backoff_entry.h"
-#include "libweave/src/data_encoding.h"
-#include "libweave/src/notification/notification_delegate.h"
-#include "libweave/src/notification/notification_parser.h"
-#include "libweave/src/notification/xml_node.h"
-#include "libweave/src/privet/openssl_utils.h"
-#include "libweave/src/utils.h"
+#include "src/backoff_entry.h"
+#include "src/data_encoding.h"
+#include "src/notification/notification_delegate.h"
+#include "src/notification/notification_parser.h"
+#include "src/notification/xml_node.h"
+#include "src/privet/openssl_utils.h"
+#include "src/utils.h"
 
 namespace weave {
 

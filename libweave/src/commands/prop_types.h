@@ -15,8 +15,8 @@
 
 #include <weave/error.h>
 
-#include "libweave/src/commands/prop_constraints.h"
-#include "libweave/src/commands/prop_values.h"
+#include "src/commands/prop_constraints.h"
+#include "src/commands/prop_values.h"
 
 namespace weave {
 

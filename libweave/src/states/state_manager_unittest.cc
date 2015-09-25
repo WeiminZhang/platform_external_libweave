@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/states/state_manager.h"
+#include "src/states/state_manager.h"
 
 #include <cstdlib>  // for abs().
 #include <vector>
@@ -13,10 +13,10 @@
 #include <gtest/gtest.h>
 #include <weave/provider/test/mock_config_store.h>
 
-#include "libweave/src/commands/schema_constants.h"
-#include "libweave/src/commands/unittest_utils.h"
-#include "libweave/src/states/error_codes.h"
-#include "libweave/src/states/mock_state_change_queue_interface.h"
+#include "src/commands/schema_constants.h"
+#include "src/commands/unittest_utils.h"
+#include "src/states/error_codes.h"
+#include "src/states/mock_state_change_queue_interface.h"
 
 namespace weave {
 

@@ -7,13 +7,13 @@
 #include <weave/device.h>
 #include <weave/error.h>
 
-#include "libweave/examples/ubuntu/avahi_client.h"
-#include "libweave/examples/ubuntu/bluez_client.h"
-#include "libweave/examples/ubuntu/curl_http_client.h"
-#include "libweave/examples/ubuntu/event_http_server.h"
-#include "libweave/examples/ubuntu/event_task_runner.h"
-#include "libweave/examples/ubuntu/file_config_store.h"
-#include "libweave/examples/ubuntu/network_manager.h"
+#include "examples/ubuntu/avahi_client.h"
+#include "examples/ubuntu/bluez_client.h"
+#include "examples/ubuntu/curl_http_client.h"
+#include "examples/ubuntu/event_http_server.h"
+#include "examples/ubuntu/event_task_runner.h"
+#include "examples/ubuntu/file_config_store.h"
+#include "examples/ubuntu/network_manager.h"
 
 namespace {
 void ShowUsage(const std::string& name) {

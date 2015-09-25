@@ -12,8 +12,8 @@
 #include <gtest/gtest.h>
 #include <weave/test/unittest_utils.h>
 
-#include "libweave/src/commands/prop_types.h"
-#include "libweave/src/commands/prop_values.h"
+#include "src/commands/prop_types.h"
+#include "src/commands/prop_values.h"
 
 namespace weave {
 namespace test {

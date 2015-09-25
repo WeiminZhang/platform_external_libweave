@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/base_api_handler.h"
+#include "src/base_api_handler.h"
 
 #include <base/strings/string_number_conversions.h>
 #include <base/values.h>
@@ -10,12 +10,12 @@
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/provider/test/mock_http_client.h>
 
-#include "libweave/src/commands/command_manager.h"
-#include "libweave/src/commands/unittest_utils.h"
-#include "libweave/src/config.h"
-#include "libweave/src/device_registration_info.h"
-#include "libweave/src/states/mock_state_change_queue_interface.h"
-#include "libweave/src/states/state_manager.h"
+#include "src/commands/command_manager.h"
+#include "src/commands/unittest_utils.h"
+#include "src/config.h"
+#include "src/device_registration_info.h"
+#include "src/states/mock_state_change_queue_interface.h"
+#include "src/states/state_manager.h"
 
 using testing::_;
 using testing::Invoke;

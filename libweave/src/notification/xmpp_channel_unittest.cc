@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/notification/xmpp_channel.h"
+#include "src/notification/xmpp_channel.h"
 
 #include <algorithm>
 #include <queue>
@@ -12,7 +12,7 @@
 #include <weave/provider/test/mock_network.h>
 #include <weave/test/fake_stream.h>
 
-#include "libweave/src/bind_lambda.h"
+#include "src/bind_lambda.h"
 
 using testing::_;
 using testing::Invoke;

@@ -11,7 +11,7 @@
 
 #include <base/macros.h>
 
-#include "libweave/src/privet/identity_delegate.h"
+#include "src/privet/identity_delegate.h"
 
 namespace weave {
 

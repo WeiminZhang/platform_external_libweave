@@ -5,14 +5,14 @@
 // This code implements SPAKE2, a variant of EKE:
 //  http://www.di.ens.fr/~pointche/pub.php?reference=AbPo04
 
-#include "libweave/external/crypto/p224_spake.h"
+#include "external/crypto/p224_spake.h"
 
 #include <algorithm>
 
 #include <base/logging.h>
 #include <base/rand_util.h>
 
-#include "libweave/external/crypto/p224.h"
+#include "external/crypto/p224.h"
 
 namespace weave {
 namespace crypto {

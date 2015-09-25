@@ -7,7 +7,7 @@
 //
 // See http://www.imperialviolet.org/2010/12/04/ecc.html ([1]) for background.
 
-#include "libweave/external/crypto/p224.h"
+#include "external/crypto/p224.h"
 
 #include <string.h>
 

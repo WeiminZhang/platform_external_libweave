@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/device_registration_info.h"
+#include "src/device_registration_info.h"
 
 #include <algorithm>
 #include <memory>
@@ -19,18 +19,18 @@
 #include <weave/provider/network.h>
 #include <weave/provider/task_runner.h>
 
-#include "libweave/src/bind_lambda.h"
-#include "libweave/src/commands/cloud_command_proxy.h"
-#include "libweave/src/commands/command_definition.h"
-#include "libweave/src/commands/command_manager.h"
-#include "libweave/src/commands/schema_constants.h"
-#include "libweave/src/data_encoding.h"
-#include "libweave/src/http_constants.h"
-#include "libweave/src/json_error_codes.h"
-#include "libweave/src/notification/xmpp_channel.h"
-#include "libweave/src/states/state_manager.h"
-#include "libweave/src/string_utils.h"
-#include "libweave/src/utils.h"
+#include "src/bind_lambda.h"
+#include "src/commands/cloud_command_proxy.h"
+#include "src/commands/command_definition.h"
+#include "src/commands/command_manager.h"
+#include "src/commands/schema_constants.h"
+#include "src/data_encoding.h"
+#include "src/http_constants.h"
+#include "src/json_error_codes.h"
+#include "src/notification/xmpp_channel.h"
+#include "src/states/state_manager.h"
+#include "src/string_utils.h"
+#include "src/utils.h"
 
 namespace weave {
 

@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "libweave/external/crypto/p224.h"
+#include "external/crypto/p224.h"
 
 namespace weave {
 namespace crypto {

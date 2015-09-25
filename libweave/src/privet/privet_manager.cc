@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/privet/privet_manager.h"
+#include "src/privet/privet_manager.h"
 
 #include <memory>
 #include <set>
@@ -17,14 +17,14 @@
 #include <base/values.h>
 #include <weave/provider/network.h>
 
-#include "libweave/src/device_registration_info.h"
-#include "libweave/src/http_constants.h"
-#include "libweave/src/privet/cloud_delegate.h"
-#include "libweave/src/privet/constants.h"
-#include "libweave/src/privet/device_delegate.h"
-#include "libweave/src/privet/privet_handler.h"
-#include "libweave/src/privet/publisher.h"
-#include "libweave/src/string_utils.h"
+#include "src/device_registration_info.h"
+#include "src/http_constants.h"
+#include "src/privet/cloud_delegate.h"
+#include "src/privet/constants.h"
+#include "src/privet/device_delegate.h"
+#include "src/privet/privet_handler.h"
+#include "src/privet/publisher.h"
+#include "src/string_utils.h"
 
 namespace weave {
 namespace privet {

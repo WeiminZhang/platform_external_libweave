@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/privet/privet_handler.h"
+#include "src/privet/privet_handler.h"
 
 #include <set>
 #include <string>
@@ -16,8 +16,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "libweave/src/privet/constants.h"
-#include "libweave/src/privet/mock_delegates.h"
+#include "src/privet/constants.h"
+#include "src/privet/mock_delegates.h"
 
 using testing::_;
 using testing::DoAll;

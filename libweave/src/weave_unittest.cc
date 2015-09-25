@@ -16,7 +16,7 @@
 #include <weave/provider/test/mock_wifi.h>
 #include <weave/test/unittest_utils.h>
 
-#include "libweave/src/bind_lambda.h"
+#include "src/bind_lambda.h"
 
 using testing::_;
 using testing::AtMost;

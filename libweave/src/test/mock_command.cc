@@ -9,7 +9,7 @@
 
 #include <base/values.h>
 
-#include "libweave/src/commands/unittest_utils.h"
+#include "src/commands/unittest_utils.h"
 
 namespace weave {
 namespace test {

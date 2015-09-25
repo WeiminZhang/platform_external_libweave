@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/external/crypto/p224_spake.h"
+#include "external/crypto/p224_spake.h"
 
 #include <string>
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/privet/cloud_delegate.h"
+#include "src/privet/cloud_delegate.h"
 
 #include <map>
 #include <vector>
@@ -14,12 +14,12 @@
 #include <weave/error.h>
 #include <weave/provider/task_runner.h>
 
-#include "libweave/src/backoff_entry.h"
-#include "libweave/src/commands/command_manager.h"
-#include "libweave/src/config.h"
-#include "libweave/src/device_registration_info.h"
-#include "libweave/src/privet/constants.h"
-#include "libweave/src/states/state_manager.h"
+#include "src/backoff_entry.h"
+#include "src/commands/command_manager.h"
+#include "src/config.h"
+#include "src/device_registration_info.h"
+#include "src/privet/constants.h"
+#include "src/states/state_manager.h"
 
 namespace weave {
 namespace privet {

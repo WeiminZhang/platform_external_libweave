@@ -13,7 +13,7 @@
 #include <weave/error.h>
 #include <weave/provider/config_store.h>
 
-#include "libweave/src/privet/security_delegate.h"
+#include "src/privet/security_delegate.h"
 
 namespace weave {
 

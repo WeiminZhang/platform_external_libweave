@@ -8,7 +8,7 @@
 
 #include <base/strings/string_util.h>
 
-#include "libweave/src/string_utils.h"
+#include "src/string_utils.h"
 
 namespace weave {
 

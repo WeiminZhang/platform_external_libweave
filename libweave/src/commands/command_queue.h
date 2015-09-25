@@ -17,7 +17,7 @@
 #include <base/time/time.h>
 #include <weave/commands.h>
 
-#include "libweave/src/commands/command_instance.h"
+#include "src/commands/command_instance.h"
 
 namespace weave {
 

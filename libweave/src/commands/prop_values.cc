@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/commands/prop_values.h"
+#include "src/commands/prop_values.h"
 
-#include "libweave/src/commands/prop_types.h"
+#include "src/commands/prop_types.h"
 
 namespace weave {
 

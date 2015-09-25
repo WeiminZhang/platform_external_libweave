@@ -10,7 +10,7 @@
 #include <base/callback_list.h>
 #include <base/time/time.h>
 
-#include "libweave/src/commands/schema_utils.h"
+#include "src/commands/schema_utils.h"
 
 namespace weave {
 

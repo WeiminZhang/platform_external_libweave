@@ -9,7 +9,7 @@
 
 #include <gmock/gmock.h>
 
-#include "libweave/src/states/state_change_queue_interface.h"
+#include "src/states/state_change_queue_interface.h"
 
 namespace weave {
 

@@ -9,7 +9,7 @@
 #include <set>
 #include <string>
 
-#include "libweave/src/privet/privet_types.h"
+#include "src/privet/privet_types.h"
 
 namespace weave {
 namespace privet {

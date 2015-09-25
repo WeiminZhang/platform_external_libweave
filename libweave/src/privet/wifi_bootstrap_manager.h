@@ -16,9 +16,9 @@
 #include <base/time/time.h>
 #include <weave/privet.h>
 
-#include "libweave/src/privet/privet_types.h"
-#include "libweave/src/privet/wifi_delegate.h"
-#include "libweave/src/privet/wifi_ssid_generator.h"
+#include "src/privet/privet_types.h"
+#include "src/privet/wifi_delegate.h"
+#include "src/privet/wifi_ssid_generator.h"
 
 namespace weave {
 

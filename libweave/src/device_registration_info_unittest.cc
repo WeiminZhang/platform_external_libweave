@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/device_registration_info.h"
+#include "src/device_registration_info.h"
 
 #include <base/json/json_reader.h>
 #include <base/json/json_writer.h>
@@ -11,12 +11,12 @@
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/provider/test/mock_http_client.h>
 
-#include "libweave/src/bind_lambda.h"
-#include "libweave/src/commands/command_manager.h"
-#include "libweave/src/commands/unittest_utils.h"
-#include "libweave/src/http_constants.h"
-#include "libweave/src/states/mock_state_change_queue_interface.h"
-#include "libweave/src/states/state_manager.h"
+#include "src/bind_lambda.h"
+#include "src/commands/command_manager.h"
+#include "src/commands/unittest_utils.h"
+#include "src/http_constants.h"
+#include "src/states/mock_state_change_queue_interface.h"
+#include "src/states/state_manager.h"
 
 using testing::_;
 using testing::AtLeast;

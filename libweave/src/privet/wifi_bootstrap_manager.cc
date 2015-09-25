@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/privet/wifi_bootstrap_manager.h"
+#include "src/privet/wifi_bootstrap_manager.h"
 
 #include <base/logging.h>
 #include <base/memory/weak_ptr.h>
@@ -11,9 +11,9 @@
 #include <weave/provider/task_runner.h>
 #include <weave/provider/wifi.h>
 
-#include "libweave/src/bind_lambda.h"
-#include "libweave/src/privet/constants.h"
-#include "libweave/src/config.h"
+#include "src/bind_lambda.h"
+#include "src/privet/constants.h"
+#include "src/config.h"
 
 namespace weave {
 namespace privet {

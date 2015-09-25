@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/commands/command_queue.h"
+#include "src/commands/command_queue.h"
 
 #include <set>
 #include <string>
@@ -12,9 +12,9 @@
 #include <base/memory/weak_ptr.h>
 #include <gtest/gtest.h>
 
-#include "libweave/src/commands/command_definition.h"
-#include "libweave/src/commands/object_schema.h"
-#include "libweave/src/string_utils.h"
+#include "src/commands/command_definition.h"
+#include "src/commands/object_schema.h"
+#include "src/string_utils.h"
 
 namespace weave {
 

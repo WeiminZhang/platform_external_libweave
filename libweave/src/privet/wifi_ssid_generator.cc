@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/privet/wifi_ssid_generator.h"
+#include "src/privet/wifi_ssid_generator.h"
 
 #include <bitset>
 
@@ -11,9 +11,9 @@
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/stringprintf.h>
 
-#include "libweave/src/privet/cloud_delegate.h"
-#include "libweave/src/privet/device_delegate.h"
-#include "libweave/src/privet/wifi_delegate.h"
+#include "src/privet/cloud_delegate.h"
+#include "src/privet/device_delegate.h"
+#include "src/privet/wifi_delegate.h"
 
 namespace weave {
 namespace privet {

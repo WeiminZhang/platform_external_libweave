@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/examples/ubuntu/event_http_server.h"
+#include "examples/ubuntu/event_http_server.h"
 
 #include <vector>
 
@@ -11,7 +11,7 @@
 #include <event2/bufferevent_ssl.h>
 #include <openssl/err.h>
 
-#include "libweave/examples/ubuntu/event_task_runner.h"
+#include "examples/ubuntu/event_task_runner.h"
 
 namespace weave {
 namespace examples {

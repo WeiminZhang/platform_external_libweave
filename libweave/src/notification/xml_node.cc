@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "libweave/src/notification/xml_node.h"
+#include "src/notification/xml_node.h"
 
 #include <base/strings/stringprintf.h>
 
-#include "libweave/src/string_utils.h"
+#include "src/string_utils.h"
 
 namespace weave {
 

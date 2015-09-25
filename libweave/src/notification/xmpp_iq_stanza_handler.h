@@ -14,7 +14,7 @@
 #include <base/time/time.h>
 #include <base/memory/weak_ptr.h>
 
-#include "libweave/src/notification/xmpp_stream_parser.h"
+#include "src/notification/xmpp_stream_parser.h"
 
 namespace weave {
 
