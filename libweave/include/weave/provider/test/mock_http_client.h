@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_HTTP_CLIENT_H_
-#define LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_HTTP_CLIENT_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_HTTP_CLIENT_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_HTTP_CLIENT_H_
 
-#include <weave/http_client.h>
+#include <weave/provider/http_client.h>
 
 #include <memory>
 #include <string>
@@ -13,6 +13,7 @@
 #include <gmock/gmock.h>
 
 namespace weave {
+namespace provider {
 namespace test {
 
 class MockHttpClientResponse : public HttpClient::Response {
@@ -48,6 +49,7 @@ class MockHttpClient : public HttpClient {
 };
 
 }  // namespace test
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_HTTP_CLIENT_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_HTTP_CLIENT_H_

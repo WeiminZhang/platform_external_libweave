@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_DNS_SERVICE_DISCOVERY_PROVIDER_H_
-#define LIBWEAVE_INCLUDE_WEAVE_DNS_SERVICE_DISCOVERY_PROVIDER_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_DNS_SERVICE_DISCOVERY_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_DNS_SERVICE_DISCOVERY_H_
 
 #include <string>
 #include <vector>
@@ -11,8 +11,9 @@
 #include <base/callback.h>
 
 namespace weave {
+namespace provider {
 
-class DnsServiceDiscoveryProvider {
+class DnsServiceDiscovery {
  public:
   // Publishes new service using DNS-SD or updates existing one.
   virtual void PublishService(const std::string& service_type,
@@ -27,9 +28,10 @@ class DnsServiceDiscoveryProvider {
   virtual std::string GetId() const = 0;
 
  protected:
-  virtual ~DnsServiceDiscoveryProvider() = default;
+  virtual ~DnsServiceDiscovery() = default;
 };
 
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_DNS_SERVICE_DISCOVERY_PROVIDER_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_DNS_SERVICE_DISCOVERY_H_

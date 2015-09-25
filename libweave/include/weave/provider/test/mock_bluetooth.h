@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_BLUETOOTH_H_
-#define LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_BLUETOOTH_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_BLUETOOTH_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_BLUETOOTH_H_
 
-#include <weave/bluetooth.h>
+#include <weave/provider/bluetooth.h>
 
 namespace weave {
+namespace provider {
 namespace test {
 
 class MockBluetooth : public Bluetooth {
@@ -27,6 +28,7 @@ class MockBluetooth : public Bluetooth {
 };
 
 }  // namespace test
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_BLUETOOTH_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_BLUETOOTH_H_

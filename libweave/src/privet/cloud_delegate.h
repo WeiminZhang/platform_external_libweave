@@ -25,7 +25,10 @@ namespace weave {
 class CommandManager;
 class DeviceRegistrationInfo;
 class StateManager;
+
+namespace provider {
 class TaskRunner;
+}
 
 namespace privet {
 
@@ -134,7 +137,7 @@ class CloudDelegate {
 
   // Create default instance.
   static std::unique_ptr<CloudDelegate> CreateDefault(
-      TaskRunner* task_runner,
+      provider::TaskRunner* task_runner,
       DeviceRegistrationInfo* device,
       CommandManager* command_manager,
       StateManager* state_manager);

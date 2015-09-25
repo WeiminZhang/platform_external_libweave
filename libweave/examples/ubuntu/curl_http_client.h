@@ -8,19 +8,21 @@
 #include <string>
 
 #include <base/memory/weak_ptr.h>
-#include <weave/http_client.h>
+#include <weave/provider/http_client.h>
 
 namespace weave {
 
+namespace provider {
 class TaskRunner;
+}
 
 namespace examples {
 
 // Basic implementation of weave::HttpClient using libcurl. Should be used in
 // production code as it's blocking and does not validate server certificates.
-class CurlHttpClient : public HttpClient {
+class CurlHttpClient : public provider::HttpClient {
  public:
-  explicit CurlHttpClient(TaskRunner* task_runner);
+  explicit CurlHttpClient(provider::TaskRunner* task_runner);
 
   std::unique_ptr<Response> SendRequestAndBlock(const std::string& method,
                                                 const std::string& url,
@@ -42,7 +44,7 @@ class CurlHttpClient : public HttpClient {
                         int id,
                         ErrorPtr error);
 
-  TaskRunner* task_runner_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
   int request_id_ = 0;
 
   base::WeakPtrFactory<CurlHttpClient> weak_ptr_factory_{this};

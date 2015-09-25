@@ -6,14 +6,14 @@
 
 #include <base/bind.h>
 #include <curl/curl.h>
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 namespace weave {
 namespace examples {
 
 namespace {
 
-struct ResponseImpl : public HttpClient::Response {
+struct ResponseImpl : public provider::HttpClient::Response {
   int GetStatusCode() const { return status; }
   std::string GetContentType() const { return content_type; }
   const std::string& GetData() const { return data; }
@@ -31,15 +31,15 @@ size_t WriteFunction(void* contents, size_t size, size_t nmemb, void* userp) {
 
 }  // namespace
 
-CurlHttpClient::CurlHttpClient(TaskRunner* task_runner)
+CurlHttpClient::CurlHttpClient(provider::TaskRunner* task_runner)
     : task_runner_{task_runner} {}
 
-std::unique_ptr<HttpClient::Response> CurlHttpClient::SendRequestAndBlock(
-    const std::string& method,
-    const std::string& url,
-    const Headers& headers,
-    const std::string& data,
-    ErrorPtr* error) {
+std::unique_ptr<provider::HttpClient::Response>
+CurlHttpClient::SendRequestAndBlock(const std::string& method,
+                                    const std::string& url,
+                                    const Headers& headers,
+                                    const std::string& data,
+                                    ErrorPtr* error) {
   std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> curl{curl_easy_init(),
                                                            &curl_easy_cleanup};
   CHECK(curl);

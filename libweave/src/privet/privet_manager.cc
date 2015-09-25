@@ -15,7 +15,7 @@
 #include <base/scoped_observer.h>
 #include <base/strings/string_number_conversions.h>
 #include <base/values.h>
-#include <weave/network_provider.h>
+#include <weave/provider/network.h>
 
 #include "libweave/src/device_registration_info.h"
 #include "libweave/src/http_constants.h"
@@ -29,16 +29,22 @@
 namespace weave {
 namespace privet {
 
+using provider::TaskRunner;
+using provider::Network;
+using provider::DnsServiceDiscovery;
+using provider::HttpServer;
+using provider::Wifi;
+
 Manager::Manager() {}
 
 Manager::~Manager() {}
 
 void Manager::Start(const Device::Options& options,
                     TaskRunner* task_runner,
-                    NetworkProvider* network,
-                    DnsServiceDiscoveryProvider* dns_sd,
+                    Network* network,
+                    DnsServiceDiscovery* dns_sd,
                     HttpServer* http_server,
-                    WifiProvider* wifi,
+                    Wifi* wifi,
                     DeviceRegistrationInfo* device,
                     CommandManager* command_manager,
                     StateManager* state_manager) {

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_HTTP_CLIENT_H_
-#define LIBWEAVE_INCLUDE_WEAVE_HTTP_CLIENT_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_HTTP_CLIENT_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_HTTP_CLIENT_H_
 
 #include <string>
 #include <utility>
@@ -13,6 +13,7 @@
 #include <weave/error.h>
 
 namespace weave {
+namespace provider {
 
 class HttpClient {
  public:
@@ -49,6 +50,7 @@ class HttpClient {
   virtual ~HttpClient() = default;
 };
 
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_HTTP_CLIENT_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_HTTP_CLIENT_H_

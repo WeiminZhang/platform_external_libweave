@@ -6,13 +6,15 @@
 
 #include <base/bind.h>
 #include <gtest/gtest.h>
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 namespace weave {
 namespace test {
 
-FakeStream::FakeStream(TaskRunner* task_runner) : task_runner_{task_runner} {}
-FakeStream::FakeStream(TaskRunner* task_runner, const std::string& read_data)
+FakeStream::FakeStream(provider::TaskRunner* task_runner)
+    : task_runner_{task_runner} {}
+FakeStream::FakeStream(provider::TaskRunner* task_runner,
+                       const std::string& read_data)
     : task_runner_{task_runner}, read_data_{read_data} {}
 
 void FakeStream::CancelPendingOperations() {}

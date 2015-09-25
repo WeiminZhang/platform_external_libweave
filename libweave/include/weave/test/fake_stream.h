@@ -14,14 +14,16 @@
 
 namespace weave {
 
+namespace provider {
 class TaskRunner;
+}
 
 namespace test {
 
 class FakeStream : public Stream {
  public:
-  explicit FakeStream(TaskRunner* task_runner);
-  FakeStream(TaskRunner* task_runner, const std::string& read_data);
+  explicit FakeStream(provider::TaskRunner* task_runner);
+  FakeStream(provider::TaskRunner* task_runner, const std::string& read_data);
 
   void ExpectWritePacketString(base::TimeDelta, const std::string& data);
   void AddReadPacketString(base::TimeDelta, const std::string& data);
@@ -37,7 +39,7 @@ class FakeStream : public Stream {
              const ErrorCallback& error_callback) override;
 
  private:
-  TaskRunner* task_runner_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
   std::string write_data_;
   std::string read_data_;
 };

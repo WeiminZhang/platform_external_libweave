@@ -18,15 +18,19 @@
 
 namespace weave {
 
-class TaskRunner;
 class XmppChannelInterface;
+
+namespace provider {
+class TaskRunner;
+}
 
 class IqStanzaHandler {
  public:
   using ResponseCallback = base::Callback<void(std::unique_ptr<XmlNode>)>;
   using TimeoutCallback = base::Closure;
 
-  IqStanzaHandler(XmppChannelInterface* xmpp_channel, TaskRunner* task_runner);
+  IqStanzaHandler(XmppChannelInterface* xmpp_channel,
+                  provider::TaskRunner* task_runner);
 
   // Sends <iq> request to the server.
   // |type| is the IQ stanza type, one of "get", "set", "query".
@@ -66,7 +70,7 @@ class IqStanzaHandler {
   void OnTimeOut(RequestId id, const TimeoutCallback& timeout_callback);
 
   XmppChannelInterface* xmpp_channel_;
-  TaskRunner* task_runner_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
   std::map<RequestId, ResponseCallback> requests_;
   RequestId last_request_id_{0};
 

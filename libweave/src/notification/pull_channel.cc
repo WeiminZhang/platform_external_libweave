@@ -6,13 +6,14 @@
 
 #include <base/bind.h>
 #include <base/location.h>
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 #include "libweave/src/notification/notification_delegate.h"
 
 namespace weave {
 
-PullChannel::PullChannel(base::TimeDelta pull_interval, TaskRunner* task_runner)
+PullChannel::PullChannel(base::TimeDelta pull_interval,
+                         provider::TaskRunner* task_runner)
     : pull_interval_{pull_interval}, task_runner_{task_runner} {}
 
 std::string PullChannel::GetName() const {

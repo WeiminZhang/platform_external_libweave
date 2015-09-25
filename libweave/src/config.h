@@ -10,8 +10,8 @@
 #include <vector>
 
 #include <base/callback.h>
-#include <weave/config_store.h>
 #include <weave/error.h>
+#include <weave/provider/config_store.h>
 
 #include "libweave/src/privet/security_delegate.h"
 
@@ -25,7 +25,7 @@ class Config final {
   using OnChangedCallback = base::Callback<void(const Settings&)>;
   ~Config() = default;
 
-  explicit Config(ConfigStore* config_store);
+  explicit Config(provider::ConfigStore* config_store);
 
   void AddOnChangedCallback(const OnChangedCallback& callback);
   const Settings& GetSettings() const;
@@ -93,7 +93,7 @@ class Config final {
   void Save();
 
   Settings settings_;
-  ConfigStore* config_store_{nullptr};
+  provider::ConfigStore* config_store_{nullptr};
   std::vector<OnChangedCallback> on_changed_;
 
   DISALLOW_COPY_AND_ASSIGN(Config);

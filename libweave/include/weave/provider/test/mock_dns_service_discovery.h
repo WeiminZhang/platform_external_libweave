@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_DNS_SERVICE_DISCOVERY_PROVIDER_H_
-#define LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_DNS_SERVICE_DISCOVERY_PROVIDER_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_DNS_SERVICE_DISCOVERY_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_DNS_SERVICE_DISCOVERY_H_
 
-#include <weave/dns_service_discovery_provider.h>
+#include <weave/provider/dns_service_discovery.h>
 
 #include <string>
 #include <vector>
@@ -13,9 +13,10 @@
 #include <gmock/gmock.h>
 
 namespace weave {
+namespace provider {
 namespace test {
 
-class MockDnsServiceDiscovery : public DnsServiceDiscoveryProvider {
+class MockDnsServiceDiscovery : public DnsServiceDiscovery {
  public:
   MOCK_METHOD3(PublishService,
                void(const std::string&,
@@ -26,6 +27,7 @@ class MockDnsServiceDiscovery : public DnsServiceDiscoveryProvider {
 };
 
 }  // namespace test
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_DNS_SERVICE_DISCOVERY_PROVIDER_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_DNS_SERVICE_DISCOVERY_H_

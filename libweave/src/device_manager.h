@@ -27,14 +27,14 @@ class DeviceManager final : public Device {
   ~DeviceManager() override;
 
   void Start(const Options& options,
-             ConfigStore* config_store,
-             TaskRunner* task_runner,
-             HttpClient* http_client,
-             NetworkProvider* network,
-             DnsServiceDiscoveryProvider* dns_sd,
-             HttpServer* http_server,
-             WifiProvider* wifi,
-             Bluetooth* bluetooth) override;
+             provider::ConfigStore* config_store,
+             provider::TaskRunner* task_runner,
+             provider::HttpClient* http_client,
+             provider::Network* network,
+             provider::DnsServiceDiscovery* dns_sd,
+             provider::HttpServer* http_server,
+             provider::Wifi* wifi,
+             provider::Bluetooth* bluetooth) override;
 
   Commands* GetCommands() override;
   State* GetState() override;
@@ -45,12 +45,12 @@ class DeviceManager final : public Device {
 
  private:
   void StartPrivet(const Options& options,
-                   TaskRunner* task_runner,
-                   NetworkProvider* network,
-                   DnsServiceDiscoveryProvider* dns_sd,
-                   HttpServer* http_server,
-                   WifiProvider* wifi,
-                   Bluetooth* bluetooth);
+                   provider::TaskRunner* task_runner,
+                   provider::Network* network,
+                   provider::DnsServiceDiscovery* dns_sd,
+                   provider::HttpServer* http_server,
+                   provider::Wifi* wifi,
+                   provider::Bluetooth* bluetooth);
 
   void OnWiFiBootstrapStateChanged(weave::WifiSetupState state);
 

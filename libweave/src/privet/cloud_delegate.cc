@@ -12,7 +12,7 @@
 #include <base/memory/weak_ptr.h>
 #include <base/values.h>
 #include <weave/error.h>
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 #include "libweave/src/backoff_entry.h"
 #include "libweave/src/commands/command_manager.h"
@@ -39,7 +39,7 @@ Command* ReturnNotFound(const std::string& command_id, ErrorPtr* error) {
 
 class CloudDelegateImpl : public CloudDelegate {
  public:
-  CloudDelegateImpl(TaskRunner* task_runner,
+  CloudDelegateImpl(provider::TaskRunner* task_runner,
                     DeviceRegistrationInfo* device,
                     CommandManager* command_manager,
                     StateManager* state_manager)
@@ -340,7 +340,7 @@ class CloudDelegateImpl : public CloudDelegate {
     return false;
   }
 
-  TaskRunner* task_runner_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
   DeviceRegistrationInfo* device_{nullptr};
   CommandManager* command_manager_{nullptr};
   StateManager* state_manager_{nullptr};
@@ -378,7 +378,7 @@ CloudDelegate::~CloudDelegate() {}
 
 // static
 std::unique_ptr<CloudDelegate> CloudDelegate::CreateDefault(
-    TaskRunner* task_runner,
+    provider::TaskRunner* task_runner,
     DeviceRegistrationInfo* device,
     CommandManager* command_manager,
     StateManager* state_manager) {

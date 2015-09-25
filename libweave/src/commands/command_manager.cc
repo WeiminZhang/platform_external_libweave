@@ -5,9 +5,9 @@
 #include "libweave/src/commands/command_manager.h"
 
 #include <base/values.h>
-#include <weave/config_store.h>
 #include <weave/enum_to_string.h>
 #include <weave/error.h>
+#include <weave/provider/config_store.h>
 
 #include "libweave/src/commands/schema_constants.h"
 #include "libweave/src/utils.h"
@@ -59,7 +59,7 @@ bool CommandManager::LoadCommands(const std::string& json,
   return LoadCommands(*dict, category, error);
 }
 
-void CommandManager::Startup(ConfigStore* config_store) {
+void CommandManager::Startup(provider::ConfigStore* config_store) {
   LOG(INFO) << "Initializing CommandManager.";
 
   // Load global standard GCD command dictionary.

@@ -14,7 +14,9 @@
 
 namespace weave {
 
-class DnsServiceDiscoveryProvider;
+namespace provider {
+class DnsServiceDiscovery;
+}
 
 namespace privet {
 
@@ -28,7 +30,7 @@ class Publisher : public IdentityDelegate {
   Publisher(const DeviceDelegate* device,
             const CloudDelegate* cloud,
             const WifiDelegate* wifi,
-            DnsServiceDiscoveryProvider* dns_sd);
+            provider::DnsServiceDiscovery* dns_sd);
   ~Publisher() override;
 
   // IdentityDelegate implementation.
@@ -42,7 +44,7 @@ class Publisher : public IdentityDelegate {
   void RemoveService();
 
   bool is_publishing_{false};
-  DnsServiceDiscoveryProvider* dns_sd_{nullptr};
+  provider::DnsServiceDiscovery* dns_sd_{nullptr};
 
   const DeviceDelegate* device_{nullptr};
   const CloudDelegate* cloud_{nullptr};

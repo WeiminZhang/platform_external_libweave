@@ -24,7 +24,9 @@ class P224EncryptedKeyExchange;
 
 namespace weave {
 
+namespace provider {
 class TaskRunner;
+}
 
 namespace privet {
 
@@ -50,7 +52,7 @@ class SecurityManager : public SecurityDelegate {
   SecurityManager(const std::set<PairingType>& pairing_modes,
                   const std::string& embedded_code,
                   bool disable_security,
-                  TaskRunner* task_runner);
+                  provider::TaskRunner* task_runner);
   ~SecurityManager() override;
 
   // SecurityDelegate methods
@@ -94,7 +96,7 @@ class SecurityManager : public SecurityDelegate {
   std::set<PairingType> pairing_modes_;
   std::string embedded_code_;
   // TODO(vitalybuka): Session cleanup can be done without posting tasks.
-  TaskRunner* task_runner_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
   std::map<std::string, std::unique_ptr<KeyExchanger>> pending_sessions_;
   std::map<std::string, std::unique_ptr<KeyExchanger>> confirmed_sessions_;
   mutable int pairing_attemts_{0};

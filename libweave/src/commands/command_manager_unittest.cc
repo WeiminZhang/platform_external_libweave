@@ -8,7 +8,7 @@
 
 #include <base/json/json_writer.h>
 #include <gtest/gtest.h>
-#include <weave/test/mock_config_store.h>
+#include <weave/provider/test/mock_config_store.h>
 
 #include "libweave/src/bind_lambda.h"
 #include "libweave/src/commands/unittest_utils.h"
@@ -115,7 +115,7 @@ TEST(CommandManager, LoadCommandsJson) {
 
 TEST(CommandManager, ShouldLoadStandardAndTestDefinitions) {
   CommandManager manager;
-  test::MockConfigStore config_store;
+  provider::test::MockConfigStore config_store;
   EXPECT_CALL(config_store, LoadBaseCommandDefs())
       .WillOnce(Return(kTestBaseCommands));
   EXPECT_CALL(config_store, LoadCommandDefs())

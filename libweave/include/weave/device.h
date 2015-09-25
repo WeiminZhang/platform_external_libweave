@@ -9,19 +9,19 @@
 #include <set>
 #include <string>
 
-#include <weave/bluetooth.h>
 #include <weave/cloud.h>
 #include <weave/commands.h>
-#include <weave/config_store.h>
-#include <weave/dns_service_discovery_provider.h>
 #include <weave/export.h>
-#include <weave/http_client.h>
-#include <weave/http_server.h>
-#include <weave/network_provider.h>
 #include <weave/privet.h>
+#include <weave/provider/bluetooth.h>
+#include <weave/provider/config_store.h>
+#include <weave/provider/dns_service_discovery.h>
+#include <weave/provider/http_client.h>
+#include <weave/provider/http_server.h>
+#include <weave/provider/network.h>
+#include <weave/provider/task_runner.h>
+#include <weave/provider/wifi.h>
 #include <weave/state.h>
-#include <weave/task_runner.h>
-#include <weave/wifi_provider.h>
 
 namespace weave {
 
@@ -38,14 +38,14 @@ class Device {
   virtual ~Device() = default;
 
   virtual void Start(const Options& options,
-                     ConfigStore* config_store,
-                     TaskRunner* task_runner,
-                     HttpClient* http_client,
-                     NetworkProvider* network,
-                     DnsServiceDiscoveryProvider* dns_sd,
-                     HttpServer* http_server,
-                     WifiProvider* wifi,
-                     Bluetooth* bluetooth) = 0;
+                     provider::ConfigStore* config_store,
+                     provider::TaskRunner* task_runner,
+                     provider::HttpClient* http_client,
+                     provider::Network* network,
+                     provider::DnsServiceDiscovery* dns_sd,
+                     provider::HttpServer* http_server,
+                     provider::Wifi* wifi,
+                     provider::Bluetooth* bluetooth_provider) = 0;
 
   virtual Commands* GetCommands() = 0;
   virtual State* GetState() = 0;

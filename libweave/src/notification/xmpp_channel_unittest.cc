@@ -8,9 +8,9 @@
 #include <queue>
 
 #include <gtest/gtest.h>
+#include <weave/provider/test/mock_network.h>
+#include <weave/provider/test/mock_task_runner.h>
 #include <weave/test/fake_stream.h>
-#include <weave/test/mock_network_provider.h>
-#include <weave/test/mock_task_runner.h>
 
 #include "libweave/src/bind_lambda.h"
 
@@ -82,14 +82,13 @@ constexpr char kSubscribeMessage[] =
 
 class FakeXmppChannel : public XmppChannel {
  public:
-  explicit FakeXmppChannel(TaskRunner* task_runner,
-                           weave::NetworkProvider* network)
+  explicit FakeXmppChannel(provider::TaskRunner* task_runner,
+                           provider::Network* network)
       : XmppChannel{kAccountName, kAccessToken, task_runner, network},
         stream_{new test::FakeStream{task_runner_}},
         fake_stream_{stream_.get()} {}
 
-  void Connect(
-      const base::Callback<void(std::unique_ptr<weave::Stream>)>& callback) {
+  void Connect(const base::Callback<void(std::unique_ptr<Stream>)>& callback) {
     callback.Run(std::move(stream_));
   }
 
@@ -111,9 +110,9 @@ class FakeXmppChannel : public XmppChannel {
   test::FakeStream* fake_stream_{nullptr};
 };
 
-class MockNetworkProvider : public weave::test::MockNetworkProvider {
+class MockNetwork : public provider::test::MockNetwork {
  public:
-  MockNetworkProvider() {
+  MockNetwork() {
     EXPECT_CALL(*this, AddConnectionChangedCallback(_))
         .WillRepeatedly(Return());
   }
@@ -145,8 +144,8 @@ class XmppChannelTest : public ::testing::Test {
     EXPECT_EQ(st, xmpp_client_.state());
   }
 
-  StrictMock<test::MockTaskRunner> task_runner_;
-  StrictMock<MockNetworkProvider> network_;
+  StrictMock<provider::test::MockTaskRunner> task_runner_;
+  StrictMock<MockNetwork> network_;
   FakeXmppChannel xmpp_client_{&task_runner_, &network_};
 };
 

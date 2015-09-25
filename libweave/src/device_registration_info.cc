@@ -15,9 +15,9 @@
 #include <base/json/json_writer.h>
 #include <base/strings/string_number_conversions.h>
 #include <base/values.h>
-#include <weave/http_client.h>
-#include <weave/network_provider.h>
-#include <weave/task_runner.h>
+#include <weave/provider/http_client.h>
+#include <weave/provider/network.h>
+#include <weave/provider/task_runner.h>
 
 #include "libweave/src/bind_lambda.h"
 #include "libweave/src/commands/cloud_command_proxy.h"
@@ -39,6 +39,8 @@ const char kErrorDomainGCD[] = "gcd";
 const char kErrorDomainGCDServer[] = "gcd_server";
 
 namespace {
+
+using provider::HttpClient;
 
 inline void SetUnexpectedError(ErrorPtr* error) {
   Error::AddTo(error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
@@ -113,7 +115,8 @@ class RequestSender final {
                 HttpClient* transport)
       : method_{method}, url_{url}, transport_{transport} {}
 
-  std::unique_ptr<HttpClient::Response> SendAndBlock(ErrorPtr* error) {
+  std::unique_ptr<provider::HttpClient::Response> SendAndBlock(
+      ErrorPtr* error) {
     return transport_->SendRequestAndBlock(method_, url_, GetFullHeaders(),
                                            data_, error);
   }
@@ -213,11 +216,11 @@ bool IsSuccessful(const HttpClient::Response& response) {
 DeviceRegistrationInfo::DeviceRegistrationInfo(
     const std::shared_ptr<CommandManager>& command_manager,
     const std::shared_ptr<StateManager>& state_manager,
-    std::unique_ptr<Config> config,
-    TaskRunner* task_runner,
-    HttpClient* http_client,
     bool notifications_enabled,
-    NetworkProvider* network)
+    std::unique_ptr<Config> config,
+    provider::TaskRunner* task_runner,
+    provider::HttpClient* http_client,
+    provider::Network* network)
     : http_client_{http_client},
       task_runner_{task_runner},
       command_manager_{command_manager},

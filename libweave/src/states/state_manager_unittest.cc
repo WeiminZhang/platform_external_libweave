@@ -11,7 +11,7 @@
 #include <base/values.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <weave/test/mock_config_store.h>
+#include <weave/provider/test/mock_config_store.h>
 
 #include "libweave/src/commands/schema_constants.h"
 #include "libweave/src/commands/unittest_utils.h"
@@ -138,7 +138,7 @@ TEST_F(StateManagerTest, LoadStateDefinition) {
 }
 
 TEST_F(StateManagerTest, Startup) {
-  test::MockConfigStore config_store;
+  provider::test::MockConfigStore config_store;
   StateManager manager(&mock_state_change_queue_);
 
   EXPECT_CALL(config_store, LoadBaseStateDefs())

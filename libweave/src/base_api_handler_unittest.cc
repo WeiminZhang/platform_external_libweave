@@ -7,8 +7,8 @@
 #include <base/strings/string_number_conversions.h>
 #include <base/values.h>
 #include <gtest/gtest.h>
-#include <weave/test/mock_config_store.h>
-#include <weave/test/mock_http_client.h>
+#include <weave/provider/test/mock_config_store.h>
+#include <weave/provider/test/mock_http_client.h>
 
 #include "libweave/src/commands/command_manager.h"
 #include "libweave/src/commands/unittest_utils.h"
@@ -65,8 +65,8 @@ class BaseApiHandlerTest : public ::testing::Test {
     std::unique_ptr<Config> config{new Config{&config_store_}};
     config->Load();
     dev_reg_.reset(new DeviceRegistrationInfo(command_manager_, state_manager_,
-                                              std::move(config), nullptr,
-                                              &http_client_, true, nullptr));
+                                              true, std::move(config), nullptr,
+                                              &http_client_, nullptr));
     handler_.reset(
         new BaseApiHandler{dev_reg_.get(), state_manager_, command_manager_});
   }
@@ -91,8 +91,8 @@ class BaseApiHandlerTest : public ::testing::Test {
               command_manager_->FindCommand(id)->GetStatus());
   }
 
-  test::MockConfigStore config_store_;
-  StrictMock<test::MockHttpClient> http_client_;
+  provider::test::MockConfigStore config_store_;
+  StrictMock<provider::test::MockHttpClient> http_client_;
   std::unique_ptr<DeviceRegistrationInfo> dev_reg_;
   std::shared_ptr<CommandManager> command_manager_;
   testing::StrictMock<MockStateChangeQueueInterface> mock_state_change_queue_;

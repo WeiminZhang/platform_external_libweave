@@ -30,14 +30,14 @@ DeviceManager::DeviceManager() {}
 DeviceManager::~DeviceManager() {}
 
 void DeviceManager::Start(const Options& options,
-                          ConfigStore* config_store,
-                          TaskRunner* task_runner,
-                          HttpClient* http_client,
-                          NetworkProvider* network,
-                          DnsServiceDiscoveryProvider* dns_sd,
-                          HttpServer* http_server,
-                          WifiProvider* wifi,
-                          Bluetooth* bluetooth) {
+                          provider::ConfigStore* config_store,
+                          provider::TaskRunner* task_runner,
+                          provider::HttpClient* http_client,
+                          provider::Network* network,
+                          provider::DnsServiceDiscovery* dns_sd,
+                          provider::HttpServer* http_server,
+                          provider::Wifi* wifi,
+                          provider::Bluetooth* bluetooth) {
   command_manager_ = std::make_shared<CommandManager>();
   command_manager_->Startup(config_store);
   state_change_queue_.reset(new StateChangeQueue(kMaxStateChangeQueueSize));
@@ -50,8 +50,8 @@ void DeviceManager::Start(const Options& options,
   // TODO(avakulenko): Figure out security implications of storing
   // device info state data unencrypted.
   device_info_.reset(new DeviceRegistrationInfo(
-      command_manager_, state_manager_, std::move(config), task_runner,
-      http_client, options.xmpp_enabled, network));
+      command_manager_, state_manager_, options.xmpp_enabled, std::move(config),
+      task_runner, http_client, network));
   base_api_handler_.reset(
       new BaseApiHandler{device_info_.get(), state_manager_, command_manager_});
 
@@ -87,12 +87,12 @@ Privet* DeviceManager::GetPrivet() {
 }
 
 void DeviceManager::StartPrivet(const Options& options,
-                                TaskRunner* task_runner,
-                                NetworkProvider* network,
-                                DnsServiceDiscoveryProvider* dns_sd,
-                                HttpServer* http_server,
-                                WifiProvider* wifi,
-                                Bluetooth* bluetooth) {
+                                provider::TaskRunner* task_runner,
+                                provider::Network* network,
+                                provider::DnsServiceDiscovery* dns_sd,
+                                provider::HttpServer* http_server,
+                                provider::Wifi* wifi,
+                                provider::Bluetooth* bluetooth) {
   privet_.reset(new privet::Manager{});
   privet_->Start(options, task_runner, network, dns_sd, http_server, wifi,
                  device_info_.get(), command_manager_.get(),

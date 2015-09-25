@@ -27,7 +27,9 @@ class Time;
 
 namespace weave {
 
+namespace provider {
 class ConfigStore;
+}
 
 // StateManager is the class that aggregates the device state fragments
 // provided by device daemons and makes the aggregate device state available
@@ -45,7 +47,7 @@ class StateManager final : public State {
 
   // Initializes the state manager and load device state fragments.
   // Called by Buffet daemon at startup.
-  void Startup(ConfigStore* config_store);
+  void Startup(provider::ConfigStore* config_store);
 
   // Returns all the categories the state properties are registered from.
   // As with GCD command handling, the category normally represent a device

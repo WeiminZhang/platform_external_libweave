@@ -11,13 +11,13 @@
 
 #include <event2/event.h>
 
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 namespace weave {
 namespace examples {
 
 // Simple task runner implemented with libevent message loop.
-class EventTaskRunner : public TaskRunner {
+class EventTaskRunner : public provider::TaskRunner {
  public:
   void PostDelayedTask(const tracked_objects::Location& from_here,
                        const base::Closure& task,
