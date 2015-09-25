@@ -14,7 +14,7 @@
 #include <vector>
 
 #include <base/memory/weak_ptr.h>
-#include <weave/http_server.h>
+#include <weave/provider/http_server.h>
 
 namespace weave {
 namespace examples {
@@ -22,7 +22,7 @@ namespace examples {
 class EventTaskRunner;
 
 // HTTP/HTTPS server implemented with libevent.
-class HttpServerImpl : public HttpServer {
+class HttpServerImpl : public provider::HttpServer {
  public:
   class RequestImpl;
 

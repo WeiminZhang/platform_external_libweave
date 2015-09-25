@@ -6,14 +6,14 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <weave/test/mock_bluetooth.h>
-#include <weave/test/mock_config_store.h>
-#include <weave/test/mock_dns_service_discovery_provider.h>
-#include <weave/test/mock_http_client.h>
-#include <weave/test/mock_http_server.h>
-#include <weave/test/mock_network_provider.h>
-#include <weave/test/mock_task_runner.h>
-#include <weave/test/mock_wifi_provider.h>
+#include <weave/provider/test/mock_bluetooth.h>
+#include <weave/provider/test/mock_config_store.h>
+#include <weave/provider/test/mock_dns_service_discovery.h>
+#include <weave/provider/test/mock_http_client.h>
+#include <weave/provider/test/mock_http_server.h>
+#include <weave/provider/test/mock_network.h>
+#include <weave/provider/test/mock_task_runner.h>
+#include <weave/provider/test/mock_wifi.h>
 #include <weave/test/unittest_utils.h>
 
 #include "libweave/src/bind_lambda.h"
@@ -36,6 +36,8 @@ namespace weave {
 
 using test::CreateDictionaryValue;
 using test::ValueToString;
+using provider::test::MockHttpClientResponse;
+using provider::NetworkState;
 
 const char kCategory[] = "powerd";
 
@@ -172,8 +174,8 @@ class WeaveTest : public ::testing::Test {
                      const std::string& json_response) {
     EXPECT_CALL(http_client_, MockSendRequest(method, url, _, _, _))
         .WillOnce(InvokeWithoutArgs([json_response]() {
-          test::MockHttpClientResponse* response =
-              new StrictMock<test::MockHttpClientResponse>;
+          provider::test::MockHttpClientResponse* response =
+              new StrictMock<provider::test::MockHttpClientResponse>;
           EXPECT_CALL(*response, GetStatusCode())
               .Times(AtLeast(1))
               .WillRepeatedly(Return(200));
@@ -224,7 +226,7 @@ class WeaveTest : public ::testing::Test {
   void InitNetwork() {
     EXPECT_CALL(network_, AddConnectionChangedCallback(_))
         .WillRepeatedly(Invoke(
-            [this](const NetworkProvider::ConnectionChangedCallback& cb) {
+            [this](const provider::Network::ConnectionChangedCallback& cb) {
               network_callbacks_.push_back(cb);
             }));
     EXPECT_CALL(network_, GetConnectionState())
@@ -264,13 +266,14 @@ class WeaveTest : public ::testing::Test {
     EXPECT_CALL(http_server_, GetHttpsCertificateFingerprint())
         .WillRepeatedly(ReturnRefOfCopy(std::vector<uint8_t>{1, 2, 3}));
     EXPECT_CALL(http_server_, AddRequestHandler(_, _))
-        .WillRepeatedly(Invoke([this](const std::string& path_prefix,
-                                      const HttpServer::OnRequestCallback& cb) {
-          http_server_request_cb_.push_back(cb);
-        }));
-    EXPECT_CALL(http_server_, AddOnStateChangedCallback(_))
         .WillRepeatedly(
-            Invoke([this](const HttpServer::OnStateChangedCallback& cb) {
+            Invoke([this](const std::string& path_prefix,
+                          const provider::HttpServer::OnRequestCallback& cb) {
+              http_server_request_cb_.push_back(cb);
+            }));
+    EXPECT_CALL(http_server_, AddOnStateChangedCallback(_))
+        .WillRepeatedly(Invoke(
+            [this](const provider::HttpServer::OnStateChangedCallback& cb) {
               http_server_changed_cb_.push_back(cb);
             }));
   }
@@ -307,26 +310,28 @@ class WeaveTest : public ::testing::Test {
     task_runner_.Run();
   }
 
-  void NotifyNetworkChanged(NetworkState state, base::TimeDelta delay) {
+  void NotifyNetworkChanged(provider::NetworkState state,
+                            base::TimeDelta delay) {
     EXPECT_CALL(network_, GetConnectionState()).WillRepeatedly(Return(state));
     for (const auto& cb : network_callbacks_) {
       task_runner_.PostDelayedTask(FROM_HERE, cb, delay);
     }
   }
 
-  std::vector<HttpServer::OnStateChangedCallback> http_server_changed_cb_;
-  std::vector<HttpServer::OnRequestCallback> http_server_request_cb_;
+  std::vector<provider::HttpServer::OnStateChangedCallback>
+      http_server_changed_cb_;
+  std::vector<provider::HttpServer::OnRequestCallback> http_server_request_cb_;
 
-  StrictMock<test::MockConfigStore> config_store_;
-  StrictMock<test::MockTaskRunner> task_runner_;
-  StrictMock<test::MockHttpClient> http_client_;
-  StrictMock<test::MockNetworkProvider> network_;
-  StrictMock<test::MockDnsServiceDiscovery> dns_sd_;
-  StrictMock<test::MockHttpServer> http_server_;
-  StrictMock<test::MockWifiProvider> wifi_;
-  StrictMock<test::MockBluetooth> bluetooth_;
+  StrictMock<provider::test::MockConfigStore> config_store_;
+  StrictMock<provider::test::MockTaskRunner> task_runner_;
+  StrictMock<provider::test::MockHttpClient> http_client_;
+  StrictMock<provider::test::MockNetwork> network_;
+  StrictMock<provider::test::MockDnsServiceDiscovery> dns_sd_;
+  StrictMock<provider::test::MockHttpServer> http_server_;
+  StrictMock<provider::test::MockWifi> wifi_;
+  StrictMock<provider::test::MockBluetooth> bluetooth_;
 
-  std::vector<NetworkProvider::ConnectionChangedCallback> network_callbacks_;
+  std::vector<provider::Network::ConnectionChangedCallback> network_callbacks_;
 
   weave::Cloud* cloud_{nullptr};
 
@@ -418,7 +423,7 @@ class WeaveWiFiSetupTest : public WeaveTest {
     InitDnsSd();
 
     EXPECT_CALL(network_, GetConnectionState())
-        .WillRepeatedly(Return(NetworkState::kConnected));
+        .WillRepeatedly(Return(provider::NetworkState::kConnected));
   }
 };
 
@@ -426,8 +431,8 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
   StartDevice();
 
   // Short disconnect.
-  NotifyNetworkChanged(NetworkState::kOffline, {});
-  NotifyNetworkChanged(NetworkState::kConnected,
+  NotifyNetworkChanged(provider::NetworkState::kOffline, {});
+  NotifyNetworkChanged(provider::NetworkState::kConnected,
                        base::TimeDelta::FromSeconds(10));
   task_runner_.Run();
 

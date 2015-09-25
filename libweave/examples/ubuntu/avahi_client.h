@@ -12,13 +12,13 @@
 #include <avahi-client/publish.h>
 #include <avahi-common/thread-watch.h>
 
-#include <weave/dns_service_discovery_provider.h>
+#include <weave/provider/dns_service_discovery.h>
 
 namespace weave {
 namespace examples {
 
-// Example of weave::DnsServiceDiscoveryProvider implemented with avahi.
-class AvahiClient : public DnsServiceDiscoveryProvider {
+// Example of provider::DnsServiceDiscovery implemented with avahi.
+class AvahiClient : public provider::DnsServiceDiscovery {
  public:
   AvahiClient();
 

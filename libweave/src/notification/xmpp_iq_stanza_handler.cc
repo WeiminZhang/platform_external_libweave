@@ -7,7 +7,7 @@
 #include <base/bind.h>
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/stringprintf.h>
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 #include "libweave/src/notification/xml_node.h"
 #include "libweave/src/notification/xmpp_channel.h"
@@ -48,7 +48,7 @@ std::string BuildIqStanza(const std::string& id,
 }  // anonymous namespace
 
 IqStanzaHandler::IqStanzaHandler(XmppChannelInterface* xmpp_channel,
-                                 TaskRunner* task_runner)
+                                 provider::TaskRunner* task_runner)
     : xmpp_channel_{xmpp_channel}, task_runner_{task_runner} {}
 
 void IqStanzaHandler::SendRequest(const std::string& type,

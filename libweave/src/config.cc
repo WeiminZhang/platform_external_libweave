@@ -70,10 +70,10 @@ Settings CreateDefaultSettings() {
 
 }  // namespace
 
-Config::Config(ConfigStore* config_store)
+Config::Config(provider::ConfigStore* config_store)
     : settings_{CreateDefaultSettings()}, config_store_{config_store} {
   if (config_store_) {
-    AddOnChangedCallback(base::Bind(&ConfigStore::OnSettingsChanged,
+    AddOnChangedCallback(base::Bind(&provider::ConfigStore::OnSettingsChanged,
                                     base::Unretained(config_store_)));
   }
 }

@@ -22,9 +22,11 @@
 
 namespace weave {
 
-class NetworkProvider;
+namespace provider {
+class Network;
 class TaskRunner;
-class WifiProvider;
+class Wifi;
+}
 
 namespace privet {
 
@@ -40,9 +42,9 @@ class WifiBootstrapManager : public WifiDelegate {
   WifiBootstrapManager(const std::string& last_configured_ssid,
                        const std::string& test_privet_ssid,
                        bool wifi_setup_enabled,
-                       TaskRunner* task_runner,
-                       NetworkProvider* shill_client,
-                       WifiProvider* wifi,
+                       provider::TaskRunner* task_runner,
+                       provider::Network* shill_client,
+                       provider::Wifi* wifi,
                        CloudDelegate* gcd);
   ~WifiBootstrapManager() override = default;
   virtual void Init();
@@ -96,9 +98,9 @@ class WifiBootstrapManager : public WifiDelegate {
   // It is not persisted to disk.
   SetupState setup_state_{SetupState::kNone};
   ConnectionState connection_state_{ConnectionState::kDisabled};
-  TaskRunner* task_runner_{nullptr};
-  NetworkProvider* network_{nullptr};
-  WifiProvider* wifi_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
+  provider::Network* network_{nullptr};
+  provider::Wifi* wifi_{nullptr};
   WifiSsidGenerator ssid_generator_;
   base::Time monitor_until_;
 

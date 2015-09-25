@@ -9,7 +9,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <weave/test/mock_task_runner.h>
+#include <weave/provider/test/mock_task_runner.h>
 
 #include "libweave/src/commands/command_dictionary.h"
 #include "libweave/src/commands/command_instance.h"
@@ -136,7 +136,7 @@ class CloudCommandProxyTest : public ::testing::Test {
   base::CallbackList<void(StateChangeQueueInterface::UpdateID)> callbacks_;
   testing::StrictMock<MockCloudCommandUpdateInterface> cloud_updater_;
   testing::StrictMock<MockStateChangeQueueInterface> state_change_queue_;
-  testing::StrictMock<test::MockTaskRunner> task_runner_;
+  testing::StrictMock<provider::test::MockTaskRunner> task_runner_;
   std::queue<base::Closure> task_queue_;
   CommandDictionary command_dictionary_;
   std::unique_ptr<CommandInstance> command_instance_;

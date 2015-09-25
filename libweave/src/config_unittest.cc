@@ -9,7 +9,7 @@
 #include <base/bind.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <weave/test/mock_config_store.h>
+#include <weave/provider/test/mock_config_store.h>
 
 #include "libweave/src/commands/unittest_utils.h"
 
@@ -35,7 +35,7 @@ class ConfigTest : public ::testing::Test {
 
   MOCK_METHOD1(OnConfigChanged, void(const Settings&));
 
-  test::MockConfigStore config_store_;
+  provider::test::MockConfigStore config_store_;
   std::unique_ptr<Config> config_;
   const Config default_{nullptr};
 };

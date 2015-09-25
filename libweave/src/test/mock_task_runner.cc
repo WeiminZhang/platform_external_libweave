@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <weave/test/mock_task_runner.h>
+#include <weave/provider/test/mock_task_runner.h>
 
 using testing::_;
 using testing::Invoke;
 using testing::AnyNumber;
 
 namespace weave {
+namespace provider {
 namespace test {
 
 class MockTaskRunner::TestClock : public base::Clock {
@@ -60,4 +61,5 @@ void MockTaskRunner::SaveTask(const tracked_objects::Location& from_here,
 }
 
 }  // namespace test
+}  // namespace provider
 }  // namespace weave

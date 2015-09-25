@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_NETWORK_PROVIDER_H_
-#define LIBWEAVE_INCLUDE_WEAVE_NETWORK_PROVIDER_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_NETWORK_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_NETWORK_H_
 
 #include <string>
 
@@ -12,6 +12,7 @@
 #include <weave/stream.h>
 
 namespace weave {
+namespace provider {
 
 enum class NetworkState {
   kOffline = 0,
@@ -22,7 +23,7 @@ enum class NetworkState {
 
 // Interface with methods to detect network connectivity and opening network
 // connections.
-class NetworkProvider {
+class Network {
  public:
   // Callback type for AddConnectionChangedCallback.
   using ConnectionChangedCallback = base::Closure;
@@ -48,9 +49,10 @@ class NetworkProvider {
       const ErrorCallback& error_callback) = 0;
 
  protected:
-  virtual ~NetworkProvider() = default;
+  virtual ~Network() = default;
 };
 
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_NETWORK_PROVIDER_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_NETWORK_H_

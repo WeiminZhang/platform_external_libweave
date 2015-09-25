@@ -17,7 +17,7 @@
 #include <base/time/time.h>
 #include <weave/error.h>
 #include <weave/cloud.h>
-#include <weave/http_client.h>
+#include <weave/provider/http_client.h>
 
 #include "libweave/src/backoff_entry.h"
 #include "libweave/src/commands/cloud_command_update_interface.h"
@@ -33,15 +33,14 @@ namespace base {
 class DictionaryValue;
 }  // namespace base
 
-namespace chromeos {
-class KeyValueStore;
-}  // namespace chromeos
-
 namespace weave {
 
-class NetworkProvider;
 class StateManager;
+
+namespace provider {
+class Network;
 class TaskRunner;
+}
 
 extern const char kErrorDomainOAuth2[];
 extern const char kErrorDomainGCD[];
@@ -58,11 +57,11 @@ class DeviceRegistrationInfo : public Cloud,
 
   DeviceRegistrationInfo(const std::shared_ptr<CommandManager>& command_manager,
                          const std::shared_ptr<StateManager>& state_manager,
-                         std::unique_ptr<Config> config,
-                         TaskRunner* task_runner,
-                         HttpClient* http_client,
                          bool notifications_enabled,
-                         NetworkProvider* network);
+                         std::unique_ptr<Config> config,
+                         provider::TaskRunner* task_runner,
+                         provider::HttpClient* http_client,
+                         provider::Network* network);
 
   ~DeviceRegistrationInfo() override;
 
@@ -162,7 +161,7 @@ class DeviceRegistrationInfo : public Cloud,
       const std::shared_ptr<base::Closure>& success_callback,
       const std::shared_ptr<CloudRequestErrorCallback>& error_callback,
       int id,
-      const HttpClient::Response& response);
+      const provider::HttpClient::Response& response);
   void OnRefreshAccessTokenError(
       const std::shared_ptr<base::Closure>& success_callback,
       const std::shared_ptr<CloudRequestErrorCallback>& error_callback,
@@ -172,7 +171,7 @@ class DeviceRegistrationInfo : public Cloud,
   // Parse the OAuth response, and sets registration status to
   // kInvalidCredentials if our registration is no longer valid.
   std::unique_ptr<base::DictionaryValue> ParseOAuthResponse(
-      const HttpClient::Response& response,
+      const provider::HttpClient::Response& response,
       ErrorPtr* error);
 
   // This attempts to open a notification channel. The channel needs to be
@@ -202,7 +201,7 @@ class DeviceRegistrationInfo : public Cloud,
   void OnCloudRequestSuccess(
       const std::shared_ptr<const CloudRequestData>& data,
       int request_id,
-      const HttpClient::Response& response);
+      const provider::HttpClient::Response& response);
   void OnCloudRequestError(const std::shared_ptr<const CloudRequestData>& data,
                            int request_id,
                            const Error* error);
@@ -297,9 +296,9 @@ class DeviceRegistrationInfo : public Cloud,
   bool connected_to_cloud_{false};
 
   // HTTP transport used for communications.
-  HttpClient* http_client_{nullptr};
+  provider::HttpClient* http_client_{nullptr};
 
-  TaskRunner* task_runner_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
   // Global command manager.
   std::shared_ptr<CommandManager> command_manager_;
   // Device state manager.
@@ -337,7 +336,7 @@ class DeviceRegistrationInfo : public Cloud,
   NotificationChannel* current_notification_channel_{nullptr};
   bool notification_channel_starting_{false};
 
-  NetworkProvider* network_{nullptr};
+  provider::Network* network_{nullptr};
 
   // Tracks our current registration status.
   RegistrationStatus registration_status_{RegistrationStatus::kUnconfigured};

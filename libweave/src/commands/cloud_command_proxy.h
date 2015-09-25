@@ -22,7 +22,10 @@
 namespace weave {
 
 class CommandInstance;
+
+namespace provider {
 class TaskRunner;
+}
 
 // Command proxy which publishes command updates to the cloud.
 class CloudCommandProxy final : public Command::Observer {
@@ -31,7 +34,7 @@ class CloudCommandProxy final : public Command::Observer {
                     CloudCommandUpdateInterface* cloud_command_updater,
                     StateChangeQueueInterface* state_change_queue,
                     std::unique_ptr<BackoffEntry> backoff_entry,
-                    TaskRunner* task_runner);
+                    provider::TaskRunner* task_runner);
   ~CloudCommandProxy() override = default;
 
   // CommandProxyInterface implementation/overloads.
@@ -70,7 +73,7 @@ class CloudCommandProxy final : public Command::Observer {
   CommandInstance* command_instance_;
   CloudCommandUpdateInterface* cloud_command_updater_;
   StateChangeQueueInterface* state_change_queue_;
-  TaskRunner* task_runner_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
 
   // Backoff for SendCommandUpdate() method.
   std::unique_ptr<BackoffEntry> cloud_backoff_entry_;

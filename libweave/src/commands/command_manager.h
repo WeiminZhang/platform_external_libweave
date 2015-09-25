@@ -20,7 +20,10 @@
 namespace weave {
 
 class CommandInstance;
+
+namespace provider {
 class ConfigStore;
+}
 
 // CommandManager class that will have a list of all the device command
 // schemas as well as the live command queue of pending command instances
@@ -78,7 +81,7 @@ class CommandManager final : public Commands {
   // Initializes the object and loads:
   //   1) the standard GCD command dictionary
   //   2) static vendor-provided command definitions
-  void Startup(weave::ConfigStore* config_store);
+  void Startup(weave::provider::ConfigStore* config_store);
 
   // Adds a new command to the command queue.
   void AddCommand(std::unique_ptr<CommandInstance> command_instance);

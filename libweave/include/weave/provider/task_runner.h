@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_TASK_RUNNER_H_
-#define LIBWEAVE_INCLUDE_WEAVE_TASK_RUNNER_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TASK_RUNNER_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TASK_RUNNER_H_
 
 #include <string>
 #include <utility>
@@ -14,6 +14,7 @@
 #include <base/time/time.h>
 
 namespace weave {
+namespace provider {
 
 // Interface with methods to post tasks into platform-specific message loop of
 // the current thread.
@@ -30,6 +31,7 @@ class TaskRunner {
   virtual ~TaskRunner() = default;
 };
 
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_TASK_RUNNER_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TASK_RUNNER_H_

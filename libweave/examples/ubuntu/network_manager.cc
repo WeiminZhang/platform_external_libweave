@@ -12,7 +12,7 @@
 #include <fstream>
 
 #include <base/bind.h>
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 #include "libweave/examples/ubuntu/ssl_stream.h"
 
@@ -20,6 +20,8 @@ namespace weave {
 namespace examples {
 
 namespace {
+
+using provider::NetworkState;
 
 int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
   int pid = fork();
@@ -38,7 +40,8 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
 
 }  // namespace
 
-NetworkImpl::NetworkImpl(TaskRunner* task_runner, bool force_bootstrapping)
+NetworkImpl::NetworkImpl(provider::TaskRunner* task_runner,
+                         bool force_bootstrapping)
     : task_runner_{task_runner}, force_bootstrapping_{force_bootstrapping} {
   SSL_load_error_strings();
   SSL_library_init();

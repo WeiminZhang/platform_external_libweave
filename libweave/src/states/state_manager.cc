@@ -6,7 +6,7 @@
 
 #include <base/logging.h>
 #include <base/values.h>
-#include <weave/config_store.h>
+#include <weave/provider/config_store.h>
 
 #include "libweave/src/json_error_codes.h"
 #include "libweave/src/states/error_codes.h"
@@ -28,7 +28,7 @@ void StateManager::AddOnChangedCallback(const base::Closure& callback) {
   callback.Run();  // Force to read current state.
 }
 
-void StateManager::Startup(ConfigStore* config_store) {
+void StateManager::Startup(provider::ConfigStore* config_store) {
   LOG(INFO) << "Initializing StateManager.";
 
   // Load standard device state definition.

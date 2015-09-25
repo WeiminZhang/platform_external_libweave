@@ -5,13 +5,13 @@
 #ifndef LIBWEAVE_EXAMPLES_UBUNTU_BLUEZ_CLIENT_H_
 #define LIBWEAVE_EXAMPLES_UBUNTU_BLUEZ_CLIENT_H_
 
-#include <weave/bluetooth.h>
+#include <weave/provider/bluetooth.h>
 
 namespace weave {
 namespace examples {
 
 // Example of weave::Bluetooth implemented with bluez.
-class BluetoothImpl : public Bluetooth {
+class BluetoothImpl : public provider::Bluetooth {
  public:
   BluetoothImpl();
 

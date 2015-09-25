@@ -16,11 +16,13 @@
 
 namespace weave {
 
+namespace provider {
 class TaskRunner;
+}  // namespace
 
 class PullChannel : public NotificationChannel {
  public:
-  PullChannel(base::TimeDelta pull_interval, TaskRunner* task_runner);
+  PullChannel(base::TimeDelta pull_interval, provider::TaskRunner* task_runner);
   ~PullChannel() override = default;
 
   // Overrides from NotificationChannel.
@@ -37,7 +39,7 @@ class PullChannel : public NotificationChannel {
   void RePost();
 
   base::TimeDelta pull_interval_;
-  TaskRunner* task_runner_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
   NotificationDelegate* delegate_{nullptr};
 
   base::WeakPtrFactory<PullChannel> weak_ptr_factory_{this};

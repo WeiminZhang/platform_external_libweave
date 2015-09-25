@@ -32,7 +32,8 @@ bufferevent* BuffetEventCallback(event_base* base, void* arg) {
 
 class MemoryReadStream : public Stream {
  public:
-  MemoryReadStream(const std::vector<uint8_t>& data, TaskRunner* task_runner)
+  MemoryReadStream(const std::vector<uint8_t>& data,
+                   provider::TaskRunner* task_runner)
       : data_{data}, task_runner_{task_runner} {}
 
   void Read(void* buffer,
@@ -58,7 +59,7 @@ class MemoryReadStream : public Stream {
 
  private:
   const std::vector<uint8_t>& data_;
-  TaskRunner* task_runner_;
+  provider::TaskRunner* task_runner_;
   size_t read_position_{0};
 };
 
@@ -66,7 +67,7 @@ class MemoryReadStream : public Stream {
 
 class HttpServerImpl::RequestImpl : public Request {
  public:
-  explicit RequestImpl(evhttp_request* req, TaskRunner* task_runner)
+  explicit RequestImpl(evhttp_request* req, provider::TaskRunner* task_runner)
       : path_{evhttp_request_uri(req)}, task_runner_{task_runner} {
     path_ = path_.substr(0, path_.find("?"));
     path_ = path_.substr(0, path_.find("#"));
@@ -97,7 +98,7 @@ class HttpServerImpl::RequestImpl : public Request {
   std::unique_ptr<evhttp_request, decltype(&evhttp_cancel_request)> req_{
       nullptr, &evhttp_cancel_request};
   std::string path_;
-  TaskRunner* task_runner_;
+  provider::TaskRunner* task_runner_;
 };
 
 HttpServerImpl::HttpServerImpl(EventTaskRunner* task_runner)

@@ -8,8 +8,8 @@
 
 #include <weave/enum_to_string.h>
 #include <weave/export.h>
-#include <weave/network_provider.h>
 #include <weave/privet.h>
+#include <weave/provider/network.h>
 
 namespace weave {
 
@@ -20,6 +20,7 @@ using privet::ConnectionState;
 using privet::CryptoType;
 using privet::SetupState;
 using privet::WifiType;
+using provider::NetworkState;
 
 const EnumToStringMap<PairingType>::Map kPairingTypeMap[] = {
     {PairingType::kPinCode, "pinCode"},
@@ -67,7 +68,7 @@ const EnumToStringMap<WifiSetupState>::Map kWifiSetupStateMap[] = {
     {WifiSetupState::kConnecting, "connecting"},
 };
 
-const EnumToStringMap<NetworkState>::Map kNetworkStateMap[] = {
+const EnumToStringMap<provider::NetworkState>::Map kNetworkStateMap[] = {
     {NetworkState::kOffline, "offline"},
     {NetworkState::kFailure, "failure"},
     {NetworkState::kConnecting, "connecting"},

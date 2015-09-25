@@ -16,7 +16,7 @@
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/stringprintf.h>
 #include <base/time/time.h>
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 #include "libweave/external/crypto/p224_spake.h"
 #include "libweave/src/data_encoding.h"
@@ -121,7 +121,7 @@ class UnsecureKeyExchanger : public SecurityManager::KeyExchanger {
 SecurityManager::SecurityManager(const std::set<PairingType>& pairing_modes,
                                  const std::string& embedded_code,
                                  bool disable_security,
-                                 TaskRunner* task_runner)
+                                 provider::TaskRunner* task_runner)
     : is_security_disabled_(disable_security),
       pairing_modes_(pairing_modes),
       embedded_code_(embedded_code),

@@ -7,8 +7,8 @@
 #include <string>
 
 #include <base/bind.h>
-#include <weave/network_provider.h>
-#include <weave/task_runner.h>
+#include <weave/provider/network.h>
+#include <weave/provider/task_runner.h>
 
 #include "libweave/src/backoff_entry.h"
 #include "libweave/src/data_encoding.h"
@@ -91,8 +91,8 @@ const int kConnectingTimeoutAfterNetChangeSeconds = 30;
 
 XmppChannel::XmppChannel(const std::string& account,
                          const std::string& access_token,
-                         TaskRunner* task_runner,
-                         NetworkProvider* network)
+                         provider::TaskRunner* task_runner,
+                         provider::Network* network)
     : account_{account},
       access_token_{access_token},
       network_{network},

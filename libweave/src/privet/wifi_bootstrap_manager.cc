@@ -7,9 +7,9 @@
 #include <base/logging.h>
 #include <base/memory/weak_ptr.h>
 #include <weave/enum_to_string.h>
-#include <weave/network_provider.h>
-#include <weave/task_runner.h>
-#include <weave/wifi_provider.h>
+#include <weave/provider/network.h>
+#include <weave/provider/task_runner.h>
+#include <weave/provider/wifi.h>
 
 #include "libweave/src/bind_lambda.h"
 #include "libweave/src/privet/constants.h"
@@ -17,13 +17,15 @@
 namespace weave {
 namespace privet {
 
+using provider::NetworkState;
+
 WifiBootstrapManager::WifiBootstrapManager(
     const std::string& last_configured_ssid,
     const std::string& test_privet_ssid,
     bool ble_setup_enabled,
-    TaskRunner* task_runner,
-    NetworkProvider* network,
-    WifiProvider* wifi,
+    provider::TaskRunner* task_runner,
+    provider::Network* network,
+    provider::Wifi* wifi,
     CloudDelegate* gcd)
     : task_runner_{task_runner},
       network_{network},

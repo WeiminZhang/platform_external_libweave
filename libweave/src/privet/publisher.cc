@@ -6,8 +6,8 @@
 
 #include <map>
 
-#include <weave/dns_service_discovery_provider.h>
 #include <weave/error.h>
+#include <weave/provider/dns_service_discovery.h>
 
 #include "libweave/src/privet/cloud_delegate.h"
 #include "libweave/src/privet/device_delegate.h"
@@ -28,7 +28,7 @@ const char kPrivetServiceType[] = "_privet._tcp";
 Publisher::Publisher(const DeviceDelegate* device,
                      const CloudDelegate* cloud,
                      const WifiDelegate* wifi,
-                     DnsServiceDiscoveryProvider* dns_sd)
+                     provider::DnsServiceDiscovery* dns_sd)
     : dns_sd_{dns_sd}, device_{device}, cloud_{cloud}, wifi_{wifi} {
   CHECK(device_);
   CHECK(cloud_);

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_HTTP_SERVER_H_
-#define LIBWEAVE_INCLUDE_WEAVE_HTTP_SERVER_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_HTTP_SERVER_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_HTTP_SERVER_H_
 
 #include <string>
 #include <vector>
@@ -12,6 +12,7 @@
 #include <weave/stream.h>
 
 namespace weave {
+namespace provider {
 
 class HttpServer {
  public:
@@ -53,6 +54,7 @@ class HttpServer {
   virtual ~HttpServer() = default;
 };
 
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_HTTP_SERVER_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_HTTP_SERVER_H_

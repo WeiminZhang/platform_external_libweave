@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_WIFI_PROVIDER_H_
-#define LIBWEAVE_INCLUDE_WEAVE_WIFI_PROVIDER_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_WIFI_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_WIFI_H_
 
 #include <string>
 
@@ -11,9 +11,10 @@
 #include <weave/error.h>
 
 namespace weave {
+namespace provider {
 
 // Interface with methods to control WiFi capability of the device.
-class WifiProvider {
+class Wifi {
  public:
   // Connects to the given network with the given pass-phrase. Implementation
   // should post either of callbacks.
@@ -29,9 +30,10 @@ class WifiProvider {
   virtual void StopAccessPoint() = 0;
 
  protected:
-  virtual ~WifiProvider() = default;
+  virtual ~Wifi() = default;
 };
 
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_WIFI_PROVIDER_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_WIFI_H_

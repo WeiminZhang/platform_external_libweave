@@ -9,12 +9,12 @@
 #include <string>
 #include <vector>
 
-#include <weave/config_store.h>
+#include <weave/provider/config_store.h>
 
 namespace weave {
 namespace examples {
 
-class FileConfigStore : public ConfigStore {
+class FileConfigStore : public provider::ConfigStore {
  public:
   bool LoadDefaults(Settings* settings) override;
   std::string LoadSettings() override;

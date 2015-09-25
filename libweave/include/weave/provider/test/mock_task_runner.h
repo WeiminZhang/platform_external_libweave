@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_TASK_RUNNER_H_
-#define LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_TASK_RUNNER_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_TASK_RUNNER_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_TASK_RUNNER_H_
 
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 #include <algorithm>
 #include <queue>
@@ -16,6 +16,7 @@
 #include <gmock/gmock.h>
 
 namespace weave {
+namespace provider {
 namespace test {
 
 class MockTaskRunner : public TaskRunner {
@@ -58,6 +59,7 @@ class MockTaskRunner : public TaskRunner {
 };
 
 }  // namespace test
+}  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_TEST_MOCK_TASK_RUNNER_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_TASK_RUNNER_H_

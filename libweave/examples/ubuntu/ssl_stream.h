@@ -12,13 +12,15 @@
 
 namespace weave {
 
+namespace provider {
 class TaskRunner;
+}
 
 namespace examples {
 
 class SSLStream : public Stream {
  public:
-  explicit SSLStream(TaskRunner* task_runner);
+  explicit SSLStream(provider::TaskRunner* task_runner);
 
   ~SSLStream() override;
 
@@ -39,7 +41,7 @@ class SSLStream : public Stream {
  private:
   void RunDelayedTask(const base::Closure& task);
 
-  TaskRunner* task_runner_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
   std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)> ctx_{nullptr, SSL_CTX_free};
   std::unique_ptr<SSL, decltype(&SSL_free)> ssl_{nullptr, SSL_free};
 

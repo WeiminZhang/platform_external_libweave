@@ -29,8 +29,8 @@ namespace weave {
 
 class CommandManager;
 class DeviceRegistrationInfo;
-class DnsServiceDiscoveryProvider;
-class NetworkProvider;
+class DnsServiceDiscovery;
+class Network;
 class StateManager;
 
 namespace privet {
@@ -48,11 +48,11 @@ class Manager : public Privet, public CloudDelegate::Observer {
   ~Manager() override;
 
   void Start(const weave::Device::Options& options,
-             TaskRunner* task_runner,
-             NetworkProvider* network,
-             DnsServiceDiscoveryProvider* dns_sd,
-             HttpServer* http_server,
-             WifiProvider* wifi,
+             provider::TaskRunner* task_runner,
+             provider::Network* network,
+             provider::DnsServiceDiscovery* dns_sd,
+             provider::HttpServer* http_server,
+             provider::Wifi* wifi,
              DeviceRegistrationInfo* device,
              CommandManager* command_manager,
              StateManager* state_manager);
@@ -70,20 +70,22 @@ class Manager : public Privet, public CloudDelegate::Observer {
   // CloudDelegate::Observer
   void OnDeviceInfoChanged() override;
 
-  void PrivetRequestHandler(const HttpServer::Request& request,
-                            const HttpServer::OnReplyCallback& callback);
+  void PrivetRequestHandler(
+      const provider::HttpServer::Request& request,
+      const provider::HttpServer::OnReplyCallback& callback);
 
-  void PrivetResponseHandler(const HttpServer::OnReplyCallback& callback,
-                             int status,
-                             const base::DictionaryValue& output);
+  void PrivetResponseHandler(
+      const provider::HttpServer::OnReplyCallback& callback,
+      int status,
+      const base::DictionaryValue& output);
 
-  void HelloWorldHandler(const HttpServer::Request& request,
-                         const HttpServer::OnReplyCallback& callback);
+  void HelloWorldHandler(const provider::HttpServer::Request& request,
+                         const provider::HttpServer::OnReplyCallback& callback);
 
   void OnChanged();
   void OnConnectivityChanged();
 
-  void OnHttpServerStatusChanged(const HttpServer& server);
+  void OnHttpServerStatusChanged(const provider::HttpServer& server);
 
   bool disable_security_{false};
   std::unique_ptr<CloudDelegate> cloud_;

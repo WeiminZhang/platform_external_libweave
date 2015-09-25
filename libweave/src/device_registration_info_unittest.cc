@@ -8,8 +8,8 @@
 #include <base/json/json_writer.h>
 #include <base/values.h>
 #include <gtest/gtest.h>
-#include <weave/test/mock_config_store.h>
-#include <weave/test/mock_http_client.h>
+#include <weave/provider/test/mock_config_store.h>
+#include <weave/provider/test/mock_http_client.h>
 
 #include "libweave/src/bind_lambda.h"
 #include "libweave/src/commands/command_manager.h"
@@ -34,8 +34,9 @@ namespace weave {
 
 using test::CreateDictionaryValue;
 using test::CreateValue;
-using test::MockHttpClient;
-using test::MockHttpClientResponse;
+using provider::test::MockHttpClient;
+using provider::test::MockHttpClientResponse;
+using provider::HttpClient;
 
 namespace {
 
@@ -122,8 +123,8 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
     std::unique_ptr<Config> config{new Config{&config_store_}};
     config_ = config.get();
     dev_reg_.reset(new DeviceRegistrationInfo{command_manager_, state_manager_,
-                                              std::move(config), nullptr,
-                                              &http_client_, true, nullptr});
+                                              true, std::move(config), nullptr,
+                                              &http_client_, nullptr});
 
     ReloadDefaults();
   }
@@ -181,7 +182,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
     return dev_reg_->registration_status_;
   }
 
-  test::MockConfigStore config_store_;
+  provider::test::MockConfigStore config_store_;
   StrictMock<MockHttpClient> http_client_;
   base::DictionaryValue data_;
   Config* config_{nullptr};

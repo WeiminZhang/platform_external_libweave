@@ -5,12 +5,13 @@
 #include "libweave/examples/ubuntu/ssl_stream.h"
 
 #include <base/bind.h>
-#include <weave/task_runner.h>
+#include <weave/provider/task_runner.h>
 
 namespace weave {
 namespace examples {
 
-SSLStream::SSLStream(TaskRunner* task_runner) : task_runner_{task_runner} {}
+SSLStream::SSLStream(provider::TaskRunner* task_runner)
+    : task_runner_{task_runner} {}
 
 SSLStream::~SSLStream() {
   CancelPendingOperations();
