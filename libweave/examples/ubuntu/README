@@ -1,0 +1,98 @@
+Overview
+--------
+The wrapper implements OS dependent services for libweave
+
+Building
+--------
+  - prepare environment
+        examples/ubuntu/prerequisites.sh
+  - build daemon
+        examples/ubuntu/build.sh
+  - binaries for daemon is at
+        out/Debug/weave
+
+Prepare Host OS
+---------------
+enable user-service-publishing in avahi daemon
+    file:    /etc/avahi/avahi-daemon.conf
+    check:   disable-user-service-publishing=no
+    restart: sudo service avahi-daemon restart
+
+Acquire Registration Ticket
+---------------------------
+Goto https://developers.google.com/oauthplayground/
+  - "Step 1", paste to "Authorize APIs" with
+          https://www.googleapis.com/auth/clouddevices
+        click "Authorize APIs", then "Allow" to get an
+        "authorization code"
+  - "Step 2", "Exchange authorization code for tokens"
+  - "Step 3", obtain a registration ticket for your new weave device
+         HTTP Method:  POST
+         Request URI:  https://www.googleapis.com/clouddevices/v1/registrationTickets
+         Enter request body:
+            {
+              "userEmail": "me"
+            }
+         then "Send the request", a ticket id will be returned in
+            {
+              "userEmail": "user@google.com",
+              "kind": "clouddevices#registrationTicket",
+              "expirationTimeMs": "1443204934855",
+              "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
+              "creationTimeMs": "1443204694855",
+              "id": "93019287-6b26-04a0-22ee-d55ad23a4226"
+            }
+    Note: the ticket "id" is not used within 240 sec, it will be expired.
+
+Register device to cloud
+------------------------
+  - copy the ticket "id" generated above 
+        93019287-6b26-04a0-22ee-d55ad23a4226
+  - go to ubuntu terminal, register ubuntu and start daemon with
+
+        sudo out/Debug/weave --registration_ticket=93019287-6b26-04a0-22ee-d55ad23a4226
+
+        you should see something like:
+          Publishing service
+          Saving settings to /var/lib/weave/weave_settings.json
+
+       note: in second and future runs, --registration_ticket
+             options is not necessary anymore
+
+  - get your device id with
+          sudo cat /var/lib/weave/weave_settings.json
+       you should see
+            ...
+            "device_id": 0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
+            ...
+
+       this device_id shall be used for future communication
+       with your device. it does not expire and no need to
+       register.
+
+  - verify device is up at
+        https://gcd.sandbox.google.com/clouddevices#
+
+Send Command to Ubuntu Device
+-----------------------------
+  - go to the oauthplayground used for registration ticket command
+     in "Step 3", send base.identify with
+        HTTP Method: POST
+        Request URI: https://www.googleapis.com/clouddevices/v1/commands
+        Enter request body:
+        {
+          "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
+          "name": "base.identify"
+        }
+   "Send the request", you command will be "queued" as its "state"
+
+  - verify command received in cloud with
+       https://gcd.sandbox.google.com/clouddevices#
+
+       click on "events" next to your device, command history should show
+           queued --> inProgress --> done
+  - verify the command execution with weave daemon
+       in terminal running the daemon, observe something similar to
+         New command 'base.identify' arrived, ...
+         received command: base.identify
+         base.identify command: completed
