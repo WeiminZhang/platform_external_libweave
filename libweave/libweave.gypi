@@ -53,6 +53,7 @@
       'third_party/modp_b64/modp_b64.cc',
     ],
     'weave_test_sources': [
+      'src/test/fake_stream.cc',
       'src/test/mock_command.cc',
       'src/test/mock_http_client.cc',
       'src/test/mock_task_runner.cc',

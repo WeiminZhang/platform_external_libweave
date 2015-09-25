@@ -8,6 +8,7 @@
 #include <queue>
 
 #include <gtest/gtest.h>
+#include <weave/test/fake_stream.h>
 #include <weave/test/mock_network_provider.h>
 #include <weave/test/mock_task_runner.h>
 
@@ -79,64 +80,12 @@ constexpr char kSubscribeMessage[] =
 
 }  // namespace
 
-class FakeStream : public Stream {
- public:
-  explicit FakeStream(TaskRunner* task_runner) : task_runner_{task_runner} {}
-
-  void CancelPendingOperations() override {}
-
-  void ExpectWritePacketString(base::TimeDelta, const std::string& data) {
-    write_data_ += data;
-  }
-
-  void AddReadPacketString(base::TimeDelta, const std::string& data) {
-    read_data_ += data;
-  }
-
-  void Read(void* buffer,
-            size_t size_to_read,
-            const ReadSuccessCallback& success_callback,
-            const ErrorCallback& error_callback) override {
-    if (read_data_.empty()) {
-      task_runner_->PostDelayedTask(
-          FROM_HERE,
-          base::Bind(&FakeStream::Read, base::Unretained(this), buffer,
-                     size_to_read, success_callback, error_callback),
-          base::TimeDelta::FromSeconds(0));
-      return;
-    }
-    size_t size = std::min(size_to_read, read_data_.size());
-    memcpy(buffer, read_data_.data(), size);
-    read_data_ = read_data_.substr(size);
-    task_runner_->PostDelayedTask(FROM_HERE, base::Bind(success_callback, size),
-                                  base::TimeDelta::FromSeconds(0));
-  }
-
-  void Write(const void* buffer,
-             size_t size_to_write,
-             const SuccessCallback& success_callback,
-             const ErrorCallback& error_callback) override {
-    size_t size = std::min(size_to_write, write_data_.size());
-    EXPECT_EQ(
-        write_data_.substr(0, size),
-        std::string(reinterpret_cast<const char*>(buffer), size_to_write));
-    write_data_ = write_data_.substr(size);
-    task_runner_->PostDelayedTask(FROM_HERE, success_callback,
-                                  base::TimeDelta::FromSeconds(0));
-  }
-
- private:
-  TaskRunner* task_runner_{nullptr};
-  std::string write_data_;
-  std::string read_data_;
-};
-
 class FakeXmppChannel : public XmppChannel {
  public:
   explicit FakeXmppChannel(TaskRunner* task_runner,
                            weave::NetworkProvider* network)
       : XmppChannel{kAccountName, kAccessToken, task_runner, network},
-        stream_{new FakeStream{task_runner_}},
+        stream_{new test::FakeStream{task_runner_}},
         fake_stream_{stream_.get()} {}
 
   void Connect(
@@ -158,8 +107,8 @@ class FakeXmppChannel : public XmppChannel {
     fake_stream_->AddReadPacketString(delta, data);
   }
 
-  std::unique_ptr<FakeStream> stream_;
-  FakeStream* fake_stream_{nullptr};
+  std::unique_ptr<test::FakeStream> stream_;
+  test::FakeStream* fake_stream_{nullptr};
 };
 
 class MockNetworkProvider : public weave::test::MockNetworkProvider {

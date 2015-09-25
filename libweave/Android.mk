@@ -147,6 +147,7 @@ LOCAL_RTTI_FLAG := -frtti
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 LOCAL_SRC_FILES := \
+	src/test/fake_stream.cc \
 	src/test/mock_command.cc \
 	src/test/mock_http_client.cc \
 	src/test/mock_task_runner.cc \
