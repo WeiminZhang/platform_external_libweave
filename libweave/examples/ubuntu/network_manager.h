@@ -50,8 +50,8 @@ class NetworkImpl : public NetworkProvider, public WifiProvider {
                     const std::string& passphrase,
                     int pid,
                     base::Time until,
-                    const base::Closure& success_callback,
-                    const base::Callback<void(const Error*)>& error_callback);
+                    const SuccessCallback& success_callback,
+                    const ErrorCallback& error_callback);
   void UpdateNetworkState();
 
   bool force_bootstrapping_{false};

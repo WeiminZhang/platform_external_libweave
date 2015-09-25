@@ -20,7 +20,7 @@ class MockWifiProvider : public WifiProvider {
                void(const std::string&,
                     const std::string&,
                     const base::Closure&,
-                    const base::Callback<void(const Error*)>&));
+                    const ErrorCallback&));
   MOCK_METHOD1(StartAccessPoint, void(const std::string&));
   MOCK_METHOD0(StopAccessPoint, void());
 };

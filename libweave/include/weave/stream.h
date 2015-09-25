@@ -18,7 +18,7 @@ class InputStream {
   virtual ~InputStream() = default;
 
   // Callbacks types for Read.
-  using ReadSuccessCallback = base::Callback<void(size_t)>;
+  using ReadSuccessCallback = base::Callback<void(size_t size)>;
 
   // Implementation should return immediately and post either success_callback
   // or error_callback. Caller guarantees that buffet is alive until either of

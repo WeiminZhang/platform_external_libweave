@@ -60,8 +60,8 @@ void NetworkImpl::TryToConnect(
     const std::string& passphrase,
     int pid,
     base::Time until,
-    const base::Closure& success_callback,
-    const base::Callback<void(const Error*)>& error_callback) {
+    const SuccessCallback& success_callback,
+    const ErrorCallback& error_callback) {
   if (pid) {
     int status = 0;
     if (pid == waitpid(pid, &status, WNOWAIT)) {

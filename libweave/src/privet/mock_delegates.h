@@ -145,7 +145,7 @@ class MockCloudDelegate : public CloudDelegate {
                void(const std::string&,
                     const std::string&,
                     const std::string&,
-                    const base::Closure&,
+                    const SuccessCallback&,
                     const ErrorCallback&));
   MOCK_CONST_METHOD0(GetOemName, std::string());
   MOCK_CONST_METHOD0(GetModelName, std::string());
@@ -160,21 +160,21 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_METHOD4(AddCommand,
                void(const base::DictionaryValue&,
                     const UserInfo&,
-                    const SuccessCallback&,
+                    const CommandSuccessCallback&,
                     const ErrorCallback&));
   MOCK_METHOD4(GetCommand,
                void(const std::string&,
                     const UserInfo&,
-                    const SuccessCallback&,
+                    const CommandSuccessCallback&,
                     const ErrorCallback&));
   MOCK_METHOD4(CancelCommand,
                void(const std::string&,
                     const UserInfo&,
-                    const SuccessCallback&,
+                    const CommandSuccessCallback&,
                     const ErrorCallback&));
   MOCK_METHOD3(ListCommands,
                void(const UserInfo&,
-                    const SuccessCallback&,
+                    const CommandSuccessCallback&,
                     const ErrorCallback&));
 
   MockCloudDelegate() {

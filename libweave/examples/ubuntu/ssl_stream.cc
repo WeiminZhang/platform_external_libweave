@@ -16,8 +16,8 @@ SSLStream::~SSLStream() {
   CancelPendingOperations();
 }
 
-void SSLStream::RunDelayedTask(const base::Closure& success_callback) {
-  success_callback.Run();
+void SSLStream::RunDelayedTask(const base::Closure& task) {
+  task.Run();
 }
 
 void SSLStream::Read(void* buffer,

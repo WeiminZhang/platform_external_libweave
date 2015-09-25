@@ -83,7 +83,7 @@ class CloudDelegateImpl : public CloudDelegate {
   void UpdateDeviceInfo(const std::string& name,
                         const std::string& description,
                         const std::string& location,
-                        const base::Closure& success_callback,
+                        const SuccessCallback& success_callback,
                         const ErrorCallback& error_callback) override {
     ErrorPtr error;
     if (!device_->UpdateDeviceInfo(name, description, location, &error))
@@ -159,7 +159,7 @@ class CloudDelegateImpl : public CloudDelegate {
 
   void AddCommand(const base::DictionaryValue& command,
                   const UserInfo& user_info,
-                  const SuccessCallback& success_callback,
+                  const CommandSuccessCallback& success_callback,
                   const ErrorCallback& error_callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
     CHECK_NE(user_info.user_id(), 0u);
@@ -184,7 +184,7 @@ class CloudDelegateImpl : public CloudDelegate {
 
   void GetCommand(const std::string& id,
                   const UserInfo& user_info,
-                  const SuccessCallback& success_callback,
+                  const CommandSuccessCallback& success_callback,
                   const ErrorCallback& error_callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
     ErrorPtr error;
@@ -196,7 +196,7 @@ class CloudDelegateImpl : public CloudDelegate {
 
   void CancelCommand(const std::string& id,
                      const UserInfo& user_info,
-                     const SuccessCallback& success_callback,
+                     const CommandSuccessCallback& success_callback,
                      const ErrorCallback& error_callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
     ErrorPtr error;
@@ -209,7 +209,7 @@ class CloudDelegateImpl : public CloudDelegate {
   }
 
   void ListCommands(const UserInfo& user_info,
-                    const SuccessCallback& success_callback,
+                    const CommandSuccessCallback& success_callback,
                     const ErrorCallback& error_callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
 
