@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_TASK_RUNNER_H_
-#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_TASK_RUNNER_H_
+#ifndef LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_FAKE_TASK_RUNNER_H_
+#define LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_FAKE_TASK_RUNNER_H_
 
 #include <weave/provider/task_runner.h>
 
@@ -13,21 +13,19 @@
 #include <vector>
 
 #include <base/time/clock.h>
-#include <gmock/gmock.h>
 
 namespace weave {
 namespace provider {
 namespace test {
 
-class MockTaskRunner : public TaskRunner {
+class FakeTaskRunner : public TaskRunner {
  public:
-  MockTaskRunner();
-  ~MockTaskRunner() override;
+  FakeTaskRunner();
+  ~FakeTaskRunner() override;
 
-  MOCK_METHOD3(PostDelayedTask,
-               void(const tracked_objects::Location&,
-                    const base::Closure&,
-                    base::TimeDelta));
+  void PostDelayedTask(const tracked_objects::Location& from_here,
+                       const base::Closure& task,
+                       base::TimeDelta delay) override;
 
   bool RunOnce();
   void Run();
@@ -55,11 +53,11 @@ class MockTaskRunner : public TaskRunner {
 
   std::priority_queue<QueueItem,
                       std::vector<QueueItem>,
-                      MockTaskRunner::Greater> queue_;
+                      FakeTaskRunner::Greater> queue_;
 };
 
 }  // namespace test
 }  // namespace provider
 }  // namespace weave
 
-#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_MOCK_TASK_RUNNER_H_
+#endif  // LIBWEAVE_INCLUDE_WEAVE_PROVIDER_TEST_FAKE_TASK_RUNNER_H_

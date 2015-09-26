@@ -8,8 +8,8 @@
 #include <queue>
 
 #include <gtest/gtest.h>
+#include <weave/provider/test/fake_task_runner.h>
 #include <weave/provider/test/mock_network.h>
-#include <weave/provider/test/mock_task_runner.h>
 #include <weave/test/fake_stream.h>
 
 #include "libweave/src/bind_lambda.h"
@@ -144,7 +144,7 @@ class XmppChannelTest : public ::testing::Test {
     EXPECT_EQ(st, xmpp_client_.state());
   }
 
-  StrictMock<provider::test::MockTaskRunner> task_runner_;
+  StrictMock<provider::test::FakeTaskRunner> task_runner_;
   StrictMock<MockNetwork> network_;
   FakeXmppChannel xmpp_client_{&task_runner_, &network_};
 };

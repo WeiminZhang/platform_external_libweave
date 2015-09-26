@@ -6,13 +6,13 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <weave/provider/test/fake_task_runner.h>
 #include <weave/provider/test/mock_bluetooth.h>
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/provider/test/mock_dns_service_discovery.h>
 #include <weave/provider/test/mock_http_client.h>
 #include <weave/provider/test/mock_http_server.h>
 #include <weave/provider/test/mock_network.h>
-#include <weave/provider/test/mock_task_runner.h>
 #include <weave/provider/test/mock_wifi.h>
 #include <weave/test/unittest_utils.h>
 
@@ -323,7 +323,7 @@ class WeaveTest : public ::testing::Test {
   std::vector<provider::HttpServer::OnRequestCallback> http_server_request_cb_;
 
   StrictMock<provider::test::MockConfigStore> config_store_;
-  StrictMock<provider::test::MockTaskRunner> task_runner_;
+  StrictMock<provider::test::FakeTaskRunner> task_runner_;
   StrictMock<provider::test::MockHttpClient> http_client_;
   StrictMock<provider::test::MockNetwork> network_;
   StrictMock<provider::test::MockDnsServiceDiscovery> dns_sd_;
