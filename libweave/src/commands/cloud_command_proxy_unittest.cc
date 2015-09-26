@@ -9,7 +9,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <weave/provider/test/mock_task_runner.h>
+#include <weave/provider/test/fake_task_runner.h>
 
 #include "libweave/src/commands/command_dictionary.h"
 #include "libweave/src/commands/command_instance.h"
@@ -136,7 +136,7 @@ class CloudCommandProxyTest : public ::testing::Test {
   base::CallbackList<void(StateChangeQueueInterface::UpdateID)> callbacks_;
   testing::StrictMock<MockCloudCommandUpdateInterface> cloud_updater_;
   testing::StrictMock<MockStateChangeQueueInterface> state_change_queue_;
-  testing::StrictMock<provider::test::MockTaskRunner> task_runner_;
+  testing::StrictMock<provider::test::FakeTaskRunner> task_runner_;
   std::queue<base::Closure> task_queue_;
   CommandDictionary command_dictionary_;
   std::unique_ptr<CommandInstance> command_instance_;
@@ -214,7 +214,6 @@ TEST_F(CloudCommandProxyTest, RetryFailed) {
   // We should retry with both state and progress fields updated this time,
   // after the initial backoff (which should be 1s in our case).
   base::TimeDelta expected_delay = base::TimeDelta::FromSeconds(1);
-  EXPECT_CALL(task_runner_, PostDelayedTask(_, _, expected_delay));
   on_error.Run();
 
   // Execute the delayed request. But pretend that it failed too.
@@ -228,7 +227,6 @@ TEST_F(CloudCommandProxyTest, RetryFailed) {
 
   // Now backoff should be 2 seconds.
   expected_delay = base::TimeDelta::FromSeconds(2);
-  EXPECT_CALL(task_runner_, PostDelayedTask(_, _, expected_delay));
   on_error.Run();
 
   // Retry the task.

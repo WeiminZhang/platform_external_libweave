@@ -54,9 +54,9 @@
     ],
     'weave_test_sources': [
       'src/test/fake_stream.cc',
+      'src/test/fake_task_runner.cc',
       'src/test/mock_command.cc',
       'src/test/mock_http_client.cc',
-      'src/test/mock_task_runner.cc',
       'src/test/unittest_utils.cc',
     ],
     'weave_unittest_sources': [

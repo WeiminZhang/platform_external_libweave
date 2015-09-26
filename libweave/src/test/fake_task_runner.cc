@@ -2,17 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <weave/provider/test/mock_task_runner.h>
-
-using testing::_;
-using testing::Invoke;
-using testing::AnyNumber;
+#include <weave/provider/test/fake_task_runner.h>
 
 namespace weave {
 namespace provider {
 namespace test {
 
-class MockTaskRunner::TestClock : public base::Clock {
+class FakeTaskRunner::TestClock : public base::Clock {
  public:
   base::Time Now() override { return now_; }
 
@@ -22,15 +18,11 @@ class MockTaskRunner::TestClock : public base::Clock {
   base::Time now_{base::Time::Now()};
 };
 
-MockTaskRunner::MockTaskRunner() : test_clock_{new TestClock} {
-  ON_CALL(*this, PostDelayedTask(_, _, _))
-      .WillByDefault(Invoke(this, &MockTaskRunner::SaveTask));
-  EXPECT_CALL(*this, PostDelayedTask(_, _, _)).Times(AnyNumber());
-}
+FakeTaskRunner::FakeTaskRunner() : test_clock_{new TestClock} {}
 
-MockTaskRunner::~MockTaskRunner() {}
+FakeTaskRunner::~FakeTaskRunner() {}
 
-bool MockTaskRunner::RunOnce() {
+bool FakeTaskRunner::RunOnce() {
   if (queue_.empty())
     return false;
   auto top = queue_.top();
@@ -40,23 +32,23 @@ bool MockTaskRunner::RunOnce() {
   return true;
 }
 
-void MockTaskRunner::Run() {
+void FakeTaskRunner::Run() {
   break_ = false;
   while (!break_ && RunOnce()) {
   }
 }
 
-void MockTaskRunner::Break() {
+void FakeTaskRunner::Break() {
   break_ = true;
 }
 
-base::Clock* MockTaskRunner::GetClock() {
+base::Clock* FakeTaskRunner::GetClock() {
   return test_clock_.get();
 }
 
-void MockTaskRunner::SaveTask(const tracked_objects::Location& from_here,
-                              const base::Closure& task,
-                              base::TimeDelta delay) {
+void FakeTaskRunner::PostDelayedTask(const tracked_objects::Location& from_here,
+                                     const base::Closure& task,
+                                     base::TimeDelta delay) {
   queue_.emplace(std::make_pair(test_clock_->Now() + delay, ++counter_), task);
 }
 

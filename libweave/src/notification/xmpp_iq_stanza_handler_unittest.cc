@@ -9,7 +9,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <weave/provider/test/mock_task_runner.h>
+#include <weave/provider/test/fake_task_runner.h>
 
 #include "libweave/src/bind_lambda.h"
 #include "libweave/src/notification/xml_node.h"
@@ -76,7 +76,7 @@ class MockResponseReceiver {
 class IqStanzaHandlerTest : public testing::Test {
  public:
   testing::StrictMock<MockXmppChannelInterface> mock_xmpp_channel_;
-  provider::test::MockTaskRunner task_runner_;
+  provider::test::FakeTaskRunner task_runner_;
   IqStanzaHandler iq_stanza_handler_{&mock_xmpp_channel_, &task_runner_};
   MockResponseReceiver receiver_;
 };
@@ -122,15 +122,11 @@ TEST_F(IqStanzaHandlerTest, UnknownResponseId) {
 }
 
 TEST_F(IqStanzaHandlerTest, SequentialResponses) {
-  EXPECT_CALL(task_runner_, PostDelayedTask(_, _, _)).Times(2);
-
   EXPECT_CALL(mock_xmpp_channel_, SendMessage(_)).Times(2);
   iq_stanza_handler_.SendRequest("set", "", "", "<body/>",
                                  receiver_.callback(1), {});
   iq_stanza_handler_.SendRequest("get", "", "", "<body/>",
                                  receiver_.callback(2), {});
-
-  EXPECT_CALL(task_runner_, PostDelayedTask(_, _, _)).Times(2);
 
   EXPECT_CALL(receiver_, OnResponse(1, "foo"));
   auto request = XmlParser{}.Parse("<iq id='1' type='result'><foo/></iq>");
@@ -144,15 +140,11 @@ TEST_F(IqStanzaHandlerTest, SequentialResponses) {
 }
 
 TEST_F(IqStanzaHandlerTest, OutOfOrderResponses) {
-  EXPECT_CALL(task_runner_, PostDelayedTask(_, _, _)).Times(2);
-
   EXPECT_CALL(mock_xmpp_channel_, SendMessage(_)).Times(2);
   iq_stanza_handler_.SendRequest("set", "", "", "<body/>",
                                  receiver_.callback(1), {});
   iq_stanza_handler_.SendRequest("get", "", "", "<body/>",
                                  receiver_.callback(2), {});
-
-  EXPECT_CALL(task_runner_, PostDelayedTask(_, _, _)).Times(2);
 
   EXPECT_CALL(receiver_, OnResponse(2, "bar"));
   auto request = XmlParser{}.Parse("<iq id='2' type='result'><bar/></iq>");
@@ -166,8 +158,6 @@ TEST_F(IqStanzaHandlerTest, OutOfOrderResponses) {
 }
 
 TEST_F(IqStanzaHandlerTest, RequestTimeout) {
-  EXPECT_CALL(task_runner_, PostDelayedTask(_, _, _)).Times(1);
-
   bool called = false;
   auto on_timeout = [&called]() { called = true; };
 
