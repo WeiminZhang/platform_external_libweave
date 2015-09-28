@@ -14,10 +14,6 @@
 
 LOCAL_PATH := $(call my-dir)
 
-# TODO(avakulenko): Remove this condition when libchromeos can be built on
-# non-Linux host.
-ifeq ($(HOST_OS),linux)
-
 # Common variables
 # ========================================================
 
@@ -233,5 +229,3 @@ LOCAL_SRC_FILES := \
 	src/weave_unittest.cc \
 
 include $(BUILD_NATIVE_TEST)
-
-endif # HOST_OS == linux
