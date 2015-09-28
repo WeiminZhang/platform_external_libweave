@@ -97,19 +97,6 @@ void DeviceManager::StartPrivet(const Options& options,
   privet_->Start(options, task_runner, network, dns_sd, http_server, wifi,
                  device_info_.get(), command_manager_.get(),
                  state_manager_.get());
-
-  privet_->AddOnWifiSetupChangedCallback(
-      base::Bind(&DeviceManager::OnWiFiBootstrapStateChanged,
-                 weak_ptr_factory_.GetWeakPtr()));
-}
-
-void DeviceManager::OnWiFiBootstrapStateChanged(
-    weave::privet::WifiBootstrapManager::State state) {
-  const std::string& ssid = privet_->GetCurrentlyConnectedSsid();
-  if (ssid != device_info_->GetSettings().last_configured_ssid) {
-    weave::Config::Transaction change{device_info_->GetMutableConfig()};
-    change.set_last_configured_ssid(ssid);
-  }
 }
 
 std::unique_ptr<Device> Device::Create() {

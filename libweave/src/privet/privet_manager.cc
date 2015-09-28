@@ -63,9 +63,8 @@ void Manager::Start(const Device::Options& options,
   if (wifi && device->GetSettings().wifi_auto_setup_enabled) {
     VLOG(1) << "Enabling WiFi bootstrapping.";
     wifi_bootstrap_manager_.reset(new WifiBootstrapManager(
-        device->GetSettings().last_configured_ssid, options.test_privet_ssid,
-        device->GetSettings().ble_setup_enabled, task_runner, network, wifi,
-        cloud_.get()));
+        options.test_privet_ssid, device->GetMutableConfig(), task_runner,
+        network, wifi, cloud_.get()));
     wifi_bootstrap_manager_->Init();
   }
 
@@ -92,14 +91,6 @@ std::string Manager::GetCurrentlyConnectedSsid() const {
   return wifi_bootstrap_manager_
              ? wifi_bootstrap_manager_->GetCurrentlyConnectedSsid()
              : "";
-}
-
-void Manager::AddOnWifiSetupChangedCallback(
-    const WifiBootstrapManager::StateListener& callback) {
-  if (wifi_bootstrap_manager_)
-    wifi_bootstrap_manager_->RegisterStateListener(callback);
-  else
-    callback.Run(WifiSetupState::kDisabled);
 }
 
 void Manager::AddOnPairingChangedCallbacks(

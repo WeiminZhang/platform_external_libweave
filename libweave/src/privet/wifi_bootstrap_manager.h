@@ -22,6 +22,8 @@
 
 namespace weave {
 
+class Config;
+
 namespace provider {
 class Network;
 class TaskRunner;
@@ -37,18 +39,14 @@ class WifiBootstrapManager : public WifiDelegate {
  public:
   using State = WifiSetupState;
 
-  using StateListener = base::Callback<void(State)>;
-
-  WifiBootstrapManager(const std::string& last_configured_ssid,
-                       const std::string& test_privet_ssid,
-                       bool wifi_setup_enabled,
+  WifiBootstrapManager(const std::string& test_privet_ssid,
+                       Config* config,
                        provider::TaskRunner* task_runner,
                        provider::Network* shill_client,
                        provider::Wifi* wifi,
                        CloudDelegate* gcd);
   ~WifiBootstrapManager() override = default;
   virtual void Init();
-  void RegisterStateListener(const StateListener& listener);
 
   // Overrides from WifiDelegate.
   const ConnectionState& GetConnectionState() const override;
@@ -78,7 +76,6 @@ class WifiBootstrapManager : public WifiDelegate {
   // Update the current state, post tasks to notify listeners accordingly to
   // the MessageLoop.
   void UpdateState(State new_state);
-  void NotifyStateListeners(State new_state) const;
 
   std::string GenerateSsid() const;
 
@@ -98,18 +95,16 @@ class WifiBootstrapManager : public WifiDelegate {
   // It is not persisted to disk.
   SetupState setup_state_{SetupState::kNone};
   ConnectionState connection_state_{ConnectionState::kDisabled};
+  Config* config_{nullptr};
   provider::TaskRunner* task_runner_{nullptr};
   provider::Network* network_{nullptr};
   provider::Wifi* wifi_{nullptr};
   WifiSsidGenerator ssid_generator_;
   base::Time monitor_until_;
 
-  std::vector<StateListener> state_listeners_;
   bool currently_online_{false};
-  std::string last_configured_ssid_;
   std::string test_privet_ssid_;
   std::string privet_ssid_;
-  bool ble_setup_enabled_{false};
 
   // Helps to reset irrelevant tasks switching state.
   base::WeakPtrFactory<WifiBootstrapManager> tasks_weak_factory_{this};

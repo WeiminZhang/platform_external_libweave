@@ -59,9 +59,6 @@ class Manager : public Privet, public CloudDelegate::Observer {
 
   std::string GetCurrentlyConnectedSsid() const;
 
-  void AddOnWifiSetupChangedCallback(
-      const OnWifiSetupChangedCallback& callback) override;
-
   void AddOnPairingChangedCallbacks(
       const OnPairingStartedCallback& on_start,
       const OnPairingEndedCallback& on_end) override;
