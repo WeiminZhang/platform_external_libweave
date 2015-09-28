@@ -18,20 +18,34 @@
 namespace weave {
 namespace provider {
 
+// Interface with methods to read/write libweave settings, device state and
+// commands definitions.
 class ConfigStore {
  public:
+  // Returns default settings. This settings used for a new device or after
+  // a factory reset.
   virtual bool LoadDefaults(Settings* settings) = 0;
+
+  // Returns settings saved by SaveSettings during last run of libWeave.
+  // Implementation should return data as-is without parsing or modifications.
   virtual std::string LoadSettings() = 0;
+
+  // Saves settings. Implementation should save data as-is without parsing or
+  // modifications. Data stored in settings can be sensitive, so it's highly
+  // recommended to protect data, e.g. using encryption.
   virtual void SaveSettings(const std::string& settings) = 0;
-  virtual void OnSettingsChanged(const Settings& settings) = 0;
 
   virtual std::string LoadBaseCommandDefs() = 0;
-  virtual std::map<std::string, std::string> LoadCommandDefs() = 0;
-
   virtual std::string LoadBaseStateDefs() = 0;
   virtual std::string LoadBaseStateDefaults() = 0;
 
+  // Returns command definitions as JSON.
+  virtual std::map<std::string, std::string> LoadCommandDefs() = 0;
+
+  // Returns device state definitions as JSON.
   virtual std::map<std::string, std::string> LoadStateDefs() = 0;
+
+  // Returns device state defaults as JSON.
   virtual std::vector<std::string> LoadStateDefaults() = 0;
 
  protected:
