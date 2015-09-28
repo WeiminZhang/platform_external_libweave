@@ -20,7 +20,7 @@ using privet::ConnectionState;
 using privet::CryptoType;
 using privet::SetupState;
 using privet::WifiType;
-using provider::NetworkState;
+using provider::Network;
 
 const EnumToStringMap<PairingType>::Map kPairingTypeMap[] = {
     {PairingType::kPinCode, "pinCode"},
@@ -68,11 +68,11 @@ const EnumToStringMap<WifiSetupState>::Map kWifiSetupStateMap[] = {
     {WifiSetupState::kConnecting, "connecting"},
 };
 
-const EnumToStringMap<provider::NetworkState>::Map kNetworkStateMap[] = {
-    {NetworkState::kOffline, "offline"},
-    {NetworkState::kFailure, "failure"},
-    {NetworkState::kConnecting, "connecting"},
-    {NetworkState::kConnected, "connected"},
+const EnumToStringMap<Network::State>::Map kNetworkStateMap[] = {
+    {Network::State::kOffline, "offline"},
+    {Network::State::kFailure, "failure"},
+    {Network::State::kConnecting, "connecting"},
+    {Network::State::kConnected, "connected"},
 };
 
 }  // namespace
@@ -106,7 +106,7 @@ LIBWEAVE_EXPORT EnumToStringMap<WifiSetupState>::EnumToStringMap()
     : EnumToStringMap(kWifiSetupStateMap) {}
 
 template <>
-LIBWEAVE_EXPORT EnumToStringMap<NetworkState>::EnumToStringMap()
+LIBWEAVE_EXPORT EnumToStringMap<Network::State>::EnumToStringMap()
     : EnumToStringMap(kNetworkStateMap) {}
 
 }  // namespace weave

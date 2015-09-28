@@ -14,17 +14,17 @@
 namespace weave {
 namespace provider {
 
-enum class NetworkState {
-  kOffline = 0,
-  kFailure,
-  kConnecting,
-  kConnected,
-};
-
 // Interface with methods to detect network connectivity and opening network
 // connections.
 class Network {
  public:
+  enum class State {
+    kOffline = 0,
+    kFailure,
+    kConnecting,
+    kConnected,
+  };
+
   // Callback type for AddConnectionChangedCallback.
   using ConnectionChangedCallback = base::Closure;
 
@@ -39,7 +39,7 @@ class Network {
       const ConnectionChangedCallback& callback) = 0;
 
   // Returns current Internet connectivity state
-  virtual NetworkState GetConnectionState() const = 0;
+  virtual State GetConnectionState() const = 0;
 
   // Opens bidirectional sockets and returns attached stream.
   virtual void OpenSslSocket(

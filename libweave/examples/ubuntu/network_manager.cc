@@ -21,8 +21,6 @@ namespace examples {
 
 namespace {
 
-using provider::NetworkState;
-
 int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
   int pid = fork();
   if (pid != 0)
@@ -129,27 +127,27 @@ void NetworkImpl::Connect(const std::string& ssid,
 }
 
 void NetworkImpl::UpdateNetworkState() {
-  network_state_ = NetworkState::kOffline;
+  network_state_ = Network::State::kOffline;
   if (force_bootstrapping_)
     return;
   if (std::system("ping talk.google.com -c 1") == 0)
-    network_state_ = NetworkState::kConnected;
+    network_state_ = State::kConnected;
   else if (std::system("nmcli dev"))
-    network_state_ = NetworkState::kFailure;
+    network_state_ = State::kFailure;
   else if (std::system("nmcli dev | grep connecting") == 0)
-    network_state_ = NetworkState::kConnecting;
+    network_state_ = State::kConnecting;
 
   task_runner_->PostDelayedTask(FROM_HERE,
                                 base::Bind(&NetworkImpl::UpdateNetworkState,
                                            weak_ptr_factory_.GetWeakPtr()),
                                 base::TimeDelta::FromSeconds(10));
 
-  bool online = GetConnectionState() == NetworkState::kConnected;
+  bool online = GetConnectionState() == State::kConnected;
   for (const auto& cb : callbacks_)
     cb.Run();
 }
 
-NetworkState NetworkImpl::GetConnectionState() const {
+provider::Network::State NetworkImpl::GetConnectionState() const {
   return network_state_;
 }
 
@@ -157,7 +155,7 @@ void NetworkImpl::StartAccessPoint(const std::string& ssid) {
   if (hostapd_started_)
     return;
 
-  network_state_ = NetworkState::kOffline;
+  network_state_ = State::kOffline;
 
   // Release wlan0 interface.
   CHECK_EQ(0, std::system("nmcli nm wifi off"));

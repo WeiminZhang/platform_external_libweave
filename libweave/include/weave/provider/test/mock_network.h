@@ -19,7 +19,7 @@ class MockNetwork : public Network {
  public:
   MOCK_METHOD1(AddConnectionChangedCallback,
                void(const ConnectionChangedCallback&));
-  MOCK_CONST_METHOD0(GetConnectionState, NetworkState());
+  MOCK_CONST_METHOD0(GetConnectionState, State());
   MOCK_METHOD4(OpenSslSocket,
                void(const std::string&,
                     uint16_t,

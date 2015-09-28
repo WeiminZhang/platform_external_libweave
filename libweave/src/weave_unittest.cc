@@ -37,7 +37,7 @@ namespace weave {
 using test::CreateDictionaryValue;
 using test::ValueToString;
 using provider::test::MockHttpClientResponse;
-using provider::NetworkState;
+using provider::Network;
 
 const char kCategory[] = "powerd";
 
@@ -230,7 +230,7 @@ class WeaveTest : public ::testing::Test {
               network_callbacks_.push_back(cb);
             }));
     EXPECT_CALL(network_, GetConnectionState())
-        .WillRepeatedly(Return(NetworkState::kOffline));
+        .WillRepeatedly(Return(Network::State::kOffline));
   }
 
   void InitDnsSd() {
@@ -310,7 +310,7 @@ class WeaveTest : public ::testing::Test {
     task_runner_.Run();
   }
 
-  void NotifyNetworkChanged(provider::NetworkState state,
+  void NotifyNetworkChanged(provider::Network::State state,
                             base::TimeDelta delay) {
     EXPECT_CALL(network_, GetConnectionState()).WillRepeatedly(Return(state));
     for (const auto& cb : network_callbacks_) {
@@ -423,7 +423,7 @@ class WeaveWiFiSetupTest : public WeaveTest {
     InitDnsSd();
 
     EXPECT_CALL(network_, GetConnectionState())
-        .WillRepeatedly(Return(provider::NetworkState::kConnected));
+        .WillRepeatedly(Return(provider::Network::State::kConnected));
   }
 };
 
@@ -431,13 +431,13 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
   StartDevice();
 
   // Short disconnect.
-  NotifyNetworkChanged(provider::NetworkState::kOffline, {});
-  NotifyNetworkChanged(provider::NetworkState::kConnected,
+  NotifyNetworkChanged(provider::Network::State::kOffline, {});
+  NotifyNetworkChanged(provider::Network::State::kConnected,
                        base::TimeDelta::FromSeconds(10));
   task_runner_.Run();
 
   // Long disconnect.
-  NotifyNetworkChanged(NetworkState::kOffline, {});
+  NotifyNetworkChanged(Network::State::kOffline, {});
   auto offline_from = task_runner_.GetClock()->Now();
   EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
       .WillOnce(InvokeWithoutArgs([this, offline_from]() {
@@ -456,7 +456,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
   StartDevice();
 
   // Long disconnect.
-  NotifyNetworkChanged(NetworkState::kOffline, {});
+  NotifyNetworkChanged(Network::State::kOffline, {});
 
   for (int i = 0; i < 5; ++i) {
     auto offline_from = task_runner_.GetClock()->Now();
@@ -480,7 +480,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
     task_runner_.Run();
   }
 
-  NotifyNetworkChanged(NetworkState::kConnected, {});
+  NotifyNetworkChanged(Network::State::kConnected, {});
   task_runner_.Run();
 }
 
@@ -488,7 +488,7 @@ TEST_F(WeaveWiFiSetupTest, StartOfflineWithSsid) {
   EXPECT_CALL(config_store_, LoadSettings())
       .WillRepeatedly(Return(R"({"last_configured_ssid": "TEST_ssid"})"));
   EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(NetworkState::kOffline));
+      .WillRepeatedly(Return(Network::State::kOffline));
 
   auto offline_from = task_runner_.GetClock()->Now();
   EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
