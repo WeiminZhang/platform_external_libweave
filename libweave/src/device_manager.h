@@ -52,8 +52,6 @@ class DeviceManager final : public Device {
                    provider::Wifi* wifi,
                    provider::Bluetooth* bluetooth);
 
-  void OnWiFiBootstrapStateChanged(weave::WifiSetupState state);
-
   std::shared_ptr<CommandManager> command_manager_;
   std::unique_ptr<StateChangeQueue> state_change_queue_;
   std::shared_ptr<StateManager> state_manager_;

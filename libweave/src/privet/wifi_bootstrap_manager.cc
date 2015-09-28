@@ -13,27 +13,25 @@
 
 #include "libweave/src/bind_lambda.h"
 #include "libweave/src/privet/constants.h"
+#include "libweave/src/config.h"
 
 namespace weave {
 namespace privet {
 
 using provider::Network;
 
-WifiBootstrapManager::WifiBootstrapManager(
-    const std::string& last_configured_ssid,
-    const std::string& test_privet_ssid,
-    bool ble_setup_enabled,
-    provider::TaskRunner* task_runner,
-    provider::Network* network,
-    provider::Wifi* wifi,
-    CloudDelegate* gcd)
-    : task_runner_{task_runner},
+WifiBootstrapManager::WifiBootstrapManager(const std::string& test_privet_ssid,
+                                           Config* config,
+                                           provider::TaskRunner* task_runner,
+                                           provider::Network* network,
+                                           provider::Wifi* wifi,
+                                           CloudDelegate* gcd)
+    : config_{config},
+      task_runner_{task_runner},
       network_{network},
       wifi_{wifi},
       ssid_generator_{gcd, this},
-      last_configured_ssid_{last_configured_ssid},
-      test_privet_ssid_{test_privet_ssid},
-      ble_setup_enabled_{ble_setup_enabled} {
+      test_privet_ssid_{test_privet_ssid} {
   CHECK(network_);
   CHECK(task_runner_);
   CHECK(wifi_);
@@ -44,18 +42,11 @@ void WifiBootstrapManager::Init() {
   network_->AddConnectionChangedCallback(
       base::Bind(&WifiBootstrapManager::OnConnectivityChange,
                  lifetime_weak_factory_.GetWeakPtr()));
-  if (last_configured_ssid_.empty()) {
+  if (config_->GetSettings().last_configured_ssid.empty()) {
     StartBootstrapping();
   } else {
     StartMonitoring();
   }
-}
-
-void WifiBootstrapManager::RegisterStateListener(
-    const StateListener& listener) {
-  // Notify about current state.
-  listener.Run(state_);
-  state_listeners_.push_back(listener);
 }
 
 void WifiBootstrapManager::StartBootstrapping() {
@@ -70,7 +61,7 @@ void WifiBootstrapManager::StartBootstrapping() {
   }
 
   UpdateState(State::kBootstrapping);
-  if (!last_configured_ssid_.empty()) {
+  if (!config_->GetSettings().last_configured_ssid.empty()) {
     // If we have been configured before, we'd like to periodically take down
     // our AP and find out if we can connect again.  Many kinds of failures are
     // transient, and having an AP up prohibits us from connecting as a client.
@@ -83,11 +74,13 @@ void WifiBootstrapManager::StartBootstrapping() {
   privet_ssid_ = GenerateSsid();
   CHECK(!privet_ssid_.empty());
   wifi_->StartAccessPoint(privet_ssid_);
-  LOG_IF(INFO, ble_setup_enabled_) << "BLE Bootstrap start: not implemented.";
+  LOG_IF(INFO, config_->GetSettings().ble_setup_enabled)
+      << "BLE Bootstrap start: not implemented.";
 }
 
 void WifiBootstrapManager::EndBootstrapping() {
-  LOG_IF(INFO, ble_setup_enabled_) << "BLE Bootstrap stop: not implemented.";
+  LOG_IF(INFO, config_->GetSettings().ble_setup_enabled)
+      << "BLE Bootstrap stop: not implemented.";
   wifi_->StopAccessPoint();
   privet_ssid_.clear();
 }
@@ -162,22 +155,7 @@ void WifiBootstrapManager::UpdateState(State new_state) {
       break;
   }
 
-  if (new_state != state_) {
-    state_ = new_state;
-    // Post with weak ptr to avoid notification after this object destroyed.
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(&WifiBootstrapManager::NotifyStateListeners,
-                              lifetime_weak_factory_.GetWeakPtr(), new_state),
-        {});
-  } else {
-    VLOG(3) << "Not notifying listeners of state change, "
-            << "because the states are the same.";
-  }
-}
-
-void WifiBootstrapManager::NotifyStateListeners(State new_state) const {
-  for (const StateListener& listener : state_listeners_)
-    listener.Run(new_state);
+  state_ = new_state;
 }
 
 std::string WifiBootstrapManager::GenerateSsid() const {
@@ -209,7 +187,7 @@ bool WifiBootstrapManager::ConfigureCredentials(const std::string& ssid,
 
 std::string WifiBootstrapManager::GetCurrentlyConnectedSsid() const {
   // TODO(vitalybuka): Get from shill, if possible.
-  return last_configured_ssid_;
+  return config_->GetSettings().last_configured_ssid;
 }
 
 std::string WifiBootstrapManager::GetHostedSsid() const {
@@ -223,7 +201,9 @@ std::set<WifiType> WifiBootstrapManager::GetTypes() const {
 
 void WifiBootstrapManager::OnConnectSuccess(const std::string& ssid) {
   VLOG(1) << "Wifi was connected successfully";
-  last_configured_ssid_ = ssid;
+  Config::Transaction change{config_};
+  change.set_last_configured_ssid(ssid);
+  change.Commit();
   setup_state_ = SetupState{SetupState::kSuccess};
   StartMonitoring();
 }
@@ -253,7 +233,7 @@ void WifiBootstrapManager::OnMonitorTimeout() {
 
 void WifiBootstrapManager::UpdateConnectionState() {
   connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
-  if (last_configured_ssid_.empty())
+  if (config_->GetSettings().last_configured_ssid.empty())
     return;
 
   Network::State service_state{network_->GetConnectionState()};

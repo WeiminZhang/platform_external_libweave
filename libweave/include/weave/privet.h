@@ -36,10 +36,6 @@ class Privet {
   using OnPairingEndedCallback =
       base::Callback<void(const std::string& session_id)>;
 
-  // Sets callback which is called when WiFi state is changed.
-  virtual void AddOnWifiSetupChangedCallback(
-      const OnWifiSetupChangedCallback& callback) = 0;
-
   virtual void AddOnPairingChangedCallbacks(
       const OnPairingStartedCallback& on_start,
       const OnPairingEndedCallback& on_end) = 0;
