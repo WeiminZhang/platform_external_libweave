@@ -17,7 +17,7 @@
 namespace weave {
 namespace privet {
 
-using provider::NetworkState;
+using provider::Network;
 
 WifiBootstrapManager::WifiBootstrapManager(
     const std::string& last_configured_ssid,
@@ -59,7 +59,7 @@ void WifiBootstrapManager::RegisterStateListener(
 }
 
 void WifiBootstrapManager::StartBootstrapping() {
-  if (network_->GetConnectionState() == NetworkState::kConnected) {
+  if (network_->GetConnectionState() == Network::State::kConnected) {
     // If one of the devices we monitor for connectivity is online, we need not
     // start an AP.  For most devices, this is a situation which happens in
     // testing when we have an ethernet connection.  If you need to always
@@ -124,7 +124,7 @@ void WifiBootstrapManager::StartMonitoring() {
   // connectivity state.  See OnConnectivityChange().
   UpdateState(State::kMonitoring);
 
-  if (network_->GetConnectionState() == NetworkState::kConnected) {
+  if (network_->GetConnectionState() == Network::State::kConnected) {
     monitor_until_ = {};
   } else {
     if (monitor_until_.is_null()) {
@@ -240,7 +240,7 @@ void WifiBootstrapManager::OnConnectivityChange() {
 
   if (state_ == State::kMonitoring ||  // Reset monitoring timeout.
       (state_ != State::kDisabled &&
-       network_->GetConnectionState() == NetworkState::kConnected)) {
+       network_->GetConnectionState() == Network::State::kConnected)) {
     StartMonitoring();
   }
 }
@@ -255,12 +255,13 @@ void WifiBootstrapManager::UpdateConnectionState() {
   connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
   if (last_configured_ssid_.empty())
     return;
-  NetworkState service_state{network_->GetConnectionState()};
+
+  Network::State service_state{network_->GetConnectionState()};
   switch (service_state) {
-    case NetworkState::kOffline:
+    case Network::State::kOffline:
       connection_state_ = ConnectionState{ConnectionState::kOffline};
       return;
-    case NetworkState::kFailure: {
+    case Network::State::kFailure: {
       // TODO(wiley) Pull error information from somewhere.
       ErrorPtr error;
       Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
@@ -268,10 +269,10 @@ void WifiBootstrapManager::UpdateConnectionState() {
       connection_state_ = ConnectionState{std::move(error)};
       return;
     }
-    case NetworkState::kConnecting:
+    case Network::State::kConnecting:
       connection_state_ = ConnectionState{ConnectionState::kConnecting};
       return;
-    case NetworkState::kConnected:
+    case Network::State::kConnected:
       connection_state_ = ConnectionState{ConnectionState::kOnline};
       return;
   }

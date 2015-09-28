@@ -32,7 +32,7 @@ class NetworkImpl : public provider::Network, public provider::Wifi {
   // Network implementation.
   void AddConnectionChangedCallback(
       const ConnectionChangedCallback& callback) override;
-  provider::NetworkState GetConnectionState() const override;
+  State GetConnectionState() const override;
   void OpenSslSocket(const std::string& host,
                      uint16_t port,
                      const OpenSslSocketSuccessCallback& success_callback,
@@ -61,7 +61,7 @@ class NetworkImpl : public provider::Network, public provider::Wifi {
   bool hostapd_started_{false};
   provider::TaskRunner* task_runner_{nullptr};
   std::vector<ConnectionChangedCallback> callbacks_;
-  provider::NetworkState network_state_{provider::NetworkState::kOffline};
+  provider::Network::State network_state_{provider::Network::State::kOffline};
 
   base::WeakPtrFactory<NetworkImpl> weak_ptr_factory_{this};
 };
