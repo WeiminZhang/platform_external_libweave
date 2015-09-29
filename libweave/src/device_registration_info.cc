@@ -40,6 +40,9 @@ const char kErrorDomainGCDServer[] = "gcd_server";
 
 namespace {
 
+const int kPollingPeriodSeconds = 7;
+const int kBackupPollingPeriodSeconds = 30;
+
 using provider::HttpClient;
 
 inline void SetUnexpectedError(ErrorPtr* error) {
@@ -216,7 +219,6 @@ bool IsSuccessful(const HttpClient::Response& response) {
 DeviceRegistrationInfo::DeviceRegistrationInfo(
     const std::shared_ptr<CommandManager>& command_manager,
     const std::shared_ptr<StateManager>& state_manager,
-    bool notifications_enabled,
     std::unique_ptr<Config> config,
     provider::TaskRunner* task_runner,
     provider::HttpClient* http_client,
@@ -226,7 +228,6 @@ DeviceRegistrationInfo::DeviceRegistrationInfo(
       command_manager_{command_manager},
       state_manager_{state_manager},
       config_{std::move(config)},
-      notifications_enabled_{notifications_enabled},
       network_{network} {
   cloud_backoff_policy_.reset(new BackoffEntry::Policy{});
   cloud_backoff_policy_->num_errors_to_ignore = 0;
@@ -454,7 +455,8 @@ void DeviceRegistrationInfo::StartNotificationChannel() {
   // call back to OnConnected() and at that time we'll switch to use the
   // primary channel and switch periodic poll into much more infrequent backup
   // poll mode.
-  const base::TimeDelta pull_interval = GetSettings().polling_period;
+  const base::TimeDelta pull_interval =
+      base::TimeDelta::FromSeconds(kPollingPeriodSeconds);
   if (!pull_channel_) {
     pull_channel_.reset(new PullChannel{pull_interval, task_runner_});
     pull_channel_->Start(this);
@@ -462,11 +464,6 @@ void DeviceRegistrationInfo::StartNotificationChannel() {
     pull_channel_->UpdatePullInterval(pull_interval);
   }
   current_notification_channel_ = pull_channel_.get();
-
-  if (!notifications_enabled_) {
-    LOG(WARNING) << "Notification channel disabled by flag.";
-    return;
-  }
 
   notification_channel_starting_ = true;
   primary_notification_channel_.reset(new XmppChannel{
@@ -1231,7 +1228,8 @@ void DeviceRegistrationInfo::OnConnected(const std::string& channel_name) {
             << channel_name;
   CHECK_EQ(primary_notification_channel_->GetName(), channel_name);
   notification_channel_starting_ = false;
-  pull_channel_->UpdatePullInterval(GetSettings().backup_polling_period);
+  pull_channel_->UpdatePullInterval(
+      base::TimeDelta::FromSeconds(kBackupPollingPeriodSeconds));
   current_notification_channel_ = primary_notification_channel_.get();
 
   // If we have not successfully connected to the cloud server and we have not
@@ -1255,7 +1253,8 @@ void DeviceRegistrationInfo::OnDisconnected() {
   if (!HaveRegistrationCredentials() || !connected_to_cloud_)
     return;
 
-  pull_channel_->UpdatePullInterval(GetSettings().polling_period);
+  pull_channel_->UpdatePullInterval(
+      base::TimeDelta::FromSeconds(kPollingPeriodSeconds));
   current_notification_channel_ = pull_channel_.get();
   UpdateDeviceResource(base::Bind(&base::DoNothing),
                        base::Bind(&IgnoreCloudError));

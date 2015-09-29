@@ -39,8 +39,7 @@ class WifiBootstrapManager : public WifiDelegate {
  public:
   using State = WifiSetupState;
 
-  WifiBootstrapManager(const std::string& test_privet_ssid,
-                       Config* config,
+  WifiBootstrapManager(Config* config,
                        provider::TaskRunner* task_runner,
                        provider::Network* shill_client,
                        provider::Wifi* wifi,
@@ -103,7 +102,6 @@ class WifiBootstrapManager : public WifiDelegate {
   base::Time monitor_until_;
 
   bool currently_online_{false};
-  std::string test_privet_ssid_;
   std::string privet_ssid_;
 
   // Helps to reset irrelevant tasks switching state.

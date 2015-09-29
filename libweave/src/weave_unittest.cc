@@ -278,11 +278,8 @@ class WeaveTest : public ::testing::Test {
   }
 
   void StartDevice() {
-    weave::Device::Options options;
-    options.xmpp_enabled = false;
-
-    device_->Start(options, &config_store_, &task_runner_, &http_client_,
-                   &network_, &dns_sd_, &http_server_, &wifi_, &bluetooth_);
+    device_->Start(&config_store_, &task_runner_, &http_client_, &network_,
+                   &dns_sd_, &http_server_, &wifi_, &bluetooth_);
 
     cloud_ = device_->GetCloud();
     ASSERT_TRUE(cloud_);
@@ -333,14 +330,9 @@ TEST_F(WeaveTest, Create) {
 }
 
 TEST_F(WeaveTest, StartMinimal) {
-  weave::Device::Options options;
-  options.xmpp_enabled = false;
-  options.disable_privet = true;
-  options.disable_security = true;
-
   InitConfigStore();
-  device_->Start(options, &config_store_, &task_runner_, &http_client_,
-                 &network_, nullptr, nullptr, &wifi_, nullptr);
+  device_->Start(&config_store_, &task_runner_, &http_client_, &network_,
+                 nullptr, nullptr, &wifi_, nullptr);
 }
 
 TEST_F(WeaveTest, StartNoWifi) {
@@ -350,9 +342,8 @@ TEST_F(WeaveTest, StartNoWifi) {
   InitDnsSd();
   InitDnsSdPublishing(false, "CB");
 
-  weave::Device::Options options;
-  device_->Start(options, &config_store_, &task_runner_, &http_client_,
-                 &network_, &dns_sd_, &http_server_, nullptr, &bluetooth_);
+  device_->Start(&config_store_, &task_runner_, &http_client_, &network_,
+                 &dns_sd_, &http_server_, nullptr, &bluetooth_);
 
   for (const auto& cb : http_server_changed_cb_)
     cb.Run(http_server_);
@@ -375,6 +366,7 @@ TEST_F(WeaveBasicTest, Start) {
 }
 
 TEST_F(WeaveBasicTest, Register) {
+  EXPECT_CALL(network_, OpenSslSocket(_, _, _, _)).WillRepeatedly(Return());
   StartDevice();
 
   auto draft = CreateDictionaryValue(kDeviceResource);

@@ -27,18 +27,9 @@ namespace weave {
 
 class Device {
  public:
-  struct Options {
-    bool xmpp_enabled = true;
-    bool disable_privet = false;
-    bool disable_security = false;
-    bool enable_ping = false;
-    std::string test_privet_ssid;
-  };
-
   virtual ~Device() = default;
 
-  virtual void Start(const Options& options,
-                     provider::ConfigStore* config_store,
+  virtual void Start(provider::ConfigStore* config_store,
                      provider::TaskRunner* task_runner,
                      provider::HttpClient* http_client,
                      provider::Network* network,

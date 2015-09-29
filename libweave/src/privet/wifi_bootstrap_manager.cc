@@ -20,8 +20,7 @@ namespace privet {
 
 using provider::Network;
 
-WifiBootstrapManager::WifiBootstrapManager(const std::string& test_privet_ssid,
-                                           Config* config,
+WifiBootstrapManager::WifiBootstrapManager(Config* config,
                                            provider::TaskRunner* task_runner,
                                            provider::Network* network,
                                            provider::Wifi* wifi,
@@ -30,8 +29,8 @@ WifiBootstrapManager::WifiBootstrapManager(const std::string& test_privet_ssid,
       task_runner_{task_runner},
       network_{network},
       wifi_{wifi},
-      ssid_generator_{gcd, this},
-      test_privet_ssid_{test_privet_ssid} {
+      ssid_generator_{gcd, this} {
+  CHECK(config_);
   CHECK(network_);
   CHECK(task_runner_);
   CHECK(wifi_);
@@ -74,13 +73,9 @@ void WifiBootstrapManager::StartBootstrapping() {
   privet_ssid_ = GenerateSsid();
   CHECK(!privet_ssid_.empty());
   wifi_->StartAccessPoint(privet_ssid_);
-  LOG_IF(INFO, config_->GetSettings().ble_setup_enabled)
-      << "BLE Bootstrap start: not implemented.";
 }
 
 void WifiBootstrapManager::EndBootstrapping() {
-  LOG_IF(INFO, config_->GetSettings().ble_setup_enabled)
-      << "BLE Bootstrap stop: not implemented.";
   wifi_->StopAccessPoint();
   privet_ssid_.clear();
 }
@@ -159,8 +154,8 @@ void WifiBootstrapManager::UpdateState(State new_state) {
 }
 
 std::string WifiBootstrapManager::GenerateSsid() const {
-  return test_privet_ssid_.empty() ? ssid_generator_.GenerateSsid()
-                                   : test_privet_ssid_;
+  const std::string& ssid = config_->GetSettings().test_privet_ssid;
+  return ssid.empty() ? ssid_generator_.GenerateSsid() : ssid;
 }
 
 const ConnectionState& WifiBootstrapManager::GetConnectionState() const {

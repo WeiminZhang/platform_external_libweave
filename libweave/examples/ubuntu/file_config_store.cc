@@ -18,6 +18,9 @@ namespace examples {
 const char kSettingsDir[] = "/var/lib/weave/";
 const char kSettingsPath[] = "/var/lib/weave/weave_settings.json";
 
+FileConfigStore::FileConfigStore(bool disable_security)
+    : disable_security_{disable_security} {}
+
 bool FileConfigStore::LoadDefaults(Settings* settings) {
   char host_name[HOST_NAME_MAX] = {};
   gethostname(host_name, HOST_NAME_MAX);
@@ -37,6 +40,8 @@ bool FileConfigStore::LoadDefaults(Settings* settings) {
   settings->client_id = "58855907228.apps.googleusercontent.com";
   settings->client_secret = "eHSAREAHrIqPsHBxCE9zPPBi";
   settings->api_key = "AIzaSyDSq46gG-AxUnC3zoqD9COIPrjolFsMfMA";
+
+  settings->disable_security = disable_security_;
   return true;
 }
 

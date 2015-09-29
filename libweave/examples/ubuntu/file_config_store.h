@@ -16,6 +16,8 @@ namespace examples {
 
 class FileConfigStore : public provider::ConfigStore {
  public:
+  explicit FileConfigStore(bool disable_security);
+
   bool LoadDefaults(Settings* settings) override;
   std::string LoadSettings() override;
   void SaveSettings(const std::string& settings) override;
@@ -26,6 +28,9 @@ class FileConfigStore : public provider::ConfigStore {
   std::string LoadBaseStateDefaults() override;
   std::map<std::string, std::string> LoadStateDefs() override;
   std::vector<std::string> LoadStateDefaults() override;
+
+ private:
+  bool disable_security_{false};
 };
 
 }  // namespace examples

@@ -57,7 +57,6 @@ class DeviceRegistrationInfo : public Cloud,
 
   DeviceRegistrationInfo(const std::shared_ptr<CommandManager>& command_manager,
                          const std::shared_ptr<StateManager>& state_manager,
-                         bool notifications_enabled,
                          std::unique_ptr<Config> config,
                          provider::TaskRunner* task_runner,
                          provider::HttpClient* http_client,
@@ -330,7 +329,6 @@ class DeviceRegistrationInfo : public Cloud,
   // another request is in flight to the cloud server.
   ResourceUpdateCallbackList queued_resource_update_callbacks_;
 
-  const bool notifications_enabled_;
   std::unique_ptr<NotificationChannel> primary_notification_channel_;
   std::unique_ptr<PullChannel> pull_channel_;
   NotificationChannel* current_notification_channel_{nullptr};

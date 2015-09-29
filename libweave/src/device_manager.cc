@@ -29,8 +29,7 @@ DeviceManager::DeviceManager() {}
 
 DeviceManager::~DeviceManager() {}
 
-void DeviceManager::Start(const Options& options,
-                          provider::ConfigStore* config_store,
+void DeviceManager::Start(provider::ConfigStore* config_store,
                           provider::TaskRunner* task_runner,
                           provider::HttpClient* http_client,
                           provider::Network* network,
@@ -50,18 +49,17 @@ void DeviceManager::Start(const Options& options,
   // TODO(avakulenko): Figure out security implications of storing
   // device info state data unencrypted.
   device_info_.reset(new DeviceRegistrationInfo(
-      command_manager_, state_manager_, options.xmpp_enabled, std::move(config),
-      task_runner, http_client, network));
+      command_manager_, state_manager_, std::move(config), task_runner,
+      http_client, network));
   base_api_handler_.reset(
       new BaseApiHandler{device_info_.get(), state_manager_, command_manager_});
 
   device_info_->Start();
 
-  if (!options.disable_privet) {
-    StartPrivet(options, task_runner, network, dns_sd, http_server, wifi,
-                bluetooth);
+  if (http_server) {
+    CHECK(dns_sd);
+    StartPrivet(task_runner, network, dns_sd, http_server, wifi, bluetooth);
   } else {
-    CHECK(!http_server);
     CHECK(!dns_sd);
   }
 }
@@ -86,15 +84,14 @@ Privet* DeviceManager::GetPrivet() {
   return privet_.get();
 }
 
-void DeviceManager::StartPrivet(const Options& options,
-                                provider::TaskRunner* task_runner,
+void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
                                 provider::Network* network,
                                 provider::DnsServiceDiscovery* dns_sd,
                                 provider::HttpServer* http_server,
                                 provider::Wifi* wifi,
                                 provider::Bluetooth* bluetooth) {
   privet_.reset(new privet::Manager{});
-  privet_->Start(options, task_runner, network, dns_sd, http_server, wifi,
+  privet_->Start(task_runner, network, dns_sd, http_server, wifi,
                  device_info_.get(), command_manager_.get(),
                  state_manager_.get());
 }

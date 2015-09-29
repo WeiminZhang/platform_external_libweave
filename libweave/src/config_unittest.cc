@@ -31,7 +31,9 @@ class ConfigTest : public ::testing::Test {
 
   const Config::Settings& GetSettings() const { return config_.GetSettings(); }
 
-  const Config::Settings& GetDefaultSettings() const { return default_.GetSettings(); }
+  const Config::Settings& GetDefaultSettings() const {
+    return default_.GetSettings();
+  }
 
   MOCK_METHOD1(OnConfigChanged, void(const Settings&));
 
@@ -57,11 +59,9 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().model_name);
   EXPECT_EQ("", GetSettings().model_id);
   EXPECT_EQ("", GetSettings().firmware_version);
-  EXPECT_EQ(base::TimeDelta::FromSeconds(7), GetSettings().polling_period);
-  EXPECT_EQ(base::TimeDelta::FromMinutes(30),
-            GetSettings().backup_polling_period);
   EXPECT_TRUE(GetSettings().wifi_auto_setup_enabled);
-  EXPECT_FALSE(GetSettings().ble_setup_enabled);
+  EXPECT_FALSE(GetSettings().disable_security);
+  EXPECT_EQ("", GetSettings().test_privet_ssid);
   EXPECT_EQ(std::set<PairingType>{PairingType::kPinCode},
             GetSettings().pairing_modes);
   EXPECT_EQ("", GetSettings().embedded_code);
@@ -110,13 +110,12 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ(GetDefaultSettings().oem_name, GetSettings().oem_name);
   EXPECT_EQ(GetDefaultSettings().model_name, GetSettings().model_name);
   EXPECT_EQ(GetDefaultSettings().model_id, GetSettings().model_id);
-  EXPECT_EQ(GetDefaultSettings().polling_period, GetSettings().polling_period);
-  EXPECT_EQ(GetDefaultSettings().backup_polling_period,
-            GetSettings().backup_polling_period);
   EXPECT_EQ(GetDefaultSettings().wifi_auto_setup_enabled,
             GetSettings().wifi_auto_setup_enabled);
-  EXPECT_EQ(GetDefaultSettings().ble_setup_enabled,
-            GetSettings().ble_setup_enabled);
+  EXPECT_EQ(GetDefaultSettings().disable_security,
+            GetSettings().disable_security);
+  EXPECT_EQ(GetDefaultSettings().test_privet_ssid,
+            GetSettings().test_privet_ssid);
   EXPECT_EQ(GetDefaultSettings().pairing_modes, GetSettings().pairing_modes);
   EXPECT_EQ(GetDefaultSettings().embedded_code, GetSettings().embedded_code);
   EXPECT_EQ("state_name", GetSettings().name);
