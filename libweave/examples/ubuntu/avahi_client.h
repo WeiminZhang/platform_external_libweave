@@ -27,7 +27,6 @@ class AvahiClient : public provider::DnsServiceDiscovery {
                       uint16_t port,
                       const std::vector<std::string>& txt) override;
   void StopPublishing(const std::string& service_name) override;
-  std::string GetId() const override;
 
   uint16_t prev_port_{0};
   std::string prev_type_;

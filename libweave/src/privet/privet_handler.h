@@ -42,8 +42,7 @@ class PrivetHandler : public CloudDelegate::Observer {
   PrivetHandler(CloudDelegate* cloud,
                 DeviceDelegate* device,
                 SecurityDelegate* pairing,
-                WifiDelegate* wifi,
-                IdentityDelegate* identity);
+                WifiDelegate* wifi);
   ~PrivetHandler() override;
 
   void OnCommandDefsChanged() override;
@@ -114,7 +113,6 @@ class PrivetHandler : public CloudDelegate::Observer {
   DeviceDelegate* device_ = nullptr;
   SecurityDelegate* security_ = nullptr;
   WifiDelegate* wifi_ = nullptr;
-  IdentityDelegate* identity_ = nullptr;
 
   std::map<std::string, std::pair<AuthScope, ApiHandler>> handlers_;
 

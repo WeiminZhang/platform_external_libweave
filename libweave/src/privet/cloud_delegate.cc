@@ -65,6 +65,10 @@ class CloudDelegateImpl : public CloudDelegate {
 
   ~CloudDelegateImpl() override = default;
 
+  std::string GetDeviceId() const override {
+    return device_->GetSettings().device_id;
+  }
+
   std::string GetModelId() const override {
     CHECK_EQ(5u, device_->GetSettings().model_id.size());
     return device_->GetSettings().model_id;

@@ -7,6 +7,7 @@
 #include <set>
 
 #include <base/bind.h>
+#include <base/guid.h>
 #include <base/json/json_reader.h>
 #include <base/json/json_writer.h>
 #include <base/logging.h>
@@ -34,6 +35,7 @@ const char kLocalDiscoveryEnabled[] = "local_discovery_enabled";
 const char kLocalPairingEnabled[] = "local_pairing_enabled";
 const char kRefreshToken[] = "refresh_token";
 const char kCloudId[] = "cloud_id";
+const char kDeviceId[] = "device_id";
 const char kRobotAccount[] = "robot_account";
 const char kLastConfiguredSsid[] = "last_configured_ssid";
 const char kSecret[] = "secret";
@@ -48,6 +50,7 @@ Config::Settings CreateDefaultSettings() {
   result.service_url = "https://www.googleapis.com/clouddevices/v1/";
   result.local_anonymous_access_role = AuthScope::kViewer;
   result.pairing_modes.emplace(PairingType::kPinCode);
+  result.device_id = base::GenerateGUID();
   return result;
 }
 
@@ -88,7 +91,7 @@ void Config::Load() {
   CHECK(!settings_.model_name.empty());
   CHECK(!settings_.model_id.empty());
   CHECK(!settings_.name.empty());
-
+  CHECK(!settings_.device_id.empty());
   CHECK_EQ(
       settings_.embedded_code.empty(),
       std::find(settings_.pairing_modes.begin(), settings_.pairing_modes.end(),
@@ -160,6 +163,9 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kCloudId, &tmp))
     set_cloud_id(tmp);
 
+  if (dict->GetString(config_keys::kDeviceId, &tmp))
+    set_device_id(tmp);
+
   if (dict->GetString(config_keys::kRefreshToken, &tmp))
     set_refresh_token(tmp);
 
@@ -185,6 +191,7 @@ void Config::Save() {
   dict.SetString(config_keys::kServiceURL, settings_.service_url);
   dict.SetString(config_keys::kRefreshToken, settings_.refresh_token);
   dict.SetString(config_keys::kCloudId, settings_.cloud_id);
+  dict.SetString(config_keys::kDeviceId, settings_.device_id);
   dict.SetString(config_keys::kRobotAccount, settings_.robot_account);
   dict.SetString(config_keys::kLastConfiguredSsid,
                  settings_.last_configured_ssid);

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <base/callback.h>
+#include <base/gtest_prod_util.h>
 #include <weave/error.h>
 #include <weave/provider/config_store.h>
 
@@ -23,6 +24,7 @@ class StorageInterface;
 class Config final {
  public:
   struct Settings : public weave::Settings {
+    std::string device_id;
     std::string refresh_token;
     std::string robot_account;
     std::string last_configured_ssid;
@@ -92,6 +94,11 @@ class Config final {
     void Commit();
 
    private:
+    FRIEND_TEST_ALL_PREFIXES(ConfigTest, Setters);
+    void set_device_id(const std::string& id) {
+      config_->settings_.device_id = id;
+    }
+
     friend class Config;
     void LoadState();
     Config* config_;

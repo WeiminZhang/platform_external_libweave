@@ -20,7 +20,6 @@
 #include "src/privet/cloud_delegate.h"
 #include "src/privet/constants.h"
 #include "src/privet/device_delegate.h"
-#include "src/privet/identity_delegate.h"
 #include "src/privet/security_delegate.h"
 #include "src/privet/wifi_delegate.h"
 #include "src/string_utils.h"
@@ -355,13 +354,8 @@ AuthScope GetAnonymousMaxScope(const CloudDelegate& cloud,
 PrivetHandler::PrivetHandler(CloudDelegate* cloud,
                              DeviceDelegate* device,
                              SecurityDelegate* security,
-                             WifiDelegate* wifi,
-                             IdentityDelegate* identity)
-    : cloud_(cloud),
-      device_(device),
-      security_(security),
-      wifi_(wifi),
-      identity_(identity) {
+                             WifiDelegate* wifi)
+    : cloud_(cloud), device_(device), security_(security), wifi_(wifi) {
   CHECK(cloud_);
   CHECK(device_);
   CHECK(security_);
@@ -478,7 +472,7 @@ void PrivetHandler::HandleInfo(const base::DictionaryValue&,
   std::string model_id = cloud_->GetModelId();
 
   output.SetString(kInfoVersionKey, kInfoVersionValue);
-  output.SetString(kInfoIdKey, identity_->GetId());
+  output.SetString(kInfoIdKey, cloud_->GetDeviceId());
   output.SetString(kNameKey, name);
 
   std::string description{cloud_->GetDescription()};

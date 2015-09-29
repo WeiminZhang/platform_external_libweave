@@ -53,7 +53,7 @@ const char kCommandDefs[] = R"({
 
 const char kDeviceResource[] = R"({
   "kind": "clouddevices#device",
-  "id": "DEVICE_ID",
+  "id": "CLOUD_ID",
   "channel": {
     "supportedType": "pull"
   },
@@ -93,8 +93,8 @@ const char kDeviceResource[] = R"({
 
 const char kRegistrationResponse[] = R"({
   "kind": "clouddevices#registrationTicket",
-  "id": "TEST_ID",
-  "deviceId": "DEVICE_ID",
+  "id": "TICKET_ID",
+  "deviceId": "CLOUD_ID",
   "oauthClientId": "CLIENT_ID",
   "userEmail": "USER@gmail.com",
   "creationTimeMs": "1440087183738",
@@ -103,8 +103,8 @@ const char kRegistrationResponse[] = R"({
 
 const char kRegistrationFinalResponse[] = R"({
   "kind": "clouddevices#registrationTicket",
-  "id": "TEST_ID",
-  "deviceId": "DEVICE_ID",
+  "id": "TICKET_ID",
+  "deviceId": "CLOUD_ID",
   "oauthClientId": "CLIENT_ID",
   "userEmail": "USER@gmail.com",
   "robotAccountEmail": "ROBO@gmail.com",
@@ -182,17 +182,16 @@ class WeaveTest : public ::testing::Test {
   }
 
   void InitDnsSd() {
-    EXPECT_CALL(dns_sd_, GetId()).WillRepeatedly(Return("TEST_ID"));
     EXPECT_CALL(dns_sd_, PublishService(_, _, _)).WillRepeatedly(Return());
     EXPECT_CALL(dns_sd_, StopPublishing("_privet._tcp")).WillOnce(Return());
   }
 
   void InitDnsSdPublishing(bool registered, const std::string& flags) {
-    std::vector<std::string> txt{{"id=TEST_ID"}, {"flags=" + flags},
-                                 {"mmid=ABCDE"}, {"services=_base"},
-                                 {"txtvers=3"},  {"ty=TEST_NAME"}};
+    std::vector<std::string> txt{{"id=TEST_DEVICE_ID"}, {"flags=" + flags},
+                                 {"mmid=ABCDE"},        {"services=_base"},
+                                 {"txtvers=3"},         {"ty=TEST_NAME"}};
     if (registered) {
-      txt.push_back("gcd_id=DEVICE_ID");
+      txt.push_back("gcd_id=CLOUD_ID");
 
       // During registration device may announce itself twice:
       // 1. with GCD ID but not connected (DB)
@@ -333,7 +332,7 @@ TEST_F(WeaveBasicTest, Register) {
   ExpectRequest(
       "PATCH",
       "https://www.googleapis.com/clouddevices/v1/registrationTickets/"
-      "TEST_ID?key=TEST_API_KEY",
+      "TICKET_ID?key=TEST_API_KEY",
       ValueToString(*response));
 
   response = CreateDictionaryValue(kRegistrationFinalResponse);
@@ -341,7 +340,7 @@ TEST_F(WeaveBasicTest, Register) {
   ExpectRequest(
       "POST",
       "https://www.googleapis.com/clouddevices/v1/registrationTickets/"
-      "TEST_ID/finalize?key=TEST_API_KEY",
+      "TICKET_ID/finalize?key=TEST_API_KEY",
       ValueToString(*response));
 
   ExpectRequest("POST", "https://accounts.google.com/o/oauth2/token",
@@ -349,7 +348,7 @@ TEST_F(WeaveBasicTest, Register) {
 
   InitDnsSdPublishing(true, "DB");
 
-  EXPECT_EQ("DEVICE_ID", cloud_->RegisterDevice("TEST_ID", nullptr));
+  EXPECT_EQ("CLOUD_ID", cloud_->RegisterDevice("TICKET_ID", nullptr));
 }
 
 class WeaveWiFiSetupTest : public WeaveTest {

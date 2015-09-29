@@ -51,6 +51,9 @@ class CloudDelegate {
     virtual void OnStateChanged() {}
   };
 
+  // Returns the ID of the device.
+  virtual std::string GetDeviceId() const = 0;
+
   // Returns the model ID of the device.
   virtual std::string GetModelId() const = 0;
 

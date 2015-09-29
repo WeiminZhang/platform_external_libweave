@@ -58,6 +58,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().oem_name);
   EXPECT_EQ("", GetSettings().model_name);
   EXPECT_EQ("", GetSettings().model_id);
+  EXPECT_FALSE(GetSettings().device_id.empty());
   EXPECT_EQ("", GetSettings().firmware_version);
   EXPECT_TRUE(GetSettings().wifi_auto_setup_enabled);
   EXPECT_FALSE(GetSettings().disable_security);
@@ -85,6 +86,7 @@ TEST_F(ConfigTest, LoadState) {
     "client_secret": "state_client_secret",
     "cloud_id": "state_cloud_id",
     "description": "state_description",
+    "device_id": "state_device_id",
     "last_configured_ssid": "state_last_configured_ssid",
     "local_anonymous_access_role": "user",
     "local_discovery_enabled": false,
@@ -110,6 +112,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ(GetDefaultSettings().oem_name, GetSettings().oem_name);
   EXPECT_EQ(GetDefaultSettings().model_name, GetSettings().model_name);
   EXPECT_EQ(GetDefaultSettings().model_id, GetSettings().model_id);
+  EXPECT_EQ("state_device_id", GetSettings().device_id);
   EXPECT_EQ(GetDefaultSettings().wifi_auto_setup_enabled,
             GetSettings().wifi_auto_setup_enabled);
   EXPECT_EQ(GetDefaultSettings().disable_security,
@@ -182,6 +185,9 @@ TEST_F(ConfigTest, Setters) {
   change.set_cloud_id("set_cloud_id");
   EXPECT_EQ("set_cloud_id", GetSettings().cloud_id);
 
+  change.set_device_id("set_device_id");
+  EXPECT_EQ("set_device_id", GetSettings().device_id);
+
   change.set_refresh_token("set_token");
   EXPECT_EQ("set_token", GetSettings().refresh_token);
 
@@ -204,6 +210,7 @@ TEST_F(ConfigTest, Setters) {
           'client_secret': 'set_client_secret',
           'cloud_id': 'set_cloud_id',
           'description': 'set_description',
+          'device_id': 'set_device_id',
           'last_configured_ssid': 'set_last_configured_ssid',
           'local_anonymous_access_role': 'user',
           'local_discovery_enabled': true,

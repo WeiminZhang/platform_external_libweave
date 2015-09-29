@@ -21,6 +21,10 @@ void GroupCallback(AvahiEntryGroup* g,
   CHECK_NE(state, AVAHI_ENTRY_GROUP_FAILURE);
 }
 
+std::string GetId() {
+  return "WEAVE" + std::to_string(gethostid());
+}
+
 }  // namespace
 
 AvahiClient::AvahiClient() {
@@ -88,10 +92,6 @@ void AvahiClient::PublishService(const std::string& service_type,
 void AvahiClient::StopPublishing(const std::string& service_name) {
   CHECK(group_);
   avahi_entry_group_reset(group_.get());
-}
-
-std::string AvahiClient::GetId() const {
-  return "WEAVE" + std::to_string(gethostid());
 }
 
 }  // namespace examples

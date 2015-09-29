@@ -77,9 +77,9 @@ void Manager::Start(TaskRunner* task_runner,
   publisher_.reset(new Publisher(device_.get(), cloud_.get(),
                                  wifi_bootstrap_manager_.get(), dns_sd));
 
-  privet_handler_.reset(
-      new PrivetHandler(cloud_.get(), device_.get(), security_.get(),
-                        wifi_bootstrap_manager_.get(), publisher_.get()));
+  privet_handler_.reset(new PrivetHandler(cloud_.get(), device_.get(),
+                                          security_.get(),
+                                          wifi_bootstrap_manager_.get()));
 
   http_server->AddOnStateChangedCallback(base::Bind(
       &Manager::OnHttpServerStatusChanged, weak_ptr_factory_.GetWeakPtr()));
