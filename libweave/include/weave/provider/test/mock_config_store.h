@@ -22,7 +22,18 @@ class MockConfigStore : public ConfigStore {
     using testing::_;
     using testing::Return;
 
-    EXPECT_CALL(*this, LoadDefaults(_)).WillRepeatedly(Return(true));
+    EXPECT_CALL(*this, LoadDefaults(_))
+        .WillRepeatedly(testing::Invoke([](Settings* settings) {
+          settings->firmware_version = "TEST_FIRMWARE";
+          settings->oem_name = "TEST_OEM";
+          settings->model_name = "TEST_MODEL";
+          settings->model_id = "ABCDE";
+          settings->name = "TEST_NAME";
+          settings->client_id = "TEST_CLIENT_ID";
+          settings->client_secret = "TEST_CLIENT_SECRET";
+          settings->api_key = "TEST_API_KEY";
+          return true;
+        }));
     EXPECT_CALL(*this, LoadSettings()).WillRepeatedly(Return(""));
     EXPECT_CALL(*this, SaveSettings(_)).WillRepeatedly(Return());
     EXPECT_CALL(*this, OnSettingsChanged(_)).WillRepeatedly(Return());

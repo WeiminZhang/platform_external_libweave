@@ -135,6 +135,8 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
           settings->client_id = test_data::kClientId;
           settings->client_secret = test_data::kClientSecret;
           settings->api_key = test_data::kApiKey;
+          settings->oem_name = "Coffee Pot Maker";
+          settings->model_name = "Pot v1";
           settings->name = "Coffee Pot";
           settings->description = "Easy to clean";
           settings->location = "Kitchen";

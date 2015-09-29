@@ -34,6 +34,9 @@ bool FileConfigStore::LoadDefaults(Settings* settings) {
   settings->model_id = "AAAAA";
   settings->pairing_modes = {PairingType::kEmbeddedCode};
   settings->embedded_code = "0000";
+  settings->client_id = "58855907228.apps.googleusercontent.com";
+  settings->client_secret = "eHSAREAHrIqPsHBxCE9zPPBi";
+  settings->api_key = "AIzaSyDSq46gG-AxUnC3zoqD9COIPrjolFsMfMA";
   return true;
 }
 

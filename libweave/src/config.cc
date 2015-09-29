@@ -49,18 +49,11 @@ bool IsValidAccessRole(const std::string& role) {
 
 Settings CreateDefaultSettings() {
   Settings result;
-  result.client_id = "58855907228.apps.googleusercontent.com";
-  result.client_secret = "eHSAREAHrIqPsHBxCE9zPPBi";
-  result.api_key = "AIzaSyDSq46gG-AxUnC3zoqD9COIPrjolFsMfMA";
   result.oauth_url = "https://accounts.google.com/o/oauth2/";
   result.service_url = "https://www.googleapis.com/clouddevices/v1/";
-  result.name = "Developer device";
   result.local_anonymous_access_role = "viewer";
   result.local_discovery_enabled = true;
   result.local_pairing_enabled = true;
-  result.oem_name = "Chromium";
-  result.model_name = "Brillo";
-  result.model_id = "AAAAA";
   result.polling_period = base::TimeDelta::FromSeconds(7);
   result.backup_polling_period = base::TimeDelta::FromMinutes(30);
   result.wifi_auto_setup_enabled = true;

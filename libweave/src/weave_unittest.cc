@@ -93,7 +93,7 @@ const char kDeviceResource[] = R"({
   "deviceKind": "vendor",
   "modelManifestId": "ABCDE",
   "systemName": "",
-  "name": "DEVICE_NAME",
+  "name": "TEST_NAME",
   "displayName": "",
   "description": "Developer device",
   "stateValidationEnabled": true,
@@ -190,16 +190,6 @@ class WeaveTest : public ::testing::Test {
   }
 
   void InitConfigStore() {
-    EXPECT_CALL(config_store_, LoadDefaults(_))
-        .WillOnce(Invoke([](weave::Settings* settings) {
-          settings->api_key = "API_KEY";
-          settings->client_secret = "CLIENT_SECRET";
-          settings->client_id = "CLIENT_ID";
-          settings->firmware_version = "FIRMWARE_VERSION";
-          settings->name = "DEVICE_NAME";
-          settings->model_id = "ABCDE";
-          return true;
-        }));
     EXPECT_CALL(config_store_, SaveSettings("")).WillRepeatedly(Return());
 
     EXPECT_CALL(config_store_, LoadBaseCommandDefs())
@@ -242,7 +232,7 @@ class WeaveTest : public ::testing::Test {
   void InitDnsSdPublishing(bool registered, const std::string& flags) {
     std::vector<std::string> txt{{"id=TEST_ID"}, {"flags=" + flags},
                                  {"mmid=ABCDE"}, {"services=_base"},
-                                 {"txtvers=3"},  {"ty=DEVICE_NAME"}};
+                                 {"txtvers=3"},  {"ty=TEST_NAME"}};
     if (registered) {
       txt.push_back("gcd_id=DEVICE_ID");
 
@@ -281,7 +271,7 @@ class WeaveTest : public ::testing::Test {
   void InitDefaultExpectations() {
     InitConfigStore();
     InitNetwork();
-    EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+    EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("TEST_NAME.*prv")))
         .WillOnce(Return());
     InitHttpServer();
     InitDnsSd();
@@ -393,7 +383,7 @@ TEST_F(WeaveBasicTest, Register) {
   ExpectRequest(
       "PATCH",
       "https://www.googleapis.com/clouddevices/v1/registrationTickets/"
-      "TEST_ID?key=API_KEY",
+      "TEST_ID?key=TEST_API_KEY",
       ValueToString(*response));
 
   response = CreateDictionaryValue(kRegistrationFinalResponse);
@@ -401,7 +391,7 @@ TEST_F(WeaveBasicTest, Register) {
   ExpectRequest(
       "POST",
       "https://www.googleapis.com/clouddevices/v1/registrationTickets/"
-      "TEST_ID/finalize?key=API_KEY",
+      "TEST_ID/finalize?key=TEST_API_KEY",
       ValueToString(*response));
 
   ExpectRequest("POST", "https://accounts.google.com/o/oauth2/token",
@@ -439,7 +429,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
   // Long disconnect.
   NotifyNetworkChanged(Network::State::kOffline, {});
   auto offline_from = task_runner_.GetClock()->Now();
-  EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+  EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("TEST_NAME.*prv")))
       .WillOnce(InvokeWithoutArgs([this, offline_from]() {
         EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                   base::TimeDelta::FromMinutes(1));
@@ -461,7 +451,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
   for (int i = 0; i < 5; ++i) {
     auto offline_from = task_runner_.GetClock()->Now();
     // Temporarily offline mode.
-    EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+    EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("TEST_NAME.*prv")))
         .WillOnce(InvokeWithoutArgs([this, &offline_from]() {
           EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                     base::TimeDelta::FromMinutes(1));
@@ -491,7 +481,7 @@ TEST_F(WeaveWiFiSetupTest, StartOfflineWithSsid) {
       .WillRepeatedly(Return(Network::State::kOffline));
 
   auto offline_from = task_runner_.GetClock()->Now();
-  EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("DEVICE_NAME.*prv")))
+  EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("TEST_NAME.*prv")))
       .WillOnce(InvokeWithoutArgs([this, &offline_from]() {
         EXPECT_GT(task_runner_.GetClock()->Now() - offline_from,
                   base::TimeDelta::FromMinutes(1));

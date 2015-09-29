@@ -10,7 +10,7 @@
       ],
     },
     'include_dirs': [
-      '<(platform2_root)/../weave/libweave',
+      '<(platform2_root)/../weave/libweave/libweave',
       '<(platform2_root)/../weave/libweave/libweave/include',
       '<(platform2_root)/../weave/libweave/libweave/third_party/modp_b64/modp_b64/',
     ],

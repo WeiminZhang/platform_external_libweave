@@ -24,20 +24,20 @@ class ConfigTest : public ::testing::Test {
   void SetUp() override {
     EXPECT_CALL(*this, OnConfigChanged(_))
         .Times(1);  // Called from AddOnChangedCallback
-    config_.reset(new Config{&config_store_});
-    config_->AddOnChangedCallback(
+    config_.AddOnChangedCallback(
         base::Bind(&ConfigTest::OnConfigChanged, base::Unretained(this)));
+    default_.Load();
   }
 
-  const Settings& GetSettings() const { return config_->GetSettings(); }
+  const Settings& GetSettings() const { return config_.GetSettings(); }
 
   const Settings& GetDefaultSettings() const { return default_.GetSettings(); }
 
   MOCK_METHOD1(OnConfigChanged, void(const Settings&));
 
   provider::test::MockConfigStore config_store_;
-  std::unique_ptr<Config> config_;
-  const Config default_{nullptr};
+  Config config_{&config_store_};
+  Config default_{&config_store_};
 };
 
 TEST_F(ConfigTest, NoStorage) {
@@ -47,15 +47,15 @@ TEST_F(ConfigTest, NoStorage) {
 }
 
 TEST_F(ConfigTest, Defaults) {
-  EXPECT_EQ("58855907228.apps.googleusercontent.com", GetSettings().client_id);
-  EXPECT_EQ("eHSAREAHrIqPsHBxCE9zPPBi", GetSettings().client_secret);
-  EXPECT_EQ("AIzaSyDSq46gG-AxUnC3zoqD9COIPrjolFsMfMA", GetSettings().api_key);
+  EXPECT_EQ("", GetSettings().client_id);
+  EXPECT_EQ("", GetSettings().client_secret);
+  EXPECT_EQ("", GetSettings().api_key);
   EXPECT_EQ("https://accounts.google.com/o/oauth2/", GetSettings().oauth_url);
   EXPECT_EQ("https://www.googleapis.com/clouddevices/v1/",
             GetSettings().service_url);
-  EXPECT_EQ("Chromium", GetSettings().oem_name);
-  EXPECT_EQ("Brillo", GetSettings().model_name);
-  EXPECT_EQ("AAAAA", GetSettings().model_id);
+  EXPECT_EQ("", GetSettings().oem_name);
+  EXPECT_EQ("", GetSettings().model_name);
+  EXPECT_EQ("", GetSettings().model_id);
   EXPECT_EQ("", GetSettings().firmware_version);
   EXPECT_EQ(base::TimeDelta::FromSeconds(7), GetSettings().polling_period);
   EXPECT_EQ(base::TimeDelta::FromMinutes(30),
@@ -65,7 +65,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ(std::set<PairingType>{PairingType::kPinCode},
             GetSettings().pairing_modes);
   EXPECT_EQ("", GetSettings().embedded_code);
-  EXPECT_EQ("Developer device", GetSettings().name);
+  EXPECT_EQ("", GetSettings().name);
   EXPECT_EQ("", GetSettings().description);
   EXPECT_EQ("", GetSettings().location);
   EXPECT_EQ("viewer", GetSettings().local_anonymous_access_role);
@@ -100,7 +100,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_CALL(config_store_, LoadSettings()).WillOnce(Return(state));
 
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
-  config_->Load();
+  config_.Load();
 
   EXPECT_EQ("state_client_id", GetSettings().client_id);
   EXPECT_EQ("state_client_secret", GetSettings().client_secret);
@@ -133,7 +133,7 @@ TEST_F(ConfigTest, LoadState) {
 }
 
 TEST_F(ConfigTest, Setters) {
-  Config::Transaction change{config_.get()};
+  Config::Transaction change{&config_};
 
   change.set_client_id("set_client_id");
   EXPECT_EQ("set_client_id", GetSettings().client_id);
