@@ -37,7 +37,7 @@ struct Settings {
   std::set<PairingType> pairing_modes;
   std::string embedded_code;
 
-  std::string device_id;
+  std::string cloud_id;
   std::string refresh_token;
   std::string robot_account;
   std::string last_configured_ssid;

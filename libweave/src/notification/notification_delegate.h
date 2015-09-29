@@ -20,7 +20,7 @@ class NotificationDelegate {
   // Called when a new command is sent via the notification channel.
   virtual void OnCommandCreated(const base::DictionaryValue& command) = 0;
   // Called when DEVICE_DELETED notification is received.
-  virtual void OnDeviceDeleted(const std::string& device_id) = 0;
+  virtual void OnDeviceDeleted(const std::string& cloud_id) = 0;
 
  protected:
   virtual ~NotificationDelegate() = default;

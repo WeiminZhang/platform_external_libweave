@@ -148,7 +148,7 @@ class CloudDelegateImpl : public CloudDelegate {
   }
 
   std::string GetCloudId() const override {
-    return device_->GetSettings().device_id;
+    return device_->GetSettings().cloud_id;
   }
 
   const base::DictionaryValue& GetState() const override { return state_; }
@@ -276,8 +276,8 @@ class CloudDelegateImpl : public CloudDelegate {
     NotifyOnCommandDefsChanged();
   }
 
-  void OnRegisterSuccess(const std::string& device_id) {
-    VLOG(1) << "Device registered: " << device_id;
+  void OnRegisterSuccess(const std::string& cloud_id) {
+    VLOG(1) << "Device registered: " << cloud_id;
     setup_state_ = SetupState(SetupState::kSuccess);
   }
 

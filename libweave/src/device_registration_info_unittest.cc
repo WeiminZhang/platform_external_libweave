@@ -151,7 +151,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   void ReloadSettings() {
     base::DictionaryValue dict;
     dict.SetString("refresh_token", test_data::kRefreshToken);
-    dict.SetString("device_id", test_data::kDeviceId);
+    dict.SetString("cloud_id", test_data::kDeviceId);
     dict.SetString("robot_account", test_data::kRobotAccountEmail);
     std::string json_string;
     base::JSONWriter::WriteWithOptions(
@@ -485,14 +485,14 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
       .Times(AtLeast(1))
       .WillRepeatedly(SaveArg<0>(&saved_settings));
 
-  std::string device_id =
+  std::string cloud_id =
       dev_reg_->RegisterDevice(test_data::kClaimTicketId, nullptr);
 
-  EXPECT_EQ(test_data::kDeviceId, device_id);
+  EXPECT_EQ(test_data::kDeviceId, cloud_id);
   EXPECT_EQ(RegistrationStatus::kConnecting, GetRegistrationStatus());
 
   // Validate the device info saved to storage...
-  EXPECT_EQ(test_data::kDeviceId, saved_settings.device_id);
+  EXPECT_EQ(test_data::kDeviceId, saved_settings.cloud_id);
   EXPECT_EQ(test_data::kRefreshToken, saved_settings.refresh_token);
   EXPECT_EQ(test_data::kRobotAccountEmail, saved_settings.robot_account);
 }

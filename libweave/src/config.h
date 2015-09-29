@@ -68,7 +68,7 @@ class Config final {
     void set_local_pairing_enabled(bool enabled) {
       settings_->local_pairing_enabled = enabled;
     }
-    void set_device_id(const std::string& id) { settings_->device_id = id; }
+    void set_cloud_id(const std::string& id) { settings_->cloud_id = id; }
     void set_refresh_token(const std::string& token) {
       settings_->refresh_token = token;
     }

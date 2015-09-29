@@ -106,7 +106,7 @@ class DeviceRegistrationInfo : public Cloud,
 
   // Returns a service URL to access the registered device on GCD server.
   // The base URL used to construct the full URL looks like this:
-  //    https://www.googleapis.com/clouddevices/v1/devices/<device_id>/
+  //    https://www.googleapis.com/clouddevices/v1/devices/<cloud_id>/
   std::string GetDeviceURL(const std::string& subpath = {},
                            const WebParamList& params = {}) const;
 
@@ -269,7 +269,7 @@ class DeviceRegistrationInfo : public Cloud,
   std::unique_ptr<base::DictionaryValue> BuildDeviceResource(ErrorPtr* error);
 
   void SetRegistrationStatus(RegistrationStatus new_status);
-  void SetDeviceId(const std::string& device_id);
+  void SetDeviceId(const std::string& cloud_id);
 
   // Callback called when command definitions are changed to re-publish new CDD.
   void OnCommandDefsChanged();
@@ -280,7 +280,7 @@ class DeviceRegistrationInfo : public Cloud,
   void OnDisconnected() override;
   void OnPermanentFailure() override;
   void OnCommandCreated(const base::DictionaryValue& command) override;
-  void OnDeviceDeleted(const std::string& device_id) override;
+  void OnDeviceDeleted(const std::string& cloud_id) override;
 
   // Wipes out the device registration information and stops server connections.
   void MarkDeviceUnregistered();
