@@ -34,13 +34,14 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
 
   execvp(path.c_str(), const_cast<char**>(args_vector.data()));
   NOTREACHED();
+  return 0;
 }
 
 }  // namespace
 
 NetworkImpl::NetworkImpl(provider::TaskRunner* task_runner,
                          bool force_bootstrapping)
-    : task_runner_{task_runner}, force_bootstrapping_{force_bootstrapping} {
+    : force_bootstrapping_{force_bootstrapping}, task_runner_{task_runner} {
   SSL_load_error_strings();
   SSL_library_init();
 
@@ -141,8 +142,6 @@ void NetworkImpl::UpdateNetworkState() {
                                 base::Bind(&NetworkImpl::UpdateNetworkState,
                                            weak_ptr_factory_.GetWeakPtr()),
                                 base::TimeDelta::FromSeconds(10));
-
-  bool online = GetConnectionState() == State::kConnected;
   for (const auto& cb : callbacks_)
     cb.Run();
 }
@@ -194,8 +193,8 @@ void NetworkImpl::StartAccessPoint(const std::string& ssid) {
 }
 
 void NetworkImpl::StopAccessPoint() {
-  int res = std::system("pkill -f dnsmasq.*/tmp/weave");
-  res = std::system("pkill -f hostapd.*/tmp/weave");
+  base::IgnoreResult(std::system("pkill -f dnsmasq.*/tmp/weave"));
+  base::IgnoreResult(std::system("pkill -f hostapd.*/tmp/weave"));
   CHECK_EQ(0, std::system("nmcli nm wifi on"));
   hostapd_started_ = false;
 }

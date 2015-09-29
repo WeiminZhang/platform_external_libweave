@@ -58,7 +58,7 @@ class MemoryReadStream : public Stream {
   void CancelPendingOperations() override {}
 
  private:
-  const std::vector<uint8_t>& data_;
+  std::vector<uint8_t> data_;
   provider::TaskRunner* task_runner_;
   size_t read_position_{0};
 };
