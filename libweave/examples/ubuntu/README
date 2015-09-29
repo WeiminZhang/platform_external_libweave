@@ -46,7 +46,7 @@ Goto https://developers.google.com/oauthplayground/
 
 Register device to cloud
 ------------------------
-  - copy the ticket "id" generated above 
+  - copy the ticket "id" generated above
         93019287-6b26-04a0-22ee-d55ad23a4226
   - go to ubuntu terminal, register ubuntu and start daemon with
 
@@ -70,8 +70,10 @@ Register device to cloud
        with your device. it does not expire and no need to
        register.
 
-  - verify device is up at
-        https://gcd.sandbox.google.com/clouddevices#
+  - verify device is up with Weave Device Manager at
+        android: https://play.google.com/apps/testing/com.google.android.apps.weave.management
+        chrome: https://chrome.google.com/webstore/detail/weave-device-manager/pcdgflbjckpjmlofgopidgdfonmnodfm
+        [need your whitelisted EAP account]
 
 Send Command to Ubuntu Device
 -----------------------------
@@ -82,17 +84,28 @@ Send Command to Ubuntu Device
         Enter request body:
         {
           "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
-          "name": "base.identify"
+          "name": "_greeter._greet"
         }
    "Send the request", you command will be "queued" as its "state"
 
-  - verify command received in cloud with
-       https://gcd.sandbox.google.com/clouddevices#
-
-       click on "events" next to your device, command history should show
-           queued --> inProgress --> done
   - verify the command execution with weave daemon
        in terminal running the daemon, observe something similar to
-         New command 'base.identify' arrived, ...
-         received command: base.identify
-         base.identify command: completed
+         New command '_greeter._greet' arrived, ...
+         received command: _greeter._greet
+         _greeter._greet command: finished
+  - verify the command history with oauthplayground
+       Similar to "Acquire Registration Ticket" section in this document,
+       except in "step 3", do:
+
+       HTTP Method:  GET    [not POST anymore]
+       Request URI:  https://www.googleapis.com/clouddevices/v1/commands?deviceId=0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
+
+       "Send the request", you get all of the commands executed on your
+       device, find something like
+          "kind": "clouddevices#command",
+          "name": "_greeter._greet",
+          "results": {
+            "_greeting": "Hello cloud user"
+          },
+          ...
+
