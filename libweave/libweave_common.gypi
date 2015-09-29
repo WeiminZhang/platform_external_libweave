@@ -20,7 +20,6 @@
     },
     'include_dirs': [
       '.',
-      '..',
       'include',
       'external',
       'third_party/include',
