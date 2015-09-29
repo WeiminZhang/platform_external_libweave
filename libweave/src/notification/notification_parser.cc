@@ -26,13 +26,13 @@ bool ParseCommandCreated(const base::DictionaryValue& notification,
 // Processes DEVICE_DELETED notifications.
 bool ParseDeviceDeleted(const base::DictionaryValue& notification,
                         NotificationDelegate* delegate) {
-  std::string device_id;
-  if (!notification.GetString("deviceId", &device_id)) {
+  std::string cloud_id;
+  if (!notification.GetString("deviceId", &cloud_id)) {
     LOG(ERROR) << "DEVICE_DELETED notification is missing 'deviceId' property";
     return false;
   }
 
-  delegate->OnDeviceDeleted(device_id);
+  delegate->OnDeviceDeleted(cloud_id);
   return true;
 }
 

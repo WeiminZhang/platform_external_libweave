@@ -33,7 +33,7 @@ const char kLocalAnonymousAccessRole[] = "local_anonymous_access_role";
 const char kLocalDiscoveryEnabled[] = "local_discovery_enabled";
 const char kLocalPairingEnabled[] = "local_pairing_enabled";
 const char kRefreshToken[] = "refresh_token";
-const char kDeviceId[] = "device_id";
+const char kCloudId[] = "cloud_id";
 const char kRobotAccount[] = "robot_account";
 const char kLastConfiguredSsid[] = "last_configured_ssid";
 
@@ -178,8 +178,8 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kLastConfiguredSsid, &tmp))
     set_last_configured_ssid(tmp);
 
-  if (dict->GetString(config_keys::kDeviceId, &tmp))
-    set_device_id(tmp);
+  if (dict->GetString(config_keys::kCloudId, &tmp))
+    set_cloud_id(tmp);
 }
 
 void Config::Save() {
@@ -193,7 +193,7 @@ void Config::Save() {
   dict.SetString(config_keys::kOAuthURL, settings_.oauth_url);
   dict.SetString(config_keys::kServiceURL, settings_.service_url);
   dict.SetString(config_keys::kRefreshToken, settings_.refresh_token);
-  dict.SetString(config_keys::kDeviceId, settings_.device_id);
+  dict.SetString(config_keys::kCloudId, settings_.cloud_id);
   dict.SetString(config_keys::kRobotAccount, settings_.robot_account);
   dict.SetString(config_keys::kLastConfiguredSsid,
                  settings_.last_configured_ssid);

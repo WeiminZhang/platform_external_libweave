@@ -71,7 +71,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("viewer", GetSettings().local_anonymous_access_role);
   EXPECT_TRUE(GetSettings().local_pairing_enabled);
   EXPECT_TRUE(GetSettings().local_discovery_enabled);
-  EXPECT_EQ("", GetSettings().device_id);
+  EXPECT_EQ("", GetSettings().cloud_id);
   EXPECT_EQ("", GetSettings().refresh_token);
   EXPECT_EQ("", GetSettings().robot_account);
   EXPECT_EQ("", GetSettings().last_configured_ssid);
@@ -83,7 +83,7 @@ TEST_F(ConfigTest, LoadState) {
     "client_id": "state_client_id",
     "client_secret": "state_client_secret",
     "description": "state_description",
-    "device_id": "state_device_id",
+    "cloud_id": "state_cloud_id",
     "local_anonymous_access_role": "user",
     "local_discovery_enabled": false,
     "local_pairing_enabled": false,
@@ -123,7 +123,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ("user", GetSettings().local_anonymous_access_role);
   EXPECT_FALSE(GetSettings().local_pairing_enabled);
   EXPECT_FALSE(GetSettings().local_discovery_enabled);
-  EXPECT_EQ("state_device_id", GetSettings().device_id);
+  EXPECT_EQ("state_cloud_id", GetSettings().cloud_id);
   EXPECT_EQ("state_refresh_token", GetSettings().refresh_token);
   EXPECT_EQ("state_robot_account", GetSettings().robot_account);
   EXPECT_EQ("state_last_configured_ssid", GetSettings().last_configured_ssid);
@@ -177,8 +177,8 @@ TEST_F(ConfigTest, Setters) {
   change.set_local_pairing_enabled(true);
   EXPECT_TRUE(GetSettings().local_pairing_enabled);
 
-  change.set_device_id("set_id");
-  EXPECT_EQ("set_id", GetSettings().device_id);
+  change.set_cloud_id("set_cloud_id");
+  EXPECT_EQ("set_cloud_id", GetSettings().cloud_id);
 
   change.set_refresh_token("set_token");
   EXPECT_EQ("set_token", GetSettings().refresh_token);
@@ -198,7 +198,7 @@ TEST_F(ConfigTest, Setters) {
           'client_id': 'set_client_id',
           'client_secret': 'set_client_secret',
           'description': 'set_description',
-          'device_id': 'set_id',
+          'cloud_id': 'set_cloud_id',
           'local_anonymous_access_role': 'user',
           'local_discovery_enabled': true,
           'local_pairing_enabled': true,

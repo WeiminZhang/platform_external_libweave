@@ -257,9 +257,9 @@ std::string DeviceRegistrationInfo::GetServiceURL(
 std::string DeviceRegistrationInfo::GetDeviceURL(
     const std::string& subpath,
     const WebParamList& params) const {
-  CHECK(!GetSettings().device_id.empty()) << "Must have a valid device ID";
+  CHECK(!GetSettings().cloud_id.empty()) << "Must have a valid device ID";
   return BuildURL(GetSettings().service_url,
-                  "devices/" + GetSettings().device_id + "/" + subpath, params);
+                  "devices/" + GetSettings().cloud_id + "/" + subpath, params);
 }
 
 std::string DeviceRegistrationInfo::GetOAuthURL(
@@ -293,7 +293,7 @@ void DeviceRegistrationInfo::ScheduleCloudConnection(
 
 bool DeviceRegistrationInfo::HaveRegistrationCredentials() const {
   return !GetSettings().refresh_token.empty() &&
-         !GetSettings().device_id.empty() &&
+         !GetSettings().cloud_id.empty() &&
          !GetSettings().robot_account.empty();
 }
 
@@ -499,8 +499,8 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
   CHECK(state);
 
   std::unique_ptr<base::DictionaryValue> resource{new base::DictionaryValue};
-  if (!GetSettings().device_id.empty())
-    resource->SetString("id", GetSettings().device_id);
+  if (!GetSettings().cloud_id.empty())
+    resource->SetString("id", GetSettings().cloud_id);
   resource->SetString("name", GetSettings().name);
   if (!GetSettings().description.empty())
     resource->SetString("description", GetSettings().description);
@@ -578,13 +578,13 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
   }
 
   std::string auth_code;
-  std::string device_id;
+  std::string cloud_id;
   std::string robot_account;
   const base::DictionaryValue* device_draft_response = nullptr;
   if (!json_resp->GetString("robotAccountEmail", &robot_account) ||
       !json_resp->GetString("robotAccountAuthorizationCode", &auth_code) ||
       !json_resp->GetDictionary("deviceDraft", &device_draft_response) ||
-      !device_draft_response->GetString("id", &device_id)) {
+      !device_draft_response->GetString("id", &cloud_id)) {
     Error::AddTo(error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
                  "Device account missing in response");
     return std::string();
@@ -622,7 +622,7 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
       base::Time::Now() + base::TimeDelta::FromSeconds(expires_in);
 
   Config::Transaction change{config_.get()};
-  change.set_device_id(device_id);
+  change.set_cloud_id(cloud_id);
   change.set_robot_account(robot_account);
   change.set_refresh_token(refresh_token);
   change.Commit();
@@ -632,7 +632,7 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
   // We're going to respond with our success immediately and we'll connect to
   // cloud shortly after.
   ScheduleCloudConnection(base::TimeDelta::FromSeconds(0));
-  return device_id;
+  return cloud_id;
 }
 
 void DeviceRegistrationInfo::DoCloudRequest(
@@ -1043,7 +1043,7 @@ void DeviceRegistrationInfo::FetchCommands(
   fetch_commands_request_queued_ = false;
   DoCloudRequest(
       http::kGet,
-      GetServiceURL("commands/queue", {{"deviceId", GetSettings().device_id}}),
+      GetServiceURL("commands/queue", {{"deviceId", GetSettings().cloud_id}}),
       nullptr, base::Bind(&DeviceRegistrationInfo::OnFetchCommandsSuccess,
                           AsWeakPtr(), on_success),
       base::Bind(&DeviceRegistrationInfo::OnFetchCommandsError, AsWeakPtr(),
@@ -1286,10 +1286,10 @@ void DeviceRegistrationInfo::OnCommandCreated(
   FetchAndPublishCommands();
 }
 
-void DeviceRegistrationInfo::OnDeviceDeleted(const std::string& device_id) {
-  if (device_id != GetSettings().device_id) {
-    LOG(WARNING) << "Unexpected device deletion notification for device ID '"
-                 << device_id << "'";
+void DeviceRegistrationInfo::OnDeviceDeleted(const std::string& cloud_id) {
+  if (cloud_id != GetSettings().cloud_id) {
+    LOG(WARNING) << "Unexpected device deletion notification for cloud ID '"
+                 << cloud_id << "'";
     return;
   }
   MarkDeviceUnregistered();
@@ -1303,7 +1303,7 @@ void DeviceRegistrationInfo::MarkDeviceUnregistered() {
 
   LOG(INFO) << "Device is unregistered from the cloud. Deleting credentials";
   Config::Transaction change{config_.get()};
-  change.set_device_id("");
+  change.set_cloud_id("");
   change.set_robot_account("");
   change.set_refresh_token("");
   change.Commit();
