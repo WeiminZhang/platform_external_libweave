@@ -39,10 +39,6 @@ Publisher::~Publisher() {
   RemoveService();
 }
 
-std::string Publisher::GetId() const {
-  return dns_sd_->GetId();
-}
-
 void Publisher::Update() {
   if (device_->GetHttpEnpoint().first == 0)
     return RemoveService();
@@ -67,7 +63,7 @@ void Publisher::ExposeService() {
       {"txtvers=3"},
       {"ty=" + name},
       {"services=" + services},
-      {"id=" + GetId()},
+      {"id=" + cloud_->GetDeviceId()},
       {"mmid=" + model_id},
       {"flags=" + WifiSsidGenerator{cloud_, wifi_}.GenerateFlags()},
   };

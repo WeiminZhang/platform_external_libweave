@@ -23,10 +23,6 @@ class DnsServiceDiscovery {
   // Stops publishing service.
   virtual void StopPublishing(const std::string& service_type) = 0;
 
-  // Returns permanent device ID.
-  // TODO(vitalybuka): Find better place for this information.
-  virtual std::string GetId() const = 0;
-
  protected:
   virtual ~DnsServiceDiscovery() = default;
 };

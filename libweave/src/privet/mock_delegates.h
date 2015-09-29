@@ -15,7 +15,6 @@
 
 #include "src/privet/cloud_delegate.h"
 #include "src/privet/device_delegate.h"
-#include "src/privet/identity_delegate.h"
 #include "src/privet/security_delegate.h"
 #include "src/privet/wifi_delegate.h"
 
@@ -137,6 +136,7 @@ class MockWifiDelegate : public WifiDelegate {
 
 class MockCloudDelegate : public CloudDelegate {
  public:
+  MOCK_CONST_METHOD0(GetDeviceId, std::string());
   MOCK_CONST_METHOD0(GetModelId, std::string());
   MOCK_CONST_METHOD0(GetName, std::string());
   MOCK_CONST_METHOD0(GetDescription, std::string());
@@ -176,6 +176,7 @@ class MockCloudDelegate : public CloudDelegate {
                     const ErrorCallback&));
 
   MockCloudDelegate() {
+    EXPECT_CALL(*this, GetDeviceId()).WillRepeatedly(Return("TestId"));
     EXPECT_CALL(*this, GetModelId()).WillRepeatedly(Return("ABMID"));
     EXPECT_CALL(*this, GetName()).WillRepeatedly(Return("TestDevice"));
     EXPECT_CALL(*this, GetDescription()).WillRepeatedly(Return(""));
@@ -199,15 +200,6 @@ class MockCloudDelegate : public CloudDelegate {
   ConnectionState connection_state_{ConnectionState::kOnline};
   SetupState setup_state_{SetupState::kNone};
   base::DictionaryValue test_dict_;
-};
-
-class MockIdentityDelegate : public IdentityDelegate {
- public:
-  MOCK_CONST_METHOD0(GetId, std::string());
-
-  MockIdentityDelegate() {
-    EXPECT_CALL(*this, GetId()).WillRepeatedly(Return("TestId"));
-  }
 };
 
 }  // namespace privet

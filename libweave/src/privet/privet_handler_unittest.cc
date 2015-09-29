@@ -124,8 +124,7 @@ class PrivetHandlerTest : public testing::Test {
  protected:
   void SetUp() override {
     auth_header_ = "Privet anonymous";
-    handler_.reset(
-        new PrivetHandler(&cloud_, &device_, &security_, &wifi_, &identity_));
+    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, &wifi_));
   }
 
   const base::DictionaryValue& HandleRequest(
@@ -153,8 +152,7 @@ class PrivetHandlerTest : public testing::Test {
   }
 
   void SetNoWifiAndGcd() {
-    handler_.reset(
-        new PrivetHandler(&cloud_, &device_, &security_, nullptr, &identity_));
+    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, nullptr));
     EXPECT_CALL(cloud_, GetCloudId()).WillRepeatedly(Return(""));
     EXPECT_CALL(cloud_, GetConnectionState())
         .WillRepeatedly(ReturnRef(gcd_disabled_state_));
@@ -170,7 +168,6 @@ class PrivetHandlerTest : public testing::Test {
   testing::StrictMock<MockDeviceDelegate> device_;
   testing::StrictMock<MockSecurityDelegate> security_;
   testing::StrictMock<MockWifiDelegate> wifi_;
-  testing::StrictMock<MockIdentityDelegate> identity_;
   std::string auth_header_;
 
  private:

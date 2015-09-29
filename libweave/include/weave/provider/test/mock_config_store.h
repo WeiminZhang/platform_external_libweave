@@ -34,7 +34,8 @@ class MockConfigStore : public ConfigStore {
           settings->api_key = "TEST_API_KEY";
           return true;
         }));
-    EXPECT_CALL(*this, LoadSettings()).WillRepeatedly(Return(""));
+    EXPECT_CALL(*this, LoadSettings())
+        .WillRepeatedly(Return(R"({"device_id": "TEST_DEVICE_ID"})"));
     EXPECT_CALL(*this, SaveSettings(_)).WillRepeatedly(Return());
   }
   MOCK_METHOD1(LoadDefaults, bool(Settings*));

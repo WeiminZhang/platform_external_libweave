@@ -23,7 +23,6 @@ class MockDnsServiceDiscovery : public DnsServiceDiscovery {
                     uint16_t,
                     const std::vector<std::string>&));
   MOCK_METHOD1(StopPublishing, void(const std::string&));
-  MOCK_CONST_METHOD0(GetId, std::string());
 };
 
 }  // namespace test

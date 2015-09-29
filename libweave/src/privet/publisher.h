@@ -11,8 +11,6 @@
 
 #include <base/macros.h>
 
-#include "src/privet/identity_delegate.h"
-
 namespace weave {
 
 namespace provider {
@@ -26,16 +24,13 @@ class DeviceDelegate;
 class WifiDelegate;
 
 // Publishes privet service on DNS-SD.
-class Publisher : public IdentityDelegate {
+class Publisher {
  public:
   Publisher(const DeviceDelegate* device,
             const CloudDelegate* cloud,
             const WifiDelegate* wifi,
             provider::DnsServiceDiscovery* dns_sd);
-  ~Publisher() override;
-
-  // IdentityDelegate implementation.
-  std::string GetId() const override;
+  ~Publisher();
 
   // Updates published information.  Removes service if HTTP is not alive.
   void Update();
