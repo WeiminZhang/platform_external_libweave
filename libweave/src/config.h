@@ -22,13 +22,20 @@ class StorageInterface;
 // Handles reading buffet config and state files.
 class Config final {
  public:
-  using OnChangedCallback = base::Callback<void(const Settings&)>;
+  struct Settings : public weave::Settings {
+    std::string refresh_token;
+    std::string robot_account;
+    std::string last_configured_ssid;
+    std::string secret;
+  };
+
+  using OnChangedCallback = base::Callback<void(const weave::Settings&)>;
   ~Config() = default;
 
   explicit Config(provider::ConfigStore* config_store);
 
   void AddOnChangedCallback(const OnChangedCallback& callback);
-  const Settings& GetSettings() const;
+  const Config::Settings& GetSettings() const;
 
   void Load();
 

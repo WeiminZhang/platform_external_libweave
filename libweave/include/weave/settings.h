@@ -56,10 +56,6 @@ struct Settings {
   base::TimeDelta backup_polling_period;
   bool wifi_auto_setup_enabled{true};
   bool ble_setup_enabled{false};
-  std::string refresh_token;
-  std::string robot_account;
-  std::string last_configured_ssid;
-  std::string secret;
 };
 
 }  // namespace weave
