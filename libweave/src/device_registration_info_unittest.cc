@@ -123,7 +123,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
     std::unique_ptr<Config> config{new Config{&config_store_}};
     config_ = config.get();
     dev_reg_.reset(new DeviceRegistrationInfo{command_manager_, state_manager_,
-                                              true, std::move(config), nullptr,
+                                              std::move(config), nullptr,
                                               &http_client_, nullptr});
 
     ReloadDefaults();
@@ -496,7 +496,8 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
   // Validate the device info saved to storage...
   EXPECT_EQ(test_data::kDeviceId, dev_reg_->GetSettings().cloud_id);
   EXPECT_EQ(test_data::kRefreshToken, dev_reg_->GetSettings().refresh_token);
-  EXPECT_EQ(test_data::kRobotAccountEmail, dev_reg_->GetSettings().robot_account);
+  EXPECT_EQ(test_data::kRobotAccountEmail,
+            dev_reg_->GetSettings().robot_account);
 }
 
 TEST_F(DeviceRegistrationInfoTest, OOBRegistrationStatus) {

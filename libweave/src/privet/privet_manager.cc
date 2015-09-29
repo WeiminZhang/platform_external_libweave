@@ -39,8 +39,7 @@ Manager::Manager() {}
 
 Manager::~Manager() {}
 
-void Manager::Start(const Device::Options& options,
-                    TaskRunner* task_runner,
+void Manager::Start(TaskRunner* task_runner,
                     Network* network,
                     DnsServiceDiscovery* dns_sd,
                     HttpServer* http_server,
@@ -48,7 +47,7 @@ void Manager::Start(const Device::Options& options,
                     DeviceRegistrationInfo* device,
                     CommandManager* command_manager,
                     StateManager* state_manager) {
-  disable_security_ = options.disable_security;
+  disable_security_ = device->GetSettings().disable_security;
 
   device_ = DeviceDelegate::CreateDefault();
   cloud_ = CloudDelegate::CreateDefault(task_runner, device, command_manager,
@@ -71,8 +70,7 @@ void Manager::Start(const Device::Options& options,
   if (wifi && device->GetSettings().wifi_auto_setup_enabled) {
     VLOG(1) << "Enabling WiFi bootstrapping.";
     wifi_bootstrap_manager_.reset(new WifiBootstrapManager(
-        options.test_privet_ssid, device->GetMutableConfig(), task_runner,
-        network, wifi, cloud_.get()));
+        device->GetMutableConfig(), task_runner, network, wifi, cloud_.get()));
     wifi_bootstrap_manager_->Init();
   }
 
@@ -88,11 +86,6 @@ void Manager::Start(const Device::Options& options,
   http_server->AddRequestHandler("/privet/",
                                  base::Bind(&Manager::PrivetRequestHandler,
                                             weak_ptr_factory_.GetWeakPtr()));
-  if (options.enable_ping) {
-    http_server->AddRequestHandler("/privet/ping",
-                                   base::Bind(&Manager::HelloWorldHandler,
-                                              weak_ptr_factory_.GetWeakPtr()));
-  }
 }
 
 std::string Manager::GetCurrentlyConnectedSsid() const {
@@ -146,11 +139,6 @@ void Manager::PrivetResponseHandler(const HttpServer::OnReplyCallback& callback,
   base::JSONWriter::WriteWithOptions(
       output, base::JSONWriter::OPTIONS_PRETTY_PRINT, &data);
   callback.Run(status, data, http::kJson);
-}
-
-void Manager::HelloWorldHandler(const HttpServer::Request& request,
-                                const HttpServer::OnReplyCallback& callback) {
-  callback.Run(http::kOk, "Hello, world!", http::kPlain);
 }
 
 void Manager::OnChanged() {

@@ -26,8 +26,7 @@ class DeviceManager final : public Device {
   DeviceManager();
   ~DeviceManager() override;
 
-  void Start(const Options& options,
-             provider::ConfigStore* config_store,
+  void Start(provider::ConfigStore* config_store,
              provider::TaskRunner* task_runner,
              provider::HttpClient* http_client,
              provider::Network* network,
@@ -44,8 +43,7 @@ class DeviceManager final : public Device {
   Config* GetConfig();
 
  private:
-  void StartPrivet(const Options& options,
-                   provider::TaskRunner* task_runner,
+  void StartPrivet(provider::TaskRunner* task_runner,
                    provider::Network* network,
                    provider::DnsServiceDiscovery* dns_sd,
                    provider::HttpServer* http_server,

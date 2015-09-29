@@ -52,12 +52,6 @@ Config::Settings CreateDefaultSettings() {
   result.oauth_url = "https://accounts.google.com/o/oauth2/";
   result.service_url = "https://www.googleapis.com/clouddevices/v1/";
   result.local_anonymous_access_role = "viewer";
-  result.local_discovery_enabled = true;
-  result.local_pairing_enabled = true;
-  result.polling_period = base::TimeDelta::FromSeconds(7);
-  result.backup_polling_period = base::TimeDelta::FromMinutes(30);
-  result.wifi_auto_setup_enabled = true;
-  result.ble_setup_enabled = false;
   result.pairing_modes.emplace(PairingType::kPinCode);
   return result;
 }

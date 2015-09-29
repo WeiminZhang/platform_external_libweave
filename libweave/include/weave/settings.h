@@ -48,14 +48,14 @@ struct Settings {
   std::string oauth_url;
   std::string service_url;
 
-  // Cloud ID of the registered device. Empty of device is not registered.
+  // Cloud ID of the registered device. Empty if device is not registered.
   std::string cloud_id;
 
-  // Internal options used by libweave. External code should not use them.
-  base::TimeDelta polling_period;
-  base::TimeDelta backup_polling_period;
+  // Internal options to tweak some library functionality. External code should
+  // avoid using them.
   bool wifi_auto_setup_enabled{true};
-  bool ble_setup_enabled{false};
+  bool disable_security{false};
+  std::string test_privet_ssid;
 };
 
 }  // namespace weave

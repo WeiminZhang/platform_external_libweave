@@ -47,8 +47,7 @@ class Manager : public Privet, public CloudDelegate::Observer {
   Manager();
   ~Manager() override;
 
-  void Start(const weave::Device::Options& options,
-             provider::TaskRunner* task_runner,
+  void Start(provider::TaskRunner* task_runner,
              provider::Network* network,
              provider::DnsServiceDiscovery* dns_sd,
              provider::HttpServer* http_server,
@@ -75,9 +74,6 @@ class Manager : public Privet, public CloudDelegate::Observer {
       const provider::HttpServer::OnReplyCallback& callback,
       int status,
       const base::DictionaryValue& output);
-
-  void HelloWorldHandler(const provider::HttpServer::Request& request,
-                         const provider::HttpServer::OnReplyCallback& callback);
 
   void OnChanged();
   void OnConnectivityChanged();

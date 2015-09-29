@@ -59,7 +59,7 @@ class BaseApiHandlerTest : public ::testing::Test {
     std::unique_ptr<Config> config{new Config{&config_store_}};
     config->Load();
     dev_reg_.reset(new DeviceRegistrationInfo(command_manager_, state_manager_,
-                                              true, std::move(config), nullptr,
+                                              std::move(config), nullptr,
                                               &http_client_, nullptr));
     handler_.reset(
         new BaseApiHandler{dev_reg_.get(), state_manager_, command_manager_});

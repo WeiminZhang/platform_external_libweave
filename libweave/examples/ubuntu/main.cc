@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  weave::examples::FileConfigStore config_store;
+  weave::examples::FileConfigStore config_store{disable_security};
   weave::examples::EventTaskRunner task_runner;
   weave::examples::CurlHttpClient http_client{&task_runner};
   weave::examples::NetworkImpl network{&task_runner, force_bootstrapping};
@@ -93,13 +93,8 @@ int main(int argc, char** argv) {
   weave::examples::BluetoothImpl bluetooth;
 
   auto device = weave::Device::Create();
-  weave::Device::Options opts;
-  opts.xmpp_enabled = true;
-  opts.disable_privet = false;
-  opts.disable_security = disable_security;
-  opts.enable_ping = true;
   device->Start(
-      opts, &config_store, &task_runner, &http_client, &network, &dns_sd,
+      &config_store, &task_runner, &http_client, &network, &dns_sd,
       &http_server,
       weave::examples::NetworkImpl::HasWifiCapability() ? &network : nullptr,
       &bluetooth);
