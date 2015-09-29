@@ -121,13 +121,14 @@ int CurlHttpClient::SendRequest(const std::string& method,
                               weak_ptr_factory_.GetWeakPtr(), success_callback,
                               request_id_, base::Passed(&response)),
         {});
-    return request_id_;
+  } else {
+    task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(&CurlHttpClient::RunErrorCallback,
+                              weak_ptr_factory_.GetWeakPtr(), error_callback,
+                              request_id_, base::Passed(&error)),
+        {});
   }
-  task_runner_->PostDelayedTask(
-      FROM_HERE, base::Bind(&CurlHttpClient::RunErrorCallback,
-                            weak_ptr_factory_.GetWeakPtr(), error_callback,
-                            request_id_, base::Passed(&error)),
-      {});
+  return request_id_;
 }
 
 void CurlHttpClient::RunSuccessCallback(const SuccessCallback& success_callback,
