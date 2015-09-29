@@ -83,6 +83,7 @@ class Manager : public Privet, public CloudDelegate::Observer {
   void OnConnectivityChanged();
 
   void OnHttpServerStatusChanged(const provider::HttpServer& server);
+  void SaveDeviceSecret(Config* config);
 
   bool disable_security_{false};
   std::unique_ptr<CloudDelegate> cloud_;

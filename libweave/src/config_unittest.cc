@@ -75,6 +75,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().refresh_token);
   EXPECT_EQ("", GetSettings().robot_account);
   EXPECT_EQ("", GetSettings().last_configured_ssid);
+  EXPECT_EQ("", GetSettings().secret);
 }
 
 TEST_F(ConfigTest, LoadState) {
@@ -82,8 +83,9 @@ TEST_F(ConfigTest, LoadState) {
     "api_key": "state_api_key",
     "client_id": "state_client_id",
     "client_secret": "state_client_secret",
-    "description": "state_description",
     "cloud_id": "state_cloud_id",
+    "description": "state_description",
+    "last_configured_ssid": "state_last_configured_ssid",
     "local_anonymous_access_role": "user",
     "local_discovery_enabled": false,
     "local_pairing_enabled": false,
@@ -92,7 +94,7 @@ TEST_F(ConfigTest, LoadState) {
     "oauth_url": "state_oauth_url",
     "refresh_token": "state_refresh_token",
     "robot_account": "state_robot_account",
-    "last_configured_ssid": "state_last_configured_ssid",
+    "secret": "state_secret",
     "service_url": "state_service_url"
   })";
   EXPECT_CALL(config_store_, LoadSettings()).WillOnce(Return(state));
@@ -127,6 +129,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ("state_refresh_token", GetSettings().refresh_token);
   EXPECT_EQ("state_robot_account", GetSettings().robot_account);
   EXPECT_EQ("state_last_configured_ssid", GetSettings().last_configured_ssid);
+  EXPECT_EQ("state_secret", GetSettings().secret);
 }
 
 TEST_F(ConfigTest, Setters) {
@@ -189,6 +192,9 @@ TEST_F(ConfigTest, Setters) {
   change.set_last_configured_ssid("set_last_configured_ssid");
   EXPECT_EQ("set_last_configured_ssid", GetSettings().last_configured_ssid);
 
+  change.set_secret("set_secret");
+  EXPECT_EQ("set_secret", GetSettings().secret);
+
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
 
   EXPECT_CALL(config_store_, SaveSettings(_))
@@ -197,8 +203,9 @@ TEST_F(ConfigTest, Setters) {
           'api_key': 'set_api_key',
           'client_id': 'set_client_id',
           'client_secret': 'set_client_secret',
-          'description': 'set_description',
           'cloud_id': 'set_cloud_id',
+          'description': 'set_description',
+          'last_configured_ssid': 'set_last_configured_ssid',
           'local_anonymous_access_role': 'user',
           'local_discovery_enabled': true,
           'local_pairing_enabled': true,
@@ -207,7 +214,7 @@ TEST_F(ConfigTest, Setters) {
           'oauth_url': 'set_oauth_url',
           'refresh_token': 'set_token',
           'robot_account': 'set_account',
-          'last_configured_ssid': 'set_last_configured_ssid',
+          'secret': 'set_secret',
           'service_url': 'set_service_url'
         })";
         EXPECT_JSON_EQ(expected, *test::CreateValue(json));

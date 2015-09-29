@@ -78,6 +78,7 @@ class Config final {
     void set_last_configured_ssid(const std::string& ssid) {
       settings_->last_configured_ssid = ssid;
     }
+    void set_secret(const std::string& secret) { settings_->secret = secret; }
 
     void Commit();
 

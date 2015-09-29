@@ -78,14 +78,17 @@ void Publisher::ExposeService() {
   if (!cloud_->GetDescription().empty())
     txt_record.emplace_back("note=" + cloud_->GetDescription());
 
-  is_publishing_ = true;
+  auto new_data = std::make_pair(port, txt_record);
+  if (published_ == new_data)
+    return;
+  published_ = new_data;
   dns_sd_->PublishService(kPrivetServiceType, port, txt_record);
 }
 
 void Publisher::RemoveService() {
-  if (!is_publishing_)
+  if (!published_.first)
     return;
-  is_publishing_ = false;
+  published_ = {};
   VLOG(1) << "Stopping service publishing.";
   dns_sd_->StopPublishing(kPrivetServiceType);
 }

@@ -58,7 +58,7 @@ class SecurityManagerTest : public testing::Test {
  public:
   void SetUp() override {
     std::vector<uint8_t> fingerprint;
-    fingerprint.resize(256 / 8);
+    fingerprint.resize(32);
     base::RandBytes(fingerprint.data(), fingerprint.size());
     security_.SetCertificateFingerprint(fingerprint);
   }
@@ -101,11 +101,28 @@ class SecurityManagerTest : public testing::Test {
 
   const base::Time time_ = base::Time::FromTimeT(1410000000);
   provider::test::FakeTaskRunner task_runner_;
-  SecurityManager security_{{PairingType::kEmbeddedCode},
+  SecurityManager security_{{},
+                            {PairingType::kEmbeddedCode},
                             "1234",
                             false,
                             &task_runner_};
 };
+
+TEST_F(SecurityManagerTest, RandomSecret) {
+  EXPECT_GE(security_.GetSecret().size(), 32);
+  EXPECT_TRUE(IsBase64(security_.GetSecret()));
+}
+
+TEST_F(SecurityManagerTest, DifferentSecret) {
+  SecurityManager security{{}, {}, "", false, &task_runner_};
+  EXPECT_NE(security_.GetSecret(), security.GetSecret());
+}
+
+TEST_F(SecurityManagerTest, ExternalSecret) {
+  const std::string kSecret = "T1SDv9CVGNO82zHKeRrUSzpAzjb1hmRyzXGotsn1gcU=";
+  SecurityManager security{kSecret, {}, "", false, &task_runner_};
+  EXPECT_EQ(kSecret, security.GetSecret());
+}
 
 TEST_F(SecurityManagerTest, IsBase64) {
   EXPECT_TRUE(IsBase64(
@@ -139,14 +156,14 @@ TEST_F(SecurityManagerTest, CreateTokenDifferentTime) {
 
 TEST_F(SecurityManagerTest, CreateTokenDifferentInstance) {
   EXPECT_NE(security_.CreateAccessToken(UserInfo{AuthScope::kUser, 123}, time_),
-            SecurityManager({}, "", false, &task_runner_)
+            SecurityManager({}, {}, "", false, &task_runner_)
                 .CreateAccessToken(UserInfo{AuthScope::kUser, 123}, time_));
 }
 
 TEST_F(SecurityManagerTest, ParseAccessToken) {
   // Multiple attempts with random secrets.
   for (size_t i = 0; i < 1000; ++i) {
-    SecurityManager security{{}, "", false, &task_runner_};
+    SecurityManager security{{}, {}, "", false, &task_runner_};
 
     std::string token =
         security.CreateAccessToken(UserInfo{AuthScope::kUser, 5}, time_);

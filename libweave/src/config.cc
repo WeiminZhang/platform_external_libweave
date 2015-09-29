@@ -36,6 +36,7 @@ const char kRefreshToken[] = "refresh_token";
 const char kCloudId[] = "cloud_id";
 const char kRobotAccount[] = "robot_account";
 const char kLastConfiguredSsid[] = "last_configured_ssid";
+const char kSecret[] = "secret";
 
 }  // namespace config_keys
 
@@ -109,12 +110,20 @@ void Config::Load() {
   CHECK(!settings_.model_name.empty());
   CHECK(!settings_.model_id.empty());
   CHECK(!settings_.name.empty());
+
   CHECK(IsValidAccessRole(settings_.local_anonymous_access_role))
       << "Invalid role: " << settings_.local_anonymous_access_role;
   CHECK_EQ(
       settings_.embedded_code.empty(),
       std::find(settings_.pairing_modes.begin(), settings_.pairing_modes.end(),
                 PairingType::kEmbeddedCode) == settings_.pairing_modes.end());
+
+  // Values below will be generated at runtime.
+  CHECK(settings_.cloud_id.empty());
+  CHECK(settings_.refresh_token.empty());
+  CHECK(settings_.robot_account.empty());
+  CHECK(settings_.last_configured_ssid.empty());
+  CHECK(settings_.secret.empty());
 
   change.LoadState();
 }
@@ -169,6 +178,9 @@ void Config::Transaction::LoadState() {
   if (dict->GetBoolean(config_keys::kLocalPairingEnabled, &tmp_bool))
     set_local_pairing_enabled(tmp_bool);
 
+  if (dict->GetString(config_keys::kCloudId, &tmp))
+    set_cloud_id(tmp);
+
   if (dict->GetString(config_keys::kRefreshToken, &tmp))
     set_refresh_token(tmp);
 
@@ -178,8 +190,8 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kLastConfiguredSsid, &tmp))
     set_last_configured_ssid(tmp);
 
-  if (dict->GetString(config_keys::kCloudId, &tmp))
-    set_cloud_id(tmp);
+  if (dict->GetString(config_keys::kSecret, &tmp))
+    set_secret(tmp);
 }
 
 void Config::Save() {
@@ -197,6 +209,7 @@ void Config::Save() {
   dict.SetString(config_keys::kRobotAccount, settings_.robot_account);
   dict.SetString(config_keys::kLastConfiguredSsid,
                  settings_.last_configured_ssid);
+  dict.SetString(config_keys::kSecret, settings_.secret);
   dict.SetString(config_keys::kName, settings_.name);
   dict.SetString(config_keys::kDescription, settings_.description);
   dict.SetString(config_keys::kLocation, settings_.location);

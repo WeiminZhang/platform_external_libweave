@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <base/macros.h>
 
@@ -43,12 +44,13 @@ class Publisher : public IdentityDelegate {
   void ExposeService();
   void RemoveService();
 
-  bool is_publishing_{false};
   provider::DnsServiceDiscovery* dns_sd_{nullptr};
 
   const DeviceDelegate* device_{nullptr};
   const CloudDelegate* cloud_{nullptr};
   const WifiDelegate* wifi_{nullptr};
+
+  std::pair<uint16_t, std::vector<std::string>> published_;
 
   DISALLOW_COPY_AND_ASSIGN(Publisher);
 };

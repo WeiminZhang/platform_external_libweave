@@ -54,9 +54,17 @@ void Manager::Start(const Device::Options& options,
   cloud_ = CloudDelegate::CreateDefault(task_runner, device, command_manager,
                                         state_manager);
   cloud_observer_.Add(cloud_.get());
-  security_.reset(new SecurityManager(device->GetSettings().pairing_modes,
-                                      device->GetSettings().embedded_code,
-                                      disable_security_, task_runner));
+  security_.reset(new SecurityManager(
+      device->GetSettings().secret, device->GetSettings().pairing_modes,
+      device->GetSettings().embedded_code, disable_security_, task_runner));
+  if (device->GetSettings().secret.empty()) {
+    // TODO(vitalybuka): Post all Config::Transaction to avoid following.
+    task_runner->PostDelayedTask(
+        FROM_HERE,
+        base::Bind(&Manager::SaveDeviceSecret, weak_ptr_factory_.GetWeakPtr(),
+                   base::Unretained(device->GetMutableConfig())),
+        {});
+  }
   network->AddConnectionChangedCallback(
       base::Bind(&Manager::OnConnectivityChanged, base::Unretained(this)));
 
@@ -162,6 +170,11 @@ void Manager::OnHttpServerStatusChanged(const HttpServer& server) {
   }
   device_->SetHttpsPort(server.GetHttpsPort());
   security_->SetCertificateFingerprint(server.GetHttpsCertificateFingerprint());
+}
+
+void Manager::SaveDeviceSecret(Config* config) {
+  Config::Transaction transaction(config);
+  transaction.set_secret(security_->GetSecret());
 }
 
 }  // namespace privet

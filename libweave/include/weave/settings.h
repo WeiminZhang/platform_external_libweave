@@ -41,6 +41,7 @@ struct Settings {
   std::string refresh_token;
   std::string robot_account;
   std::string last_configured_ssid;
+  std::string secret;
 };
 
 }  // namespace weave
