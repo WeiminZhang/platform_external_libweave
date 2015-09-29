@@ -118,17 +118,19 @@ class UnsecureKeyExchanger : public SecurityManager::KeyExchanger {
 
 }  // namespace
 
-SecurityManager::SecurityManager(const std::set<PairingType>& pairing_modes,
+SecurityManager::SecurityManager(const std::string& secret,
+                                 const std::set<PairingType>& pairing_modes,
                                  const std::string& embedded_code,
                                  bool disable_security,
                                  provider::TaskRunner* task_runner)
     : is_security_disabled_(disable_security),
       pairing_modes_(pairing_modes),
       embedded_code_(embedded_code),
-      task_runner_{task_runner},
-      secret_(kSha256OutputSize) {
-  base::RandBytes(secret_.data(), kSha256OutputSize);
-
+      task_runner_{task_runner} {
+  if (!Base64Decode(secret, &secret_) || secret_.size() != kSha256OutputSize) {
+    secret_.resize(kSha256OutputSize);
+    base::RandBytes(secret_.data(), secret_.size());
+  }
   CHECK_EQ(embedded_code_.empty(),
            std::find(pairing_modes_.begin(), pairing_modes_.end(),
                      PairingType::kEmbeddedCode) == pairing_modes_.end());
@@ -348,6 +350,10 @@ void SecurityManager::RegisterPairingListeners(
   CHECK(on_start_.is_null() && on_end_.is_null());
   on_start_ = on_start;
   on_end_ = on_end;
+}
+
+std::string SecurityManager::GetSecret() const {
+  return Base64Encode(secret_);
 }
 
 bool SecurityManager::CheckIfPairingAllowed(ErrorPtr* error) {

@@ -49,9 +49,11 @@ class SecurityManager : public SecurityDelegate {
     virtual const std::string& GetKey() const = 0;
   };
 
-  SecurityManager(const std::set<PairingType>& pairing_modes,
+  SecurityManager(const std::string& secret,
+                  const std::set<PairingType>& pairing_modes,
                   const std::string& embedded_code,
                   bool disable_security,
+                  // TODO(vitalybuka): Remove task_runner.
                   provider::TaskRunner* task_runner);
   ~SecurityManager() override;
 
@@ -83,6 +85,8 @@ class SecurityManager : public SecurityDelegate {
   void SetCertificateFingerprint(const std::vector<uint8_t>& fingerprint) {
     certificate_fingerprint_ = fingerprint;
   }
+
+  std::string GetSecret() const;
 
  private:
   FRIEND_TEST_ALL_PREFIXES(SecurityManagerTest, ThrottlePairing);
