@@ -47,8 +47,8 @@ bool IsValidAccessRole(const std::string& role) {
   return StringToEnum(role, &scope);
 }
 
-Settings CreateDefaultSettings() {
-  Settings result;
+Config::Settings CreateDefaultSettings() {
+  Config::Settings result;
   result.oauth_url = "https://accounts.google.com/o/oauth2/";
   result.service_url = "https://www.googleapis.com/clouddevices/v1/";
   result.local_anonymous_access_role = "viewer";
@@ -78,7 +78,7 @@ void Config::AddOnChangedCallback(const OnChangedCallback& callback) {
   callback.Run(settings_);
 }
 
-const Settings& Config::GetSettings() const {
+const Config::Settings& Config::GetSettings() const {
   return settings_;
 }
 

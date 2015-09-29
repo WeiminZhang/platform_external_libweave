@@ -29,9 +29,9 @@ class ConfigTest : public ::testing::Test {
     default_.Load();
   }
 
-  const Settings& GetSettings() const { return config_.GetSettings(); }
+  const Config::Settings& GetSettings() const { return config_.GetSettings(); }
 
-  const Settings& GetDefaultSettings() const { return default_.GetSettings(); }
+  const Config::Settings& GetDefaultSettings() const { return default_.GetSettings(); }
 
   MOCK_METHOD1(OnConfigChanged, void(const Settings&));
 

@@ -494,9 +494,9 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
   EXPECT_EQ(RegistrationStatus::kConnecting, GetRegistrationStatus());
 
   // Validate the device info saved to storage...
-  EXPECT_EQ(test_data::kDeviceId, saved_settings.cloud_id);
-  EXPECT_EQ(test_data::kRefreshToken, saved_settings.refresh_token);
-  EXPECT_EQ(test_data::kRobotAccountEmail, saved_settings.robot_account);
+  EXPECT_EQ(test_data::kDeviceId, dev_reg_->GetSettings().cloud_id);
+  EXPECT_EQ(test_data::kRefreshToken, dev_reg_->GetSettings().refresh_token);
+  EXPECT_EQ(test_data::kRobotAccountEmail, dev_reg_->GetSettings().robot_account);
 }
 
 TEST_F(DeviceRegistrationInfoTest, OOBRegistrationStatus) {
