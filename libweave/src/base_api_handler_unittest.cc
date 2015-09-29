@@ -27,12 +27,6 @@ namespace weave {
 class BaseApiHandlerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    EXPECT_CALL(config_store_, LoadDefaults(_))
-        .WillOnce(Invoke([](Settings* settings) {
-          settings->firmware_version = "123123";
-          return true;
-        }));
-
     EXPECT_CALL(mock_state_change_queue_, NotifyPropertiesUpdated(_, _))
         .WillRepeatedly(Return(true));
 
@@ -131,7 +125,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
 
   auto expected = R"({
     'base': {
-      'firmwareVersion': '123123',
+      'firmwareVersion': 'TEST_FIRMWARE',
       'localAnonymousAccessMaxRole': 'none',
       'localDiscoveryEnabled': false,
       'localPairingEnabled': false,
@@ -153,7 +147,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
   EXPECT_TRUE(settings.local_pairing_enabled);
   expected = R"({
     'base': {
-      'firmwareVersion': '123123',
+      'firmwareVersion': 'TEST_FIRMWARE',
       'localAnonymousAccessMaxRole': 'user',
       'localDiscoveryEnabled': true,
       'localPairingEnabled': true,
@@ -168,7 +162,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
   }
   expected = R"({
     'base': {
-      'firmwareVersion': '123123',
+      'firmwareVersion': 'TEST_FIRMWARE',
       'localAnonymousAccessMaxRole': 'viewer',
       'localDiscoveryEnabled': true,
       'localPairingEnabled': true,

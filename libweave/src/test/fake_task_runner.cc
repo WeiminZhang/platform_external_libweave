@@ -34,7 +34,7 @@ bool FakeTaskRunner::RunOnce() {
 
 void FakeTaskRunner::Run() {
   break_ = false;
-  while (!break_ && RunOnce()) {
+  for (size_t i = 0; i < 1000 && !break_ && RunOnce(); ++i) {
   }
 }
 
