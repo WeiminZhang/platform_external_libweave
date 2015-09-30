@@ -116,8 +116,6 @@ TEST(CommandManager, LoadCommandsJson) {
 TEST(CommandManager, ShouldLoadStandardAndTestDefinitions) {
   CommandManager manager;
   provider::test::MockConfigStore config_store;
-  EXPECT_CALL(config_store, LoadBaseCommandDefs())
-      .WillOnce(Return(kTestBaseCommands));
   EXPECT_CALL(config_store, LoadCommandDefs())
       .WillOnce(Return(std::map<std::string, std::string>{
           {"category", kTestVendorCommands}, {"test", kTestTestCommands}}));

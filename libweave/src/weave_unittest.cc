@@ -41,46 +41,13 @@ using provider::Network;
 
 const char kCategory[] = "powerd";
 
-const char kBaseCommandDefs[] = R"({
-  "base": {
-    "reboot": {
-      "parameters": {"delay": "integer"},
-      "results": {}
-    },
-    "shutdown": {
-      "parameters": {},
-      "results": {}
-    }
-  }
-})";
-
 const char kCommandDefs[] = R"({
   "base": {
     "reboot": {},
-    "shutdown": {}
-  }
-})";
-
-const char kBaseStateDefs[] = R"({
-  "base": {
-    "firmwareVersion": "string",
-    "localDiscoveryEnabled": "boolean",
-    "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
-    "localPairingEnabled": "boolean",
-    "network": {
-      "properties": {
-        "name": "string"
-      }
+    "_shutdown": {
+      "parameters": {},
+      "results": {}
     }
-  }
-})";
-
-const char kBaseStateDefaults[] = R"({
-  "base": {
-    "firmwareVersion": "",
-    "localDiscoveryEnabled": false,
-    "localAnonymousAccessMaxRole": "none",
-    "localPairingEnabled": false
   }
 })";
 
@@ -192,22 +159,13 @@ class WeaveTest : public ::testing::Test {
   void InitConfigStore() {
     EXPECT_CALL(config_store_, SaveSettings("")).WillRepeatedly(Return());
 
-    EXPECT_CALL(config_store_, LoadBaseCommandDefs())
-        .WillOnce(Return(kBaseCommandDefs));
-
     EXPECT_CALL(config_store_, LoadCommandDefs())
         .WillOnce(Return(
             std::map<std::string, std::string>{{kCategory, kCommandDefs}}));
 
-    EXPECT_CALL(config_store_, LoadBaseStateDefs())
-        .WillOnce(Return(kBaseStateDefs));
-
     EXPECT_CALL(config_store_, LoadStateDefs())
         .WillOnce(Return(
             std::map<std::string, std::string>{{kCategory, kStateDefs}}));
-
-    EXPECT_CALL(config_store_, LoadBaseStateDefaults())
-        .WillOnce(Return(kBaseStateDefaults));
 
     EXPECT_CALL(config_store_, LoadStateDefaults())
         .WillOnce(Return(std::vector<std::string>{kStateDefaults}));

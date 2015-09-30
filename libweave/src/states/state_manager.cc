@@ -16,6 +16,33 @@
 
 namespace weave {
 
+namespace {
+
+const char kBaseStateDefs[] = R"({
+  "base": {
+    "firmwareVersion": "string",
+    "localDiscoveryEnabled": "boolean",
+    "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
+    "localPairingEnabled": "boolean",
+    "network": {
+      "properties": {
+        "name": "string"
+      }
+    }
+  }
+})";
+
+const char kBaseStateDefaults[] = R"({
+  "base": {
+    "firmwareVersion": "unknown",
+    "localDiscoveryEnabled": false,
+    "localAnonymousAccessMaxRole": "none",
+    "localPairingEnabled": false
+  }
+})";
+
+}
+
 StateManager::StateManager(StateChangeQueueInterface* state_change_queue)
     : state_change_queue_(state_change_queue) {
   CHECK(state_change_queue_) << "State change queue not specified";
@@ -32,14 +59,14 @@ void StateManager::Startup(provider::ConfigStore* config_store) {
   LOG(INFO) << "Initializing StateManager.";
 
   // Load standard device state definition.
-  CHECK(LoadBaseStateDefinition(config_store->LoadBaseStateDefs(), nullptr));
+  CHECK(LoadBaseStateDefinition(kBaseStateDefs, nullptr));
 
   // Load component-specific device state definitions.
   for (const auto& pair : config_store->LoadStateDefs())
     CHECK(LoadStateDefinition(pair.second, pair.first, nullptr));
 
   // Load standard device state defaults.
-  CHECK(LoadStateDefaults(config_store->LoadBaseStateDefaults(), nullptr));
+  CHECK(LoadStateDefaults(kBaseStateDefaults, nullptr));
 
   // Load component-specific device state defaults.
   for (const auto& json : config_store->LoadStateDefaults())
