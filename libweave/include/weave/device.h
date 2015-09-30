@@ -27,6 +27,10 @@ namespace weave {
 
 class Device {
  public:
+  // Callback type for AddSettingsChangedCallback.
+  using SettingsChangedCallback =
+      base::Callback<void(const Settings& settings)>;
+
   virtual ~Device() = default;
 
   virtual void Start(provider::ConfigStore* config_store,
@@ -37,6 +41,13 @@ class Device {
                      provider::HttpServer* http_server,
                      provider::Wifi* wifi,
                      provider::Bluetooth* bluetooth_provider) = 0;
+
+  // Returns reference the current settings.
+  virtual const Settings& GetSettings() = 0;
+
+  // Subscribes to notification settings changes.
+  virtual void AddSettingsChangedCallback(
+      const SettingsChangedCallback& callback) = 0;
 
   virtual Commands* GetCommands() = 0;
   virtual State* GetState() = 0;

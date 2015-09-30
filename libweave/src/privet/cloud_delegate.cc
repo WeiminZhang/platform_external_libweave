@@ -47,7 +47,7 @@ class CloudDelegateImpl : public CloudDelegate {
         device_{device},
         command_manager_{command_manager},
         state_manager_{state_manager} {
-    device_->AddOnConfigChangedCallback(base::Bind(
+    device_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
         &CloudDelegateImpl::OnConfigChanged, weak_factory_.GetWeakPtr()));
     device_->AddOnRegistrationChangedCallback(base::Bind(
         &CloudDelegateImpl::OnRegistrationChanged, weak_factory_.GetWeakPtr()));

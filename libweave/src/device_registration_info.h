@@ -85,9 +85,6 @@ class DeviceRegistrationInfo : public Cloud,
                            const std::string& service_url,
                            ErrorPtr* error) override;
 
-  // Add callback to listen for changes in config.
-  void AddOnConfigChangedCallback(const Config::OnChangedCallback& callback);
-
   // Returns the GCD service request URL. If |subpath| is specified, it is
   // appended to the base URL which is normally
   //    https://www.googleapis.com/clouddevices/v1/".

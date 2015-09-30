@@ -36,12 +36,10 @@ class MockConfigStore : public ConfigStore {
         }));
     EXPECT_CALL(*this, LoadSettings()).WillRepeatedly(Return(""));
     EXPECT_CALL(*this, SaveSettings(_)).WillRepeatedly(Return());
-    EXPECT_CALL(*this, OnSettingsChanged(_)).WillRepeatedly(Return());
   }
   MOCK_METHOD1(LoadDefaults, bool(Settings*));
   MOCK_METHOD0(LoadSettings, std::string());
   MOCK_METHOD1(SaveSettings, void(const std::string&));
-  MOCK_METHOD1(OnSettingsChanged, void(const Settings&));
 
   MOCK_METHOD0(LoadBaseCommandDefs, std::string());
   MOCK_METHOD0(LoadCommandDefs, std::map<std::string, std::string>());

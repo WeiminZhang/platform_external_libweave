@@ -55,10 +55,6 @@ Config::Settings CreateDefaultSettings() {
 
 Config::Config(provider::ConfigStore* config_store)
     : settings_{CreateDefaultSettings()}, config_store_{config_store} {
-  if (config_store_) {
-    AddOnChangedCallback(base::Bind(&provider::ConfigStore::OnSettingsChanged,
-                                    base::Unretained(config_store_)));
-  }
 }
 
 void Config::AddOnChangedCallback(const OnChangedCallback& callback) {
