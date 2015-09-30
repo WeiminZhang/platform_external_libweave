@@ -14,6 +14,43 @@
 
 namespace weave {
 
+namespace {
+
+const char kBaseCommandDefs[] = R"({
+  "base": {
+    "updateBaseConfiguration": {
+      "minimalRole": "manager",
+      "parameters": {
+        "localDiscoveryEnabled": "boolean",
+        "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
+        "localPairingEnabled": "boolean"
+      },
+      "results": {}
+    },
+    "reboot": {
+      "minimalRole": "user",
+      "parameters": {},
+      "results": {}
+    },
+    "identify": {
+      "minimalRole": "user",
+      "parameters": {},
+      "results": {}
+    },
+    "updateDeviceInfo": {
+      "minimalRole": "manager",
+      "parameters": {
+        "description": "string",
+        "name": "string",
+        "location": "string"
+      },
+      "results": {}
+    }
+  }
+})";
+
+}
+
 CommandManager::CommandManager() {}
 
 CommandManager::~CommandManager() {}
@@ -63,7 +100,7 @@ void CommandManager::Startup(provider::ConfigStore* config_store) {
   LOG(INFO) << "Initializing CommandManager.";
 
   // Load global standard GCD command dictionary.
-  CHECK(LoadBaseCommands(config_store->LoadBaseCommandDefs(), nullptr));
+  CHECK(LoadBaseCommands(kBaseCommandDefs, nullptr));
 
   // Loading the rest of commands.
   for (const auto& defs : config_store->LoadCommandDefs())

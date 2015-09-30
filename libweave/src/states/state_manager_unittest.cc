@@ -141,15 +141,10 @@ TEST_F(StateManagerTest, Startup) {
   provider::test::MockConfigStore config_store;
   StateManager manager(&mock_state_change_queue_);
 
-  EXPECT_CALL(config_store, LoadBaseStateDefs())
-      .WillOnce(Return(kBaseDefinition));
-
   EXPECT_CALL(config_store, LoadStateDefs())
       .WillOnce(Return(std::map<std::string, std::string>{
           {"powerd", R"({"power": {"battery_level":"integer"}})"}}));
 
-  EXPECT_CALL(config_store, LoadBaseStateDefaults())
-      .WillOnce(Return(kBaseDefaults));
   EXPECT_CALL(config_store, LoadStateDefaults())
       .WillOnce(Return(std::vector<std::string>{
           R"({"power": {"battery_level":44}})"}));
@@ -158,14 +153,14 @@ TEST_F(StateManagerTest, Startup) {
 
   auto expected = R"({
     'base': {
-      'manufacturer': 'Test Factory',
-      'serialNumber': 'Test Model'
+      'firmwareVersion': 'unknown',
+      'localAnonymousAccessMaxRole': 'none',
+      'localDiscoveryEnabled': false,
+      'localPairingEnabled': false,
+      'network': {}
     },
     'power': {
       'battery_level': 44
-    },
-    'device': {
-      'state_property': ''
     }
   })";
   EXPECT_JSON_EQ(expected, *manager.GetStateValuesAsJson());

@@ -59,36 +59,6 @@ void FileConfigStore::SaveSettings(const std::string& settings) {
   str << settings;
 }
 
-std::string FileConfigStore::LoadBaseCommandDefs() {
-  return R"({
-    "base": {
-      "updateBaseConfiguration": {
-        "minimalRole": "manager",
-        "parameters": {
-          "localDiscoveryEnabled": "boolean",
-          "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
-          "localPairingEnabled": "boolean"
-        },
-        "results": {}
-      },
-      "identify": {
-        "minimalRole": "user",
-        "parameters": {},
-        "results": {}
-      },
-      "updateDeviceInfo": {
-        "minimalRole": "manager",
-        "parameters": {
-          "description": "string",
-          "name": "string",
-          "location": "string"
-        },
-        "results": {}
-      }
-    }
-  })";
-}
-
 std::map<std::string, std::string> FileConfigStore::LoadCommandDefs() {
   return {{"example", R"({
     "base": {
@@ -104,33 +74,6 @@ std::map<std::string, std::string> FileConfigStore::LoadCommandDefs() {
       }
     }
   })"}};
-}
-
-std::string FileConfigStore::LoadBaseStateDefs() {
-  return R"({
-    "base": {
-      "firmwareVersion": "string",
-      "localDiscoveryEnabled": "boolean",
-      "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
-      "localPairingEnabled": "boolean",
-      "network": {
-        "properties": {
-          "name": "string"
-        }
-      }
-    }
-  })";
-}
-
-std::string FileConfigStore::LoadBaseStateDefaults() {
-  return R"({
-    "base": {
-      "firmwareVersion": "unknown",
-      "localDiscoveryEnabled": false,
-      "localAnonymousAccessMaxRole": "none",
-      "localPairingEnabled": false
-    }
-  })";
 }
 
 std::map<std::string, std::string> FileConfigStore::LoadStateDefs() {
