@@ -698,21 +698,9 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
     registration->GetString(kSetupStartUserKey, &user);
   }
 
-  cloud_->UpdateDeviceInfo(name, description, location,
-                           base::Bind(&PrivetHandler::OnUpdateDeviceInfoDone,
-                                      weak_ptr_factory_.GetWeakPtr(), ssid,
-                                      passphrase, ticket, user, callback),
-                           base::Bind(&OnCommandRequestFailed, callback));
-}
+  cloud_->UpdateDeviceInfo(name, description, location);
 
-void PrivetHandler::OnUpdateDeviceInfoDone(
-    const std::string& ssid,
-    const std::string& passphrase,
-    const std::string& ticket,
-    const std::string& user,
-    const RequestCallback& callback) const {
   ErrorPtr error;
-
   if (!ssid.empty() && !wifi_->ConfigureCredentials(ssid, passphrase, &error))
     return ReturnError(*error, callback);
 

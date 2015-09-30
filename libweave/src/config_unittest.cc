@@ -68,7 +68,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().name);
   EXPECT_EQ("", GetSettings().description);
   EXPECT_EQ("", GetSettings().location);
-  EXPECT_EQ("viewer", GetSettings().local_anonymous_access_role);
+  EXPECT_EQ(AuthScope::kViewer, GetSettings().local_anonymous_access_role);
   EXPECT_TRUE(GetSettings().local_pairing_enabled);
   EXPECT_TRUE(GetSettings().local_discovery_enabled);
   EXPECT_EQ("", GetSettings().cloud_id);
@@ -121,7 +121,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ("state_name", GetSettings().name);
   EXPECT_EQ("state_description", GetSettings().description);
   EXPECT_EQ("state_location", GetSettings().location);
-  EXPECT_EQ("user", GetSettings().local_anonymous_access_role);
+  EXPECT_EQ(AuthScope::kUser, GetSettings().local_anonymous_access_role);
   EXPECT_FALSE(GetSettings().local_pairing_enabled);
   EXPECT_FALSE(GetSettings().local_discovery_enabled);
   EXPECT_EQ("state_cloud_id", GetSettings().cloud_id);
@@ -158,14 +158,14 @@ TEST_F(ConfigTest, Setters) {
   change.set_location("set_location");
   EXPECT_EQ("set_location", GetSettings().location);
 
-  change.set_local_anonymous_access_role("viewer");
-  EXPECT_EQ("viewer", GetSettings().local_anonymous_access_role);
+  change.set_local_anonymous_access_role(AuthScope::kViewer);
+  EXPECT_EQ(AuthScope::kViewer, GetSettings().local_anonymous_access_role);
 
-  change.set_local_anonymous_access_role("none");
-  EXPECT_EQ("none", GetSettings().local_anonymous_access_role);
+  change.set_local_anonymous_access_role(AuthScope::kNone);
+  EXPECT_EQ(AuthScope::kNone, GetSettings().local_anonymous_access_role);
 
-  change.set_local_anonymous_access_role("user");
-  EXPECT_EQ("user", GetSettings().local_anonymous_access_role);
+  change.set_local_anonymous_access_role(AuthScope::kUser);
+  EXPECT_EQ(AuthScope::kUser, GetSettings().local_anonymous_access_role);
 
   change.set_local_discovery_enabled(false);
   EXPECT_FALSE(GetSettings().local_discovery_enabled);

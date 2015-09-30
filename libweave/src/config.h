@@ -68,7 +68,9 @@ class Config final {
     void set_location(const std::string& location) {
       settings_->location = location;
     }
-    bool set_local_anonymous_access_role(const std::string& role);
+    void set_local_anonymous_access_role(AuthScope role) {
+      settings_->local_anonymous_access_role = role;
+    }
     void set_local_discovery_enabled(bool enabled) {
       settings_->local_discovery_enabled = enabled;
     }

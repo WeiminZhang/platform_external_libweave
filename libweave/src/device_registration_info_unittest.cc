@@ -140,7 +140,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
           settings->name = "Coffee Pot";
           settings->description = "Easy to clean";
           settings->location = "Kitchen";
-          settings->local_anonymous_access_role = "viewer";
+          settings->local_anonymous_access_role = AuthScope::kViewer;
           settings->model_id = "AAAAA";
           settings->oauth_url = test_data::kOAuthURL;
           settings->service_url = test_data::kServiceURL;

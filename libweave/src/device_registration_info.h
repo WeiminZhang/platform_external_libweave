@@ -72,14 +72,12 @@ class DeviceRegistrationInfo : public Cloud,
       const OnCloudRequestErrorCallback& error_callback) override;
   std::string RegisterDevice(const std::string& ticket_id,
                              ErrorPtr* error) override;
-  bool UpdateDeviceInfo(const std::string& name,
+  void UpdateDeviceInfo(const std::string& name,
                         const std::string& description,
-                        const std::string& location,
-                        ErrorPtr* error) override;
-  bool UpdateBaseConfig(const std::string& anonymous_access_role,
+                        const std::string& location) override;
+  void UpdateBaseConfig(AuthScope anonymous_access_role,
                         bool local_discovery_enabled,
-                        bool local_pairing_enabled,
-                        ErrorPtr* error) override;
+                        bool local_pairing_enabled) override;
   bool UpdateServiceConfig(const std::string& client_id,
                            const std::string& client_secret,
                            const std::string& api_key,

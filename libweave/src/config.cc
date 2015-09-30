@@ -42,16 +42,11 @@ const char kSecret[] = "secret";
 
 namespace {
 
-bool IsValidAccessRole(const std::string& role) {
-  privet::AuthScope scope;
-  return StringToEnum(role, &scope);
-}
-
 Config::Settings CreateDefaultSettings() {
   Config::Settings result;
   result.oauth_url = "https://accounts.google.com/o/oauth2/";
   result.service_url = "https://www.googleapis.com/clouddevices/v1/";
-  result.local_anonymous_access_role = "viewer";
+  result.local_anonymous_access_role = AuthScope::kViewer;
   result.pairing_modes.emplace(PairingType::kPinCode);
   return result;
 }
@@ -98,8 +93,6 @@ void Config::Load() {
   CHECK(!settings_.model_id.empty());
   CHECK(!settings_.name.empty());
 
-  CHECK(IsValidAccessRole(settings_.local_anonymous_access_role))
-      << "Invalid role: " << settings_.local_anonymous_access_role;
   CHECK_EQ(
       settings_.embedded_code.empty(),
       std::find(settings_.pairing_modes.begin(), settings_.pairing_modes.end(),
@@ -156,8 +149,11 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kLocation, &tmp))
     set_location(tmp);
 
-  if (dict->GetString(config_keys::kLocalAnonymousAccessRole, &tmp))
-    set_local_anonymous_access_role(tmp);
+  AuthScope scope{AuthScope::kNone};
+  if (dict->GetString(config_keys::kLocalAnonymousAccessRole, &tmp) &&
+      StringToEnum(tmp, &scope)) {
+    set_local_anonymous_access_role(scope);
+  }
 
   if (dict->GetBoolean(config_keys::kLocalDiscoveryEnabled, &tmp_bool))
     set_local_discovery_enabled(tmp_bool);
@@ -201,7 +197,7 @@ void Config::Save() {
   dict.SetString(config_keys::kDescription, settings_.description);
   dict.SetString(config_keys::kLocation, settings_.location);
   dict.SetString(config_keys::kLocalAnonymousAccessRole,
-                 settings_.local_anonymous_access_role);
+                 EnumToString(settings_.local_anonymous_access_role));
   dict.SetBoolean(config_keys::kLocalDiscoveryEnabled,
                   settings_.local_discovery_enabled);
   dict.SetBoolean(config_keys::kLocalPairingEnabled,
@@ -216,16 +212,6 @@ void Config::Save() {
 
 Config::Transaction::~Transaction() {
   Commit();
-}
-
-bool Config::Transaction::set_local_anonymous_access_role(
-    const std::string& role) {
-  if (!IsValidAccessRole(role)) {
-    LOG(ERROR) << "Invalid role: " << role;
-    return false;
-  }
-  settings_->local_anonymous_access_role = role;
-  return true;
 }
 
 void Config::Transaction::Commit() {

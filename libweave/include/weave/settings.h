@@ -13,6 +13,14 @@
 
 namespace weave {
 
+// Scopes in order of increasing privileges.
+enum class AuthScope {
+  kNone,
+  kViewer,
+  kUser,
+  kOwner,
+};
+
 struct Settings {
   // Model specific information. Must be set by ConfigStore::LoadDefaults.
   std::string firmware_version;
@@ -32,7 +40,7 @@ struct Settings {
 
   // Options mirrored into "base" state.
   // Maximum role for local anonymous user.
-  std::string local_anonymous_access_role;
+  AuthScope local_anonymous_access_role{AuthScope::kViewer};
   // If true, allows local discovery using DNS-SD.
   bool local_discovery_enabled{true};
   // If true, allows local pairing using Privet API.

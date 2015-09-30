@@ -10,6 +10,7 @@
 #include <base/callback.h>
 #include <base/values.h>
 #include <weave/error.h>
+#include <weave/settings.h>
 
 namespace weave {
 
@@ -46,16 +47,14 @@ class Cloud {
                                      ErrorPtr* error) = 0;
 
   // Updates basic device information.
-  virtual bool UpdateDeviceInfo(const std::string& name,
+  virtual void UpdateDeviceInfo(const std::string& name,
                                 const std::string& description,
-                                const std::string& location,
-                                ErrorPtr* error) = 0;
+                                const std::string& location) = 0;
 
   // Updates base device config.
-  virtual bool UpdateBaseConfig(const std::string& anonymous_access_role,
+  virtual void UpdateBaseConfig(AuthScope anonymous_access_role,
                                 bool local_discovery_enabled,
-                                bool local_pairing_enabled,
-                                ErrorPtr* error) = 0;
+                                bool local_pairing_enabled) = 0;
 
   // Updates GCD service configuration. Usually for testing.
   virtual bool UpdateServiceConfig(const std::string& client_id,
