@@ -66,9 +66,7 @@ class CloudDelegate {
   // Update basic device information.
   virtual void UpdateDeviceInfo(const std::string& name,
                                 const std::string& description,
-                                const std::string& location,
-                                const SuccessCallback& success_callback,
-                                const ErrorCallback& error_callback) = 0;
+                                const std::string& location) = 0;
 
   // Returns the name of the maker.
   virtual std::string GetOemName() const = 0;

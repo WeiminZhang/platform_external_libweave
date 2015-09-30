@@ -53,7 +53,8 @@ void BaseApiHandler::UpdateBaseConfiguration(Command* command) {
   command->SetProgress(base::DictionaryValue{}, nullptr);
 
   const auto& settings = device_info_->GetSettings();
-  std::string anonymous_access_role{settings.local_anonymous_access_role};
+  std::string anonymous_access_role{
+      EnumToString(settings.local_anonymous_access_role)};
   bool discovery_enabled{settings.local_discovery_enabled};
   bool pairing_enabled{settings.local_pairing_enabled};
 
@@ -62,18 +63,22 @@ void BaseApiHandler::UpdateBaseConfiguration(Command* command) {
   parameters->GetBoolean("localDiscoveryEnabled", &discovery_enabled);
   parameters->GetBoolean("localPairingEnabled", &pairing_enabled);
 
-  if (!device_info_->UpdateBaseConfig(anonymous_access_role, discovery_enabled,
-                                      pairing_enabled, nullptr)) {
+  AuthScope auth_scope{AuthScope::kNone};
+  if (!StringToEnum(anonymous_access_role, &auth_scope)) {
     return command->Abort();
   }
+
+  device_info_->UpdateBaseConfig(auth_scope, discovery_enabled,
+                                 pairing_enabled);
 
   command->Done();
 }
 
 void BaseApiHandler::OnConfigChanged(const Settings& settings) {
   base::DictionaryValue state;
-  state.SetStringWithoutPathExpansion(kBaseStateAnonymousAccessRole,
-                                      settings.local_anonymous_access_role);
+  state.SetStringWithoutPathExpansion(
+      kBaseStateAnonymousAccessRole,
+      EnumToString(settings.local_anonymous_access_role));
   state.SetBooleanWithoutPathExpansion(kBaseStateDiscoveryEnabled,
                                        settings.local_discovery_enabled);
   state.SetBooleanWithoutPathExpansion(kBaseStatePairingEnabled,
@@ -94,10 +99,7 @@ void BaseApiHandler::UpdateDeviceInfo(Command* command) {
   parameters->GetString("description", &description);
   parameters->GetString("location", &location);
 
-  if (!device_info_->UpdateDeviceInfo(name, description, location, nullptr)) {
-    return command->Abort();
-  }
-
+  device_info_->UpdateDeviceInfo(name, description, location);
   command->Done();
 }
 

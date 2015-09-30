@@ -807,10 +807,9 @@ void DeviceRegistrationInfo::OnConnectedToCloud() {
   PublishStateUpdates();
 }
 
-bool DeviceRegistrationInfo::UpdateDeviceInfo(const std::string& name,
+void DeviceRegistrationInfo::UpdateDeviceInfo(const std::string& name,
                                               const std::string& description,
-                                              const std::string& location,
-                                              ErrorPtr* error) {
+                                              const std::string& location) {
   Config::Transaction change{config_.get()};
   change.set_name(name);
   change.set_description(description);
@@ -821,27 +820,15 @@ bool DeviceRegistrationInfo::UpdateDeviceInfo(const std::string& name,
     UpdateDeviceResource(base::Bind(&base::DoNothing),
                          base::Bind(&IgnoreCloudError));
   }
-
-  return true;
 }
 
-bool DeviceRegistrationInfo::UpdateBaseConfig(
-    const std::string& anonymous_access_role,
-    bool local_discovery_enabled,
-    bool local_pairing_enabled,
-    ErrorPtr* error) {
+void DeviceRegistrationInfo::UpdateBaseConfig(AuthScope anonymous_access_role,
+                                              bool local_discovery_enabled,
+                                              bool local_pairing_enabled) {
   Config::Transaction change(config_.get());
-  if (!change.set_local_anonymous_access_role(anonymous_access_role)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::kErrorDomain,
-                       "invalid_parameter", "Invalid role: %s",
-                       anonymous_access_role.c_str());
-    return false;
-  }
-
+  change.set_local_anonymous_access_role(anonymous_access_role);
   change.set_local_discovery_enabled(local_discovery_enabled);
   change.set_local_pairing_enabled(local_pairing_enabled);
-
-  return true;
 }
 
 bool DeviceRegistrationInfo::UpdateServiceConfig(

@@ -141,12 +141,10 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_CONST_METHOD0(GetName, std::string());
   MOCK_CONST_METHOD0(GetDescription, std::string());
   MOCK_CONST_METHOD0(GetLocation, std::string());
-  MOCK_METHOD5(UpdateDeviceInfo,
+  MOCK_METHOD3(UpdateDeviceInfo,
                void(const std::string&,
                     const std::string&,
-                    const std::string&,
-                    const SuccessCallback&,
-                    const ErrorCallback&));
+                    const std::string&));
   MOCK_CONST_METHOD0(GetOemName, std::string());
   MOCK_CONST_METHOD0(GetModelName, std::string());
   MOCK_CONST_METHOD0(GetServices, std::set<std::string>());
@@ -182,8 +180,7 @@ class MockCloudDelegate : public CloudDelegate {
     EXPECT_CALL(*this, GetName()).WillRepeatedly(Return("TestDevice"));
     EXPECT_CALL(*this, GetDescription()).WillRepeatedly(Return(""));
     EXPECT_CALL(*this, GetLocation()).WillRepeatedly(Return(""));
-    EXPECT_CALL(*this, UpdateDeviceInfo(_, _, _, _, _))
-        .WillRepeatedly(RunCallback<3>());
+    EXPECT_CALL(*this, UpdateDeviceInfo(_, _, _)).WillRepeatedly(Return());
     EXPECT_CALL(*this, GetOemName()).WillRepeatedly(Return("Chromium"));
     EXPECT_CALL(*this, GetModelName()).WillRepeatedly(Return("Brillo"));
     EXPECT_CALL(*this, GetServices())

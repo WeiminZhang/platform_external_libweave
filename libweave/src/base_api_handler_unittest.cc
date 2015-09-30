@@ -119,7 +119,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'localPairingEnabled': false
     }
   })");
-  EXPECT_EQ("none", settings.local_anonymous_access_role);
+  EXPECT_EQ(AuthScope::kNone, settings.local_anonymous_access_role);
   EXPECT_FALSE(settings.local_discovery_enabled);
   EXPECT_FALSE(settings.local_pairing_enabled);
 
@@ -142,7 +142,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'localPairingEnabled': true
     }
   })");
-  EXPECT_EQ("user", settings.local_anonymous_access_role);
+  EXPECT_EQ(AuthScope::kUser, settings.local_anonymous_access_role);
   EXPECT_TRUE(settings.local_discovery_enabled);
   EXPECT_TRUE(settings.local_pairing_enabled);
   expected = R"({
@@ -158,7 +158,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
 
   {
     Config::Transaction change{dev_reg_->GetMutableConfig()};
-    change.set_local_anonymous_access_role("viewer");
+    change.set_local_anonymous_access_role(AuthScope::kViewer);
   }
   expected = R"({
     'base': {

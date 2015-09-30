@@ -28,8 +28,6 @@ class IdentityDelegate;
 class SecurityDelegate;
 class WifiDelegate;
 
-enum class AuthScope;
-
 // Privet V3 HTTP/HTTPS requests handler.
 // API details at https://developers.google.com/cloud-devices/
 class PrivetHandler : public CloudDelegate::Observer {
@@ -110,11 +108,6 @@ class PrivetHandler : public CloudDelegate::Observer {
                             const UserInfo& user_info,
                             const RequestCallback& callback);
 
-  void OnUpdateDeviceInfoDone(const std::string& ssid,
-                              const std::string& passphrase,
-                              const std::string& ticket,
-                              const std::string& user,
-                              const RequestCallback& callback) const;
   void ReplyWithSetupStatus(const RequestCallback& callback) const;
 
   CloudDelegate* cloud_ = nullptr;

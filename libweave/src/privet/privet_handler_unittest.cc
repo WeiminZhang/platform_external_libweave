@@ -525,8 +525,8 @@ TEST_F(PrivetHandlerSetupTest, StatusGcdError) {
 }
 
 TEST_F(PrivetHandlerSetupTest, SetupNameDescriptionLocation) {
-  EXPECT_CALL(cloud_, UpdateDeviceInfo("testName", "testDescription",
-                                       "testLocation", _, _))
+  EXPECT_CALL(cloud_,
+              UpdateDeviceInfo("testName", "testDescription", "testLocation"))
       .Times(1);
   const char kInput[] = R"({
     'name': 'testName',

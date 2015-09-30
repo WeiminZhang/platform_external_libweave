@@ -9,6 +9,7 @@
 
 #include <base/logging.h>
 #include <weave/error.h>
+#include <weave/settings.h>
 
 namespace weave {
 namespace privet {
@@ -22,14 +23,6 @@ enum class CryptoType {
 enum class WifiType {
   kWifi24,
   kWifi50,
-};
-
-// Scopes in order of increasing privileges.
-enum class AuthScope {
-  kNone,
-  kViewer,
-  kUser,
-  kOwner,
 };
 
 class UserInfo {

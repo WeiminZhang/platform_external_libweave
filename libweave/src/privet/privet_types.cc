@@ -15,7 +15,6 @@ namespace weave {
 
 namespace {
 
-using privet::AuthScope;
 using privet::ConnectionState;
 using privet::CryptoType;
 using privet::SetupState;

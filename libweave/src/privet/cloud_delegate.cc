@@ -82,13 +82,8 @@ class CloudDelegateImpl : public CloudDelegate {
 
   void UpdateDeviceInfo(const std::string& name,
                         const std::string& description,
-                        const std::string& location,
-                        const SuccessCallback& success_callback,
-                        const ErrorCallback& error_callback) override {
-    ErrorPtr error;
-    if (!device_->UpdateDeviceInfo(name, description, location, &error))
-      return error_callback.Run(error.get());
-    success_callback.Run();
+                        const std::string& location) override {
+    device_->UpdateDeviceInfo(name, description, location);
   }
 
   std::string GetOemName() const override {
@@ -109,12 +104,7 @@ class CloudDelegateImpl : public CloudDelegate {
   }
 
   AuthScope GetAnonymousMaxScope() const override {
-    AuthScope scope;
-    if (StringToEnum(device_->GetSettings().local_anonymous_access_role,
-                     &scope)) {
-      return scope;
-    }
-    return AuthScope::kNone;
+    return device_->GetSettings().local_anonymous_access_role;
   }
 
   const ConnectionState& GetConnectionState() const override {
