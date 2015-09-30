@@ -64,6 +64,15 @@ void DeviceManager::Start(provider::ConfigStore* config_store,
   }
 }
 
+const Settings& DeviceManager::GetSettings() {
+  return device_info_->GetSettings();
+}
+
+void DeviceManager::AddSettingsChangedCallback(
+    const SettingsChangedCallback& callback) {
+  device_info_->GetMutableConfig()->AddOnChangedCallback(callback);
+}
+
 Commands* DeviceManager::GetCommands() {
   return command_manager_.get();
 }

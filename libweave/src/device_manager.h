@@ -26,6 +26,7 @@ class DeviceManager final : public Device {
   DeviceManager();
   ~DeviceManager() override;
 
+  // Device implementation.
   void Start(provider::ConfigStore* config_store,
              provider::TaskRunner* task_runner,
              provider::HttpClient* http_client,
@@ -34,7 +35,9 @@ class DeviceManager final : public Device {
              provider::HttpServer* http_server,
              provider::Wifi* wifi,
              provider::Bluetooth* bluetooth) override;
-
+  const Settings& GetSettings() override;
+  void AddSettingsChangedCallback(
+      const SettingsChangedCallback& callback) override;
   Commands* GetCommands() override;
   State* GetState() override;
   Cloud* GetCloud() override;

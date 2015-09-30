@@ -25,7 +25,7 @@ BaseApiHandler::BaseApiHandler(
     const std::shared_ptr<StateManager>& state_manager,
     const std::shared_ptr<CommandManager>& command_manager)
     : device_info_{device_info}, state_manager_{state_manager} {
-  device_info_->AddOnConfigChangedCallback(base::Bind(
+  device_info_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
       &BaseApiHandler::OnConfigChanged, weak_ptr_factory_.GetWeakPtr()));
 
   const auto& settings = device_info_->GetSettings();

@@ -59,10 +59,6 @@ void FileConfigStore::SaveSettings(const std::string& settings) {
   str << settings;
 }
 
-void FileConfigStore::OnSettingsChanged(const Settings& settings) {
-  LOG(INFO) << "OnSettingsChanged";
-}
-
 std::string FileConfigStore::LoadBaseCommandDefs() {
   return R"({
     "base": {

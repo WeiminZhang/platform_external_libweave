@@ -482,11 +482,6 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
         return ReplyWithJson(200, json);
       })));
 
-  Settings saved_settings;
-  EXPECT_CALL(config_store_, OnSettingsChanged(_))
-      .Times(AtLeast(1))
-      .WillRepeatedly(SaveArg<0>(&saved_settings));
-
   std::string cloud_id =
       dev_reg_->RegisterDevice(test_data::kClaimTicketId, nullptr);
 

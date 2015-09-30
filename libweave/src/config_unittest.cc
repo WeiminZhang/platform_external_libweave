@@ -218,7 +218,6 @@ TEST_F(ConfigTest, Setters) {
         })";
         EXPECT_JSON_EQ(expected, *test::CreateValue(json));
       }));
-  EXPECT_CALL(config_store_, OnSettingsChanged(_)).Times(1);
 
   change.Commit();
 }
