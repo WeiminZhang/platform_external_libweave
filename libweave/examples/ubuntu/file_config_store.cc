@@ -77,8 +77,8 @@ std::map<std::string, std::string> FileConfigStore::LoadCommandDefs() {
   })"}};
 }
 
-std::map<std::string, std::string> FileConfigStore::LoadStateDefs() {
-  return {{kCategory, R"({"_greeter": {"_greetings_counter":"integer"}})"}};
+std::vector<std::string> FileConfigStore::LoadStateDefs() {
+  return {R"({"_greeter": {"_greetings_counter":"integer"}})"};
 }
 
 std::vector<std::string> FileConfigStore::LoadStateDefaults() {

@@ -43,7 +43,7 @@ class MockConfigStore : public ConfigStore {
   MOCK_METHOD1(SaveSettings, void(const std::string&));
 
   MOCK_METHOD0(LoadCommandDefs, std::map<std::string, std::string>());
-  MOCK_METHOD0(LoadStateDefs, std::map<std::string, std::string>());
+  MOCK_METHOD0(LoadStateDefs, std::vector<std::string>());
   MOCK_METHOD0(LoadStateDefaults, std::vector<std::string>());
 };
 
