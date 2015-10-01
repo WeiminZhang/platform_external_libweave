@@ -57,7 +57,6 @@ void DeviceManager::Start(provider::ConfigStore* config_store,
   device_info_->Start();
 
   if (http_server) {
-    CHECK(dns_sd);
     StartPrivet(task_runner, network, dns_sd, http_server, wifi, bluetooth);
   } else {
     CHECK(!dns_sd);
