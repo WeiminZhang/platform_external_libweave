@@ -74,8 +74,10 @@ void Manager::Start(TaskRunner* task_runner,
     wifi_bootstrap_manager_->Init();
   }
 
-  publisher_.reset(new Publisher(device_.get(), cloud_.get(),
-                                 wifi_bootstrap_manager_.get(), dns_sd));
+  if (dns_sd) {
+    publisher_.reset(new Publisher(device_.get(), cloud_.get(),
+                                   wifi_bootstrap_manager_.get(), dns_sd));
+  }
 
   privet_handler_.reset(new PrivetHandler(cloud_.get(), device_.get(),
                                           security_.get(),
