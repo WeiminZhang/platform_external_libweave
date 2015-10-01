@@ -17,6 +17,7 @@ namespace examples {
 
 const char kSettingsDir[] = "/var/lib/weave/";
 const char kSettingsPath[] = "/var/lib/weave/weave_settings.json";
+const char kCategory[] = "example";
 
 FileConfigStore::FileConfigStore(bool disable_security)
     : disable_security_{disable_security} {}
@@ -60,7 +61,7 @@ void FileConfigStore::SaveSettings(const std::string& settings) {
 }
 
 std::map<std::string, std::string> FileConfigStore::LoadCommandDefs() {
-  return {{"example", R"({
+  return {{kCategory, R"({
     "base": {
       "updateBaseConfiguration": {},
       "identify": {},
@@ -77,11 +78,11 @@ std::map<std::string, std::string> FileConfigStore::LoadCommandDefs() {
 }
 
 std::map<std::string, std::string> FileConfigStore::LoadStateDefs() {
-  return {};
+  return {{kCategory, R"({"_greeter": {"_greetings_counter":"integer"}})"}};
 }
 
 std::vector<std::string> FileConfigStore::LoadStateDefaults() {
-  return {};
+  return {R"({"_greeter": {"_greetings_counter": 0}})"};
 }
 
 }  // namespace examples

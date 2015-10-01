@@ -28,7 +28,7 @@ void ShowUsage(const std::string& name) {
 
 class CommandHandler {
  public:
-  explicit CommandHandler(weave::Device* device) {
+  explicit CommandHandler(weave::Device* device) : device_{device} {
     device->GetCommands()->AddOnCommandAddedCallback(base::Bind(
         &CommandHandler::OnNewCommand, weak_ptr_factory_.GetWeakPtr()));
   }
@@ -38,22 +38,34 @@ class CommandHandler {
     LOG(INFO) << "received command: " << cmd->GetName();
     if (cmd->GetName() == "_greeter._greet") {
       std::string name;
-      cmd->GetParameters()->GetString("_name", &name);
-      if (name.empty()) {
-        name = cmd->GetOrigin() == weave::CommandOrigin::kCloud ? "cloud user"
-                                                                : "local user";
-      }
-      LOG(INFO) << "vendor _greeter._greet command: in progress";
+      if (!cmd->GetParameters()->GetString("_name", &name))
+        name = "anonymous";
+
+      LOG(INFO) << cmd->GetName() << " command in progress";
       cmd->SetProgress(base::DictionaryValue{}, nullptr);
+
       base::DictionaryValue result;
       result.SetString("_greeting", "Hello " + name);
       cmd->SetResults(result, nullptr);
-      LOG(INFO) << "vendor _greeter._greet command: finished";
+      LOG(INFO) << cmd->GetName() << " command finished: " << result;
+
+      base::DictionaryValue state;
+      state.SetIntegerWithoutPathExpansion("_greeter._greetings_counter",
+                                           ++counter_);
+      device_->GetState()->SetProperties(state, nullptr);
+
+      LOG(INFO) << "New state: "
+                << *device_->GetState()->GetStateValuesAsJson();
+
       cmd->Done();
     } else {
       LOG(INFO) << "unimplemented command: ignored";
     }
   }
+
+  weave::Device* device_{nullptr};
+  int counter_{0};
+
   base::WeakPtrFactory<CommandHandler> weak_ptr_factory_{this};
 };
 }

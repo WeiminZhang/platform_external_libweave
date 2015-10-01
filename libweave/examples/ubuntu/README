@@ -84,7 +84,8 @@ Send Command to Ubuntu Device
         Enter request body:
         {
           "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
-          "name": "_greeter._greet"
+          "name": "_greeter._greet",
+          "parameters": { "_name": "cloud user" }
         }
    "Send the request", you command will be "queued" as its "state"
 
