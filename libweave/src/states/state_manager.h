@@ -51,11 +51,6 @@ class StateManager final {
   // Called by Buffet daemon at startup.
   void Startup(provider::ConfigStore* config_store);
 
-  // Returns all the categories the state properties are registered from.
-  // As with GCD command handling, the category normally represent a device
-  // service (daemon) that is responsible for a set of properties.
-  const std::set<std::string>& GetCategories() const { return categories_; }
-
   // Returns the recorded state changes since last time this method has been
   // called.
   std::pair<StateChangeQueueInterface::UpdateID, std::vector<StateChange>>
@@ -80,16 +75,12 @@ class StateManager final {
                         const base::Time& timestamp,
                         ErrorPtr* error);
 
-  // Loads a device state fragment from a JSON object. |category| represents
-  // a device daemon providing the state fragment or empty string for the
-  // base state fragment.
+  // Loads a device state fragment from a JSON object.
   bool LoadStateDefinition(const base::DictionaryValue& dict,
-                           const std::string& category,
                            ErrorPtr* error);
 
   // Loads a device state fragment JSON.
   bool LoadStateDefinition(const std::string& json,
-                           const std::string& category,
                            ErrorPtr* error);
 
   // Loads the base device state fragment JSON. This state fragment
@@ -111,7 +102,6 @@ class StateManager final {
 
   StateChangeQueueInterface* state_change_queue_;  // Owned by Manager.
   std::map<std::string, std::unique_ptr<StatePackage>> packages_;
-  std::set<std::string> categories_;
 
   std::vector<base::Closure> on_changed_;
 

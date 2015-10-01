@@ -41,10 +41,10 @@ class ConfigStore {
   // Value is JSON with command definition.
   virtual std::map<std::string, std::string> LoadCommandDefs() = 0;
 
-  // Returns device state definitions as JSON.
-  virtual std::map<std::string, std::string> LoadStateDefs() = 0;
+  // Returns device state definitions as array of JSONs.
+  virtual std::vector<std::string> LoadStateDefs() = 0;
 
-  // Returns device state defaults as JSON.
+  // Returns device state defaults as array of JSONs.
   virtual std::vector<std::string> LoadStateDefaults() = 0;
 
  protected:

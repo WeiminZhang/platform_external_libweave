@@ -68,15 +68,14 @@ class StateManagerTest : public ::testing::Test {
     mgr_->AddChangedCallback(
         base::Bind(&StateManagerTest::OnStateChanged, base::Unretained(this)));
 
-    LoadStateDefinition(GetTestSchema().get(), "default", nullptr);
+    LoadStateDefinition(GetTestSchema().get(), nullptr);
     ASSERT_TRUE(mgr_->LoadStateDefaults(*GetTestValues().get(), nullptr));
   }
   void TearDown() override { mgr_.reset(); }
 
   void LoadStateDefinition(const base::DictionaryValue* json,
-                           const std::string& category,
                            ErrorPtr* error) {
-    ASSERT_TRUE(mgr_->LoadStateDefinition(*json, category, error));
+    ASSERT_TRUE(mgr_->LoadStateDefinition(*json, error));
   }
 
   bool SetPropertyValue(const std::string& name,
@@ -95,11 +94,9 @@ class StateManagerTest : public ::testing::Test {
 TEST(StateManager, Empty) {
   testing::StrictMock<MockStateChangeQueueInterface> mock_state_change_queue;
   StateManager manager(&mock_state_change_queue);
-  EXPECT_TRUE(manager.GetCategories().empty());
 }
 
 TEST_F(StateManagerTest, Initialized) {
-  EXPECT_EQ(std::set<std::string>{"default"}, mgr_->GetCategories());
   auto expected = R"({
     'base': {
       'manufacturer': 'Test Factory',
@@ -118,9 +115,7 @@ TEST_F(StateManagerTest, LoadStateDefinition) {
       'battery_level':'integer'
     }
   })");
-  LoadStateDefinition(dict.get(), "powerd", nullptr);
-  EXPECT_EQ((std::set<std::string>{"default", "powerd"}),
-            mgr_->GetCategories());
+  LoadStateDefinition(dict.get(), nullptr);
 
   auto expected = R"({
     'base': {
@@ -142,12 +137,12 @@ TEST_F(StateManagerTest, Startup) {
   StateManager manager(&mock_state_change_queue_);
 
   EXPECT_CALL(config_store, LoadStateDefs())
-      .WillOnce(Return(std::map<std::string, std::string>{
-          {"powerd", R"({"power": {"battery_level":"integer"}})"}}));
+      .WillOnce(Return(std::vector<std::string>{
+          {R"({"power": {"battery_level":"integer"}})"}}));
 
   EXPECT_CALL(config_store, LoadStateDefaults())
-      .WillOnce(Return(std::vector<std::string>{
-          R"({"power": {"battery_level":44}})"}));
+      .WillOnce(Return(
+          std::vector<std::string>{{R"({"power": {"battery_level":44}})"}}));
 
   manager.Startup(&config_store);
 

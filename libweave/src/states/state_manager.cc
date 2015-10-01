@@ -61,8 +61,8 @@ void StateManager::Startup(provider::ConfigStore* config_store) {
   CHECK(LoadBaseStateDefinition(kBaseStateDefs, nullptr));
 
   // Load component-specific device state definitions.
-  for (const auto& pair : config_store->LoadStateDefs())
-    CHECK(LoadStateDefinition(pair.second, pair.first, nullptr));
+  for (const auto& state_def : config_store->LoadStateDefs())
+    CHECK(LoadStateDefinition(state_def, nullptr));
 
   // Load standard device state defaults.
   CHECK(LoadStateDefaults(kBaseStateDefaults, nullptr));
@@ -175,7 +175,6 @@ void StateManager::NotifyStateUpdatedOnServer(
 }
 
 bool StateManager::LoadStateDefinition(const base::DictionaryValue& dict,
-                                       const std::string& category,
                                        ErrorPtr* error) {
   base::DictionaryValue::Iterator iter(dict);
   while (!iter.IsAtEnd()) {
@@ -199,26 +198,16 @@ bool StateManager::LoadStateDefinition(const base::DictionaryValue& dict,
       return false;
     iter.Advance();
   }
-  if (category != kDefaultCategory)
-    categories_.insert(category);
 
   return true;
 }
 
 bool StateManager::LoadStateDefinition(const std::string& json,
-                                       const std::string& category,
                                        ErrorPtr* error) {
   std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
   if (!dict)
     return false;
-  if (category == kDefaultCategory) {
-    Error::AddToPrintf(error, FROM_HERE, errors::kErrorDomain,
-                       errors::kInvalidCategoryError,
-                       "Invalid state category: '%s'", category.c_str());
-    return false;
-  }
-
-  if (!LoadStateDefinition(*dict, category, error)) {
+  if (!LoadStateDefinition(*dict, error)) {
     Error::AddToPrintf(error, FROM_HERE, errors::kErrorDomain,
                        errors::kSchemaError,
                        "Failed to load state definition: '%s'", json.c_str());
@@ -232,7 +221,7 @@ bool StateManager::LoadBaseStateDefinition(const std::string& json,
   std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
   if (!dict)
     return false;
-  if (!LoadStateDefinition(*dict, kDefaultCategory, error)) {
+  if (!LoadStateDefinition(*dict, error)) {
     Error::AddToPrintf(
         error, FROM_HERE, errors::kErrorDomain, errors::kSchemaError,
         "Failed to load base state definition: '%s'", json.c_str());

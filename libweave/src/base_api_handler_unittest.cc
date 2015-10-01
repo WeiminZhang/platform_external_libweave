@@ -53,8 +53,8 @@ class BaseApiHandlerTest : public ::testing::Test {
         'localPairingEnabled': false
       }
     })");
-    ASSERT_TRUE(state_manager_->LoadStateDefinition(*state_definition, "base",
-                                                    nullptr));
+    ASSERT_TRUE(
+        state_manager_->LoadStateDefinition(*state_definition, nullptr));
     ASSERT_TRUE(state_manager_->LoadStateDefaults(*state_defaults, nullptr));
     std::unique_ptr<Config> config{new Config{&config_store_}};
     config->Load();
