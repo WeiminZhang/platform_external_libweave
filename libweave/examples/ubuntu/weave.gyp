@@ -30,6 +30,7 @@
         'avahi_client.cc',
         'bluez_client.cc',
         'curl_http_client.cc',
+        'event_http_client.cc',
         'event_http_server.cc',
         'event_task_runner.cc',
         'file_config_store.cc',
