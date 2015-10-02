@@ -23,25 +23,23 @@ class Manager;
 
 class DeviceManager final : public Device {
  public:
-  DeviceManager();
+  DeviceManager(provider::ConfigStore* config_store,
+                provider::TaskRunner* task_runner,
+                provider::HttpClient* http_client,
+                provider::Network* network,
+                provider::DnsServiceDiscovery* dns_sd,
+                provider::HttpServer* http_server,
+                provider::Wifi* wifi,
+                provider::Bluetooth* bluetooth);
   ~DeviceManager() override;
 
   // Device implementation.
-  void Start(provider::ConfigStore* config_store,
-             provider::TaskRunner* task_runner,
-             provider::HttpClient* http_client,
-             provider::Network* network,
-             provider::DnsServiceDiscovery* dns_sd,
-             provider::HttpServer* http_server,
-             provider::Wifi* wifi,
-             provider::Bluetooth* bluetooth) override;
   const Settings& GetSettings() override;
   void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) override;
   Commands* GetCommands() override;
   State* GetState() override;
-  std::string RegisterDevice(const std::string& ticket_id,
-                             ErrorPtr* error) override;
+  std::string Register(const std::string& ticket_id, ErrorPtr* error) override;
 
   GcdState GetGcdState() const override;
   void AddGcdStateChangedCallback(

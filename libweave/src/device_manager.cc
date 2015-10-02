@@ -25,18 +25,14 @@ const size_t kMaxStateChangeQueueSize = 100;
 
 }  // namespace
 
-DeviceManager::DeviceManager() {}
-
-DeviceManager::~DeviceManager() {}
-
-void DeviceManager::Start(provider::ConfigStore* config_store,
-                          provider::TaskRunner* task_runner,
-                          provider::HttpClient* http_client,
-                          provider::Network* network,
-                          provider::DnsServiceDiscovery* dns_sd,
-                          provider::HttpServer* http_server,
-                          provider::Wifi* wifi,
-                          provider::Bluetooth* bluetooth) {
+DeviceManager::DeviceManager(provider::ConfigStore* config_store,
+                             provider::TaskRunner* task_runner,
+                             provider::HttpClient* http_client,
+                             provider::Network* network,
+                             provider::DnsServiceDiscovery* dns_sd,
+                             provider::HttpServer* http_server,
+                             provider::Wifi* wifi,
+                             provider::Bluetooth* bluetooth) {
   command_manager_ = std::make_shared<CommandManager>();
   command_manager_->Startup(config_store);
   state_change_queue_.reset(new StateChangeQueue(kMaxStateChangeQueueSize));
@@ -62,6 +58,8 @@ void DeviceManager::Start(provider::ConfigStore* config_store,
     CHECK(!dns_sd);
   }
 }
+
+DeviceManager::~DeviceManager() {}
 
 const Settings& DeviceManager::GetSettings() {
   return device_info_->GetSettings();
@@ -117,8 +115,17 @@ void DeviceManager::AddPairingChangedCallbacks(
     privet_->AddOnPairingChangedCallbacks(begin_callback, end_callback);
 }
 
-std::unique_ptr<Device> Device::Create() {
-  return std::unique_ptr<Device>{new DeviceManager};
+std::unique_ptr<Device> Device::Create(provider::ConfigStore* config_store,
+                                       provider::TaskRunner* task_runner,
+                                       provider::HttpClient* http_client,
+                                       provider::Network* network,
+                                       provider::DnsServiceDiscovery* dns_sd,
+                                       provider::HttpServer* http_server,
+                                       provider::Wifi* wifi,
+                                       provider::Bluetooth* bluetooth) {
+  return std::unique_ptr<Device>{
+      new DeviceManager{config_store, task_runner, http_client, network, dns_sd,
+                        http_server, wifi, bluetooth}};
 }
 
 }  // namespace weave

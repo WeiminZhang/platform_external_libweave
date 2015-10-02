@@ -104,8 +104,7 @@ int main(int argc, char** argv) {
   weave::examples::HttpServerImpl http_server{&task_runner};
   weave::examples::BluetoothImpl bluetooth;
 
-  auto device = weave::Device::Create();
-  device->Start(
+  auto device = weave::Device::Create(
       &config_store, &task_runner, &http_client, &network, &dns_sd,
       &http_server,
       weave::examples::NetworkImpl::HasWifiCapability() ? &network : nullptr,
