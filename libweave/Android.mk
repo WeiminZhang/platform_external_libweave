@@ -90,7 +90,6 @@ LOCAL_SRC_FILES := \
 	src/commands/prop_values.cc \
 	src/commands/schema_constants.cc \
 	src/commands/schema_utils.cc \
-	src/commands/user_role.cc \
 	src/config.cc \
 	src/data_encoding.cc \
 	src/device_manager.cc \
