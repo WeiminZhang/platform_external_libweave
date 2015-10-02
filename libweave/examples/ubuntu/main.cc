@@ -52,9 +52,9 @@ class CommandHandler {
       base::DictionaryValue state;
       state.SetIntegerWithoutPathExpansion("_greeter._greetings_counter",
                                            ++counter_);
-      device_->GetState()->SetProperties(state, nullptr);
+      device_->SetStateProperties(state, nullptr);
 
-      LOG(INFO) << "New state: " << *device_->GetState()->GetState();
+      LOG(INFO) << "New state: " << *device_->GetState();
 
       cmd->Done();
     } else {

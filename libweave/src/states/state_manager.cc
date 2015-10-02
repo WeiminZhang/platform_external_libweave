@@ -49,7 +49,7 @@ StateManager::StateManager(StateChangeQueueInterface* state_change_queue)
 
 StateManager::~StateManager() {}
 
-void StateManager::AddStateChangedCallback(const base::Closure& callback) {
+void StateManager::AddChangedCallback(const base::Closure& callback) {
   on_changed_.push_back(callback);
   callback.Run();  // Force to read current state.
 }
@@ -102,21 +102,24 @@ bool StateManager::SetProperties(const base::DictionaryValue& property_set,
   return all_success;
 }
 
-bool StateManager::SetStateProperty(const std::string& name,
-                                    const base::Value& value,
-                                    ErrorPtr* error) {
-  return SetPropertyValue(name, value, base::Time::Now(), error);
+bool StateManager::SetProperty(const std::string& name,
+                               const base::Value& value,
+                               ErrorPtr* error) {
+  bool result = SetPropertyValue(name, value, base::Time::Now(), error);
+  for (const auto& cb : on_changed_)
+    cb.Run();
+  return result;
 }
 
-std::unique_ptr<base::Value> StateManager::GetStateProperty(
-    const std::string& name) {
+std::unique_ptr<base::Value> StateManager::GetProperty(
+    const std::string& name) const {
   auto parts = SplitAtFirst(name, ".", true);
   const std::string& package_name = parts.first;
   const std::string& property_name = parts.second;
   if (package_name.empty() || property_name.empty())
     return nullptr;
 
-  StatePackage* package = FindPackage(package_name);
+  const StatePackage* package = FindPackage(package_name);
   if (!package)
     return nullptr;
 
@@ -285,6 +288,12 @@ bool StateManager::LoadStateDefaults(const std::string& json, ErrorPtr* error) {
 }
 
 StatePackage* StateManager::FindPackage(const std::string& package_name) {
+  auto it = packages_.find(package_name);
+  return (it != packages_.end()) ? it->second.get() : nullptr;
+}
+
+const StatePackage* StateManager::FindPackage(
+    const std::string& package_name) const {
   auto it = packages_.find(package_name);
   return (it != packages_.end()) ? it->second.get() : nullptr;
 }

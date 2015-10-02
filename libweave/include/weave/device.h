@@ -19,7 +19,6 @@
 #include <weave/provider/network.h>
 #include <weave/provider/task_runner.h>
 #include <weave/provider/wifi.h>
-#include <weave/state.h>
 
 namespace weave {
 
@@ -46,7 +45,27 @@ class Device {
       const SettingsChangedCallback& callback) = 0;
 
   virtual Commands* GetCommands() = 0;
-  virtual State* GetState() = 0;
+
+  // Sets callback which is called when stat is changed.
+  virtual void AddStateChangedCallback(const base::Closure& callback) = 0;
+
+  // Returns value of the single property.
+  // |name| is full property name, including package name. e.g. "base.network".
+  virtual std::unique_ptr<base::Value> GetStateProperty(
+      const std::string& name) const = 0;
+
+  // Sets value of the single property.
+  // |name| is full property name, including package name. e.g. "base.network".
+  virtual bool SetStateProperty(const std::string& name,
+                                const base::Value& value,
+                                ErrorPtr* error) = 0;
+
+  // Updates a multiple property values.
+  virtual bool SetStateProperties(const base::DictionaryValue& property_set,
+                                  ErrorPtr* error) = 0;
+
+  // Returns aggregated state properties across all registered packages.
+  virtual std::unique_ptr<base::DictionaryValue> GetState() const = 0;
 
   // Returns current state of GCD connection.
   virtual GcdState GetGcdState() const = 0;
