@@ -134,7 +134,7 @@ MATCHER_P(MatchTxt, txt, "") {
 
 class WeaveTest : public ::testing::Test {
  protected:
-  void SetUp() override { device_ = weave::Device::Create(); }
+  void SetUp() override {}
 
   void ExpectRequest(const std::string& method,
                      const std::string& url,
@@ -235,8 +235,9 @@ class WeaveTest : public ::testing::Test {
   }
 
   void StartDevice() {
-    device_->Start(&config_store_, &task_runner_, &http_client_, &network_,
-                   &dns_sd_, &http_server_, &wifi_, &bluetooth_);
+    device_ = weave::Device::Create(&config_store_, &task_runner_,
+                                    &http_client_, &network_, &dns_sd_,
+                                    &http_server_, &wifi_, &bluetooth_);
 
     for (const auto& cb : http_server_changed_cb_)
       cb.Run(http_server_);
@@ -270,14 +271,10 @@ class WeaveTest : public ::testing::Test {
   std::unique_ptr<weave::Device> device_;
 };
 
-TEST_F(WeaveTest, Create) {
-  ASSERT_TRUE(device_.get());
-}
-
 TEST_F(WeaveTest, StartMinimal) {
   InitConfigStore();
-  device_->Start(&config_store_, &task_runner_, &http_client_, &network_,
-                 nullptr, nullptr, &wifi_, nullptr);
+  device_ = weave::Device::Create(&config_store_, &task_runner_, &http_client_,
+                                  &network_, nullptr, nullptr, &wifi_, nullptr);
 }
 
 TEST_F(WeaveTest, StartNoWifi) {
@@ -287,8 +284,9 @@ TEST_F(WeaveTest, StartNoWifi) {
   InitDnsSd();
   InitDnsSdPublishing(false, "CB");
 
-  device_->Start(&config_store_, &task_runner_, &http_client_, &network_,
-                 &dns_sd_, &http_server_, nullptr, &bluetooth_);
+  device_ = weave::Device::Create(&config_store_, &task_runner_, &http_client_,
+                                  &network_, &dns_sd_, &http_server_, nullptr,
+                                  &bluetooth_);
 
   for (const auto& cb : http_server_changed_cb_)
     cb.Run(http_server_);
@@ -336,7 +334,7 @@ TEST_F(WeaveBasicTest, Register) {
 
   InitDnsSdPublishing(true, "DB");
 
-  EXPECT_EQ("CLOUD_ID", device_->RegisterDevice("TICKET_ID", nullptr));
+  EXPECT_EQ("CLOUD_ID", device_->Register("TICKET_ID", nullptr));
 }
 
 class WeaveWiFiSetupTest : public WeaveTest {

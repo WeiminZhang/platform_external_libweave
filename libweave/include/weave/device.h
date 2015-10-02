@@ -35,15 +35,6 @@ class Device {
  public:
   virtual ~Device() = default;
 
-  virtual void Start(provider::ConfigStore* config_store,
-                     provider::TaskRunner* task_runner,
-                     provider::HttpClient* http_client,
-                     provider::Network* network,
-                     provider::DnsServiceDiscovery* dns_sd,
-                     provider::HttpServer* http_server,
-                     provider::Wifi* wifi,
-                     provider::Bluetooth* bluetooth_provider) = 0;
-
   // Returns reference the current settings.
   virtual const Settings& GetSettings() = 0;
 
@@ -84,7 +75,15 @@ class Device {
       const PairingBeginCallback& begin_callback,
       const PairingEndCallback& end_callback) = 0;
 
-  LIBWEAVE_EXPORT static std::unique_ptr<Device> Create();
+  LIBWEAVE_EXPORT static std::unique_ptr<Device> Create(
+      provider::ConfigStore* config_store,
+      provider::TaskRunner* task_runner,
+      provider::HttpClient* http_client,
+      provider::Network* network,
+      provider::DnsServiceDiscovery* dns_sd,
+      provider::HttpServer* http_server,
+      provider::Wifi* wifi,
+      provider::Bluetooth* bluetooth_provider);
 };
 
 }  // namespace weave
