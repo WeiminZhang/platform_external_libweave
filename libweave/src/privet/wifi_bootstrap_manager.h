@@ -14,7 +14,6 @@
 #include <base/memory/weak_ptr.h>
 #include <base/scoped_observer.h>
 #include <base/time/time.h>
-#include <weave/privet.h>
 
 #include "src/privet/privet_types.h"
 #include "src/privet/wifi_delegate.h"
