@@ -17,7 +17,6 @@ namespace privet {
 enum class CryptoType {
   kNone,
   kSpake_p224,
-  kSpake_p256,
 };
 
 enum class WifiType {

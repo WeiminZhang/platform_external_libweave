@@ -24,8 +24,6 @@ using provider::Network;
 const EnumToStringMap<PairingType>::Map kPairingTypeMap[] = {
     {PairingType::kPinCode, "pinCode"},
     {PairingType::kEmbeddedCode, "embeddedCode"},
-    {PairingType::kUltrasound32, "ultrasound32"},
-    {PairingType::kAudible32, "audible32"},
 };
 
 const EnumToStringMap<ConnectionState::Status>::Map kConnectionStateMap[] = {
@@ -50,7 +48,6 @@ const EnumToStringMap<WifiType>::Map kWifiTypeMap[] = {
 const EnumToStringMap<CryptoType>::Map kCryptoTypeMap[] = {
     {CryptoType::kNone, "none"},
     {CryptoType::kSpake_p224, "p224_spake2"},
-    {CryptoType::kSpake_p256, "p256_spake2"},
 };
 
 const EnumToStringMap<AuthScope>::Map kAuthScopeMap[] = {
@@ -58,13 +55,6 @@ const EnumToStringMap<AuthScope>::Map kAuthScopeMap[] = {
     {AuthScope::kViewer, "viewer"},
     {AuthScope::kUser, "user"},
     {AuthScope::kOwner, "owner"},
-};
-
-const EnumToStringMap<WifiSetupState>::Map kWifiSetupStateMap[] = {
-    {WifiSetupState::kDisabled, "disabled"},
-    {WifiSetupState::kBootstrapping, "waiting"},
-    {WifiSetupState::kMonitoring, "monitoring"},
-    {WifiSetupState::kConnecting, "connecting"},
 };
 
 const EnumToStringMap<Network::State>::Map kNetworkStateMap[] = {
@@ -99,10 +89,6 @@ LIBWEAVE_EXPORT EnumToStringMap<CryptoType>::EnumToStringMap()
 template <>
 LIBWEAVE_EXPORT EnumToStringMap<AuthScope>::EnumToStringMap()
     : EnumToStringMap(kAuthScopeMap) {}
-
-template <>
-LIBWEAVE_EXPORT EnumToStringMap<WifiSetupState>::EnumToStringMap()
-    : EnumToStringMap(kWifiSetupStateMap) {}
 
 template <>
 LIBWEAVE_EXPORT EnumToStringMap<Network::State>::EnumToStringMap()

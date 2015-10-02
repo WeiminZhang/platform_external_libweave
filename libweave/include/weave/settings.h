@@ -9,7 +9,6 @@
 #include <string>
 
 #include <base/time/time.h>
-#include <weave/privet.h>
 
 namespace weave {
 
@@ -19,6 +18,12 @@ enum class AuthScope {
   kViewer,
   kUser,
   kOwner,
+};
+
+// Type client-device pairing.
+enum class PairingType {
+  kPinCode,
+  kEmbeddedCode,
 };
 
 struct Settings {

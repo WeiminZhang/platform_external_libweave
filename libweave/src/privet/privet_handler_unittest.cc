@@ -313,13 +313,10 @@ TEST_F(PrivetHandlerTest, Info) {
       ],
       'pairing': [
         'pinCode',
-        'embeddedCode',
-        'ultrasound32',
-        'audible32'
+        'embeddedCode'
       ],
       'crypto': [
-        'p224_spake2',
-        'p256_spake2'
+        'p224_spake2'
       ]
     },
     'wifi': {
@@ -346,7 +343,7 @@ TEST_F(PrivetHandlerTest, PairingStartInvalidParams) {
 
   EXPECT_PRED2(IsEqualError, CodeWithReason(400, "invalidParams"),
                HandleRequest("/privet/v3/pairing/start",
-                             "{'pairing':'code','crypto':'p256_spake2'}"));
+                             "{'pairing':'code','crypto':'p224_spake2'}"));
 }
 
 TEST_F(PrivetHandlerTest, PairingStart) {
@@ -354,7 +351,7 @@ TEST_F(PrivetHandlerTest, PairingStart) {
       IsEqualJson,
       "{'deviceCommitment': 'testCommitment', 'sessionId': 'testSession'}",
       HandleRequest("/privet/v3/pairing/start",
-                    "{'pairing': 'embeddedCode', 'crypto': 'p256_spake2'}"));
+                    "{'pairing': 'embeddedCode', 'crypto': 'p224_spake2'}"));
 }
 
 TEST_F(PrivetHandlerTest, PairingConfirm) {
