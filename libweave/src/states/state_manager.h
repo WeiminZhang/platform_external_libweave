@@ -40,7 +40,7 @@ class StateManager final : public State {
   ~StateManager() override;
 
   // State overrides.
-  void AddOnChangedCallback(const base::Closure& callback) override;
+  void AddStateChangedCallback(const base::Closure& callback) override;
   bool SetProperties(const base::DictionaryValue& property_set,
                      ErrorPtr* error) override;
   std::unique_ptr<base::Value> GetStateProperty(

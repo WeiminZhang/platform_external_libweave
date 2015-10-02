@@ -49,7 +49,7 @@ StateManager::StateManager(StateChangeQueueInterface* state_change_queue)
 
 StateManager::~StateManager() {}
 
-void StateManager::AddOnChangedCallback(const base::Closure& callback) {
+void StateManager::AddStateChangedCallback(const base::Closure& callback) {
   on_changed_.push_back(callback);
   callback.Run();  // Force to read current state.
 }

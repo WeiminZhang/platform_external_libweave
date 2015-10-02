@@ -13,7 +13,7 @@ namespace weave {
 class State {
  public:
   // Sets callback which is called when stat is changed.
-  virtual void AddOnChangedCallback(const base::Closure& callback) = 0;
+  virtual void AddStateChangedCallback(const base::Closure& callback) = 0;
 
   // Returns value of the single property.
   // |name| is full property name, including package name. e.g. "base.network".

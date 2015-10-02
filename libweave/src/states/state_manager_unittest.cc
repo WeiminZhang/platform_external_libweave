@@ -65,7 +65,7 @@ class StateManagerTest : public ::testing::Test {
     mgr_.reset(new StateManager(&mock_state_change_queue_));
 
     EXPECT_CALL(*this, OnStateChanged()).Times(1);
-    mgr_->AddOnChangedCallback(
+    mgr_->AddStateChangedCallback(
         base::Bind(&StateManagerTest::OnStateChanged, base::Unretained(this)));
 
     LoadStateDefinition(GetTestSchema().get(), "default", nullptr);
