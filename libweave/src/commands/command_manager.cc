@@ -49,7 +49,7 @@ const char kBaseCommandDefs[] = R"({
   }
 })";
 
-}
+}  // namespace
 
 CommandManager::CommandManager() {}
 
