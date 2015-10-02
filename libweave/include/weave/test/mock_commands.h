@@ -20,7 +20,7 @@ class MockCommands : public Commands {
 
   MOCK_METHOD1(AddOnCommandAddedCallback, void(const OnCommandCallback&));
   MOCK_METHOD1(AddOnCommandRemovedCallback, void(const OnCommandCallback&));
-  MOCK_METHOD4(AddCommand,
+  MOCK_METHOD3(AddCommand,
                bool(const base::DictionaryValue&, std::string*, ErrorPtr*));
   MOCK_METHOD1(FindCommand, Command*(const std::string&));
 };

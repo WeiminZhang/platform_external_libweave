@@ -14,6 +14,7 @@
 #include <weave/provider/test/mock_http_server.h>
 #include <weave/provider/test/mock_network.h>
 #include <weave/provider/test/mock_wifi.h>
+#include <weave/test/mock_commands.h>
 #include <weave/test/unittest_utils.h>
 
 #include "src/bind_lambda.h"
