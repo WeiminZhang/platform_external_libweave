@@ -43,7 +43,12 @@ class StateManager final : public State {
   void AddOnChangedCallback(const base::Closure& callback) override;
   bool SetProperties(const base::DictionaryValue& property_set,
                      ErrorPtr* error) override;
-  std::unique_ptr<base::DictionaryValue> GetStateValuesAsJson() const override;
+  std::unique_ptr<base::Value> GetStateProperty(
+      const std::string& name) override;
+  bool SetStateProperty(const std::string& name,
+                        const base::Value& value,
+                        ErrorPtr* error) override;
+  std::unique_ptr<base::DictionaryValue> GetState() const override;
 
   // Initializes the state manager and load device state fragments.
   // Called by Buffet daemon at startup.

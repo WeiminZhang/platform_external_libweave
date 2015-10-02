@@ -54,8 +54,7 @@ class CommandHandler {
                                            ++counter_);
       device_->GetState()->SetProperties(state, nullptr);
 
-      LOG(INFO) << "New state: "
-                << *device_->GetState()->GetStateValuesAsJson();
+      LOG(INFO) << "New state: " << *device_->GetState()->GetState();
 
       cmd->Done();
     } else {

@@ -485,8 +485,7 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
   if (!commands)
     return nullptr;
 
-  std::unique_ptr<base::DictionaryValue> state =
-      state_manager_->GetStateValuesAsJson();
+  std::unique_ptr<base::DictionaryValue> state = state_manager_->GetState();
   CHECK(state);
 
   std::unique_ptr<base::DictionaryValue> resource{new base::DictionaryValue};
