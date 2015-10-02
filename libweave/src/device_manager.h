@@ -38,7 +38,17 @@ class DeviceManager final : public Device {
   void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) override;
   Commands* GetCommands() override;
-  State* GetState() override;
+
+  void AddStateChangedCallback(const base::Closure& callback) override;
+  bool SetStateProperties(const base::DictionaryValue& property_set,
+                          ErrorPtr* error) override;
+  std::unique_ptr<base::Value> GetStateProperty(
+      const std::string& name) const override;
+  bool SetStateProperty(const std::string& name,
+                        const base::Value& value,
+                        ErrorPtr* error) override;
+  std::unique_ptr<base::DictionaryValue> GetState() const override;
+
   std::string Register(const std::string& ticket_id, ErrorPtr* error) override;
 
   GcdState GetGcdState() const override;

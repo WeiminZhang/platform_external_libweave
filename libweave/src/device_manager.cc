@@ -72,10 +72,6 @@ Commands* DeviceManager::GetCommands() {
   return command_manager_.get();
 }
 
-State* DeviceManager::GetState() {
-  return state_manager_.get();
-}
-
 Config* DeviceManager::GetConfig() {
   return device_info_->GetMutableConfig();
 }
@@ -99,6 +95,31 @@ GcdState DeviceManager::GetGcdState() const {
 void DeviceManager::AddGcdStateChangedCallback(
     const GcdStateChangedCallback& callback) {
   device_info_->AddGcdStateChangedCallback(callback);
+}
+
+void DeviceManager::AddStateChangedCallback(const base::Closure& callback) {
+  state_manager_->AddChangedCallback(callback);
+}
+
+bool DeviceManager::SetStateProperties(
+    const base::DictionaryValue& property_set,
+    ErrorPtr* error) {
+  return state_manager_->SetProperties(property_set, error);
+}
+
+std::unique_ptr<base::Value> DeviceManager::GetStateProperty(
+    const std::string& name) const {
+  return state_manager_->GetProperty(name);
+}
+
+bool DeviceManager::SetStateProperty(const std::string& name,
+                                     const base::Value& value,
+                                     ErrorPtr* error) {
+  return state_manager_->SetProperty(name, value, error);
+}
+
+std::unique_ptr<base::DictionaryValue> DeviceManager::GetState() const {
+  return state_manager_->GetState();
 }
 
 std::string DeviceManager::Register(const std::string& ticket_id,

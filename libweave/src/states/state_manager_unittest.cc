@@ -65,7 +65,7 @@ class StateManagerTest : public ::testing::Test {
     mgr_.reset(new StateManager(&mock_state_change_queue_));
 
     EXPECT_CALL(*this, OnStateChanged()).Times(1);
-    mgr_->AddStateChangedCallback(
+    mgr_->AddChangedCallback(
         base::Bind(&StateManagerTest::OnStateChanged, base::Unretained(this)));
 
     LoadStateDefinition(GetTestSchema().get(), "default", nullptr);
@@ -263,10 +263,10 @@ TEST_F(StateManagerTest, SetProperties) {
 }
 
 TEST_F(StateManagerTest, GetProperty) {
-  EXPECT_JSON_EQ("'Test Model'", *mgr_->GetStateProperty("base.serialNumber"));
-  EXPECT_JSON_EQ("''", *mgr_->GetStateProperty("device.state_property"));
-  EXPECT_EQ(nullptr, mgr_->GetStateProperty("device.unknown"));
-  EXPECT_EQ(nullptr, mgr_->GetStateProperty("unknown.state_property"));
+  EXPECT_JSON_EQ("'Test Model'", *mgr_->GetProperty("base.serialNumber"));
+  EXPECT_JSON_EQ("''", *mgr_->GetProperty("device.state_property"));
+  EXPECT_EQ(nullptr, mgr_->GetProperty("device.unknown"));
+  EXPECT_EQ(nullptr, mgr_->GetProperty("unknown.state_property"));
 }
 
 }  // namespace weave

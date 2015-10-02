@@ -15,7 +15,6 @@
 #include <base/callback.h>
 #include <base/macros.h>
 #include <weave/error.h>
-#include <weave/state.h>
 
 #include "src/states/state_change_queue_interface.h"
 #include "src/states/state_package.h"
@@ -34,21 +33,19 @@ class ConfigStore;
 // StateManager is the class that aggregates the device state fragments
 // provided by device daemons and makes the aggregate device state available
 // to the GCD cloud server and local clients.
-class StateManager final : public State {
+class StateManager final {
  public:
   explicit StateManager(StateChangeQueueInterface* state_change_queue);
-  ~StateManager() override;
+  ~StateManager();
 
-  // State overrides.
-  void AddStateChangedCallback(const base::Closure& callback) override;
+  void AddChangedCallback(const base::Closure& callback);
   bool SetProperties(const base::DictionaryValue& property_set,
-                     ErrorPtr* error) override;
-  std::unique_ptr<base::Value> GetStateProperty(
-      const std::string& name) override;
-  bool SetStateProperty(const std::string& name,
-                        const base::Value& value,
-                        ErrorPtr* error) override;
-  std::unique_ptr<base::DictionaryValue> GetState() const override;
+                     ErrorPtr* error);
+  std::unique_ptr<base::Value> GetProperty(const std::string& name) const;
+  bool SetProperty(const std::string& name,
+                   const base::Value& value,
+                   ErrorPtr* error);
+  std::unique_ptr<base::DictionaryValue> GetState() const;
 
   // Initializes the state manager and load device state fragments.
   // Called by Buffet daemon at startup.
@@ -108,6 +105,7 @@ class StateManager final : public State {
 
   // Finds a package by its name. Returns nullptr if not found.
   StatePackage* FindPackage(const std::string& package_name);
+  const StatePackage* FindPackage(const std::string& package_name) const;
   // Finds a package by its name. If none exists, one will be created.
   StatePackage* FindOrCreatePackage(const std::string& package_name);
 
