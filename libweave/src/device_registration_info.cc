@@ -243,7 +243,7 @@ DeviceRegistrationInfo::DeviceRegistrationInfo(
   command_manager_->AddOnCommandDefChanged(
       base::Bind(&DeviceRegistrationInfo::OnCommandDefsChanged,
                  weak_factory_.GetWeakPtr()));
-  state_manager_->AddOnChangedCallback(base::Bind(
+  state_manager_->AddStateChangedCallback(base::Bind(
       &DeviceRegistrationInfo::OnStateChanged, weak_factory_.GetWeakPtr()));
 }
 
