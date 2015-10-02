@@ -113,6 +113,12 @@ void CommandManager::AddCommand(
 }
 
 bool CommandManager::AddCommand(const base::DictionaryValue& command,
+                                std::string* id,
+                                ErrorPtr* error) {
+  return AddCommand(command, UserRole::kOwner, id, error);
+}
+
+bool CommandManager::AddCommand(const base::DictionaryValue& command,
                                 UserRole role,
                                 std::string* id,
                                 ErrorPtr* error) {

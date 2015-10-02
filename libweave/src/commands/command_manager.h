@@ -36,7 +36,6 @@ class CommandManager final : public Commands {
 
   // Commands overrides.
   bool AddCommand(const base::DictionaryValue& command,
-                  UserRole role,
                   std::string* id,
                   ErrorPtr* error) override;
   CommandInstance* FindCommand(const std::string& id) override;
@@ -90,6 +89,11 @@ class CommandManager final : public Commands {
   bool SetCommandVisibility(const std::vector<std::string>& command_names,
                             CommandDefinition::Visibility visibility,
                             ErrorPtr* error);
+
+  bool AddCommand(const base::DictionaryValue& command,
+                  UserRole role,
+                  std::string* id,
+                  ErrorPtr* error);
 
  private:
   CommandDictionary base_dictionary_;  // Base/std command definitions/schemas.

@@ -7,11 +7,26 @@
 #include <vector>
 
 #include <weave/error.h>
+#include <weave/enum_to_string.h>
 
 #include "src/commands/schema_constants.h"
 #include "src/string_utils.h"
 
 namespace weave {
+
+namespace {
+
+const EnumToStringMap<UserRole>::Map kMap[] = {
+    {UserRole::kViewer, commands::attributes::kCommand_Role_Viewer},
+    {UserRole::kUser, commands::attributes::kCommand_Role_User},
+    {UserRole::kOwner, commands::attributes::kCommand_Role_Owner},
+    {UserRole::kManager, commands::attributes::kCommand_Role_Manager},
+};
+}
+
+template <>
+LIBWEAVE_EXPORT EnumToStringMap<UserRole>::EnumToStringMap()
+    : EnumToStringMap(kMap) {}
 
 bool CommandDefinition::Visibility::FromString(const std::string& str,
                                                ErrorPtr* error) {

@@ -15,6 +15,13 @@
 
 namespace weave {
 
+enum class UserRole {
+  kViewer,
+  kUser,
+  kManager,
+  kOwner,
+};
+
 // A simple GCD command definition. This class contains the command category
 // and a full object schema describing the command parameter types and
 // constraints. See comments for CommandDefinitions::LoadCommands for the
