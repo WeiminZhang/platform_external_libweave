@@ -37,7 +37,12 @@ class DeviceDelegate;
 
 class WifiBootstrapManager : public WifiDelegate {
  public:
-  using State = WifiSetupState;
+  enum class State {
+    kDisabled,
+    kBootstrapping,
+    kMonitoring,
+    kConnecting,
+  };
 
   WifiBootstrapManager(Config* config,
                        provider::TaskRunner* task_runner,

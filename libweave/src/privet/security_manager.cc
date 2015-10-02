@@ -218,11 +218,6 @@ bool SecurityManager::StartPairing(PairingType mode,
       CHECK(!embedded_code_.empty());
       code = embedded_code_;
       break;
-    case PairingType::kUltrasound32:
-    case PairingType::kAudible32: {
-      code = base::RandBytesAsString(4);
-      break;
-    }
     case PairingType::kPinCode:
       code = base::StringPrintf("%04i", base::RandInt(0, 9999));
       break;

@@ -89,12 +89,11 @@ class MockSecurityDelegate : public SecurityDelegate {
     EXPECT_CALL(*this, GetPairingTypes())
         .WillRepeatedly(Return(std::set<PairingType>{
             PairingType::kPinCode, PairingType::kEmbeddedCode,
-            PairingType::kUltrasound32, PairingType::kAudible32,
         }));
 
     EXPECT_CALL(*this, GetCryptoTypes())
         .WillRepeatedly(Return(std::set<CryptoType>{
-            CryptoType::kSpake_p224, CryptoType::kSpake_p256,
+            CryptoType::kSpake_p224,
         }));
 
     EXPECT_CALL(*this, StartPairing(_, _, _, _, _))

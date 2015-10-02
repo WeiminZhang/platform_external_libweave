@@ -18,6 +18,16 @@
 namespace weave {
 namespace privet {
 
+namespace {
+
+const EnumToStringMap<WifiBootstrapManager::State>::Map kWifiSetupStateMap[] = {
+    {WifiBootstrapManager::State::kDisabled, "disabled"},
+    {WifiBootstrapManager::State::kBootstrapping, "waiting"},
+    {WifiBootstrapManager::State::kMonitoring, "monitoring"},
+    {WifiBootstrapManager::State::kConnecting, "connecting"},
+};
+}
+
 using provider::Network;
 
 WifiBootstrapManager::WifiBootstrapManager(Config* config,
@@ -259,4 +269,10 @@ void WifiBootstrapManager::UpdateConnectionState() {
 }
 
 }  // namespace privet
+
+template <>
+LIBWEAVE_EXPORT
+EnumToStringMap<privet::WifiBootstrapManager::State>::EnumToStringMap()
+    : EnumToStringMap(privet::kWifiSetupStateMap) {}
+
 }  // namespace weave

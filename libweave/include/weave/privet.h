@@ -9,26 +9,12 @@
 #include <vector>
 
 #include <base/callback.h>
+#include <weave/settings.h>
 
 namespace weave {
 
-enum class PairingType {
-  kPinCode,
-  kEmbeddedCode,
-  kUltrasound32,
-  kAudible32,
-};
-
-enum class WifiSetupState {
-  kDisabled,
-  kBootstrapping,
-  kMonitoring,
-  kConnecting,
-};
-
 class Privet {
  public:
-  using OnWifiSetupChangedCallback = base::Callback<void(WifiSetupState state)>;
   using OnPairingStartedCallback =
       base::Callback<void(const std::string& session_id,
                           PairingType pairing_type,
