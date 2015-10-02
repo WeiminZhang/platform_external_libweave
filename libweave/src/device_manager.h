@@ -40,7 +40,13 @@ class DeviceManager final : public Device {
       const SettingsChangedCallback& callback) override;
   Commands* GetCommands() override;
   State* GetState() override;
-  Cloud* GetCloud() override;
+  std::string RegisterDevice(const std::string& ticket_id,
+                             ErrorPtr* error) override;
+
+  GcdState GetGcdState() const override;
+  void AddGcdStateChangedCallback(
+      const GcdStateChangedCallback& callback) override;
+
   void AddPairingChangedCallbacks(
       const PairingBeginCallback& begin_callback,
       const PairingEndCallback& end_callback) override;

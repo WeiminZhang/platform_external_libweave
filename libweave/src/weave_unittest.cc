@@ -238,9 +238,6 @@ class WeaveTest : public ::testing::Test {
     device_->Start(&config_store_, &task_runner_, &http_client_, &network_,
                    &dns_sd_, &http_server_, &wifi_, &bluetooth_);
 
-    cloud_ = device_->GetCloud();
-    ASSERT_TRUE(cloud_);
-
     for (const auto& cb : http_server_changed_cb_)
       cb.Run(http_server_);
 
@@ -269,8 +266,6 @@ class WeaveTest : public ::testing::Test {
   StrictMock<provider::test::MockBluetooth> bluetooth_;
 
   std::vector<provider::Network::ConnectionChangedCallback> network_callbacks_;
-
-  weave::Cloud* cloud_{nullptr};
 
   std::unique_ptr<weave::Device> device_;
 };
@@ -341,7 +336,7 @@ TEST_F(WeaveBasicTest, Register) {
 
   InitDnsSdPublishing(true, "DB");
 
-  EXPECT_EQ("CLOUD_ID", cloud_->RegisterDevice("TICKET_ID", nullptr));
+  EXPECT_EQ("CLOUD_ID", device_->RegisterDevice("TICKET_ID", nullptr));
 }
 
 class WeaveWiFiSetupTest : public WeaveTest {

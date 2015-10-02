@@ -15,8 +15,8 @@
 #include <base/macros.h>
 #include <base/memory/weak_ptr.h>
 #include <base/time/time.h>
+#include <weave/device.h>
 #include <weave/error.h>
-#include <weave/cloud.h>
 #include <weave/provider/http_client.h>
 
 #include "src/backoff_entry.h"
@@ -47,8 +47,7 @@ extern const char kErrorDomainGCD[];
 extern const char kErrorDomainGCDServer[];
 
 // The DeviceRegistrationInfo class represents device registration information.
-class DeviceRegistrationInfo : public Cloud,
-                               public NotificationDelegate,
+class DeviceRegistrationInfo : public NotificationDelegate,
                                public CloudCommandUpdateInterface {
  public:
   using CloudRequestCallback =
@@ -63,11 +62,9 @@ class DeviceRegistrationInfo : public Cloud,
 
   ~DeviceRegistrationInfo() override;
 
-  // Cloud overrides.
-  void AddOnRegistrationChangedCallback(
-      const OnRegistrationChangedCallback& callback) override;
-  std::string RegisterDevice(const std::string& ticket_id,
-                             ErrorPtr* error) override;
+  void AddGcdStateChangedCallback(
+      const Device::GcdStateChangedCallback& callback);
+  std::string RegisterDevice(const std::string& ticket_id, ErrorPtr* error);
 
   void UpdateDeviceInfo(const std::string& name,
                         const std::string& description,
@@ -127,6 +124,8 @@ class DeviceRegistrationInfo : public Cloud,
   // TODO(vitalybuka): remove getters and pass config to dependent code.
   const Config::Settings& GetSettings() const { return config_->GetSettings(); }
   Config* GetMutableConfig() { return config_.get(); }
+
+  GcdState GetGcdState() const { return gcd_state_; }
 
  private:
   friend class DeviceRegistrationInfoTest;
@@ -261,7 +260,7 @@ class DeviceRegistrationInfo : public Cloud,
   // for all supported commands and current device state.
   std::unique_ptr<base::DictionaryValue> BuildDeviceResource(ErrorPtr* error);
 
-  void SetRegistrationStatus(RegistrationStatus new_status);
+  void SetGcdState(GcdState new_state);
   void SetDeviceId(const std::string& cloud_id);
 
   // Callback called when command definitions are changed to re-publish new CDD.
@@ -330,10 +329,10 @@ class DeviceRegistrationInfo : public Cloud,
 
   provider::Network* network_{nullptr};
 
-  // Tracks our current registration status.
-  RegistrationStatus registration_status_{RegistrationStatus::kUnconfigured};
+  // Tracks our GCD state.
+  GcdState gcd_state_{GcdState::kUnconfigured};
 
-  std::vector<OnRegistrationChangedCallback> on_registration_changed_;
+  std::vector<Device::GcdStateChangedCallback> gcd_state_changed_callbacks_;
 
   base::WeakPtrFactory<DeviceRegistrationInfo> weak_factory_{this};
   DISALLOW_COPY_AND_ASSIGN(DeviceRegistrationInfo);

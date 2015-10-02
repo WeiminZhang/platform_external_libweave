@@ -180,9 +180,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
 
   void SetAccessToken() { dev_reg_->access_token_ = test_data::kAccessToken; }
 
-  RegistrationStatus GetRegistrationStatus() const {
-    return dev_reg_->registration_status_;
-  }
+  GcdState GetGcdState() const { return dev_reg_->GetGcdState(); }
 
   provider::test::MockConfigStore config_store_;
   StrictMock<MockHttpClient> http_client_;
@@ -256,7 +254,7 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
 
 TEST_F(DeviceRegistrationInfoTest, CheckAuthenticationFailure) {
   ReloadSettings();
-  EXPECT_EQ(RegistrationStatus::kConnecting, GetRegistrationStatus());
+  EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
   EXPECT_CALL(http_client_,
               MockSendRequest(http::kPost, dev_reg_->GetOAuthURL("token"),
@@ -277,12 +275,12 @@ TEST_F(DeviceRegistrationInfoTest, CheckAuthenticationFailure) {
   ErrorPtr error;
   EXPECT_FALSE(RefreshAccessToken(&error));
   EXPECT_TRUE(error->HasError(kErrorDomainOAuth2, "unable_to_authenticate"));
-  EXPECT_EQ(RegistrationStatus::kConnecting, GetRegistrationStatus());
+  EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 }
 
 TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
   ReloadSettings();
-  EXPECT_EQ(RegistrationStatus::kConnecting, GetRegistrationStatus());
+  EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
   EXPECT_CALL(http_client_,
               MockSendRequest(http::kPost, dev_reg_->GetOAuthURL("token"),
@@ -303,7 +301,7 @@ TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
   ErrorPtr error;
   EXPECT_FALSE(RefreshAccessToken(&error));
   EXPECT_TRUE(error->HasError(kErrorDomainOAuth2, "invalid_grant"));
-  EXPECT_EQ(RegistrationStatus::kInvalidCredentials, GetRegistrationStatus());
+  EXPECT_EQ(GcdState::kInvalidCredentials, GetGcdState());
 }
 
 TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
@@ -486,7 +484,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
       dev_reg_->RegisterDevice(test_data::kClaimTicketId, nullptr);
 
   EXPECT_EQ(test_data::kDeviceId, cloud_id);
-  EXPECT_EQ(RegistrationStatus::kConnecting, GetRegistrationStatus());
+  EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
   // Validate the device info saved to storage...
   EXPECT_EQ(test_data::kDeviceId, dev_reg_->GetSettings().cloud_id);
@@ -498,10 +496,10 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
 TEST_F(DeviceRegistrationInfoTest, OOBRegistrationStatus) {
   // After we've been initialized, we should be either offline or
   // unregistered, depending on whether or not we've found credentials.
-  EXPECT_EQ(RegistrationStatus::kUnconfigured, GetRegistrationStatus());
+  EXPECT_EQ(GcdState::kUnconfigured, GetGcdState());
   // Put some credentials into our state, make sure we call that offline.
   ReloadSettings();
-  EXPECT_EQ(RegistrationStatus::kConnecting, GetRegistrationStatus());
+  EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 }
 
 TEST_F(DeviceRegistrationInfoTest, UpdateCommand) {

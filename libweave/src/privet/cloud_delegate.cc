@@ -49,7 +49,7 @@ class CloudDelegateImpl : public CloudDelegate {
         state_manager_{state_manager} {
     device_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
         &CloudDelegateImpl::OnConfigChanged, weak_factory_.GetWeakPtr()));
-    device_->AddOnRegistrationChangedCallback(base::Bind(
+    device_->AddGcdStateChangedCallback(base::Bind(
         &CloudDelegateImpl::OnRegistrationChanged, weak_factory_.GetWeakPtr()));
 
     command_manager_->AddOnCommandDefChanged(base::Bind(
@@ -234,13 +234,13 @@ class CloudDelegateImpl : public CloudDelegate {
 
   void OnConfigChanged(const Settings&) { NotifyOnDeviceInfoChanged(); }
 
-  void OnRegistrationChanged(RegistrationStatus status) {
-    if (status == RegistrationStatus::kUnconfigured) {
+  void OnRegistrationChanged(GcdState status) {
+    if (status == GcdState::kUnconfigured) {
       connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
-    } else if (status == RegistrationStatus::kConnecting) {
+    } else if (status == GcdState::kConnecting) {
       // TODO(vitalybuka): Find conditions for kOffline.
       connection_state_ = ConnectionState{ConnectionState::kConnecting};
-    } else if (status == RegistrationStatus::kConnected) {
+    } else if (status == GcdState::kConnected) {
       connection_state_ = ConnectionState{ConnectionState::kOnline};
     } else {
       ErrorPtr error;

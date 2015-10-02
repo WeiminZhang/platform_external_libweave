@@ -84,10 +84,6 @@ Config* DeviceManager::GetConfig() {
   return device_info_->GetMutableConfig();
 }
 
-Cloud* DeviceManager::GetCloud() {
-  return device_info_.get();
-}
-
 void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
                                 provider::Network* network,
                                 provider::DnsServiceDiscovery* dns_sd,
@@ -98,6 +94,20 @@ void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
   privet_->Start(task_runner, network, dns_sd, http_server, wifi,
                  device_info_.get(), command_manager_.get(),
                  state_manager_.get());
+}
+
+GcdState DeviceManager::GetGcdState() const {
+  return device_info_->GetGcdState();
+}
+
+void DeviceManager::AddGcdStateChangedCallback(
+    const GcdStateChangedCallback& callback) {
+  device_info_->AddGcdStateChangedCallback(callback);
+}
+
+std::string DeviceManager::Register(const std::string& ticket_id,
+                                    ErrorPtr* error) {
+  return device_info_->RegisterDevice(ticket_id, error);
 }
 
 void DeviceManager::AddPairingChangedCallbacks(
