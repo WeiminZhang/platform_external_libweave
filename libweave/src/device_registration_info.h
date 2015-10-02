@@ -53,7 +53,6 @@ class DeviceRegistrationInfo : public Cloud,
  public:
   using CloudRequestCallback =
       base::Callback<void(const base::DictionaryValue& response)>;
-  using CloudRequestErrorCallback = base::Callback<void(const Error* error)>;
 
   DeviceRegistrationInfo(const std::shared_ptr<CommandManager>& command_manager,
                          const std::shared_ptr<StateManager>& state_manager,
@@ -67,9 +66,6 @@ class DeviceRegistrationInfo : public Cloud,
   // Cloud overrides.
   void AddOnRegistrationChangedCallback(
       const OnRegistrationChangedCallback& callback) override;
-  void GetDeviceInfo(
-      const OnCloudRequestCallback& success_callback,
-      const OnCloudRequestErrorCallback& error_callback) override;
   std::string RegisterDevice(const std::string& ticket_id,
                              ErrorPtr* error) override;
   void UpdateDeviceInfo(const std::string& name,
@@ -84,6 +80,9 @@ class DeviceRegistrationInfo : public Cloud,
                            const std::string& oauth_url,
                            const std::string& service_url,
                            ErrorPtr* error) override;
+
+  void GetDeviceInfo(const CloudRequestCallback& success_callback,
+                     const ErrorCallback& error_callback);
 
   // Returns the GCD service request URL. If |subpath| is specified, it is
   // appended to the base URL which is normally
@@ -148,17 +147,17 @@ class DeviceRegistrationInfo : public Cloud,
 
   // Forcibly refreshes the access token.
   void RefreshAccessToken(const base::Closure& success_callback,
-                          const CloudRequestErrorCallback& error_callback);
+                          const ErrorCallback& error_callback);
 
   // Callbacks for RefreshAccessToken().
   void OnRefreshAccessTokenSuccess(
       const std::shared_ptr<base::Closure>& success_callback,
-      const std::shared_ptr<CloudRequestErrorCallback>& error_callback,
+      const std::shared_ptr<ErrorCallback>& error_callback,
       int id,
       const provider::HttpClient::Response& response);
   void OnRefreshAccessTokenError(
       const std::shared_ptr<base::Closure>& success_callback,
-      const std::shared_ptr<CloudRequestErrorCallback>& error_callback,
+      const std::shared_ptr<ErrorCallback>& error_callback,
       int id,
       const Error* error);
 
@@ -181,7 +180,7 @@ class DeviceRegistrationInfo : public Cloud,
                       const std::string& url,
                       const base::DictionaryValue* body,
                       const CloudRequestCallback& success_callback,
-                      const CloudRequestErrorCallback& error_callback);
+                      const ErrorCallback& error_callback);
 
   // Helper for DoCloudRequest().
   struct CloudRequestData {
@@ -189,7 +188,7 @@ class DeviceRegistrationInfo : public Cloud,
     std::string url;
     std::string body;
     CloudRequestCallback success_callback;
-    CloudRequestErrorCallback error_callback;
+    ErrorCallback error_callback;
   };
   void SendCloudRequest(const std::shared_ptr<const CloudRequestData>& data);
   void OnCloudRequestSuccess(
@@ -207,7 +206,7 @@ class DeviceRegistrationInfo : public Cloud,
   void CheckAccessTokenError(const Error* error);
 
   void UpdateDeviceResource(const base::Closure& on_success,
-                            const CloudRequestErrorCallback& on_failure);
+                            const ErrorCallback& on_failure);
   void StartQueuedUpdateDeviceResource();
   // Success/failure callbacks for UpdateDeviceResource().
   void OnUpdateDeviceResourceSuccess(const base::DictionaryValue& device_info);
@@ -225,13 +224,12 @@ class DeviceRegistrationInfo : public Cloud,
 
   void FetchCommands(
       const base::Callback<void(const base::ListValue&)>& on_success,
-      const CloudRequestErrorCallback& on_failure);
+      const ErrorCallback& on_failure);
   // Success/failure callbacks for FetchCommands().
   void OnFetchCommandsSuccess(
       const base::Callback<void(const base::ListValue&)>& callback,
       const base::DictionaryValue& json);
-  void OnFetchCommandsError(const CloudRequestErrorCallback& callback,
-                            const Error* error);
+  void OnFetchCommandsError(const ErrorCallback& callback, const Error* error);
   // Called when FetchCommands completes (with either success or error).
   // This method reschedules any pending/queued fetch requests.
   void OnFetchCommandsReturned();
@@ -316,7 +314,7 @@ class DeviceRegistrationInfo : public Cloud,
   bool fetch_commands_request_queued_{false};
 
   using ResourceUpdateCallbackList =
-      std::vector<std::pair<base::Closure, CloudRequestErrorCallback>>;
+      std::vector<std::pair<base::Closure, ErrorCallback>>;
   // Success/error callbacks for device resource update request currently in
   // flight to the cloud server.
   ResourceUpdateCallbackList in_progress_resource_update_callbacks_;

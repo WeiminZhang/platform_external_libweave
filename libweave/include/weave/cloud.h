@@ -26,20 +26,10 @@ class Cloud {
  public:
   using OnRegistrationChangedCallback =
       base::Callback<void(RegistrationStatus satus)>;
-  using OnCloudRequestCallback =
-      base::Callback<void(const base::DictionaryValue& response)>;
-  using OnCloudRequestErrorCallback = base::Callback<void(const Error* error)>;
 
   // Sets callback which is called when registration state is changed.
   virtual void AddOnRegistrationChangedCallback(
       const OnRegistrationChangedCallback& callback) = 0;
-
-  // Gets the full device description JSON object asynchronously.
-  // Passes the device info as the first argument to |callback|, or nullptr if
-  // the device is not registered or in case of communication failure.
-  virtual void GetDeviceInfo(
-      const OnCloudRequestCallback& success_callback,
-      const OnCloudRequestErrorCallback& error_callback) = 0;
 
   // Registers the device.
   // Returns a device ID on success.
