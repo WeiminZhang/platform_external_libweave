@@ -40,7 +40,6 @@ const char kBaseStateDefaults[] = R"({
     "localPairingEnabled": false
   }
 })";
-
 }
 
 StateManager::StateManager(StateChangeQueueInterface* state_change_queue)

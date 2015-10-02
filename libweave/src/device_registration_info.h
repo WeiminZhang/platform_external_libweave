@@ -68,18 +68,19 @@ class DeviceRegistrationInfo : public Cloud,
       const OnRegistrationChangedCallback& callback) override;
   std::string RegisterDevice(const std::string& ticket_id,
                              ErrorPtr* error) override;
+
   void UpdateDeviceInfo(const std::string& name,
                         const std::string& description,
-                        const std::string& location) override;
+                        const std::string& location);
   void UpdateBaseConfig(AuthScope anonymous_access_role,
                         bool local_discovery_enabled,
-                        bool local_pairing_enabled) override;
+                        bool local_pairing_enabled);
   bool UpdateServiceConfig(const std::string& client_id,
                            const std::string& client_secret,
                            const std::string& api_key,
                            const std::string& oauth_url,
                            const std::string& service_url,
-                           ErrorPtr* error) override;
+                           ErrorPtr* error);
 
   void GetDeviceInfo(const CloudRequestCallback& success_callback,
                      const ErrorCallback& error_callback);

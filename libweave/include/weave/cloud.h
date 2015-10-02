@@ -36,24 +36,6 @@ class Cloud {
   virtual std::string RegisterDevice(const std::string& ticket_id,
                                      ErrorPtr* error) = 0;
 
-  // Updates basic device information.
-  virtual void UpdateDeviceInfo(const std::string& name,
-                                const std::string& description,
-                                const std::string& location) = 0;
-
-  // Updates base device config.
-  virtual void UpdateBaseConfig(AuthScope anonymous_access_role,
-                                bool local_discovery_enabled,
-                                bool local_pairing_enabled) = 0;
-
-  // Updates GCD service configuration. Usually for testing.
-  virtual bool UpdateServiceConfig(const std::string& client_id,
-                                   const std::string& client_secret,
-                                   const std::string& api_key,
-                                   const std::string& oauth_url,
-                                   const std::string& service_url,
-                                   ErrorPtr* error) = 0;
-
  protected:
   virtual ~Cloud() = default;
 };

@@ -101,9 +101,10 @@ void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
 }
 
 void DeviceManager::AddPairingChangedCallbacks(
-      const PairingBeginCallback& begin_callback,
-      const PairingEndCallback& end_callback) {
-  privet_->AddOnPairingChangedCallbacks(begin_callback, end_callback);
+    const PairingBeginCallback& begin_callback,
+    const PairingEndCallback& end_callback) {
+  if (privet_)
+    privet_->AddOnPairingChangedCallbacks(begin_callback, end_callback);
 }
 
 std::unique_ptr<Device> Device::Create() {
