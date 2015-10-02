@@ -109,7 +109,7 @@ TEST_F(StateManagerTest, Initialized) {
       'state_property': ''
     }
   })";
-  EXPECT_JSON_EQ(expected, *mgr_->GetStateValuesAsJson());
+  EXPECT_JSON_EQ(expected, *mgr_->GetState());
 }
 
 TEST_F(StateManagerTest, LoadStateDefinition) {
@@ -134,7 +134,7 @@ TEST_F(StateManagerTest, LoadStateDefinition) {
       'state_property': ''
     }
   })";
-  EXPECT_JSON_EQ(expected, *mgr_->GetStateValuesAsJson());
+  EXPECT_JSON_EQ(expected, *mgr_->GetState());
 }
 
 TEST_F(StateManagerTest, Startup) {
@@ -163,7 +163,7 @@ TEST_F(StateManagerTest, Startup) {
       'battery_level': 44
     }
   })";
-  EXPECT_JSON_EQ(expected, *manager.GetStateValuesAsJson());
+  EXPECT_JSON_EQ(expected, *manager.GetState());
 }
 
 TEST_F(StateManagerTest, SetPropertyValue) {
@@ -184,7 +184,7 @@ TEST_F(StateManagerTest, SetPropertyValue) {
       'state_property': 'Test Value'
     }
   })";
-  EXPECT_JSON_EQ(expected, *mgr_->GetStateValuesAsJson());
+  EXPECT_JSON_EQ(expected, *mgr_->GetState());
 }
 
 TEST_F(StateManagerTest, SetPropertyValue_Error_NoName) {
@@ -259,7 +259,14 @@ TEST_F(StateManagerTest, SetProperties) {
       'state_property': ''
     }
   })";
-  EXPECT_JSON_EQ(expected, *mgr_->GetStateValuesAsJson());
+  EXPECT_JSON_EQ(expected, *mgr_->GetState());
+}
+
+TEST_F(StateManagerTest, GetProperty) {
+  EXPECT_JSON_EQ("'Test Model'", *mgr_->GetStateProperty("base.serialNumber"));
+  EXPECT_JSON_EQ("''", *mgr_->GetStateProperty("device.state_property"));
+  EXPECT_EQ(nullptr, mgr_->GetStateProperty("device.unknown"));
+  EXPECT_EQ(nullptr, mgr_->GetStateProperty("unknown.state_property"));
 }
 
 }  // namespace weave

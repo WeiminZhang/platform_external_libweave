@@ -15,14 +15,23 @@ class State {
   // Sets callback which is called when stat is changed.
   virtual void AddOnChangedCallback(const base::Closure& callback) = 0;
 
-  // Updates a multiple property values.
+  // Returns value of the single property.
+  // |name| is full property name, including package name. e.g. "base.network".
+  virtual std::unique_ptr<base::Value> GetStateProperty(
+      const std::string& name) = 0;
+
+  // Sets value of the single property.
+  // |name| is full property name, including package name. e.g. "base.network".
+  virtual bool SetStateProperty(const std::string& name,
+                                const base::Value& value,
+                                ErrorPtr* error) = 0;
+
+  // Updates multiple property values.
   virtual bool SetProperties(const base::DictionaryValue& property_set,
                              ErrorPtr* error) = 0;
 
-  // Returns aggregated state properties across all registered packages as
-  // a JSON object that can be used to send the device state to the GCD server.
-  virtual std::unique_ptr<base::DictionaryValue> GetStateValuesAsJson()
-      const = 0;
+  // Returns aggregated state properties across all registered packages.
+  virtual std::unique_ptr<base::DictionaryValue> GetState() const = 0;
 
  protected:
   virtual ~State() = default;

@@ -75,8 +75,7 @@ void StateManager::Startup(provider::ConfigStore* config_store) {
     cb.Run();
 }
 
-std::unique_ptr<base::DictionaryValue> StateManager::GetStateValuesAsJson()
-    const {
+std::unique_ptr<base::DictionaryValue> StateManager::GetState() const {
   std::unique_ptr<base::DictionaryValue> dict{new base::DictionaryValue};
   for (const auto& pair : packages_) {
     auto pkg_value = pair.second->GetValuesAsJson();
@@ -101,6 +100,27 @@ bool StateManager::SetProperties(const base::DictionaryValue& property_set,
   for (const auto& cb : on_changed_)
     cb.Run();
   return all_success;
+}
+
+bool StateManager::SetStateProperty(const std::string& name,
+                                    const base::Value& value,
+                                    ErrorPtr* error) {
+  return SetPropertyValue(name, value, base::Time::Now(), error);
+}
+
+std::unique_ptr<base::Value> StateManager::GetStateProperty(
+    const std::string& name) {
+  auto parts = SplitAtFirst(name, ".", true);
+  const std::string& package_name = parts.first;
+  const std::string& property_name = parts.second;
+  if (package_name.empty() || property_name.empty())
+    return nullptr;
+
+  StatePackage* package = FindPackage(package_name);
+  if (!package)
+    return nullptr;
+
+  return package->GetPropertyValue(property_name, nullptr);
 }
 
 bool StateManager::SetPropertyValue(const std::string& full_property_name,

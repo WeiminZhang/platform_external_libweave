@@ -132,7 +132,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'network': {}
     }
   })";
-  EXPECT_JSON_EQ(expected, *state_manager_->GetStateValuesAsJson());
+  EXPECT_JSON_EQ(expected, *state_manager_->GetState());
 
   AddCommand(R"({
     'name' : 'base.updateBaseConfiguration',
@@ -154,7 +154,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'network': {}
     }
   })";
-  EXPECT_JSON_EQ(expected, *state_manager_->GetStateValuesAsJson());
+  EXPECT_JSON_EQ(expected, *state_manager_->GetState());
 
   {
     Config::Transaction change{dev_reg_->GetMutableConfig()};
@@ -169,7 +169,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'network': {}
     }
   })";
-  EXPECT_JSON_EQ(expected, *state_manager_->GetStateValuesAsJson());
+  EXPECT_JSON_EQ(expected, *state_manager_->GetState());
 }
 
 TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
