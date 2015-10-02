@@ -14,13 +14,6 @@
 
 namespace weave {
 
-enum class UserRole {
-  kViewer,
-  kUser,
-  kManager,
-  kOwner,
-};
-
 class Commands {
  public:
   using OnCommandCallback = base::Callback<void(Command*)>;
@@ -34,7 +27,6 @@ class Commands {
 
   // Adds a new command to the command queue.
   virtual bool AddCommand(const base::DictionaryValue& command,
-                          UserRole role,
                           std::string* id,
                           ErrorPtr* error) = 0;
 
