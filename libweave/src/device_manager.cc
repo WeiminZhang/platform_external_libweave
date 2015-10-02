@@ -88,10 +88,6 @@ Cloud* DeviceManager::GetCloud() {
   return device_info_.get();
 }
 
-Privet* DeviceManager::GetPrivet() {
-  return privet_.get();
-}
-
 void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
                                 provider::Network* network,
                                 provider::DnsServiceDiscovery* dns_sd,
@@ -102,6 +98,12 @@ void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
   privet_->Start(task_runner, network, dns_sd, http_server, wifi,
                  device_info_.get(), command_manager_.get(),
                  state_manager_.get());
+}
+
+void DeviceManager::AddPairingChangedCallbacks(
+      const PairingBeginCallback& begin_callback,
+      const PairingEndCallback& end_callback) {
+  privet_->AddOnPairingChangedCallbacks(begin_callback, end_callback);
 }
 
 std::unique_ptr<Device> Device::Create() {

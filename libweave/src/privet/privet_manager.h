@@ -42,7 +42,7 @@ class PrivetHandler;
 class Publisher;
 class SecurityManager;
 
-class Manager : public Privet, public CloudDelegate::Observer {
+class Manager : public CloudDelegate::Observer {
  public:
   Manager();
   ~Manager() override;
@@ -59,8 +59,8 @@ class Manager : public Privet, public CloudDelegate::Observer {
   std::string GetCurrentlyConnectedSsid() const;
 
   void AddOnPairingChangedCallbacks(
-      const OnPairingStartedCallback& on_start,
-      const OnPairingEndedCallback& on_end) override;
+      const Device::PairingBeginCallback& begin_callback,
+      const Device::PairingEndCallback& end_callback);
 
  private:
   // CloudDelegate::Observer

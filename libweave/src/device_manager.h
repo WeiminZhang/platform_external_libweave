@@ -41,7 +41,9 @@ class DeviceManager final : public Device {
   Commands* GetCommands() override;
   State* GetState() override;
   Cloud* GetCloud() override;
-  Privet* GetPrivet() override;
+  void AddPairingChangedCallbacks(
+      const PairingBeginCallback& begin_callback,
+      const PairingEndCallback& end_callback) override;
 
   Config* GetConfig();
 

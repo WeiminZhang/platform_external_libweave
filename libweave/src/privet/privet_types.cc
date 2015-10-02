@@ -8,7 +8,6 @@
 
 #include <weave/enum_to_string.h>
 #include <weave/export.h>
-#include <weave/privet.h>
 #include <weave/provider/network.h>
 
 namespace weave {

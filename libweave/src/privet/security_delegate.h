@@ -10,7 +10,6 @@
 #include <string>
 
 #include <base/time/time.h>
-#include <weave/privet.h>
 
 #include "src/privet/privet_types.h"
 
