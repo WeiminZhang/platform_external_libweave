@@ -9,7 +9,6 @@
 #include <set>
 #include <string>
 
-#include <weave/cloud.h>
 #include <weave/commands.h>
 #include <weave/export.h>
 #include <weave/provider/bluetooth.h>
@@ -23,6 +22,14 @@
 #include <weave/state.h>
 
 namespace weave {
+
+// States of Gcd connection.
+enum class GcdState {
+  kUnconfigured,        // We have no credentials.
+  kConnecting,          // We have credentials but not yet connected.
+  kConnected,           // We're registered and connected to the cloud.
+  kInvalidCredentials,  // Our registration has been revoked.
+};
 
 class Device {
  public:
@@ -49,7 +56,20 @@ class Device {
 
   virtual Commands* GetCommands() = 0;
   virtual State* GetState() = 0;
-  virtual Cloud* GetCloud() = 0;
+
+  // Returns current state of GCD connection.
+  virtual GcdState GetGcdState() const = 0;
+
+  // Callback type for GcdStatusCallback.
+  using GcdStateChangedCallback = base::Callback<void(GcdState state)>;
+  // Sets callback which is called when state of server connection changed.
+  virtual void AddGcdStateChangedCallback(
+      const GcdStateChangedCallback& callback) = 0;
+
+  // Registers the device. Returns a device ID on success.
+  // This is testing method and should not be used by applications.
+  virtual std::string Register(const std::string& ticket_id,
+                               ErrorPtr* error) = 0;
 
   // Handler should display pin code to the user.
   using PairingBeginCallback =

@@ -284,7 +284,7 @@ void DeviceRegistrationInfo::Start() {
 
 void DeviceRegistrationInfo::ScheduleCloudConnection(
     const base::TimeDelta& delay) {
-  SetRegistrationStatus(RegistrationStatus::kConnecting);
+  SetGcdState(GcdState::kConnecting);
   if (!task_runner_)
     return;  // Assume we're in test
   task_runner_->PostDelayedTask(
@@ -322,7 +322,7 @@ DeviceRegistrationInfo::ParseOAuthResponse(const HttpClient::Response& response,
     }
     if (error_code == "invalid_grant") {
       LOG(INFO) << "The device's registration has been revoked.";
-      SetRegistrationStatus(RegistrationStatus::kInvalidCredentials);
+      SetGcdState(GcdState::kInvalidCredentials);
     }
     // I have never actually seen an error_description returned.
     if (!resp->GetString("error_description", &error_message)) {
@@ -470,10 +470,10 @@ void DeviceRegistrationInfo::StartNotificationChannel() {
   primary_notification_channel_->Start(this);
 }
 
-void DeviceRegistrationInfo::AddOnRegistrationChangedCallback(
-    const OnRegistrationChangedCallback& callback) {
-  on_registration_changed_.push_back(callback);
-  callback.Run(registration_status_);
+void DeviceRegistrationInfo::AddGcdStateChangedCallback(
+    const Device::GcdStateChangedCallback& callback) {
+  gcd_state_changed_callbacks_.push_back(callback);
+  callback.Run(gcd_state_);
 }
 
 std::unique_ptr<base::DictionaryValue>
@@ -730,7 +730,7 @@ void DeviceRegistrationInfo::OnCloudRequestSuccess(
   }
 
   cloud_backoff_entry_->InformOfRequest(true);
-  SetRegistrationStatus(RegistrationStatus::kConnected);
+  SetGcdState(GcdState::kConnected);
   data->success_callback.Run(*json_resp);
 }
 
@@ -745,7 +745,7 @@ void DeviceRegistrationInfo::OnCloudRequestError(
 void DeviceRegistrationInfo::RetryCloudRequest(
     const std::shared_ptr<const CloudRequestData>& data) {
   // TODO(avakulenko): Tie connecting/connected status to XMPP channel instead.
-  SetRegistrationStatus(RegistrationStatus::kConnecting);
+  SetGcdState(GcdState::kConnecting);
   cloud_backoff_entry_->InformOfRequest(false);
   SendCloudRequest(data);
 }
@@ -1176,13 +1176,12 @@ void DeviceRegistrationInfo::OnPublishStateError(const Error* error) {
   device_state_update_pending_ = false;
 }
 
-void DeviceRegistrationInfo::SetRegistrationStatus(
-    RegistrationStatus new_status) {
-  VLOG_IF(1, new_status != registration_status_)
-      << "Changing registration status to " << static_cast<int>(new_status);
-  registration_status_ = new_status;
-  for (const auto& cb : on_registration_changed_)
-    cb.Run(registration_status_);
+void DeviceRegistrationInfo::SetGcdState(GcdState new_state) {
+  VLOG_IF(1, new_state != gcd_state_) << "Changing registration status to "
+                                      << EnumToString(new_state);
+  gcd_state_ = new_state;
+  for (const auto& cb : gcd_state_changed_callbacks_)
+    cb.Run(gcd_state_);
 }
 
 void DeviceRegistrationInfo::OnCommandDefsChanged() {
@@ -1297,7 +1296,7 @@ void DeviceRegistrationInfo::MarkDeviceUnregistered() {
     pull_channel_.reset();
   }
   notification_channel_starting_ = false;
-  SetRegistrationStatus(RegistrationStatus::kInvalidCredentials);
+  SetGcdState(GcdState::kInvalidCredentials);
 }
 
 }  // namespace weave

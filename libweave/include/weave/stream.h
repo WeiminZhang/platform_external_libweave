@@ -17,7 +17,7 @@ class InputStream {
  public:
   virtual ~InputStream() = default;
 
-  // Callbacks types for Read.
+  // Callback type for Read.
   using ReadSuccessCallback = base::Callback<void(size_t size)>;
 
   // Implementation should return immediately and post either success_callback

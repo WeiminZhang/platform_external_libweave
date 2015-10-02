@@ -113,8 +113,7 @@ int main(int argc, char** argv) {
 
   if (!registration_ticket.empty()) {
     weave::ErrorPtr error;
-    auto device_id =
-        device->GetCloud()->RegisterDevice(registration_ticket, &error);
+    auto device_id = device->Register(registration_ticket, &error);
     if (error != nullptr) {
       LOG(ERROR) << "Fail to register device: " << error->GetMessage();
     } else {
