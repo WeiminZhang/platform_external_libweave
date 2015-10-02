@@ -337,7 +337,7 @@ DeviceRegistrationInfo::ParseOAuthResponse(const HttpClient::Response& response,
 
 void DeviceRegistrationInfo::RefreshAccessToken(
     const base::Closure& success_callback,
-    const CloudRequestErrorCallback& error_callback) {
+    const ErrorCallback& error_callback) {
   LOG(INFO) << "Refreshing access token.";
 
   ErrorPtr error;
@@ -363,8 +363,7 @@ void DeviceRegistrationInfo::RefreshAccessToken(
   // one of the copies will be bad.
   auto shared_success_callback =
       std::make_shared<base::Closure>(success_callback);
-  auto shared_error_callback =
-      std::make_shared<CloudRequestErrorCallback>(error_callback);
+  auto shared_error_callback = std::make_shared<ErrorCallback>(error_callback);
 
   RequestSender sender{http::kPost, GetOAuthURL("token"), http_client_};
   sender.SetFormData({
@@ -386,7 +385,7 @@ void DeviceRegistrationInfo::RefreshAccessToken(
 
 void DeviceRegistrationInfo::OnRefreshAccessTokenSuccess(
     const std::shared_ptr<base::Closure>& success_callback,
-    const std::shared_ptr<CloudRequestErrorCallback>& error_callback,
+    const std::shared_ptr<ErrorCallback>& error_callback,
     int id,
     const HttpClient::Response& response) {
   VLOG(1) << "Refresh access token request with ID " << id << " completed";
@@ -424,7 +423,7 @@ void DeviceRegistrationInfo::OnRefreshAccessTokenSuccess(
 
 void DeviceRegistrationInfo::OnRefreshAccessTokenError(
     const std::shared_ptr<base::Closure>& success_callback,
-    const std::shared_ptr<CloudRequestErrorCallback>& error_callback,
+    const std::shared_ptr<ErrorCallback>& error_callback,
     int id,
     const Error* error) {
   VLOG(1) << "Refresh access token request with ID " << id << " failed";
@@ -516,7 +515,7 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
 
 void DeviceRegistrationInfo::GetDeviceInfo(
     const CloudRequestCallback& success_callback,
-    const CloudRequestErrorCallback& error_callback) {
+    const ErrorCallback& error_callback) {
   ErrorPtr error;
   if (!VerifyRegistrationCredentials(&error)) {
     if (!error_callback.is_null())
@@ -632,7 +631,7 @@ void DeviceRegistrationInfo::DoCloudRequest(
     const std::string& url,
     const base::DictionaryValue* body,
     const CloudRequestCallback& success_callback,
-    const CloudRequestErrorCallback& error_callback) {
+    const ErrorCallback& error_callback) {
   // We make CloudRequestData shared here because we want to make sure
   // there is only one instance of success_callback and error_calback since
   // those may have move-only types and making a copy of the callback with
@@ -881,7 +880,7 @@ void DeviceRegistrationInfo::NotifyCommandAborted(const std::string& command_id,
 
 void DeviceRegistrationInfo::UpdateDeviceResource(
     const base::Closure& on_success,
-    const CloudRequestErrorCallback& on_failure) {
+    const ErrorCallback& on_failure) {
   queued_resource_update_callbacks_.emplace_back(on_success, on_failure);
   if (!in_progress_resource_update_callbacks_.empty()) {
     VLOG(1) << "Another request is already pending.";
@@ -1001,9 +1000,8 @@ void DeviceRegistrationInfo::OnFetchCommandsSuccess(
   callback.Run(commands ? *commands : empty);
 }
 
-void DeviceRegistrationInfo::OnFetchCommandsError(
-    const CloudRequestErrorCallback& callback,
-    const Error* error) {
+void DeviceRegistrationInfo::OnFetchCommandsError(const ErrorCallback& callback,
+                                                  const Error* error) {
   OnFetchCommandsReturned();
   callback.Run(error);
 }
@@ -1017,7 +1015,7 @@ void DeviceRegistrationInfo::OnFetchCommandsReturned() {
 
 void DeviceRegistrationInfo::FetchCommands(
     const base::Callback<void(const base::ListValue&)>& on_success,
-    const CloudRequestErrorCallback& on_failure) {
+    const ErrorCallback& on_failure) {
   fetch_commands_request_sent_ = true;
   fetch_commands_request_queued_ = false;
   DoCloudRequest(

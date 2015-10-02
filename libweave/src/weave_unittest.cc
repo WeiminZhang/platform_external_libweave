@@ -241,13 +241,6 @@ class WeaveTest : public ::testing::Test {
     cloud_ = device_->GetCloud();
     ASSERT_TRUE(cloud_);
 
-    cloud_->GetDeviceInfo(
-        base::Bind(
-            [](const base::DictionaryValue& response) { ADD_FAILURE(); }),
-        base::Bind([](const Error* error) {
-          EXPECT_TRUE(error->HasError("gcd", "device_not_registered"));
-        }));
-
     for (const auto& cb : http_server_changed_cb_)
       cb.Run(http_server_);
 
