@@ -42,8 +42,6 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
   std::unique_ptr<Config> config{new Config{config_store}};
   config->Load();
 
-  // TODO(avakulenko): Figure out security implications of storing
-  // device info state data unencrypted.
   device_info_.reset(new DeviceRegistrationInfo(
       command_manager_, state_manager_, std::move(config), task_runner,
       http_client, network));
