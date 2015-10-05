@@ -3,7 +3,7 @@
     {
       'target_name': 'weave',
       'type': 'executable',
-      'cflags': ['-pthread'],
+      'cflags': ['-pthread', '-I/usr/include/libnl3'],
       'sources': [
         'avahi_client.cc',
         'bluez_client.cc',
@@ -12,6 +12,7 @@
         'event_task_runner.cc',
         'file_config_store.cc',
         'main.cc',
+        'netlink_network.cc',
         'network_manager.cc',
         'ssl_stream.cc',
       ],
@@ -28,6 +29,8 @@
         '-lavahi-common',
         '-lavahi-client',
         '-levent_openssl',
+        '-lnl-3',
+        '-lnl-route-3',
       ]
     }
   ]

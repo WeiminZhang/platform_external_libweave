@@ -15,6 +15,8 @@ sudo apt-get install ${APT_GET_OPTS} \
   libavahi-client-dev \
   libcurl4-openssl-dev \
   libexpat1-dev \
+  libnl-3-dev \
+  libnl-route-3-dev \
   libtool \
   ninja-build \
   || exit 1
