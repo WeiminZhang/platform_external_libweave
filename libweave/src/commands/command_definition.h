@@ -22,11 +22,8 @@ enum class UserRole {
   kOwner,
 };
 
-// A simple GCD command definition. This class contains the command category
-// and a full object schema describing the command parameter types and
-// constraints. See comments for CommandDefinitions::LoadCommands for the
-// detailed description of what command categories are and what they are used
-// for.
+// A simple GCD command definition. This class contains the full object schema
+// describing the command parameter types and constraints.
 class CommandDefinition final {
  public:
   struct Visibility {
@@ -52,13 +49,10 @@ class CommandDefinition final {
     bool cloud{false};  // Command is available to cloud clients.
   };
 
-  CommandDefinition(const std::string& category,
-                    std::unique_ptr<const ObjectSchema> parameters,
+  CommandDefinition(std::unique_ptr<const ObjectSchema> parameters,
                     std::unique_ptr<const ObjectSchema> progress,
                     std::unique_ptr<const ObjectSchema> results);
 
-  // Gets the category this command belongs to.
-  const std::string& GetCategory() const { return category_; }
   // Gets the object schema for command parameters.
   const ObjectSchema* GetParameters() const { return parameters_.get(); }
   // Gets the object schema for command progress.
@@ -75,7 +69,6 @@ class CommandDefinition final {
   void SetMinimalRole(UserRole minimal_role) { minimal_role_ = minimal_role; }
 
  private:
-  std::string category_;  // Cmd category. Could be "powerd" for "base.reboot".
   std::unique_ptr<const ObjectSchema> parameters_;  // Command parameters def.
   std::unique_ptr<const ObjectSchema> progress_;    // Command progress def.
   std::unique_ptr<const ObjectSchema> results_;     // Command results def.

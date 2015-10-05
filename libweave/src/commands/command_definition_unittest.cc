@@ -78,9 +78,8 @@ TEST(CommandDefinition, Test) {
   const ObjectSchema* param_ptr = params.get();
   const ObjectSchema* progress_ptr = progress.get();
   const ObjectSchema* results_ptr = results.get();
-  CommandDefinition def{"powerd", std::move(params), std::move(progress),
+  CommandDefinition def{std::move(params), std::move(progress),
                         std::move(results)};
-  EXPECT_EQ("powerd", def.GetCategory());
   EXPECT_EQ(param_ptr, def.GetParameters());
   EXPECT_EQ(progress_ptr, def.GetProgress());
   EXPECT_EQ(results_ptr, def.GetResults());

@@ -70,10 +70,6 @@ const std::string& CommandInstance::GetName() const {
   return name_;
 }
 
-const std::string& CommandInstance::GetCategory() const {
-  return command_definition_->GetCategory();
-}
-
 CommandStatus CommandInstance::GetStatus() const {
   return status_;
 }

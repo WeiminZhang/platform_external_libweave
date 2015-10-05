@@ -60,8 +60,8 @@ void FileConfigStore::SaveSettings(const std::string& settings) {
   str << settings;
 }
 
-std::map<std::string, std::string> FileConfigStore::LoadCommandDefs() {
-  return {{kCategory, R"({
+std::vector<std::string> FileConfigStore::LoadCommandDefs() {
+  return {R"({
     "base": {
       "updateBaseConfiguration": {},
       "identify": {},
@@ -74,7 +74,7 @@ std::map<std::string, std::string> FileConfigStore::LoadCommandDefs() {
         "results": { "_greeting": "string" }
       }
     }
-  })"}};
+  })"};
 }
 
 std::vector<std::string> FileConfigStore::LoadStateDefs() {

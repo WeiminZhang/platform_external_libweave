@@ -61,7 +61,7 @@ class CommandInstanceTest : public ::testing::Test {
         }
       }
     })");
-    CHECK(dict_.LoadCommands(*json, "robotd", nullptr, nullptr))
+    CHECK(dict_.LoadCommands(*json, nullptr, nullptr))
         << "Failed to parse test command dictionary";
   }
   CommandDictionary dict_;
@@ -84,7 +84,6 @@ TEST_F(CommandInstanceTest, Test) {
 
   EXPECT_EQ("", instance.GetID());
   EXPECT_EQ("robot.speak", instance.GetName());
-  EXPECT_EQ("robotd", instance.GetCategory());
   EXPECT_EQ(CommandOrigin::kCloud, instance.GetOrigin());
   EXPECT_JSON_EQ("{'phrase': 'iPityDaFool', 'volume': 5}",
                  *instance.GetParameters());
@@ -122,7 +121,6 @@ TEST_F(CommandInstanceTest, FromJson) {
   EXPECT_EQ("abcd", id);
   EXPECT_EQ("abcd", instance->GetID());
   EXPECT_EQ("robot.jump", instance->GetName());
-  EXPECT_EQ("robotd", instance->GetCategory());
   EXPECT_JSON_EQ("{'height': 53, '_jumpType': '_withKick'}",
                  *instance->GetParameters());
 }
@@ -132,7 +130,6 @@ TEST_F(CommandInstanceTest, FromJson_ParamsOmitted) {
   auto instance = CommandInstance::FromJson(json.get(), CommandOrigin::kCloud,
                                             dict_, nullptr, nullptr);
   EXPECT_EQ("base.reboot", instance->GetName());
-  EXPECT_EQ("robotd", instance->GetCategory());
   EXPECT_JSON_EQ("{}", *instance->GetParameters());
 }
 

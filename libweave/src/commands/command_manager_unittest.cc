@@ -72,7 +72,7 @@ TEST(CommandManager, LoadBaseCommandsJSON) {
 TEST(CommandManager, LoadCommandsDict) {
   CommandManager manager;
   auto json = CreateDictionaryValue(kTestVendorCommands);
-  EXPECT_TRUE(manager.LoadCommands(*json, "category", nullptr));
+  EXPECT_TRUE(manager.LoadCommands(*json, nullptr));
 }
 
 TEST(CommandManager, LoadCommandsJson) {
@@ -107,7 +107,7 @@ TEST(CommandManager, LoadCommandsJson) {
       }
     }
   })";
-  EXPECT_TRUE(manager.LoadCommands(json_str, "test", nullptr));
+  EXPECT_TRUE(manager.LoadCommands(json_str, nullptr));
   EXPECT_EQ(2, manager.GetCommandDictionary().GetSize());
   EXPECT_NE(nullptr, manager.GetCommandDictionary().FindCommand("base.reboot"));
   EXPECT_NE(nullptr, manager.GetCommandDictionary().FindCommand("robot._jump"));
@@ -117,8 +117,8 @@ TEST(CommandManager, ShouldLoadStandardAndTestDefinitions) {
   CommandManager manager;
   provider::test::MockConfigStore config_store;
   EXPECT_CALL(config_store, LoadCommandDefs())
-      .WillOnce(Return(std::map<std::string, std::string>{
-          {"category", kTestVendorCommands}, {"test", kTestTestCommands}}));
+      .WillOnce(Return(
+          std::vector<std::string>{kTestVendorCommands, kTestTestCommands}));
   manager.Startup(&config_store);
   EXPECT_EQ(3, manager.GetCommandDictionary().GetSize());
   EXPECT_NE(nullptr, manager.GetCommandDictionary().FindCommand("robot._jump"));
@@ -152,7 +152,7 @@ TEST(CommandManager, UpdateCommandVisibility) {
       }
     }
   })");
-  ASSERT_TRUE(manager.LoadCommands(*json, "test", nullptr));
+  ASSERT_TRUE(manager.LoadCommands(*json, nullptr));
   EXPECT_EQ(2, update_count);
   const CommandDictionary& dict = manager.GetCommandDictionary();
   EXPECT_TRUE(manager.SetCommandVisibility(

@@ -35,11 +35,8 @@ class ConfigStore {
   // recommended to protect data, e.g. using encryption.
   virtual void SaveSettings(const std::string& settings) = 0;
 
-  // Returns command definitions as JSON.
-  // Key is unique string which will be used to assign single command handler
-  // later.
-  // Value is JSON with command definition.
-  virtual std::map<std::string, std::string> LoadCommandDefs() = 0;
+  // Returns command definitions as array of JSONs.
+  virtual std::vector<std::string> LoadCommandDefs() = 0;
 
   // Returns device state definitions as array of JSONs.
   virtual std::vector<std::string> LoadStateDefs() = 0;
