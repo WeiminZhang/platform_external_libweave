@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <bitset>
 #include <base/bind.h>
 #include <base/values.h>
 #include <weave/device.h>
@@ -16,6 +17,10 @@
 #include "examples/ubuntu/network_manager.h"
 
 namespace {
+
+// Supported LED count on this device
+const size_t kLedCount = 3;
+
 void ShowUsage(const std::string& name) {
   LOG(ERROR) << "\nUsage: " << name << " <option(s)>"
              << "\nOptions:\n"
@@ -57,17 +62,59 @@ class CommandHandler {
       LOG(INFO) << "New state: " << *device_->GetState();
 
       cmd->Done();
+    } else if (cmd->GetName() == "_ledflasher._set") {
+      int32_t led_index;
+      bool cmd_value;
+      if (cmd->GetParameters()->GetInteger("_led", &led_index) &&
+          cmd->GetParameters()->GetBoolean("_on", &cmd_value)) {
+        // Display this command in terminal
+        LOG(INFO) << cmd->GetName() << " _led: " << led_index
+                  << ", _on: " << (cmd_value ? "true" : "false");
+
+        led_index--;
+        int new_state = cmd_value ? 1 : 0;
+        int cur_state = led_status_[led_index];
+        led_status_[led_index] = new_state;
+
+        if (cmd_value != cur_state) {
+          UpdateLedState();
+        }
+      }
+      cmd->Done();
+    } else if (cmd->GetName() == "_ledflasher._toggle") {
+      int32_t led_index;
+      if (cmd->GetParameters()->GetInteger("_led", &led_index)) {
+        LOG(INFO) << cmd->GetName() << " _led: " << led_index;
+        led_index--;
+        led_status_[led_index] = ~led_status_[led_index];
+
+        UpdateLedState();
+      }
+      cmd->Done();
     } else {
-      LOG(INFO) << "unimplemented command: ignored";
+      LOG(INFO) << cmd->GetName() << " unimplemented command: ignored";
     }
+  }
+
+  void UpdateLedState(void) {
+    base::ListValue list;
+    for (uint32_t i = 0; i < led_status_.size(); i++)
+      list.AppendBoolean(led_status_[i] ? true : false);
+
+    device_->SetStateProperty("_ledflasher._leds", list, nullptr);
   }
 
   weave::Device* device_{nullptr};
   int counter_{0};
 
+  // Simulate LED status on this device so client app could explore
+  // Each bit represents one device, indexing from LSB
+  std::bitset<kLedCount> led_status_{0};
+
   base::WeakPtrFactory<CommandHandler> weak_ptr_factory_{this};
 };
-}
+
+}  // namespace
 
 int main(int argc, char** argv) {
   bool force_bootstrapping = false;
