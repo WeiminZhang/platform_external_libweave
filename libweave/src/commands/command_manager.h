@@ -61,19 +61,13 @@ class CommandManager final : public Commands {
   // the base command definitions from.
   bool LoadBaseCommands(const std::string& json, ErrorPtr* error);
 
-  // Loads device command schema for particular category.
-  // See CommandDictionary::LoadCommands for detailed description of the
-  // parameters.
+  // Loads device command schema.
   bool LoadCommands(const base::DictionaryValue& dict,
-                    const std::string& category,
                     ErrorPtr* error);
 
   // Same as the overload above, but takes a path to a json file to read
-  // the base command definitions from. Also, the command category is
-  // derived from file name (without extension). So, if the path points to
-  // "power_manager.json", the command category used will be "power_manager".
+  // the base command definitions from.
   bool LoadCommands(const std::string& json,
-                    const std::string& category,
                     ErrorPtr* error);
 
   // Startup method to be called by buffet daemon at startup.

@@ -68,7 +68,7 @@ class BaseApiHandlerTest : public ::testing::Test {
   void LoadCommands(const std::string& command_definitions) {
     auto json = test::CreateDictionaryValue(command_definitions.c_str());
     EXPECT_TRUE(command_manager_->LoadBaseCommands(*json, nullptr));
-    EXPECT_TRUE(command_manager_->LoadCommands(*json, "", nullptr));
+    EXPECT_TRUE(command_manager_->LoadCommands(*json, nullptr));
   }
 
   void AddCommand(const std::string& command) {

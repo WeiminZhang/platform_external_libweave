@@ -66,7 +66,7 @@ const CommandDictionary& CommandManager::GetCommandDictionary() const {
 
 bool CommandManager::LoadBaseCommands(const base::DictionaryValue& dict,
                                       ErrorPtr* error) {
-  return base_dictionary_.LoadCommands(dict, "", nullptr, error);
+  return base_dictionary_.LoadCommands(dict, nullptr, error);
 }
 
 bool CommandManager::LoadBaseCommands(const std::string& json,
@@ -78,22 +78,19 @@ bool CommandManager::LoadBaseCommands(const std::string& json,
 }
 
 bool CommandManager::LoadCommands(const base::DictionaryValue& dict,
-                                  const std::string& category,
                                   ErrorPtr* error) {
-  bool result =
-      dictionary_.LoadCommands(dict, category, &base_dictionary_, error);
+  bool result = dictionary_.LoadCommands(dict, &base_dictionary_, error);
   for (const auto& cb : on_command_changed_)
     cb.Run();
   return result;
 }
 
 bool CommandManager::LoadCommands(const std::string& json,
-                                  const std::string& category,
                                   ErrorPtr* error) {
   std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
   if (!dict)
     return false;
-  return LoadCommands(*dict, category, error);
+  return LoadCommands(*dict, error);
 }
 
 void CommandManager::Startup(provider::ConfigStore* config_store) {
@@ -104,7 +101,7 @@ void CommandManager::Startup(provider::ConfigStore* config_store) {
 
   // Loading the rest of commands.
   for (const auto& defs : config_store->LoadCommandDefs())
-    CHECK(this->LoadCommands(defs.second, defs.first, nullptr));
+    CHECK(this->LoadCommands(defs, nullptr));
 }
 
 void CommandManager::AddCommand(

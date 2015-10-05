@@ -71,12 +71,10 @@ std::string CommandDefinition::Visibility::ToString() const {
 }
 
 CommandDefinition::CommandDefinition(
-    const std::string& category,
     std::unique_ptr<const ObjectSchema> parameters,
     std::unique_ptr<const ObjectSchema> progress,
     std::unique_ptr<const ObjectSchema> results)
-    : category_{category},
-      parameters_{std::move(parameters)},
+    : parameters_{std::move(parameters)},
       progress_{std::move(progress)},
       results_{std::move(results)} {
   // Set to be available to all clients by default.

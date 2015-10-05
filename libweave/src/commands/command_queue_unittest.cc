@@ -39,9 +39,8 @@ class CommandQueueTest : public testing::Test {
   CommandQueue queue_;
 
  private:
-  CommandDefinition command_definition_{"powerd", ObjectSchema::Create(),
-                                        ObjectSchema::Create(),
-                                        ObjectSchema::Create()};
+  CommandDefinition command_definition_{
+      ObjectSchema::Create(), ObjectSchema::Create(), ObjectSchema::Create()};
 };
 
 // Keeps track of commands being added to and removed from the queue_.

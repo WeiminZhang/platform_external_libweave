@@ -367,7 +367,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
       }
     }
   })");
-  EXPECT_TRUE(command_manager_->LoadCommands(*json_cmds, "", nullptr));
+  EXPECT_TRUE(command_manager_->LoadCommands(*json_cmds, nullptr));
 
   std::string ticket_url = dev_reg_->GetServiceURL("registrationTickets/") +
                            test_data::kClaimTicketId;
@@ -516,7 +516,7 @@ TEST_F(DeviceRegistrationInfoTest, UpdateCommand) {
       }
     }
   })");
-  EXPECT_TRUE(command_manager_->LoadCommands(*json_cmds, "", nullptr));
+  EXPECT_TRUE(command_manager_->LoadCommands(*json_cmds, nullptr));
 
   const std::string command_url = dev_reg_->GetServiceURL("commands/1234");
 

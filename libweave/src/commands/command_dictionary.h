@@ -34,27 +34,14 @@ class CommandDictionary final {
  public:
   CommandDictionary() = default;
 
-  // Gets the list of names of commands that belong to the given category.
-  std::vector<std::string> GetCommandNamesByCategory(
-      const std::string& category) const;
-
   // Loads command definitions from a JSON object. This is done at the daemon
   // startup and whenever a device daemon decides to update its command list.
-  // |json| is a JSON dictionary that describes the complete commands contained
-  // in a particular |category|. Usually, |categories| are 1:1 with daemons on
-  // a device. For instance, the power manager daemon might provide a category
-  // "power_man" that provides the "base.reboot" and "base.shutdown" commands.
-  // However, nothing prohibits a daemon providing commands in two categories.
-  // When LoadCommands is called, all previous definitions of commands from the
-  // same category are removed, effectively replacing all the commands in the
-  // given category.
-  // Optional |base_commands| parameter specifies the definition of standard
-  // GCD commands for parameter schema validation. Can be set to nullptr if
-  // no validation is needed.
-  // Returns false on failure and |error| provides additional error information
-  // when provided.
+  // |json| is a JSON dictionary that describes the complete commands. Optional
+  // |base_commands| parameter specifies the definition of standard GCD commands
+  // for parameter schema validation. Can be set to nullptr if no validation is
+  // needed. Returns false on failure and |error| provides additional error
+  // information when provided.
   bool LoadCommands(const base::DictionaryValue& json,
-                    const std::string& category,
                     const CommandDictionary* base_commands,
                     ErrorPtr* error);
   // Converts all the command definitions to a JSON object for CDD/Device

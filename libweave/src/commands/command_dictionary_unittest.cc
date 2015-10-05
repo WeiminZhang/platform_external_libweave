@@ -17,7 +17,6 @@ TEST(CommandDictionary, Empty) {
   CommandDictionary dict;
   EXPECT_TRUE(dict.IsEmpty());
   EXPECT_EQ(nullptr, dict.FindCommand("robot.jump"));
-  EXPECT_TRUE(dict.GetCommandNamesByCategory("robotd").empty());
 }
 
 TEST(CommandDictionary, LoadCommands) {
@@ -36,7 +35,7 @@ TEST(CommandDictionary, LoadCommands) {
     }
   })");
   CommandDictionary dict;
-  EXPECT_TRUE(dict.LoadCommands(*json, "robotd", nullptr, nullptr));
+  EXPECT_TRUE(dict.LoadCommands(*json, nullptr, nullptr));
   EXPECT_EQ(1, dict.GetSize());
   EXPECT_NE(nullptr, dict.FindCommand("robot.jump"));
   json = CreateDictionaryValue(R"({
@@ -48,14 +47,12 @@ TEST(CommandDictionary, LoadCommands) {
       }
     }
   })");
-  EXPECT_TRUE(dict.LoadCommands(*json, "powerd", nullptr, nullptr));
+  EXPECT_TRUE(dict.LoadCommands(*json, nullptr, nullptr));
   EXPECT_EQ(3, dict.GetSize());
   EXPECT_NE(nullptr, dict.FindCommand("robot.jump"));
   EXPECT_NE(nullptr, dict.FindCommand("base.reboot"));
   EXPECT_NE(nullptr, dict.FindCommand("base.shutdown"));
   EXPECT_EQ(nullptr, dict.FindCommand("foo.bar"));
-  std::vector<std::string> expected_commands{"base.reboot", "base.shutdown"};
-  EXPECT_EQ(expected_commands, dict.GetCommandNamesByCategory("powerd"));
 }
 
 TEST(CommandDictionary, LoadWithInheritance) {
@@ -77,12 +74,12 @@ TEST(CommandDictionary, LoadWithInheritance) {
     }
   })");
   CommandDictionary base_dict;
-  EXPECT_TRUE(base_dict.LoadCommands(*json, "test1", nullptr, nullptr));
+  EXPECT_TRUE(base_dict.LoadCommands(*json, nullptr, nullptr));
   EXPECT_EQ(1, base_dict.GetSize());
   json = CreateDictionaryValue(R"({'robot': {'jump': {}}})");
 
   CommandDictionary dict;
-  EXPECT_TRUE(dict.LoadCommands(*json, "test2", &base_dict, nullptr));
+  EXPECT_TRUE(dict.LoadCommands(*json, &base_dict, nullptr));
   EXPECT_EQ(1, dict.GetSize());
 
   auto cmd = dict.FindCommand("robot.jump");
@@ -105,27 +102,27 @@ TEST(CommandDictionary, LoadCommands_Failures) {
 
   // Command definition is not an object.
   auto json = CreateDictionaryValue("{'robot':{'jump':0}}");
-  EXPECT_FALSE(dict.LoadCommands(*json, "robotd", nullptr, &error));
+  EXPECT_FALSE(dict.LoadCommands(*json, nullptr, &error));
   EXPECT_EQ("type_mismatch", error->GetCode());
   error.reset();
 
   // Package definition is not an object.
   json = CreateDictionaryValue("{'robot':'blah'}");
-  EXPECT_FALSE(dict.LoadCommands(*json, "robotd", nullptr, &error));
+  EXPECT_FALSE(dict.LoadCommands(*json, nullptr, &error));
   EXPECT_EQ("type_mismatch", error->GetCode());
   error.reset();
 
   // Invalid command definition is not an object.
   json = CreateDictionaryValue(
       "{'robot':{'jump':{'parameters':{'flip':0},'results':{}}}}");
-  EXPECT_FALSE(dict.LoadCommands(*json, "robotd", nullptr, &error));
+  EXPECT_FALSE(dict.LoadCommands(*json, nullptr, &error));
   EXPECT_EQ("invalid_object_schema", error->GetCode());
   EXPECT_NE(nullptr, error->GetInnerError());  // Must have additional info.
   error.reset();
 
   // Empty command name.
   json = CreateDictionaryValue("{'robot':{'':{'parameters':{},'results':{}}}}");
-  EXPECT_FALSE(dict.LoadCommands(*json, "robotd", nullptr, &error));
+  EXPECT_FALSE(dict.LoadCommands(*json, nullptr, &error));
   EXPECT_EQ("invalid_command_name", error->GetCode());
   error.reset();
 }
@@ -135,10 +132,10 @@ TEST(CommandDictionaryDeathTest, LoadCommands_RedefineInDifferentCategory) {
   CommandDictionary dict;
   ErrorPtr error;
   auto json = CreateDictionaryValue("{'robot':{'jump':{}}}");
-  dict.LoadCommands(*json, "category1", nullptr, &error);
-  ASSERT_DEATH(dict.LoadCommands(*json, "category2", nullptr, &error),
+  dict.LoadCommands(*json, nullptr, &error);
+  ASSERT_DEATH(dict.LoadCommands(*json, nullptr, &error),
                ".*Definition for command 'robot.jump' overrides an "
-               "earlier definition in category 'category1'");
+               "earlier definition");
 }
 
 TEST(CommandDictionary, LoadCommands_CustomCommandNaming) {
@@ -154,18 +151,18 @@ TEST(CommandDictionary, LoadCommands_CustomCommandNaming) {
       }
     }
   })");
-  base_dict.LoadCommands(*json, "", nullptr, &error);
-  EXPECT_TRUE(dict.LoadCommands(*json, "robotd", &base_dict, &error));
+  base_dict.LoadCommands(*json, nullptr, &error);
+  EXPECT_TRUE(dict.LoadCommands(*json, &base_dict, &error));
   auto json2 =
       CreateDictionaryValue("{'base':{'jump':{'parameters':{},'results':{}}}}");
-  EXPECT_FALSE(dict.LoadCommands(*json2, "robotd", &base_dict, &error));
+  EXPECT_FALSE(dict.LoadCommands(*json2, &base_dict, &error));
   EXPECT_EQ("invalid_command_name", error->GetCode());
   error.reset();
 
   // If the command starts with "_", then it's Ok.
   json2 = CreateDictionaryValue(
       "{'base':{'_jump':{'parameters':{},'results':{}}}}");
-  EXPECT_TRUE(dict.LoadCommands(*json2, "robotd", &base_dict, nullptr));
+  EXPECT_TRUE(dict.LoadCommands(*json2, &base_dict, nullptr));
 }
 
 TEST(CommandDictionary, LoadCommands_RedefineStdCommand) {
@@ -181,7 +178,7 @@ TEST(CommandDictionary, LoadCommands_RedefineStdCommand) {
       }
     }
   })");
-  base_dict.LoadCommands(*json, "", nullptr, &error);
+  base_dict.LoadCommands(*json, nullptr, &error);
 
   auto json2 = CreateDictionaryValue(R"({
     'base': {
@@ -191,7 +188,7 @@ TEST(CommandDictionary, LoadCommands_RedefineStdCommand) {
       }
     }
   })");
-  EXPECT_FALSE(dict.LoadCommands(*json2, "robotd", &base_dict, &error));
+  EXPECT_FALSE(dict.LoadCommands(*json2, &base_dict, &error));
   EXPECT_EQ("invalid_object_schema", error->GetCode());
   EXPECT_EQ("invalid_parameter_definition", error->GetInnerError()->GetCode());
   EXPECT_EQ("param_type_changed", error->GetFirstError()->GetCode());
@@ -205,7 +202,7 @@ TEST(CommandDictionary, LoadCommands_RedefineStdCommand) {
       }
     }
   })");
-  EXPECT_FALSE(dict.LoadCommands(*json3, "robotd", &base_dict, &error));
+  EXPECT_FALSE(dict.LoadCommands(*json3, &base_dict, &error));
   EXPECT_EQ("invalid_object_schema", error->GetCode());
   // TODO(antonm): remove parameter from error below and use some generic.
   EXPECT_EQ("invalid_parameter_definition", error->GetInnerError()->GetCode());
@@ -227,7 +224,7 @@ TEST(CommandDictionary, GetCommandsAsJson) {
     }
   })");
   CommandDictionary base_dict;
-  base_dict.LoadCommands(*json_base, "base", nullptr, nullptr);
+  base_dict.LoadCommands(*json_base, nullptr, nullptr);
 
   auto json = CreateDictionaryValue(R"({
     'base': {
@@ -244,7 +241,7 @@ TEST(CommandDictionary, GetCommandsAsJson) {
     }
   })");
   CommandDictionary dict;
-  dict.LoadCommands(*json, "device", &base_dict, nullptr);
+  dict.LoadCommands(*json, &base_dict, nullptr);
 
   json = dict.GetCommandsAsJson(
       [](const CommandDefinition* def) { return true; }, false, nullptr);
@@ -341,7 +338,7 @@ TEST(CommandDictionary, GetCommandsAsJsonWithVisibility) {
     }
   })");
   CommandDictionary dict;
-  ASSERT_TRUE(dict.LoadCommands(*json, "test", nullptr, nullptr));
+  ASSERT_TRUE(dict.LoadCommands(*json, nullptr, nullptr));
 
   json = dict.GetCommandsAsJson(
       [](const CommandDefinition* def) { return true; }, false, nullptr);
@@ -438,7 +435,7 @@ TEST(CommandDictionary, LoadWithPermissions) {
       }
     }
   })");
-  EXPECT_TRUE(base_dict.LoadCommands(*json, "testd", nullptr, nullptr));
+  EXPECT_TRUE(base_dict.LoadCommands(*json, nullptr, nullptr));
 
   auto cmd = base_dict.FindCommand("base.command1");
   ASSERT_NE(nullptr, cmd);
@@ -494,7 +491,7 @@ TEST(CommandDictionary, LoadWithPermissions) {
       }
     }
   })");
-  EXPECT_TRUE(dict.LoadCommands(*json, "testd", &base_dict, nullptr));
+  EXPECT_TRUE(dict.LoadCommands(*json, &base_dict, nullptr));
 
   cmd = dict.FindCommand("base.command1");
   ASSERT_NE(nullptr, cmd);
@@ -540,7 +537,7 @@ TEST(CommandDictionary, LoadWithPermissions_InvalidVisibility) {
       }
     }
   })");
-  EXPECT_FALSE(dict.LoadCommands(*json, "testd", nullptr, &error));
+  EXPECT_FALSE(dict.LoadCommands(*json, nullptr, &error));
   EXPECT_EQ("invalid_command_visibility", error->GetCode());
   EXPECT_EQ("invalid_parameter_value", error->GetInnerError()->GetCode());
   error.reset();
@@ -560,7 +557,7 @@ TEST(CommandDictionary, LoadWithPermissions_InvalidRole) {
       }
     }
   })");
-  EXPECT_FALSE(dict.LoadCommands(*json, "testd", nullptr, &error));
+  EXPECT_FALSE(dict.LoadCommands(*json, nullptr, &error));
   EXPECT_EQ("invalid_minimal_role", error->GetCode());
   EXPECT_EQ("invalid_parameter_value", error->GetInnerError()->GetCode());
   error.reset();

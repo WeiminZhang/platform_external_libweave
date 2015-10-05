@@ -161,14 +161,13 @@ class WeaveTest : public ::testing::Test {
     EXPECT_CALL(config_store_, SaveSettings("")).WillRepeatedly(Return());
 
     EXPECT_CALL(config_store_, LoadCommandDefs())
-        .WillOnce(Return(
-            std::map<std::string, std::string>{{kCategory, kCommandDefs}}));
+        .WillOnce(Return(std::vector<std::string>{kCommandDefs}));
 
     EXPECT_CALL(config_store_, LoadStateDefs())
-        .WillOnce(Return(std::vector<std::string>{{kStateDefs}}));
+        .WillOnce(Return(std::vector<std::string>{kStateDefs}));
 
     EXPECT_CALL(config_store_, LoadStateDefaults())
-        .WillOnce(Return(std::vector<std::string>{{kStateDefaults}}));
+        .WillOnce(Return(std::vector<std::string>{kStateDefaults}));
   }
 
   void InitNetwork() {

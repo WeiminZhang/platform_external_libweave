@@ -21,7 +21,7 @@ class FileConfigStore : public provider::ConfigStore {
   bool LoadDefaults(Settings* settings) override;
   std::string LoadSettings() override;
   void SaveSettings(const std::string& settings) override;
-  std::map<std::string, std::string> LoadCommandDefs() override;
+  std::vector<std::string> LoadCommandDefs() override;
   std::vector<std::string> LoadStateDefs() override;
   std::vector<std::string> LoadStateDefaults() override;
 

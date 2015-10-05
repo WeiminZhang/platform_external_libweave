@@ -46,7 +46,6 @@ class CommandInstance final : public Command {
   void RemoveObserver(Observer* observer) override;
   const std::string& GetID() const override;
   const std::string& GetName() const override;
-  const std::string& GetCategory() const override;
   CommandStatus GetStatus() const override;
   CommandOrigin GetOrigin() const override;
   std::unique_ptr<base::DictionaryValue> GetParameters() const override;

@@ -52,9 +52,6 @@ class Command {
   // Returns the full name of the command.
   virtual const std::string& GetName() const = 0;
 
-  // Returns the command category.
-  virtual const std::string& GetCategory() const = 0;
-
   // Returns the command status.
   virtual CommandStatus GetStatus() const = 0;
 

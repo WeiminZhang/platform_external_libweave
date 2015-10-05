@@ -13,18 +13,7 @@
 
 namespace weave {
 
-std::vector<std::string> CommandDictionary::GetCommandNamesByCategory(
-    const std::string& category) const {
-  std::vector<std::string> names;
-  for (const auto& pair : definitions_) {
-    if (pair.second->GetCategory() == category)
-      names.push_back(pair.first);
-  }
-  return names;
-}
-
 bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
-                                     const std::string& category,
                                      const CommandDictionary* base_commands,
                                      ErrorPtr* error) {
   CommandMap new_defs;
@@ -142,7 +131,7 @@ bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
       }
 
       std::unique_ptr<CommandDefinition> command_def{new CommandDefinition{
-          category, std::move(parameters_schema), std::move(progress_schema),
+          std::move(parameters_schema), std::move(progress_schema),
           std::move(results_schema)}};
       command_def->SetVisibility(visibility);
       command_def->SetMinimalRole(minimal_role);
@@ -159,17 +148,10 @@ bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
   // daemon on the same device.
   for (const auto& pair : new_defs) {
     auto iter = definitions_.find(pair.first);
-    CHECK(iter == definitions_.end())
-        << "Definition for command '" << pair.first
-        << "' overrides an earlier definition in category '"
-        << iter->second->GetCategory().c_str() << "'";
+    CHECK(iter == definitions_.end()) << "Definition for command '"
+                                      << pair.first
+                                      << "' overrides an earlier definition";
   }
-
-  // Now that we successfully loaded all the command definitions,
-  // remove previous definitions of commands from the same category.
-  std::vector<std::string> names = GetCommandNamesByCategory(category);
-  for (const std::string& name : names)
-    definitions_.erase(name);
 
   // Insert new definitions into the global map.
   for (auto& pair : new_defs)
