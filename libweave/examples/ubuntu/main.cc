@@ -29,8 +29,8 @@ void ShowUsage(const std::string& name) {
 class CommandHandler {
  public:
   explicit CommandHandler(weave::Device* device) : device_{device} {
-    device->GetCommands()->AddCommandAddedCallback(base::Bind(
-        &CommandHandler::OnNewCommand, weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandAddedCallback(base::Bind(&CommandHandler::OnNewCommand,
+                                               weak_ptr_factory_.GetWeakPtr()));
   }
 
  private:

@@ -12,7 +12,6 @@
 #include <base/callback.h>
 #include <base/macros.h>
 #include <base/memory/weak_ptr.h>
-#include <weave/commands.h>
 
 #include "src/commands/command_dictionary.h"
 #include "src/commands/command_queue.h"
@@ -28,19 +27,18 @@ class ConfigStore;
 // CommandManager class that will have a list of all the device command
 // schemas as well as the live command queue of pending command instances
 // dispatched to the device.
-class CommandManager final : public Commands {
+class CommandManager final {
  public:
   CommandManager();
 
-  ~CommandManager() override;
+  ~CommandManager();
 
-  // Commands overrides.
   bool AddCommand(const base::DictionaryValue& command,
                   std::string* id,
-                  ErrorPtr* error) override;
-  CommandInstance* FindCommand(const std::string& id) override;
-  void AddCommandAddedCallback(const CommandCallback& callback) override;
-  void AddCommandRemovedCallback(const CommandCallback& callback) override;
+                  ErrorPtr* error);
+  CommandInstance* FindCommand(const std::string& id);
+  void AddCommandAddedCallback(const Device::CommandCallback& callback);
+  void AddCommandRemovedCallback(const Device::CommandCallback& callback);
 
   // Sets callback which is called when command definitions is changed.
   void AddCommandDefChanged(const base::Closure& callback);

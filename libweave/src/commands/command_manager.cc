@@ -175,12 +175,13 @@ bool CommandManager::SetCommandVisibility(
   return true;
 }
 
-void CommandManager::AddCommandAddedCallback(const CommandCallback& callback) {
+void CommandManager::AddCommandAddedCallback(
+    const Device::CommandCallback& callback) {
   command_queue_.AddCommandAddedCallback(callback);
 }
 
 void CommandManager::AddCommandRemovedCallback(
-    const CommandCallback& callback) {
+    const Device::CommandCallback& callback) {
   command_queue_.AddCommandRemovedCallback(callback);
 }
 

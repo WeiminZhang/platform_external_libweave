@@ -14,7 +14,7 @@
 #include <weave/provider/test/mock_http_server.h>
 #include <weave/provider/test/mock_network.h>
 #include <weave/provider/test/mock_wifi.h>
-#include <weave/test/mock_commands.h>
+#include <weave/test/mock_device.h>
 #include <weave/test/unittest_utils.h>
 
 #include "src/bind_lambda.h"
@@ -269,6 +269,12 @@ class WeaveTest : public ::testing::Test {
 
   std::unique_ptr<weave::Device> device_;
 };
+
+TEST_F(WeaveTest, MockDevice) {
+  // Test checks if mock implements entire interface and mock can be
+  // instantiated.
+  test::MockDevice device;
+}
 
 TEST_F(WeaveTest, StartMinimal) {
   InitConfigStore();
