@@ -9,7 +9,6 @@
 #include <string>
 
 #include <base/macros.h>
-#include <weave/commands.h>
 
 #include "src/commands/object_schema.h"
 

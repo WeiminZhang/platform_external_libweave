@@ -14,7 +14,7 @@ const int kRemoveCommandDelayMin = 5;
 }
 
 void CommandQueue::AddCommandAddedCallback(
-    const Commands::CommandCallback& callback) {
+    const Device::CommandCallback& callback) {
   on_command_added_.push_back(callback);
   // Send all pre-existed commands.
   for (const auto& command : map_)
@@ -22,7 +22,7 @@ void CommandQueue::AddCommandAddedCallback(
 }
 
 void CommandQueue::AddCommandRemovedCallback(
-    const Commands::CommandCallback& callback) {
+    const Device::CommandCallback& callback) {
   on_command_removed_.push_back(callback);
 }
 

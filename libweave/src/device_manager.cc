@@ -59,17 +59,13 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
 
 DeviceManager::~DeviceManager() {}
 
-const Settings& DeviceManager::GetSettings() {
+const Settings& DeviceManager::GetSettings() const {
   return device_info_->GetSettings();
 }
 
 void DeviceManager::AddSettingsChangedCallback(
     const SettingsChangedCallback& callback) {
   device_info_->GetMutableConfig()->AddOnChangedCallback(callback);
-}
-
-Commands* DeviceManager::GetCommands() {
-  return command_manager_.get();
 }
 
 Config* DeviceManager::GetConfig() {
@@ -99,6 +95,24 @@ void DeviceManager::AddGcdStateChangedCallback(
 
 void DeviceManager::AddStateChangedCallback(const base::Closure& callback) {
   state_manager_->AddChangedCallback(callback);
+}
+
+bool DeviceManager::AddCommand(const base::DictionaryValue& command,
+                               std::string* id,
+                               ErrorPtr* error) {
+  return command_manager_->AddCommand(command, id, error);
+}
+
+Command* DeviceManager::FindCommand(const std::string& id) {
+  return command_manager_->FindCommand(id);
+}
+
+void DeviceManager::AddCommandAddedCallback(const CommandCallback& callback) {
+  return command_manager_->AddCommandAddedCallback(callback);
+}
+
+void DeviceManager::AddCommandRemovedCallback(const CommandCallback& callback) {
+  return command_manager_->AddCommandRemovedCallback(callback);
 }
 
 bool DeviceManager::SetStateProperties(

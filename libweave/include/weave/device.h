@@ -9,7 +9,7 @@
 #include <set>
 #include <string>
 
-#include <weave/commands.h>
+#include <weave/command.h>
 #include <weave/export.h>
 #include <weave/provider/bluetooth.h>
 #include <weave/provider/config_store.h>
@@ -35,16 +35,34 @@ class Device {
   virtual ~Device() = default;
 
   // Returns reference the current settings.
-  virtual const Settings& GetSettings() = 0;
+  virtual const Settings& GetSettings() const = 0;
 
   // Callback type for AddSettingsChangedCallback.
   using SettingsChangedCallback =
       base::Callback<void(const Settings& settings)>;
+
   // Subscribes to notification settings changes.
   virtual void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) = 0;
 
-  virtual Commands* GetCommands() = 0;
+  // Callback type for AddCommandAddedCallback and AddCommandRemovedCallback.
+  using CommandCallback = base::Callback<void(Command*)>;
+
+  // Adds notification callback for a new command being added to the queue.
+  virtual void AddCommandAddedCallback(const CommandCallback& callback) = 0;
+
+  // Adds notification callback for a command being removed from the queue.
+  virtual void AddCommandRemovedCallback(const CommandCallback& callback) = 0;
+
+  // Adds a new command to the command queue.
+  virtual bool AddCommand(const base::DictionaryValue& command,
+                          std::string* id,
+                          ErrorPtr* error) = 0;
+
+  // Finds a command by the command |id|. Returns nullptr if the command with
+  // the given |id| is not found. The returned pointer should not be persisted
+  // for a long period of time.
+  virtual Command* FindCommand(const std::string& id) = 0;
 
   // Sets callback which is called when stat is changed.
   virtual void AddStateChangedCallback(const base::Closure& callback) = 0;
@@ -72,6 +90,7 @@ class Device {
 
   // Callback type for GcdStatusCallback.
   using GcdStateChangedCallback = base::Callback<void(GcdState state)>;
+
   // Sets callback which is called when state of server connection changed.
   virtual void AddGcdStateChangedCallback(
       const GcdStateChangedCallback& callback) = 0;
@@ -86,10 +105,12 @@ class Device {
       base::Callback<void(const std::string& session_id,
                           PairingType pairing_type,
                           const std::vector<uint8_t>& code)>;
+
   // Handler should stop displaying pin code.
   using PairingEndCallback =
       base::Callback<void(const std::string& session_id)>;
   // Subscribes to notification about client pairing events.
+
   virtual void AddPairingChangedCallbacks(
       const PairingBeginCallback& begin_callback,
       const PairingEndCallback& end_callback) = 0;

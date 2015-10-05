@@ -34,11 +34,15 @@ class DeviceManager final : public Device {
   ~DeviceManager() override;
 
   // Device implementation.
-  const Settings& GetSettings() override;
+  const Settings& GetSettings() const override;
   void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) override;
-  Commands* GetCommands() override;
-
+  bool AddCommand(const base::DictionaryValue& command,
+                  std::string* id,
+                  ErrorPtr* error) override;
+  Command* FindCommand(const std::string& id) override;
+  void AddCommandAddedCallback(const CommandCallback& callback) override;
+  void AddCommandRemovedCallback(const CommandCallback& callback) override;
   void AddStateChangedCallback(const base::Closure& callback) override;
   bool SetStateProperties(const base::DictionaryValue& property_set,
                           ErrorPtr* error) override;
@@ -48,13 +52,10 @@ class DeviceManager final : public Device {
                         const base::Value& value,
                         ErrorPtr* error) override;
   std::unique_ptr<base::DictionaryValue> GetState() const override;
-
   std::string Register(const std::string& ticket_id, ErrorPtr* error) override;
-
   GcdState GetGcdState() const override;
   void AddGcdStateChangedCallback(
       const GcdStateChangedCallback& callback) override;
-
   void AddPairingChangedCallbacks(
       const PairingBeginCallback& begin_callback,
       const PairingEndCallback& end_callback) override;
