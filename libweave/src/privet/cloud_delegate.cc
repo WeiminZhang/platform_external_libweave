@@ -52,11 +52,11 @@ class CloudDelegateImpl : public CloudDelegate {
     device_->AddGcdStateChangedCallback(base::Bind(
         &CloudDelegateImpl::OnRegistrationChanged, weak_factory_.GetWeakPtr()));
 
-    command_manager_->AddOnCommandDefChanged(base::Bind(
+    command_manager_->AddCommandDefChanged(base::Bind(
         &CloudDelegateImpl::OnCommandDefChanged, weak_factory_.GetWeakPtr()));
-    command_manager_->AddOnCommandAddedCallback(base::Bind(
+    command_manager_->AddCommandAddedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandAdded, weak_factory_.GetWeakPtr()));
-    command_manager_->AddOnCommandRemovedCallback(base::Bind(
+    command_manager_->AddCommandRemovedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandRemoved, weak_factory_.GetWeakPtr()));
 
     state_manager_->AddChangedCallback(base::Bind(

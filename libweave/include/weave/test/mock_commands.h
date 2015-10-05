@@ -18,8 +18,8 @@ class MockCommands : public Commands {
  public:
   ~MockCommands() override = default;
 
-  MOCK_METHOD1(AddOnCommandAddedCallback, void(const OnCommandCallback&));
-  MOCK_METHOD1(AddOnCommandRemovedCallback, void(const OnCommandCallback&));
+  MOCK_METHOD1(AddCommandAddedCallback, void(const CommandCallback&));
+  MOCK_METHOD1(AddCommandRemovedCallback, void(const CommandCallback&));
   MOCK_METHOD3(AddCommand,
                bool(const base::DictionaryValue&, std::string*, ErrorPtr*));
   MOCK_METHOD1(FindCommand, Command*(const std::string&));

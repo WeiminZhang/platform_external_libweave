@@ -34,7 +34,7 @@ BaseApiHandler::BaseApiHandler(
                                       settings.firmware_version);
   CHECK(state_manager_->SetProperties(state, nullptr));
 
-  command_manager->AddOnCommandAddedCallback(base::Bind(
+  command_manager->AddCommandAddedCallback(base::Bind(
       &BaseApiHandler::OnCommandAdded, weak_ptr_factory_.GetWeakPtr()));
 }
 

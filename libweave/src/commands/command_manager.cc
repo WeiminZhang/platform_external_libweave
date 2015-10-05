@@ -55,7 +55,7 @@ CommandManager::CommandManager() {}
 
 CommandManager::~CommandManager() {}
 
-void CommandManager::AddOnCommandDefChanged(const base::Closure& callback) {
+void CommandManager::AddCommandDefChanged(const base::Closure& callback) {
   on_command_changed_.push_back(callback);
   callback.Run();
 }
@@ -175,14 +175,13 @@ bool CommandManager::SetCommandVisibility(
   return true;
 }
 
-void CommandManager::AddOnCommandAddedCallback(
-    const OnCommandCallback& callback) {
-  command_queue_.AddOnCommandAddedCallback(callback);
+void CommandManager::AddCommandAddedCallback(const CommandCallback& callback) {
+  command_queue_.AddCommandAddedCallback(callback);
 }
 
-void CommandManager::AddOnCommandRemovedCallback(
-    const OnCommandCallback& callback) {
-  command_queue_.AddOnCommandRemovedCallback(callback);
+void CommandManager::AddCommandRemovedCallback(
+    const CommandCallback& callback) {
+  command_queue_.AddCommandRemovedCallback(callback);
 }
 
 }  // namespace weave

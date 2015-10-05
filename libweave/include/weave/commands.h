@@ -16,14 +16,13 @@ namespace weave {
 
 class Commands {
  public:
-  using OnCommandCallback = base::Callback<void(Command*)>;
+  using CommandCallback = base::Callback<void(Command*)>;
 
   // Adds notification callback for a new command being added to the queue.
-  virtual void AddOnCommandAddedCallback(const OnCommandCallback& callback) = 0;
+  virtual void AddCommandAddedCallback(const CommandCallback& callback) = 0;
 
   // Adds notification callback for a command being removed from the queue.
-  virtual void AddOnCommandRemovedCallback(
-      const OnCommandCallback& callback) = 0;
+  virtual void AddCommandRemovedCallback(const CommandCallback& callback) = 0;
 
   // Adds a new command to the command queue.
   virtual bool AddCommand(const base::DictionaryValue& command,

@@ -240,7 +240,7 @@ DeviceRegistrationInfo::DeviceRegistrationInfo(
   cloud_backoff_entry_.reset(new BackoffEntry{cloud_backoff_policy_.get()});
   oauth2_backoff_entry_.reset(new BackoffEntry{cloud_backoff_policy_.get()});
 
-  command_manager_->AddOnCommandDefChanged(
+  command_manager_->AddCommandDefChanged(
       base::Bind(&DeviceRegistrationInfo::OnCommandDefsChanged,
                  weak_factory_.GetWeakPtr()));
   state_manager_->AddChangedCallback(base::Bind(

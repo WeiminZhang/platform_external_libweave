@@ -26,10 +26,10 @@ class CommandQueue final {
   CommandQueue() = default;
 
   // Adds notifications callback for a new command is added to the queue.
-  void AddOnCommandAddedCallback(const Commands::OnCommandCallback& callback);
+  void AddCommandAddedCallback(const Commands::CommandCallback& callback);
 
   // Adds notifications callback for a command is removed from the queue.
-  void AddOnCommandRemovedCallback(const Commands::OnCommandCallback& callback);
+  void AddCommandRemovedCallback(const Commands::CommandCallback& callback);
 
   // Checks if the command queue is empty.
   bool IsEmpty() const { return map_.empty(); }
@@ -75,7 +75,7 @@ class CommandQueue final {
   // Queue of commands to be removed.
   std::queue<std::pair<base::Time, std::string>> remove_queue_;
 
-  using CallbackList = std::vector<Commands::OnCommandCallback>;
+  using CallbackList = std::vector<Commands::CommandCallback>;
   CallbackList on_command_added_;
   CallbackList on_command_removed_;
 

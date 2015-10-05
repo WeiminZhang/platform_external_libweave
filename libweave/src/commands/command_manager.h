@@ -39,11 +39,11 @@ class CommandManager final : public Commands {
                   std::string* id,
                   ErrorPtr* error) override;
   CommandInstance* FindCommand(const std::string& id) override;
-  void AddOnCommandAddedCallback(const OnCommandCallback& callback) override;
-  void AddOnCommandRemovedCallback(const OnCommandCallback& callback) override;
+  void AddCommandAddedCallback(const CommandCallback& callback) override;
+  void AddCommandRemovedCallback(const CommandCallback& callback) override;
 
   // Sets callback which is called when command definitions is changed.
-  void AddOnCommandDefChanged(const base::Closure& callback);
+  void AddCommandDefChanged(const base::Closure& callback);
 
   // Returns the command definitions for the device.
   const CommandDictionary& GetCommandDictionary() const;
