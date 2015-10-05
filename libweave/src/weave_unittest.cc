@@ -40,8 +40,6 @@ using test::ValueToString;
 using provider::test::MockHttpClientResponse;
 using provider::Network;
 
-const char kCategory[] = "powerd";
-
 const char kCommandDefs[] = R"({
   "base": {
     "reboot": {},
