@@ -28,7 +28,6 @@ class BaseApiHandler final {
   BaseApiHandler(DeviceRegistrationInfo* device_info, Device* device);
 
  private:
-  void OnCommandAdded(Command* command);
   void UpdateBaseConfiguration(Command* command);
   void UpdateDeviceInfo(Command* command);
   bool UpdateState(const std::string& anonymous_access_role,

@@ -176,13 +176,21 @@ bool CommandManager::SetCommandVisibility(
 }
 
 void CommandManager::AddCommandAddedCallback(
-    const Device::CommandCallback& callback) {
+    const CommandQueue::CommandCallback& callback) {
   command_queue_.AddCommandAddedCallback(callback);
 }
 
 void CommandManager::AddCommandRemovedCallback(
-    const Device::CommandCallback& callback) {
+    const CommandQueue::CommandCallback& callback) {
   command_queue_.AddCommandRemovedCallback(callback);
+}
+
+void CommandManager::AddCommandHandler(
+    const std::string& command_name,
+    const CommandQueue::CommandCallback& callback) {
+  CHECK(command_name.empty() || base_dictionary_.FindCommand(command_name))
+      << "Command undefined: " << command_name;
+  command_queue_.AddCommandHandler(command_name, callback);
 }
 
 }  // namespace weave

@@ -34,66 +34,85 @@ void ShowUsage(const std::string& name) {
 class CommandHandler {
  public:
   explicit CommandHandler(weave::Device* device) : device_{device} {
-    device->AddCommandAddedCallback(base::Bind(&CommandHandler::OnNewCommand,
-                                               weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandHandler("_greeter._greet",
+                              base::Bind(&CommandHandler::OnGreetCommand,
+                                         weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandHandler("_ledflasher._set",
+                              base::Bind(&CommandHandler::OnFlasherSetCommand,
+                                         weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandHandler(
+        "_ledflasher._toggle",
+        base::Bind(&CommandHandler::OnFlasherToggleCommand,
+                   weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandHandler("",
+                              base::Bind(&CommandHandler::OnUnhandledCommand,
+                                         weak_ptr_factory_.GetWeakPtr()));
   }
 
  private:
-  void OnNewCommand(weave::Command* cmd) {
+  void OnGreetCommand(weave::Command* cmd) {
     LOG(INFO) << "received command: " << cmd->GetName();
-    if (cmd->GetName() == "_greeter._greet") {
-      std::string name;
-      if (!cmd->GetParameters()->GetString("_name", &name))
-        name = "anonymous";
+    std::string name;
+    if (!cmd->GetParameters()->GetString("_name", &name))
+      name = "anonymous";
 
-      LOG(INFO) << cmd->GetName() << " command in progress";
-      cmd->SetProgress(base::DictionaryValue{}, nullptr);
+    LOG(INFO) << cmd->GetName() << " command in progress";
+    cmd->SetProgress(base::DictionaryValue{}, nullptr);
 
-      base::DictionaryValue result;
-      result.SetString("_greeting", "Hello " + name);
-      cmd->SetResults(result, nullptr);
-      LOG(INFO) << cmd->GetName() << " command finished: " << result;
+    base::DictionaryValue result;
+    result.SetString("_greeting", "Hello " + name);
+    cmd->SetResults(result, nullptr);
+    LOG(INFO) << cmd->GetName() << " command finished: " << result;
 
-      base::DictionaryValue state;
-      state.SetIntegerWithoutPathExpansion("_greeter._greetings_counter",
-                                           ++counter_);
-      device_->SetStateProperties(state, nullptr);
+    base::DictionaryValue state;
+    state.SetIntegerWithoutPathExpansion("_greeter._greetings_counter",
+                                         ++counter_);
+    device_->SetStateProperties(state, nullptr);
 
-      LOG(INFO) << "New state: " << *device_->GetState();
+    LOG(INFO) << "New state: " << *device_->GetState();
 
-      cmd->Done();
-    } else if (cmd->GetName() == "_ledflasher._set") {
-      int32_t led_index;
-      bool cmd_value;
-      if (cmd->GetParameters()->GetInteger("_led", &led_index) &&
-          cmd->GetParameters()->GetBoolean("_on", &cmd_value)) {
-        // Display this command in terminal
-        LOG(INFO) << cmd->GetName() << " _led: " << led_index
-                  << ", _on: " << (cmd_value ? "true" : "false");
+    cmd->Done();
+  }
 
-        led_index--;
-        int new_state = cmd_value ? 1 : 0;
-        int cur_state = led_status_[led_index];
-        led_status_[led_index] = new_state;
+  void OnFlasherSetCommand(weave::Command* cmd) {
+    LOG(INFO) << "received command: " << cmd->GetName();
+    int32_t led_index;
+    bool cmd_value;
+    if (cmd->GetParameters()->GetInteger("_led", &led_index) &&
+        cmd->GetParameters()->GetBoolean("_on", &cmd_value)) {
+      // Display this command in terminal
+      LOG(INFO) << cmd->GetName() << " _led: " << led_index
+                << ", _on: " << (cmd_value ? "true" : "false");
 
-        if (cmd_value != cur_state) {
-          UpdateLedState();
-        }
-      }
-      cmd->Done();
-    } else if (cmd->GetName() == "_ledflasher._toggle") {
-      int32_t led_index;
-      if (cmd->GetParameters()->GetInteger("_led", &led_index)) {
-        LOG(INFO) << cmd->GetName() << " _led: " << led_index;
-        led_index--;
-        led_status_[led_index] = ~led_status_[led_index];
+      led_index--;
+      int new_state = cmd_value ? 1 : 0;
+      int cur_state = led_status_[led_index];
+      led_status_[led_index] = new_state;
 
+      if (cmd_value != cur_state) {
         UpdateLedState();
       }
-      cmd->Done();
-    } else {
-      LOG(INFO) << cmd->GetName() << " unimplemented command: ignored";
+      return cmd->Done();
     }
+    cmd->Abort();
+  }
+
+  void OnFlasherToggleCommand(weave::Command* cmd) {
+    LOG(INFO) << "received command: " << cmd->GetName();
+    int32_t led_index;
+    if (cmd->GetParameters()->GetInteger("_led", &led_index)) {
+      LOG(INFO) << cmd->GetName() << " _led: " << led_index;
+      led_index--;
+      led_status_[led_index] = ~led_status_[led_index];
+
+      UpdateLedState();
+      return cmd->Done();
+    }
+    cmd->Abort();
+  }
+
+  void OnUnhandledCommand(weave::Command* cmd) {
+    LOG(INFO) << cmd->GetName() << " unimplemented command: ignored";
   }
 
   void UpdateLedState(void) {
