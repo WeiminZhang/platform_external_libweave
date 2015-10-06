@@ -111,10 +111,6 @@ void DeviceManager::AddCommandAddedCallback(const CommandCallback& callback) {
   return command_manager_->AddCommandAddedCallback(callback);
 }
 
-void DeviceManager::AddCommandRemovedCallback(const CommandCallback& callback) {
-  return command_manager_->AddCommandRemovedCallback(callback);
-}
-
 bool DeviceManager::SetStateProperties(
     const base::DictionaryValue& property_set,
     ErrorPtr* error) {
