@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/provider/test/mock_http_client.h>
+#include <weave/test/mock_device.h>
 
 #include "src/commands/command_manager.h"
 #include "src/commands/unittest_utils.h"
@@ -32,6 +33,14 @@ class BaseApiHandlerTest : public ::testing::Test {
 
     command_manager_ = std::make_shared<CommandManager>();
     state_manager_ = std::make_shared<StateManager>(&mock_state_change_queue_);
+
+    EXPECT_CALL(device_, SetStateProperties(_, _))
+        .WillRepeatedly(
+            Invoke(state_manager_.get(), &StateManager::SetProperties));
+    EXPECT_CALL(device_, AddCommandAddedCallback(_))
+        .WillRepeatedly(Invoke(command_manager_.get(),
+                               &CommandManager::AddCommandAddedCallback));
+
     auto state_definition = test::CreateDictionaryValue(R"({
       'base': {
         'firmwareVersion': 'string',
@@ -61,8 +70,7 @@ class BaseApiHandlerTest : public ::testing::Test {
     dev_reg_.reset(new DeviceRegistrationInfo(command_manager_, state_manager_,
                                               std::move(config), nullptr,
                                               &http_client_, nullptr));
-    handler_.reset(
-        new BaseApiHandler{dev_reg_.get(), state_manager_, command_manager_});
+    handler_.reset(new BaseApiHandler{dev_reg_.get(), &device_});
   }
 
   void LoadCommands(const std::string& command_definitions) {
@@ -92,6 +100,7 @@ class BaseApiHandlerTest : public ::testing::Test {
   testing::StrictMock<MockStateChangeQueueInterface> mock_state_change_queue_;
   std::shared_ptr<StateManager> state_manager_;
   std::unique_ptr<BaseApiHandler> handler_;
+  StrictMock<test::MockDevice> device_;
   int command_id_{0};
 };
 

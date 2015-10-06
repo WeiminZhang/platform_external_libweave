@@ -45,8 +45,7 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
   device_info_.reset(new DeviceRegistrationInfo(
       command_manager_, state_manager_, std::move(config), task_runner,
       http_client, network));
-  base_api_handler_.reset(
-      new BaseApiHandler{device_info_.get(), state_manager_, command_manager_});
+  base_api_handler_.reset(new BaseApiHandler{device_info_.get(), this});
 
   device_info_->Start();
 
