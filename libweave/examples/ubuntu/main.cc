@@ -26,9 +26,9 @@ void ShowUsage(const std::string& name) {
              << "\nOptions:\n"
              << "\t-h,--help                    Show this help message\n"
              << "\t-b,--bootstrapping           Force WiFi bootstrapping\n"
-             << "\t--disable_security           Disable privet security\n"
-             << "\t--registration_ticket=TICKET Register device with the given "
-                "ticket\n";
+             << "\t-d,--disable_security        Disable privet security\n"
+             << "\t--registration_ticket=TICKET Register device with the "
+                                                "given ticket\n";
 }
 
 class CommandHandler {
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
       return 0;
     } else if (arg == "-b" || arg == "--bootstrapping") {
       force_bootstrapping = true;
-    } else if (arg == "--disable_security") {
+    } else if (arg == "-d" || arg == "--disable_security") {
       disable_security = true;
     } else if (arg.find("--registration_ticket") != std::string::npos) {
       auto pos = arg.find("=");
