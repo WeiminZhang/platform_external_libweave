@@ -5,11 +5,9 @@
 #include "src/base_api_handler.h"
 
 #include <base/bind.h>
+#include <weave/device.h>
 
-#include "src/commands/command_instance.h"
-#include "src/commands/command_manager.h"
 #include "src/device_registration_info.h"
-#include "src/states/state_manager.h"
 
 namespace weave {
 
@@ -20,11 +18,9 @@ const char kBaseStateDiscoveryEnabled[] = "base.localDiscoveryEnabled";
 const char kBaseStatePairingEnabled[] = "base.localPairingEnabled";
 }  // namespace
 
-BaseApiHandler::BaseApiHandler(
-    DeviceRegistrationInfo* device_info,
-    const std::shared_ptr<StateManager>& state_manager,
-    const std::shared_ptr<CommandManager>& command_manager)
-    : device_info_{device_info}, state_manager_{state_manager} {
+BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
+                               Device* device)
+    : device_info_{device_info}, device_{device} {
   device_info_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
       &BaseApiHandler::OnConfigChanged, weak_ptr_factory_.GetWeakPtr()));
 
@@ -32,10 +28,10 @@ BaseApiHandler::BaseApiHandler(
   base::DictionaryValue state;
   state.SetStringWithoutPathExpansion(kBaseStateFirmwareVersion,
                                       settings.firmware_version);
-  CHECK(state_manager_->SetProperties(state, nullptr));
+  CHECK(device_->SetStateProperties(state, nullptr));
 
-  command_manager->AddCommandAddedCallback(base::Bind(
-      &BaseApiHandler::OnCommandAdded, weak_ptr_factory_.GetWeakPtr()));
+  device_->AddCommandAddedCallback(base::Bind(&BaseApiHandler::OnCommandAdded,
+                                              weak_ptr_factory_.GetWeakPtr()));
 }
 
 void BaseApiHandler::OnCommandAdded(Command* command) {
@@ -83,7 +79,7 @@ void BaseApiHandler::OnConfigChanged(const Settings& settings) {
                                        settings.local_discovery_enabled);
   state.SetBooleanWithoutPathExpansion(kBaseStatePairingEnabled,
                                        settings.local_pairing_enabled);
-  state_manager_->SetProperties(state, nullptr);
+  device_->SetStateProperties(state, nullptr);
 }
 
 void BaseApiHandler::UpdateDeviceInfo(Command* command) {
