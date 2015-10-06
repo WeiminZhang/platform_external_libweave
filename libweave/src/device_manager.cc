@@ -106,8 +106,9 @@ Command* DeviceManager::FindCommand(const std::string& id) {
   return command_manager_->FindCommand(id);
 }
 
-void DeviceManager::AddCommandAddedCallback(const CommandCallback& callback) {
-  return command_manager_->AddCommandAddedCallback(callback);
+void DeviceManager::AddCommandHandler(const std::string& command_name,
+                                      const CommandHandlerCallback& callback) {
+  return command_manager_->AddCommandHandler(command_name, callback);
 }
 
 bool DeviceManager::SetStateProperties(

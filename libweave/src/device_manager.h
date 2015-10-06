@@ -41,7 +41,8 @@ class DeviceManager final : public Device {
                   std::string* id,
                   ErrorPtr* error) override;
   Command* FindCommand(const std::string& id) override;
-  void AddCommandAddedCallback(const CommandCallback& callback) override;
+  void AddCommandHandler(const std::string& command_name,
+                         const CommandHandlerCallback& callback) override;
   void AddStateChangedCallback(const base::Closure& callback) override;
   bool SetStateProperties(const base::DictionaryValue& property_set,
                           ErrorPtr* error) override;

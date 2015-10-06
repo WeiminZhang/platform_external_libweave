@@ -37,8 +37,10 @@ class CommandManager final {
                   std::string* id,
                   ErrorPtr* error);
   CommandInstance* FindCommand(const std::string& id);
-  void AddCommandAddedCallback(const Device::CommandCallback& callback);
-  void AddCommandRemovedCallback(const Device::CommandCallback& callback);
+  void AddCommandAddedCallback(const CommandQueue::CommandCallback& callback);
+  void AddCommandRemovedCallback(const CommandQueue::CommandCallback& callback);
+  void AddCommandHandler(const std::string& command_name,
+                         const CommandQueue::CommandCallback& callback);
 
   // Sets callback which is called when command definitions is changed.
   void AddCommandDefChanged(const base::Closure& callback);

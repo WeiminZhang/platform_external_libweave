@@ -21,7 +21,8 @@ class MockDevice : public Device {
   MOCK_CONST_METHOD0(GetSettings, const Settings&());
   MOCK_METHOD1(AddSettingsChangedCallback,
                void(const SettingsChangedCallback& callback));
-  MOCK_METHOD1(AddCommandAddedCallback, void(const CommandCallback&));
+  MOCK_METHOD2(AddCommandHandler,
+               void(const std::string&, const CommandHandlerCallback&));
   MOCK_METHOD3(AddCommand,
                bool(const base::DictionaryValue&, std::string*, ErrorPtr*));
   MOCK_METHOD1(FindCommand, Command*(const std::string&));

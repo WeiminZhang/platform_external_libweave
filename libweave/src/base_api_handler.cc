@@ -30,22 +30,19 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
                                       settings.firmware_version);
   CHECK(device_->SetStateProperties(state, nullptr));
 
-  device_->AddCommandAddedCallback(base::Bind(&BaseApiHandler::OnCommandAdded,
-                                              weak_ptr_factory_.GetWeakPtr()));
-}
+  device_->AddCommandHandler(
+      "base.updateBaseConfiguration",
+      base::Bind(&BaseApiHandler::UpdateBaseConfiguration,
+                 weak_ptr_factory_.GetWeakPtr()));
 
-void BaseApiHandler::OnCommandAdded(Command* command) {
-  if (command->GetStatus() != CommandStatus::kQueued)
-    return;
-
-  if (command->GetName() == "base.updateBaseConfiguration")
-    return UpdateBaseConfiguration(command);
-
-  if (command->GetName() == "base.updateDeviceInfo")
-    return UpdateDeviceInfo(command);
+  device_->AddCommandHandler("base.updateDeviceInfo",
+                             base::Bind(&BaseApiHandler::UpdateDeviceInfo,
+                                        weak_ptr_factory_.GetWeakPtr()));
 }
 
 void BaseApiHandler::UpdateBaseConfiguration(Command* command) {
+  CHECK(command->GetStatus() == CommandStatus::kQueued)
+      << EnumToString(command->GetStatus());
   command->SetProgress(base::DictionaryValue{}, nullptr);
 
   const auto& settings = device_info_->GetSettings();
@@ -83,6 +80,8 @@ void BaseApiHandler::OnConfigChanged(const Settings& settings) {
 }
 
 void BaseApiHandler::UpdateDeviceInfo(Command* command) {
+  CHECK(command->GetStatus() == CommandStatus::kQueued)
+      << EnumToString(command->GetStatus());
   command->SetProgress(base::DictionaryValue{}, nullptr);
 
   const auto& settings = device_info_->GetSettings();

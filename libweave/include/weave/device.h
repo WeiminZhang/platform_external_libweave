@@ -45,11 +45,16 @@ class Device {
   virtual void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) = 0;
 
-  // Callback type for AddCommandAddedCallback.
-  using CommandCallback = base::Callback<void(Command*)>;
+  // Callback type for AddCommandHandler.
+  using CommandHandlerCallback = base::Callback<void(Command*)>;
 
-  // Adds notification callback for a new command being added to the queue.
-  virtual void AddCommandAddedCallback(const CommandCallback& callback) = 0;
+  // Sets handler for new commands added to the queue.
+  // |command_name| is the full command name of the command to handle. e.g.
+  // "base.reboot". Each command can have no more than one handler.
+  // Empty |command_name| sets default handler for all unhanded commands.
+  // No new command handlers can be set after default handler was set.
+  virtual void AddCommandHandler(const std::string& command_name,
+                                 const CommandHandlerCallback& callback) = 0;
 
   // Adds a new command to the command queue.
   virtual bool AddCommand(const base::DictionaryValue& command,
