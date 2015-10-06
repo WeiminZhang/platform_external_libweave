@@ -45,14 +45,11 @@ class Device {
   virtual void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) = 0;
 
-  // Callback type for AddCommandAddedCallback and AddCommandRemovedCallback.
+  // Callback type for AddCommandAddedCallback.
   using CommandCallback = base::Callback<void(Command*)>;
 
   // Adds notification callback for a new command being added to the queue.
   virtual void AddCommandAddedCallback(const CommandCallback& callback) = 0;
-
-  // Adds notification callback for a command being removed from the queue.
-  virtual void AddCommandRemovedCallback(const CommandCallback& callback) = 0;
 
   // Adds a new command to the command queue.
   virtual bool AddCommand(const base::DictionaryValue& command,
