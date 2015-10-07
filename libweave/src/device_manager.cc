@@ -92,8 +92,12 @@ void DeviceManager::AddGcdStateChangedCallback(
   device_info_->AddGcdStateChangedCallback(callback);
 }
 
-void DeviceManager::AddStateChangedCallback(const base::Closure& callback) {
-  state_manager_->AddChangedCallback(callback);
+void DeviceManager::AddCommandDefinitions(const std::string& json) {
+  CHECK(command_manager_->LoadCommands(json, nullptr));
+}
+
+void DeviceManager::AddCommandDefinitions(const base::DictionaryValue& dict) {
+  CHECK(command_manager_->LoadCommands(dict, nullptr));
 }
 
 bool DeviceManager::AddCommand(const base::DictionaryValue& command,
@@ -109,6 +113,27 @@ Command* DeviceManager::FindCommand(const std::string& id) {
 void DeviceManager::AddCommandHandler(const std::string& command_name,
                                       const CommandHandlerCallback& callback) {
   return command_manager_->AddCommandHandler(command_name, callback);
+}
+
+void DeviceManager::AddStateChangedCallback(const base::Closure& callback) {
+  state_manager_->AddChangedCallback(callback);
+}
+
+void DeviceManager::AddStateDefinitions(const std::string& json) {
+  CHECK(state_manager_->LoadStateDefinition(json, nullptr));
+}
+
+void DeviceManager::AddStateDefinitions(const base::DictionaryValue& dict) {
+  CHECK(state_manager_->LoadStateDefinition(dict, nullptr));
+}
+
+bool DeviceManager::SetState(const std::string& json, ErrorPtr* error) {
+  return state_manager_->LoadStateDefaults(json, error);
+}
+
+bool DeviceManager::SetState(const base::DictionaryValue& dict,
+                             ErrorPtr* error) {
+  return state_manager_->LoadStateDefaults(dict, error);
 }
 
 bool DeviceManager::SetStateProperties(
