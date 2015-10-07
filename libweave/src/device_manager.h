@@ -48,9 +48,9 @@ class DeviceManager final : public Device {
   void AddStateChangedCallback(const base::Closure& callback) override;
   void AddStateDefinitionsFromJson(const std::string& json) override;
   void AddStateDefinitions(const base::DictionaryValue& dict) override;
-  bool SetStateFromJson(const std::string& json, ErrorPtr* error) override;
-  bool SetState(const base::DictionaryValue& dict, ErrorPtr* error) override;
-  bool SetStateProperties(const base::DictionaryValue& property_set,
+  bool SetStatePropertiesFromJson(const std::string& json,
+                                  ErrorPtr* error) override;
+  bool SetStateProperties(const base::DictionaryValue& dict,
                           ErrorPtr* error) override;
   std::unique_ptr<base::Value> GetStateProperty(
       const std::string& name) const override;

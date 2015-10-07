@@ -36,11 +36,9 @@ class StateManager final {
 
   void AddChangedCallback(const base::Closure& callback);
   bool LoadStateDefinition(const base::DictionaryValue& dict, ErrorPtr* error);
-  bool LoadStateDefinition(const std::string& json, ErrorPtr* error);
-  bool LoadStateDefaults(const base::DictionaryValue& dict, ErrorPtr* error);
-  bool LoadStateDefaults(const std::string& json, ErrorPtr* error);
-  bool SetProperties(const base::DictionaryValue& property_set,
-                     ErrorPtr* error);
+  bool LoadStateDefinitionFromJson(const std::string& json, ErrorPtr* error);
+  bool SetProperties(const base::DictionaryValue& dict, ErrorPtr* error);
+  bool SetPropertiesFromJson(const std::string& json, ErrorPtr* error);
   std::unique_ptr<base::Value> GetProperty(const std::string& name) const;
   bool SetProperty(const std::string& name,
                    const base::Value& value,

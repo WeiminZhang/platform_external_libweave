@@ -31,16 +31,14 @@ class MockDevice : public Device {
   MOCK_METHOD1(AddStateChangedCallback, void(const base::Closure& callback));
   MOCK_METHOD1(AddStateDefinitionsFromJson, void(const std::string&));
   MOCK_METHOD1(AddStateDefinitions, void(const base::DictionaryValue&));
-  MOCK_METHOD2(SetStateFromJson, bool(const std::string&, ErrorPtr*));
-  MOCK_METHOD2(SetState, bool(const base::DictionaryValue&, ErrorPtr*));
+  MOCK_METHOD2(SetStatePropertiesFromJson, bool(const std::string&, ErrorPtr*));
+  MOCK_METHOD2(SetStateProperties,
+               bool(const base::DictionaryValue&, ErrorPtr*));
   MOCK_CONST_METHOD1(MockGetStateProperty,
                      base::Value*(const std::string& name));
   MOCK_METHOD3(SetStateProperty,
                bool(const std::string& name,
                     const base::Value& value,
-                    ErrorPtr* error));
-  MOCK_METHOD2(SetStateProperties,
-               bool(const base::DictionaryValue& property_set,
                     ErrorPtr* error));
   MOCK_CONST_METHOD0(MockGetState, base::DictionaryValue*());
   MOCK_CONST_METHOD0(GetGcdState, GcdState());
