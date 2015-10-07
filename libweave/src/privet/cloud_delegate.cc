@@ -31,7 +31,8 @@ const BackoffEntry::Policy register_backoff_policy = {0,    1000, 2.0,  0.2,
 
 const int kMaxDeviceRegistrationTimeMinutes = 5;
 
-Command* ReturnNotFound(const std::string& command_id, ErrorPtr* error) {
+CommandInstance* ReturnNotFound(const std::string& command_id,
+                                ErrorPtr* error) {
   Error::AddToPrintf(error, FROM_HERE, errors::kDomain, errors::kNotFound,
                      "Command not found, ID='%s'", command_id.c_str());
   return nullptr;
@@ -300,9 +301,9 @@ class CloudDelegateImpl : public CloudDelegate {
         backoff_entry_.GetTimeUntilRelease());
   }
 
-  Command* GetCommandInternal(const std::string& command_id,
-                              const UserInfo& user_info,
-                              ErrorPtr* error) const {
+  CommandInstance* GetCommandInternal(const std::string& command_id,
+                                      const UserInfo& user_info,
+                                      ErrorPtr* error) const {
     if (user_info.scope() != AuthScope::kOwner) {
       auto it = command_owners_.find(command_id);
       if (it == command_owners_.end())

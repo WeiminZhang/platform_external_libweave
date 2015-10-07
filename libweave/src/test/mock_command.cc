@@ -26,9 +26,5 @@ std::unique_ptr<base::DictionaryValue> MockCommand::GetResults() const {
   return CreateDictionaryValue(MockGetResults());
 }
 
-std::unique_ptr<base::DictionaryValue> MockCommand::ToJson() const {
-  return CreateDictionaryValue(MockToJson());
-}
-
 }  // namespace test
 }  // namespace weave
