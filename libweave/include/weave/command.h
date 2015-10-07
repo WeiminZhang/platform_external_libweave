@@ -59,7 +59,7 @@ class Command {
                           ErrorPtr* error) = 0;
 
   // Aborts command execution.
-  virtual void Abort() = 0;
+  virtual void Abort(const Error* error) = 0;
 
   // Cancels command execution.
   virtual void Cancel() = 0;

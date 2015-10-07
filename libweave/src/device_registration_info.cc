@@ -862,16 +862,8 @@ void DeviceRegistrationInfo::NotifyCommandAborted(const std::string& command_id,
   command_patch.SetString(commands::attributes::kCommand_State,
                           EnumToString(CommandStatus::kAborted));
   if (error) {
-    command_patch.SetString(commands::attributes::kCommand_ErrorCode,
-                            Join(":", error->GetDomain(), error->GetCode()));
-    std::vector<std::string> messages;
-    const Error* current_error = error.get();
-    while (current_error) {
-      messages.push_back(current_error->GetMessage());
-      current_error = current_error->GetInnerError();
-    }
-    command_patch.SetString(commands::attributes::kCommand_ErrorMessage,
-                            Join(";", messages));
+    command_patch.Set(commands::attributes::kCommand_Error,
+                      ErrorInfoToJson(*error).release());
   }
   UpdateCommand(command_id, command_patch, base::Bind(&base::DoNothing),
                 base::Bind(&base::DoNothing));

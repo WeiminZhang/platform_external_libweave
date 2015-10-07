@@ -141,8 +141,8 @@ class CommandHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
-    int32_t led_index;
-    bool cmd_value;
+    int32_t led_index = 0;
+    bool cmd_value = false;
     if (cmd->GetParameters()->GetInteger("_led", &led_index) &&
         cmd->GetParameters()->GetBoolean("_on", &cmd_value)) {
       // Display this command in terminal
@@ -159,7 +159,10 @@ class CommandHandler {
       }
       return cmd->Done();
     }
-    cmd->Abort();
+    weave::ErrorPtr error;
+    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+                        "Invalid parameters");
+    cmd->Abort(error.get());
   }
 
   void OnFlasherToggleCommand(const std::weak_ptr<weave::Command>& command) {
@@ -167,7 +170,7 @@ class CommandHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
-    int32_t led_index;
+    int32_t led_index = 0;
     if (cmd->GetParameters()->GetInteger("_led", &led_index)) {
       LOG(INFO) << cmd->GetName() << " _led: " << led_index;
       led_index--;
@@ -176,7 +179,10 @@ class CommandHandler {
       UpdateLedState();
       return cmd->Done();
     }
-    cmd->Abort();
+    weave::ErrorPtr error;
+    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+                        "Invalid parameters");
+    cmd->Abort(error.get());
   }
 
   void OnUnhandledCommand(const std::weak_ptr<weave::Command>& command) {

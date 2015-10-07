@@ -57,15 +57,13 @@ const char kCommand_Parameters[] = "parameters";
 const char kCommand_Progress[] = "progress";
 const char kCommand_Results[] = "results";
 const char kCommand_State[] = "state";
+const char kCommand_Error[] = "error";
 
 const char kCommand_Role[] = "minimalRole";
 const char kCommand_Role_Manager[] = "manager";
 const char kCommand_Role_Owner[] = "owner";
 const char kCommand_Role_User[] = "user";
 const char kCommand_Role_Viewer[] = "viewer";
-
-const char kCommand_ErrorCode[] = "error.code";
-const char kCommand_ErrorMessage[] = "error.message";
 
 const char kCommand_Visibility[] = "visibility";
 const char kCommand_Visibility_None[] = "none";

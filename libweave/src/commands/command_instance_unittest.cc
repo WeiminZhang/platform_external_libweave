@@ -212,11 +212,16 @@ TEST_F(CommandInstanceTest, ToJson) {
   EXPECT_TRUE(instance->SetResults(*CreateDictionaryValue("{'testResult': 17}"),
                                    nullptr));
 
+  ErrorPtr error;
+  Error::AddTo(&error, FROM_HERE, "DOMAIN", "CODE", "MESSAGE");
+  instance->Abort(error.get());
+
   json->MergeDictionary(CreateDictionaryValue(R"({
     'id': 'testId',
     'progress': {'progress': 15},
-    'state': 'inProgress',
-    'results': {'testResult': 17}
+    'state': 'aborted',
+    'results': {'testResult': 17},
+    'error': {'code': 'CODE', 'message': 'MESSAGE'}
   })").get());
 
   auto converted = instance->ToJson();
