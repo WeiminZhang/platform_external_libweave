@@ -52,7 +52,6 @@ class CommandInstance final : public Command {
   ~CommandInstance() override;
 
   // Command overrides.
-  std::unique_ptr<base::DictionaryValue> ToJson() const override;
   const std::string& GetID() const override;
   const std::string& GetName() const override;
   CommandStatus GetStatus() const override;
@@ -87,6 +86,8 @@ class CommandInstance final : public Command {
       const CommandDictionary& dictionary,
       std::string* command_id,
       ErrorPtr* error);
+
+  std::unique_ptr<base::DictionaryValue> ToJson() const;
 
   // Sets the command ID (normally done by CommandQueue when the command
   // instance is added to it).

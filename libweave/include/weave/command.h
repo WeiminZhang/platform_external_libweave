@@ -67,9 +67,6 @@ class Command {
   // Marks the command as completed successfully.
   virtual void Done() = 0;
 
-  // Returns JSON representation of the command.
-  virtual std::unique_ptr<base::DictionaryValue> ToJson() const = 0;
-
  protected:
   virtual ~Command() = default;
 };
