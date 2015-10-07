@@ -30,6 +30,8 @@ std::unique_ptr<base::DictionaryValue> LoadJsonDict(
     const std::string& json_string,
     ErrorPtr* error);
 
+std::unique_ptr<base::DictionaryValue> ErrorInfoToJson(const Error& error);
+
 }  // namespace weave
 
 #endif  // LIBWEAVE_SRC_UTILS_H_
