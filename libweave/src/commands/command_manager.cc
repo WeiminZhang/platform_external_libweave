@@ -7,7 +7,6 @@
 #include <base/values.h>
 #include <weave/enum_to_string.h>
 #include <weave/error.h>
-#include <weave/provider/config_store.h>
 
 #include "src/commands/schema_constants.h"
 #include "src/utils.h"
@@ -93,15 +92,11 @@ bool CommandManager::LoadCommands(const std::string& json,
   return LoadCommands(*dict, error);
 }
 
-void CommandManager::Startup(provider::ConfigStore* config_store) {
+void CommandManager::Startup() {
   LOG(INFO) << "Initializing CommandManager.";
 
   // Load global standard GCD command dictionary.
   CHECK(LoadBaseCommands(kBaseCommandDefs, nullptr));
-
-  // Loading the rest of commands.
-  for (const auto& defs : config_store->LoadCommandDefs())
-    CHECK(this->LoadCommands(defs, nullptr));
 }
 
 void CommandManager::AddCommand(

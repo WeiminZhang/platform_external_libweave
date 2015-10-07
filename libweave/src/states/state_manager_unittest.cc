@@ -59,12 +59,12 @@ class StateManagerTest : public ::testing::Test {
     // Initial expectations.
     EXPECT_CALL(mock_state_change_queue_, IsEmpty()).Times(0);
     EXPECT_CALL(mock_state_change_queue_, NotifyPropertiesUpdated(_, _))
-        .Times(0);
+        .WillRepeatedly(Return(true));
     EXPECT_CALL(mock_state_change_queue_, GetAndClearRecordedStateChanges())
         .Times(0);
     mgr_.reset(new StateManager(&mock_state_change_queue_));
 
-    EXPECT_CALL(*this, OnStateChanged()).Times(1);
+    EXPECT_CALL(*this, OnStateChanged()).Times(2);
     mgr_->AddChangedCallback(
         base::Bind(&StateManagerTest::OnStateChanged, base::Unretained(this)));
 
@@ -133,18 +133,13 @@ TEST_F(StateManagerTest, LoadStateDefinition) {
 }
 
 TEST_F(StateManagerTest, Startup) {
-  provider::test::MockConfigStore config_store;
   StateManager manager(&mock_state_change_queue_);
 
-  EXPECT_CALL(config_store, LoadStateDefs())
-      .WillOnce(Return(std::vector<std::string>{
-          {R"({"power": {"battery_level":"integer"}})"}}));
-
-  EXPECT_CALL(config_store, LoadStateDefaults())
-      .WillOnce(Return(
-          std::vector<std::string>{{R"({"power": {"battery_level":44}})"}}));
-
-  manager.Startup(&config_store);
+  manager.Startup();
+  ASSERT_TRUE(manager.LoadStateDefinition(
+      R"({"power": {"battery_level":"integer"}})", nullptr));
+  ASSERT_TRUE(
+      manager.LoadStateDefaults(R"({"power": {"battery_level":44}})", nullptr));
 
   auto expected = R"({
     'base': {

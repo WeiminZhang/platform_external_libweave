@@ -157,15 +157,6 @@ class WeaveTest : public ::testing::Test {
 
   void InitConfigStore() {
     EXPECT_CALL(config_store_, SaveSettings("")).WillRepeatedly(Return());
-
-    EXPECT_CALL(config_store_, LoadCommandDefs())
-        .WillOnce(Return(std::vector<std::string>{kCommandDefs}));
-
-    EXPECT_CALL(config_store_, LoadStateDefs())
-        .WillOnce(Return(std::vector<std::string>{kStateDefs}));
-
-    EXPECT_CALL(config_store_, LoadStateDefaults())
-        .WillOnce(Return(std::vector<std::string>{kStateDefaults}));
   }
 
   void InitNetwork() {
@@ -236,6 +227,10 @@ class WeaveTest : public ::testing::Test {
                                     &http_client_, &network_, &dns_sd_,
                                     &http_server_, &wifi_, &bluetooth_);
 
+    device_->AddCommandDefinitions(kCommandDefs);
+    device_->AddStateDefinitions(kStateDefs);
+    device_->SetState(kStateDefaults, nullptr);
+
     for (const auto& cb : http_server_changed_cb_)
       cb.Run(http_server_);
 
@@ -290,6 +285,7 @@ TEST_F(WeaveTest, StartNoWifi) {
   device_ = weave::Device::Create(&config_store_, &task_runner_, &http_client_,
                                   &network_, &dns_sd_, &http_server_, nullptr,
                                   &bluetooth_);
+  device_->AddCommandDefinitions(kCommandDefs);
 
   for (const auto& cb : http_server_changed_cb_)
     cb.Run(http_server_);

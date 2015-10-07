@@ -34,6 +34,45 @@ void ShowUsage(const std::string& name) {
 class CommandHandler {
  public:
   explicit CommandHandler(weave::Device* device) : device_{device} {
+    device->AddCommandDefinitions(R"({
+      "base": {
+        "updateBaseConfiguration": {},
+        "identify": {},
+        "updateDeviceInfo": {}
+      },
+      "_greeter": {
+        "_greet": {
+          "minimalRole": "user",
+          "parameters": { "_name": "string"},
+          "results": { "_greeting": "string" }
+        }
+      },
+      "_ledflasher": {
+         "_set":{
+           "parameters": {
+             "_led": {"minimum": 1, "maximum": 3},
+             "_on": "boolean"
+           }
+         },
+         "_toggle":{
+           "parameters": {
+             "_led": {"minimum": 1, "maximum": 3}
+           }
+        }
+      }
+    })");
+
+    device->AddStateDefinitions(R"({
+      "_greeter": {"_greetings_counter":"integer"},
+      "_ledflasher": {"_leds": {"items": "boolean"}}
+    })");
+
+    device->SetState(R"({
+      "_greeter": {"_greetings_counter": 0},
+    "_ledflasher":{"_leds": [false, false, false]}
+    })",
+                     nullptr);
+
     device->AddCommandHandler("_greeter._greet",
                               base::Bind(&CommandHandler::OnGreetCommand,
                                          weak_ptr_factory_.GetWeakPtr()));

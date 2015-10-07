@@ -35,15 +35,6 @@ class ConfigStore {
   // recommended to protect data, e.g. using encryption.
   virtual void SaveSettings(const std::string& settings) = 0;
 
-  // Returns command definitions as array of JSONs.
-  virtual std::vector<std::string> LoadCommandDefs() = 0;
-
-  // Returns device state definitions as array of JSONs.
-  virtual std::vector<std::string> LoadStateDefs() = 0;
-
-  // Returns device state defaults as array of JSONs.
-  virtual std::vector<std::string> LoadStateDefaults() = 0;
-
  protected:
   virtual ~ConfigStore() = default;
 };
