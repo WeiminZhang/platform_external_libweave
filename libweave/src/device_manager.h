@@ -37,7 +37,7 @@ class DeviceManager final : public Device {
   const Settings& GetSettings() const override;
   void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) override;
-  void AddCommandDefinitions(const std::string& json) override;
+  void AddCommandDefinitionsFromJson(const std::string& json) override;
   void AddCommandDefinitions(const base::DictionaryValue& dict) override;
   bool AddCommand(const base::DictionaryValue& command,
                   std::string* id,
@@ -46,9 +46,9 @@ class DeviceManager final : public Device {
   void AddCommandHandler(const std::string& command_name,
                          const CommandHandlerCallback& callback) override;
   void AddStateChangedCallback(const base::Closure& callback) override;
-  void AddStateDefinitions(const std::string& json) override;
+  void AddStateDefinitionsFromJson(const std::string& json) override;
   void AddStateDefinitions(const base::DictionaryValue& dict) override;
-  bool SetState(const std::string& json, ErrorPtr* error) override;
+  bool SetStateFromJson(const std::string& json, ErrorPtr* error) override;
   bool SetState(const base::DictionaryValue& dict, ErrorPtr* error) override;
   bool SetStateProperties(const base::DictionaryValue& property_set,
                           ErrorPtr* error) override;
