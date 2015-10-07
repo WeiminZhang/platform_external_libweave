@@ -25,6 +25,7 @@ const char kInvalidCommandName[] = "invalid_command_name";
 const char kCommandFailed[] = "command_failed";
 const char kInvalidCommandVisibility[] = "invalid_command_visibility";
 const char kInvalidMinimalRole[] = "invalid_minimal_role";
+const char kCommandDestroyed[] = "command_destroyed";
 }  // namespace commands
 }  // namespace errors
 

@@ -31,6 +31,17 @@ class CommandQueue;
 
 class CommandInstance final : public Command {
  public:
+  class Observer {
+   public:
+    virtual void OnResultsChanged() = 0;
+    virtual void OnStatusChanged() = 0;
+    virtual void OnProgressChanged() = 0;
+    virtual void OnCommandDestroyed() = 0;
+
+   protected:
+    virtual ~Observer() = default;
+  };
+
   // Construct a command instance given the full command |name| which must
   // be in format "<package_name>.<command_name>", a command |category| and
   // a list of parameters and their values specified in |parameters|.
@@ -42,8 +53,6 @@ class CommandInstance final : public Command {
 
   // Command overrides.
   std::unique_ptr<base::DictionaryValue> ToJson() const override;
-  void AddObserver(Observer* observer) override;
-  void RemoveObserver(Observer* observer) override;
   const std::string& GetID() const override;
   const std::string& GetName() const override;
   CommandStatus GetStatus() const override;
@@ -82,8 +91,17 @@ class CommandInstance final : public Command {
   // Sets the command ID (normally done by CommandQueue when the command
   // instance is added to it).
   void SetID(const std::string& id) { id_ = id; }
+
+  void AddObserver(Observer* observer);
+  void RemoveObserver(Observer* observer);
+
   // Sets the pointer to queue this command is part of.
-  void SetCommandQueue(CommandQueue* queue) { queue_ = queue; }
+  void AttachToQueue(CommandQueue* queue) { queue_ = queue; }
+  void DetachFromQueue() {
+    observers_.Clear();
+    queue_ = nullptr;
+    command_definition_ = nullptr;
+  }
 
  private:
   // Helper function to update the command status.
@@ -101,7 +119,7 @@ class CommandInstance final : public Command {
   // The origin of the command, either "local" or "cloud".
   CommandOrigin origin_ = CommandOrigin::kLocal;
   // Command definition.
-  const CommandDefinition* command_definition_;
+  const CommandDefinition* command_definition_{nullptr};
   // Command parameters and their values.
   ValueMap parameters_;
   // Current command execution progress.

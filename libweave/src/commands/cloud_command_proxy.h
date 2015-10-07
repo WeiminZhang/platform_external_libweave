@@ -17,6 +17,7 @@
 
 #include "src/backoff_entry.h"
 #include "src/commands/cloud_command_update_interface.h"
+#include "src/commands/command_instance.h"
 #include "src/states/state_change_queue_interface.h"
 
 namespace weave {
@@ -28,7 +29,7 @@ class TaskRunner;
 }
 
 // Command proxy which publishes command updates to the cloud.
-class CloudCommandProxy final : public Command::Observer {
+class CloudCommandProxy final : public CommandInstance::Observer {
  public:
   CloudCommandProxy(CommandInstance* command_instance,
                     CloudCommandUpdateInterface* cloud_command_updater,
@@ -93,7 +94,7 @@ class CloudCommandProxy final : public Command::Observer {
   // successfully.
   UpdateID last_state_update_id_{0};
 
-  ScopedObserver<Command, Command::Observer> observer_{this};
+  ScopedObserver<CommandInstance, CommandInstance::Observer> observer_{this};
 
   base::WeakPtrFactory<CloudCommandProxy> backoff_weak_ptr_factory_{this};
   base::WeakPtrFactory<CloudCommandProxy> weak_ptr_factory_{this};

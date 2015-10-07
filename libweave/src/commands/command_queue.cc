@@ -24,8 +24,9 @@ void CommandQueue::AddCommandRemovedCallback(const CommandCallback& callback) {
   on_command_removed_.push_back(callback);
 }
 
-void CommandQueue::AddCommandHandler(const std::string& command_name,
-                                     const CommandCallback& callback) {
+void CommandQueue::AddCommandHandler(
+    const std::string& command_name,
+    const Device::CommandHandlerCallback& callback) {
   if (!command_name.empty()) {
     CHECK(default_command_callback_.is_null())
         << "Commands specific handler are not allowed after default one";
@@ -33,7 +34,7 @@ void CommandQueue::AddCommandHandler(const std::string& command_name,
     for (const auto& command : map_) {
       if (command.second->GetStatus() == CommandStatus::kQueued &&
           command.second->GetName() == command_name) {
-        callback.Run(command.second.get());
+        callback.Run(command.second);
       }
     }
 
@@ -45,7 +46,7 @@ void CommandQueue::AddCommandHandler(const std::string& command_name,
       if (command.second->GetStatus() == CommandStatus::kQueued &&
           command_callbacks_.find(command.second->GetName()) ==
               command_callbacks_.end()) {
-        callback.Run(command.second.get());
+        callback.Run(command.second);
       }
     }
 
@@ -57,7 +58,7 @@ void CommandQueue::AddCommandHandler(const std::string& command_name,
 void CommandQueue::Add(std::unique_ptr<CommandInstance> instance) {
   std::string id = instance->GetID();
   LOG_IF(FATAL, id.empty()) << "Command has no ID";
-  instance->SetCommandQueue(this);
+  instance->AttachToQueue(this);
   auto pair = map_.insert(std::make_pair(id, std::move(instance)));
   LOG_IF(FATAL, !pair.second) << "Command with ID '" << id
                               << "' is already in the queue";
@@ -67,9 +68,9 @@ void CommandQueue::Add(std::unique_ptr<CommandInstance> instance) {
   auto it_handler = command_callbacks_.find(pair.first->second->GetName());
 
   if (it_handler != command_callbacks_.end())
-    it_handler->second.Run(pair.first->second.get());
+    it_handler->second.Run(pair.first->second);
   else if (!default_command_callback_.is_null())
-    default_command_callback_.Run(pair.first->second.get());
+    default_command_callback_.Run(pair.first->second);
 
   Cleanup();
 }
@@ -88,8 +89,8 @@ bool CommandQueue::Remove(const std::string& id) {
   auto p = map_.find(id);
   if (p == map_.end())
     return false;
-  std::unique_ptr<CommandInstance> instance{std::move(p->second)};
-  instance->SetCommandQueue(nullptr);
+  std::shared_ptr<CommandInstance> instance = p->second;
+  instance->DetachFromQueue();
   map_.erase(p);
   for (const auto& cb : on_command_removed_)
     cb.Run(instance.get());

@@ -25,7 +25,8 @@ class CommandQueue final {
  public:
   CommandQueue() = default;
 
-  using CommandCallback = Device::CommandHandlerCallback;
+  // TODO: Remove AddCommandAddedCallback and AddCommandRemovedCallback.
+  using CommandCallback = base::Callback<void(Command* command)>;
 
   // Adds notifications callback for a new command is added to the queue.
   void AddCommandAddedCallback(const CommandCallback& callback);
@@ -34,7 +35,7 @@ class CommandQueue final {
   void AddCommandRemovedCallback(const CommandCallback& callback);
 
   void AddCommandHandler(const std::string& command_name,
-                         const CommandCallback& callback);
+                         const Device::CommandHandlerCallback& callback);
 
   // Checks if the command queue is empty.
   bool IsEmpty() const { return map_.empty(); }
@@ -75,7 +76,7 @@ class CommandQueue final {
   base::Time test_now_;
 
   // ID-to-CommandInstance map.
-  std::map<std::string, std::unique_ptr<CommandInstance>> map_;
+  std::map<std::string, std::shared_ptr<CommandInstance>> map_;
 
   // Queue of commands to be removed.
   std::queue<std::pair<base::Time, std::string>> remove_queue_;
@@ -83,8 +84,8 @@ class CommandQueue final {
   using CallbackList = std::vector<CommandCallback>;
   CallbackList on_command_added_;
   CallbackList on_command_removed_;
-  std::map<std::string, CommandCallback> command_callbacks_;
-  CommandCallback default_command_callback_;
+  std::map<std::string, Device::CommandHandlerCallback> command_callbacks_;
+  Device::CommandHandlerCallback default_command_callback_;
 
   DISALLOW_COPY_AND_ASSIGN(CommandQueue);
 };
