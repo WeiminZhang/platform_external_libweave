@@ -30,15 +30,13 @@ class MockCommand : public Command {
   MOCK_CONST_METHOD0(MockGetResults, const std::string&());
   MOCK_METHOD2(SetProgress, bool(const base::DictionaryValue&, ErrorPtr*));
   MOCK_METHOD2(SetResults, bool(const base::DictionaryValue&, ErrorPtr*));
-  MOCK_METHOD0(Abort, void());
+  MOCK_METHOD1(Abort, void(const Error*));
   MOCK_METHOD0(Cancel, void());
   MOCK_METHOD0(Done, void());
-  MOCK_CONST_METHOD0(MockToJson, const std::string&());
 
   std::unique_ptr<base::DictionaryValue> GetParameters() const override;
   std::unique_ptr<base::DictionaryValue> GetProgress() const override;
   std::unique_ptr<base::DictionaryValue> GetResults() const override;
-  std::unique_ptr<base::DictionaryValue> ToJson() const override;
 };
 
 }  // namespace test
