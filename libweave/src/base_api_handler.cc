@@ -30,6 +30,13 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
                                       settings.firmware_version);
   CHECK(device_->SetStateProperties(state, nullptr));
 
+  device->AddCommandDefinitionsFromJson(R"({
+    "base": {
+      "updateBaseConfiguration": {},
+      "updateDeviceInfo": {}
+    }
+  })");
+
   device_->AddCommandHandler(
       "base.updateBaseConfiguration",
       base::Bind(&BaseApiHandler::UpdateBaseConfiguration,

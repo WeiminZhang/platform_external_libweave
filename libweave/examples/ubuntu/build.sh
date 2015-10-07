@@ -23,6 +23,6 @@ export CORES=`cat /proc/cpuinfo | grep processor | wc -l`
 ninja -j $CORES -C out/${BUILD_CONFIG} $BUILD_TARGET || exit 1
 
 if [[ $BUILD_TARGET == *"libweave_testrunner"* ]]; then
-  out/${BUILD_CONFIG}/libweave_testrunner || exit 1
-  out/${BUILD_CONFIG}/libweave_exports_testrunner || exit 1
+  out/${BUILD_CONFIG}/libweave_testrunner --gtest_break_on_failure || exit 1
+  out/${BUILD_CONFIG}/libweave_exports_testrunner --gtest_break_on_failure || exit 1
 fi

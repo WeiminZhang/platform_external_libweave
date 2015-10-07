@@ -227,9 +227,9 @@ class WeaveTest : public ::testing::Test {
                                     &http_client_, &network_, &dns_sd_,
                                     &http_server_, &wifi_, &bluetooth_);
 
-    device_->AddCommandDefinitions(kCommandDefs);
-    device_->AddStateDefinitions(kStateDefs);
-    device_->SetState(kStateDefaults, nullptr);
+    device_->AddCommandDefinitionsFromJson(kCommandDefs);
+    device_->AddStateDefinitionsFromJson(kStateDefs);
+    device_->SetStateFromJson(kStateDefaults, nullptr);
 
     for (const auto& cb : http_server_changed_cb_)
       cb.Run(http_server_);
@@ -285,7 +285,7 @@ TEST_F(WeaveTest, StartNoWifi) {
   device_ = weave::Device::Create(&config_store_, &task_runner_, &http_client_,
                                   &network_, &dns_sd_, &http_server_, nullptr,
                                   &bluetooth_);
-  device_->AddCommandDefinitions(kCommandDefs);
+  device_->AddCommandDefinitionsFromJson(kCommandDefs);
 
   for (const auto& cb : http_server_changed_cb_)
     cb.Run(http_server_);

@@ -34,74 +34,24 @@ class BaseApiHandlerTest : public ::testing::Test {
         .WillRepeatedly(Return(true));
 
     command_manager_ = std::make_shared<CommandManager>();
+    command_manager_->Startup();
+
     state_manager_ = std::make_shared<StateManager>(&mock_state_change_queue_);
+    state_manager_->Startup();
 
     EXPECT_CALL(device_, SetStateProperties(_, _))
         .WillRepeatedly(
             Invoke(state_manager_.get(), &StateManager::SetProperties));
+    EXPECT_CALL(device_, AddCommandDefinitionsFromJson(_))
+        .WillRepeatedly(Invoke([this](const std::string& json) {
+          EXPECT_TRUE(command_manager_->LoadCommands(json, nullptr));
+        }));
+
     EXPECT_CALL(device_, AddCommandHandler(AnyOf("base.updateBaseConfiguration",
                                                  "base.updateDeviceInfo"),
                                            _))
         .WillRepeatedly(
             Invoke(command_manager_.get(), &CommandManager::AddCommandHandler));
-
-    auto state_definition = test::CreateDictionaryValue(R"({
-      'base': {
-        'firmwareVersion': 'string',
-        'localDiscoveryEnabled': 'boolean',
-        'localAnonymousAccessMaxRole': [ 'none', 'viewer', 'user' ],
-        'localPairingEnabled': 'boolean',
-        'network': {
-          'properties': {
-            'name': 'string'
-          }
-        }
-      }
-    })");
-    auto state_defaults = test::CreateDictionaryValue(R"({
-      'base': {
-        'firmwareVersion': '123123',
-        'localDiscoveryEnabled': false,
-        'localAnonymousAccessMaxRole': 'none',
-        'localPairingEnabled': false
-      }
-    })");
-    ASSERT_TRUE(
-        state_manager_->LoadStateDefinition(*state_definition, nullptr));
-    ASSERT_TRUE(state_manager_->LoadStateDefaults(*state_defaults, nullptr));
-
-    auto base_commands = test::CreateDictionaryValue(R"({
-      'base': {
-        'updateBaseConfiguration': {
-          'parameters': {
-            'localDiscoveryEnabled': 'boolean',
-            'localAnonymousAccessMaxRole': [ 'none', 'viewer', 'user' ],
-            'localPairingEnabled': 'boolean'
-           },
-           'results': {}
-        },
-        'updateDeviceInfo': {
-          'parameters': {
-            'description': 'string',
-            'name': {
-              'type': 'string',
-              'minLength': 1
-            },
-            'location': 'string'
-          },
-          'results': {}
-        }
-      }
-    })");
-    EXPECT_TRUE(command_manager_->LoadBaseCommands(*base_commands, nullptr));
-
-    auto handled_commands = test::CreateDictionaryValue(R"({
-      'base': {
-        'updateBaseConfiguration': {},
-        'updateDeviceInfo': {}
-      }
-    })");
-    EXPECT_TRUE(command_manager_->LoadCommands(*handled_commands, nullptr));
 
     std::unique_ptr<Config> config{new Config{&config_store_}};
     config->Load();

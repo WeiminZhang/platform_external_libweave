@@ -34,12 +34,7 @@ void ShowUsage(const std::string& name) {
 class CommandHandler {
  public:
   explicit CommandHandler(weave::Device* device) : device_{device} {
-    device->AddCommandDefinitions(R"({
-      "base": {
-        "updateBaseConfiguration": {},
-        "identify": {},
-        "updateDeviceInfo": {}
-      },
+    device->AddCommandDefinitionsFromJson(R"({
       "_greeter": {
         "_greet": {
           "minimalRole": "user",
@@ -62,16 +57,16 @@ class CommandHandler {
       }
     })");
 
-    device->AddStateDefinitions(R"({
+    device->AddStateDefinitionsFromJson(R"({
       "_greeter": {"_greetings_counter":"integer"},
       "_ledflasher": {"_leds": {"items": "boolean"}}
     })");
 
-    device->SetState(R"({
+    device->SetStateFromJson(R"({
       "_greeter": {"_greetings_counter": 0},
     "_ledflasher":{"_leds": [false, false, false]}
     })",
-                     nullptr);
+                             nullptr);
 
     device->AddCommandHandler("_greeter._greet",
                               base::Bind(&CommandHandler::OnGreetCommand,

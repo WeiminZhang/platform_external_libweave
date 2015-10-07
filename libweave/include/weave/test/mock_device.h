@@ -21,7 +21,7 @@ class MockDevice : public Device {
   MOCK_CONST_METHOD0(GetSettings, const Settings&());
   MOCK_METHOD1(AddSettingsChangedCallback,
                void(const SettingsChangedCallback& callback));
-  MOCK_METHOD1(AddCommandDefinitions, void(const std::string&));
+  MOCK_METHOD1(AddCommandDefinitionsFromJson, void(const std::string&));
   MOCK_METHOD1(AddCommandDefinitions, void(const base::DictionaryValue&));
   MOCK_METHOD2(AddCommandHandler,
                void(const std::string&, const CommandHandlerCallback&));
@@ -29,9 +29,9 @@ class MockDevice : public Device {
                bool(const base::DictionaryValue&, std::string*, ErrorPtr*));
   MOCK_METHOD1(FindCommand, Command*(const std::string&));
   MOCK_METHOD1(AddStateChangedCallback, void(const base::Closure& callback));
-  MOCK_METHOD1(AddStateDefinitions, void(const std::string&));
+  MOCK_METHOD1(AddStateDefinitionsFromJson, void(const std::string&));
   MOCK_METHOD1(AddStateDefinitions, void(const base::DictionaryValue&));
-  MOCK_METHOD2(SetState, bool(const std::string&, ErrorPtr*));
+  MOCK_METHOD2(SetStateFromJson, bool(const std::string&, ErrorPtr*));
   MOCK_METHOD2(SetState, bool(const base::DictionaryValue&, ErrorPtr*));
   MOCK_CONST_METHOD1(MockGetStateProperty,
                      base::Value*(const std::string& name));

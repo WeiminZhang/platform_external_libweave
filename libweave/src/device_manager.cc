@@ -92,7 +92,7 @@ void DeviceManager::AddGcdStateChangedCallback(
   device_info_->AddGcdStateChangedCallback(callback);
 }
 
-void DeviceManager::AddCommandDefinitions(const std::string& json) {
+void DeviceManager::AddCommandDefinitionsFromJson(const std::string& json) {
   CHECK(command_manager_->LoadCommands(json, nullptr));
 }
 
@@ -119,7 +119,7 @@ void DeviceManager::AddStateChangedCallback(const base::Closure& callback) {
   state_manager_->AddChangedCallback(callback);
 }
 
-void DeviceManager::AddStateDefinitions(const std::string& json) {
+void DeviceManager::AddStateDefinitionsFromJson(const std::string& json) {
   CHECK(state_manager_->LoadStateDefinition(json, nullptr));
 }
 
@@ -127,7 +127,7 @@ void DeviceManager::AddStateDefinitions(const base::DictionaryValue& dict) {
   CHECK(state_manager_->LoadStateDefinition(dict, nullptr));
 }
 
-bool DeviceManager::SetState(const std::string& json, ErrorPtr* error) {
+bool DeviceManager::SetStateFromJson(const std::string& json, ErrorPtr* error) {
   return state_manager_->LoadStateDefaults(json, error);
 }
 

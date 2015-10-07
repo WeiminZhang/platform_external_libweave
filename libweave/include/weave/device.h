@@ -48,7 +48,7 @@ class Device {
   // Adds provided commands definitions. Can be called multiple times with
   // condition that definitions do not conflict.
   // Invalid value is fatal.
-  virtual void AddCommandDefinitions(const std::string& json) = 0;
+  virtual void AddCommandDefinitionsFromJson(const std::string& json) = 0;
   virtual void AddCommandDefinitions(const base::DictionaryValue& dict) = 0;
 
   // Callback type for AddCommandHandler.
@@ -78,13 +78,13 @@ class Device {
   // Adds provided state definitions. Can be called multiple times with
   // condition that definitions do not conflict.
   // Invalid value is fatal.
-  virtual void AddStateDefinitions(const std::string& json) = 0;
+  virtual void AddStateDefinitionsFromJson(const std::string& json) = 0;
   virtual void AddStateDefinitions(const base::DictionaryValue& dict) = 0;
 
   // Updates multiple properties of the state.
   // It's recommended to call this to initialize state defined by
   // AddStateDefinitions.
-  virtual bool SetState(const std::string& json, ErrorPtr* error) = 0;
+  virtual bool SetStateFromJson(const std::string& json, ErrorPtr* error) = 0;
   virtual bool SetState(const base::DictionaryValue& dict, ErrorPtr* error) = 0;
 
   // Returns value of the single property.
