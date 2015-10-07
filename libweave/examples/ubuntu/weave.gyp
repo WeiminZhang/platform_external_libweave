@@ -3,7 +3,29 @@
     {
       'target_name': 'weave',
       'type': 'executable',
-      'cflags': ['-pthread', '-I/usr/include/libnl3'],
+      'variables': {
+        'deps': [
+          'avahi-client',
+          'expat',
+          'libcurl',
+          'libcrypto',
+          'libnl-3.0',
+          'libnl-route-3.0',
+          'openssl',
+        ]
+      },
+      'cflags': [
+        '>!@(pkg-config >(deps) --cflags)',
+        '-pthread',
+      ],
+      'link_settings': {
+        'ldflags+': [
+          '>!@(pkg-config >(deps) --libs-only-L --libs-only-other)',
+        ],
+        'libraries+': [
+          '>!(pkg-config >(deps) --libs-only-l)',
+        ],
+      },
       'sources': [
         'avahi_client.cc',
         'bluez_client.cc',
@@ -21,16 +43,8 @@
       ],
       'libraries': [
         '-levent',
-        '-lcrypto',
-        '-lexpat',
-        '-lcurl',
-        '-lpthread',
-        '-lssl',
-        '-lavahi-common',
-        '-lavahi-client',
         '-levent_openssl',
-        '-lnl-3',
-        '-lnl-route-3',
+        '-lpthread',
       ]
     }
   ]
