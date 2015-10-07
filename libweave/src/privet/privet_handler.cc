@@ -182,7 +182,7 @@ std::unique_ptr<base::DictionaryValue> ErrorToJson(const Error& error) {
 }
 
 template <class T>
-void SetState(const T& state, base::DictionaryValue* parent) {
+void SetStateProperties(const T& state, base::DictionaryValue* parent) {
   if (!state.error()) {
     parent->SetString(kStatusKey, EnumToString(state.status()));
     return;
@@ -330,7 +330,7 @@ std::unique_ptr<base::DictionaryValue> CreateWifiSection(
     DCHECK(!state.IsStatusEqual(ConnectionState::kOnline));
     result->SetString(kInfoWifiHostedSsidKey, hosted_ssid);
   }
-  SetState(state, result.get());
+  SetStateProperties(state, result.get());
   return result;
 }
 
@@ -338,7 +338,7 @@ std::unique_ptr<base::DictionaryValue> CreateGcdSection(
     const CloudDelegate& cloud) {
   std::unique_ptr<base::DictionaryValue> gcd(new base::DictionaryValue());
   gcd->SetString(kInfoIdKey, cloud.GetCloudId());
-  SetState(cloud.GetConnectionState(), gcd.get());
+  SetStateProperties(cloud.GetConnectionState(), gcd.get());
   return gcd;
 }
 
@@ -718,7 +718,7 @@ void PrivetHandler::ReplyWithSetupStatus(
   if (!state.IsStatusEqual(SetupState::kNone)) {
     base::DictionaryValue* gcd = new base::DictionaryValue;
     output.Set(kGcdKey, gcd);
-    SetState(state, gcd);
+    SetStateProperties(state, gcd);
     if (state.IsStatusEqual(SetupState::kSuccess))
       gcd->SetString(kInfoIdKey, cloud_->GetCloudId());
   }
@@ -728,7 +728,7 @@ void PrivetHandler::ReplyWithSetupStatus(
     if (!state.IsStatusEqual(SetupState::kNone)) {
       base::DictionaryValue* wifi = new base::DictionaryValue;
       output.Set(kWifiKey, wifi);
-      SetState(state, wifi);
+      SetStateProperties(state, wifi);
       if (state.IsStatusEqual(SetupState::kSuccess))
         wifi->SetString(kInfoWifiSsidKey, wifi_->GetCurrentlyConnectedSsid());
     }

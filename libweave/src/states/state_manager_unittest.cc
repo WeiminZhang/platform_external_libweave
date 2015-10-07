@@ -69,7 +69,7 @@ class StateManagerTest : public ::testing::Test {
         base::Bind(&StateManagerTest::OnStateChanged, base::Unretained(this)));
 
     LoadStateDefinition(GetTestSchema().get(), nullptr);
-    ASSERT_TRUE(mgr_->LoadStateDefaults(*GetTestValues().get(), nullptr));
+    ASSERT_TRUE(mgr_->SetProperties(*GetTestValues().get(), nullptr));
   }
   void TearDown() override { mgr_.reset(); }
 
@@ -136,10 +136,10 @@ TEST_F(StateManagerTest, Startup) {
   StateManager manager(&mock_state_change_queue_);
 
   manager.Startup();
-  ASSERT_TRUE(manager.LoadStateDefinition(
+  ASSERT_TRUE(manager.LoadStateDefinitionFromJson(
       R"({"power": {"battery_level":"integer"}})", nullptr));
-  ASSERT_TRUE(
-      manager.LoadStateDefaults(R"({"power": {"battery_level":44}})", nullptr));
+  ASSERT_TRUE(manager.SetPropertiesFromJson(
+      R"({"power": {"battery_level":44}})", nullptr));
 
   auto expected = R"({
     'base': {
@@ -238,7 +238,7 @@ TEST_F(StateManagerTest, SetProperties) {
 
   EXPECT_CALL(*this, OnStateChanged()).Times(1);
   ASSERT_TRUE(mgr_->SetProperties(
-      *CreateDictionaryValue("{'base.manufacturer': 'No Name'}"), nullptr));
+      *CreateDictionaryValue("{'base':{'manufacturer':'No Name'}}"), nullptr));
 
   auto expected = R"({
     'base': {

@@ -81,11 +81,17 @@ class Device {
   virtual void AddStateDefinitionsFromJson(const std::string& json) = 0;
   virtual void AddStateDefinitions(const base::DictionaryValue& dict) = 0;
 
-  // Updates multiple properties of the state.
+  // Sets value of multiple properties of the state.
   // It's recommended to call this to initialize state defined by
   // AddStateDefinitions.
-  virtual bool SetStateFromJson(const std::string& json, ErrorPtr* error) = 0;
-  virtual bool SetState(const base::DictionaryValue& dict, ErrorPtr* error) = 0;
+  // Example:
+  //   device->SetStatePropertiesFromJson("{'base':{'firmwareVersion':'123'}}")
+  // Method completely replaces properties included |json| or |dict|.
+  // Properties of the state not included |json| or |dict| will stay unchanged.
+  virtual bool SetStatePropertiesFromJson(const std::string& json,
+                                          ErrorPtr* error) = 0;
+  virtual bool SetStateProperties(const base::DictionaryValue& dict,
+                                  ErrorPtr* error) = 0;
 
   // Returns value of the single property.
   // |name| is full property name, including package name. e.g. "base.network".
@@ -97,10 +103,6 @@ class Device {
   virtual bool SetStateProperty(const std::string& name,
                                 const base::Value& value,
                                 ErrorPtr* error) = 0;
-
-  // Updates a multiple property values.
-  virtual bool SetStateProperties(const base::DictionaryValue& property_set,
-                                  ErrorPtr* error) = 0;
 
   // Returns aggregated state properties across all registered packages.
   virtual std::unique_ptr<base::DictionaryValue> GetState() const = 0;

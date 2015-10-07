@@ -120,26 +120,21 @@ void DeviceManager::AddStateChangedCallback(const base::Closure& callback) {
 }
 
 void DeviceManager::AddStateDefinitionsFromJson(const std::string& json) {
-  CHECK(state_manager_->LoadStateDefinition(json, nullptr));
+  CHECK(state_manager_->LoadStateDefinitionFromJson(json, nullptr));
 }
 
 void DeviceManager::AddStateDefinitions(const base::DictionaryValue& dict) {
   CHECK(state_manager_->LoadStateDefinition(dict, nullptr));
 }
 
-bool DeviceManager::SetStateFromJson(const std::string& json, ErrorPtr* error) {
-  return state_manager_->LoadStateDefaults(json, error);
+bool DeviceManager::SetStatePropertiesFromJson(const std::string& json,
+                                               ErrorPtr* error) {
+  return state_manager_->SetPropertiesFromJson(json, error);
 }
 
-bool DeviceManager::SetState(const base::DictionaryValue& dict,
-                             ErrorPtr* error) {
-  return state_manager_->LoadStateDefaults(dict, error);
-}
-
-bool DeviceManager::SetStateProperties(
-    const base::DictionaryValue& property_set,
-    ErrorPtr* error) {
-  return state_manager_->SetProperties(property_set, error);
+bool DeviceManager::SetStateProperties(const base::DictionaryValue& dict,
+                                       ErrorPtr* error) {
+  return state_manager_->SetProperties(dict, error);
 }
 
 std::unique_ptr<base::Value> DeviceManager::GetStateProperty(

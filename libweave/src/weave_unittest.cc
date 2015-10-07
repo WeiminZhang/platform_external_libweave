@@ -229,7 +229,7 @@ class WeaveTest : public ::testing::Test {
 
     device_->AddCommandDefinitionsFromJson(kCommandDefs);
     device_->AddStateDefinitionsFromJson(kStateDefs);
-    device_->SetStateFromJson(kStateDefaults, nullptr);
+    device_->SetStatePropertiesFromJson(kStateDefaults, nullptr);
 
     for (const auto& cb : http_server_changed_cb_)
       cb.Run(http_server_);

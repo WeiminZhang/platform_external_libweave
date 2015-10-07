@@ -60,7 +60,7 @@ void StateManager::Startup() {
   CHECK(LoadBaseStateDefinition(kBaseStateDefs, nullptr));
 
   // Load standard device state defaults.
-  CHECK(LoadStateDefaults(kBaseStateDefaults, nullptr));
+  CHECK(SetPropertiesFromJson(kBaseStateDefaults, nullptr));
 
   for (const auto& cb : on_changed_)
     cb.Run();
@@ -74,23 +74,6 @@ std::unique_ptr<base::DictionaryValue> StateManager::GetState() const {
     dict->SetWithoutPathExpansion(pair.first, pkg_value.release());
   }
   return dict;
-}
-
-bool StateManager::SetProperties(const base::DictionaryValue& property_set,
-                                 ErrorPtr* error) {
-  base::Time timestamp = base::Time::Now();
-  bool all_success = true;
-  for (base::DictionaryValue::Iterator it(property_set); !it.IsAtEnd();
-       it.Advance()) {
-    if (!SetPropertyValue(it.key(), it.value(), timestamp, error)) {
-      // Remember that an error occurred but keep going and update the rest of
-      // the properties if possible.
-      all_success = false;
-    }
-  }
-  for (const auto& cb : on_changed_)
-    cb.Run();
-  return all_success;
 }
 
 bool StateManager::SetProperty(const std::string& name,
@@ -192,8 +175,8 @@ bool StateManager::LoadStateDefinition(const base::DictionaryValue& dict,
   return true;
 }
 
-bool StateManager::LoadStateDefinition(const std::string& json,
-                                       ErrorPtr* error) {
+bool StateManager::LoadStateDefinitionFromJson(const std::string& json,
+                                               ErrorPtr* error) {
   std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
   if (!dict)
     return false;
@@ -220,8 +203,8 @@ bool StateManager::LoadBaseStateDefinition(const std::string& json,
   return true;
 }
 
-bool StateManager::LoadStateDefaults(const base::DictionaryValue& dict,
-                                     ErrorPtr* error) {
+bool StateManager::SetProperties(const base::DictionaryValue& dict,
+                                 ErrorPtr* error) {
   base::Time timestamp = base::Time::Now();
   bool all_success = true;
   for (base::DictionaryValue::Iterator iter(dict); !iter.IsAtEnd();
@@ -257,11 +240,12 @@ bool StateManager::LoadStateDefaults(const base::DictionaryValue& dict,
   return all_success;
 }
 
-bool StateManager::LoadStateDefaults(const std::string& json, ErrorPtr* error) {
+bool StateManager::SetPropertiesFromJson(const std::string& json,
+                                         ErrorPtr* error) {
   std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
   if (!dict)
     return false;
-  if (!LoadStateDefaults(*dict, error)) {
+  if (!SetProperties(*dict, error)) {
     Error::AddToPrintf(error, FROM_HERE, errors::kErrorDomain,
                        errors::kSchemaError, "Failed to load defaults: '%s'",
                        json.c_str());

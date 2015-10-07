@@ -26,8 +26,7 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
 
   const auto& settings = device_info_->GetSettings();
   base::DictionaryValue state;
-  state.SetStringWithoutPathExpansion(kBaseStateFirmwareVersion,
-                                      settings.firmware_version);
+  state.SetString(kBaseStateFirmwareVersion, settings.firmware_version);
   CHECK(device_->SetStateProperties(state, nullptr));
 
   device->AddCommandDefinitionsFromJson(R"({
@@ -76,13 +75,11 @@ void BaseApiHandler::UpdateBaseConfiguration(Command* command) {
 
 void BaseApiHandler::OnConfigChanged(const Settings& settings) {
   base::DictionaryValue state;
-  state.SetStringWithoutPathExpansion(
-      kBaseStateAnonymousAccessRole,
-      EnumToString(settings.local_anonymous_access_role));
-  state.SetBooleanWithoutPathExpansion(kBaseStateDiscoveryEnabled,
-                                       settings.local_discovery_enabled);
-  state.SetBooleanWithoutPathExpansion(kBaseStatePairingEnabled,
-                                       settings.local_pairing_enabled);
+  state.SetString(kBaseStateAnonymousAccessRole,
+                  EnumToString(settings.local_anonymous_access_role));
+  state.SetBoolean(kBaseStateDiscoveryEnabled,
+                   settings.local_discovery_enabled);
+  state.SetBoolean(kBaseStatePairingEnabled, settings.local_pairing_enabled);
   device_->SetStateProperties(state, nullptr);
 }
 

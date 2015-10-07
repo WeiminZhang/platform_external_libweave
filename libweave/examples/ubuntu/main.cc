@@ -62,11 +62,11 @@ class CommandHandler {
       "_ledflasher": {"_leds": {"items": "boolean"}}
     })");
 
-    device->SetStateFromJson(R"({
+    device->SetStatePropertiesFromJson(R"({
       "_greeter": {"_greetings_counter": 0},
-    "_ledflasher":{"_leds": [false, false, false]}
+      "_ledflasher":{"_leds": [false, false, false]}
     })",
-                             nullptr);
+                                       nullptr);
 
     device->AddCommandHandler("_greeter._greet",
                               base::Bind(&CommandHandler::OnGreetCommand,
@@ -99,8 +99,7 @@ class CommandHandler {
     LOG(INFO) << cmd->GetName() << " command finished: " << result;
 
     base::DictionaryValue state;
-    state.SetIntegerWithoutPathExpansion("_greeter._greetings_counter",
-                                         ++counter_);
+    state.SetInteger("_greeter._greetings_counter", ++counter_);
     device_->SetStateProperties(state, nullptr);
 
     LOG(INFO) << "New state: " << *device_->GetState();
