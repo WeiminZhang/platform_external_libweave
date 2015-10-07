@@ -20,10 +20,6 @@ namespace weave {
 
 class CommandInstance;
 
-namespace provider {
-class ConfigStore;
-}
-
 // CommandManager class that will have a list of all the device command
 // schemas as well as the live command queue of pending command instances
 // dispatched to the device.
@@ -71,10 +67,8 @@ class CommandManager final {
                     ErrorPtr* error);
 
   // Startup method to be called by buffet daemon at startup.
-  // Initializes the object and loads:
-  //   1) the standard GCD command dictionary
-  //   2) static vendor-provided command definitions
-  void Startup(weave::provider::ConfigStore* config_store);
+  // Initializes standard GCD command dictionary.
+  void Startup();
 
   // Adds a new command to the command queue.
   void AddCommand(std::unique_ptr<CommandInstance> command_instance);

@@ -60,48 +60,5 @@ void FileConfigStore::SaveSettings(const std::string& settings) {
   str << settings;
 }
 
-std::vector<std::string> FileConfigStore::LoadCommandDefs() {
-  return {R"({
-    "base": {
-      "updateBaseConfiguration": {},
-      "identify": {},
-      "updateDeviceInfo": {}
-    },
-    "_greeter": {
-      "_greet": {
-        "minimalRole": "user",
-        "parameters": { "_name": "string"},
-        "results": { "_greeting": "string" }
-      }
-    },
-    "_ledflasher": {
-       "_set":{
-         "parameters": {
-           "_led": {"minimum": 1, "maximum": 3},
-           "_on": "boolean"
-         }
-       },
-       "_toggle":{
-         "parameters": {
-           "_led": {"minimum": 1, "maximum": 3}
-         }
-      }
-    }
-  })"};
-}
-std::vector<std::string> FileConfigStore::LoadStateDefs() {
-  return {R"({
-    "_greeter": {"_greetings_counter":"integer"},
-    "_ledflasher": {"_leds": {"items": "boolean"}}
-  })"};
-}
-
-std::vector<std::string> FileConfigStore::LoadStateDefaults() {
-  return {R"({
-    "_greeter": {"_greetings_counter": 0},
-    "_ledflasher":{"_leds": [false, false, false]}
-  })"};
-}
-
 }  // namespace examples
 }  // namespace weave

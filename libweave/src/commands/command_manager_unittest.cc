@@ -115,11 +115,9 @@ TEST(CommandManager, LoadCommandsJson) {
 
 TEST(CommandManager, ShouldLoadStandardAndTestDefinitions) {
   CommandManager manager;
-  provider::test::MockConfigStore config_store;
-  EXPECT_CALL(config_store, LoadCommandDefs())
-      .WillOnce(Return(
-          std::vector<std::string>{kTestVendorCommands, kTestTestCommands}));
-  manager.Startup(&config_store);
+  manager.Startup();
+  ASSERT_TRUE(manager.LoadCommands(kTestVendorCommands, nullptr));
+  ASSERT_TRUE(manager.LoadCommands(kTestTestCommands, nullptr));
   EXPECT_EQ(3, manager.GetCommandDictionary().GetSize());
   EXPECT_NE(nullptr, manager.GetCommandDictionary().FindCommand("robot._jump"));
   EXPECT_NE(nullptr,
