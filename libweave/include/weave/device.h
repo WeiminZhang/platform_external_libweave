@@ -52,7 +52,8 @@ class Device {
   virtual void AddCommandDefinitions(const base::DictionaryValue& dict) = 0;
 
   // Callback type for AddCommandHandler.
-  using CommandHandlerCallback = base::Callback<void(Command*)>;
+  using CommandHandlerCallback =
+      base::Callback<void(const std::weak_ptr<Command>& command)>;
 
   // Sets handler for new commands added to the queue.
   // |command_name| is the full command name of the command to handle. e.g.

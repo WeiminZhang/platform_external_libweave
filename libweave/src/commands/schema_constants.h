@@ -28,6 +28,7 @@ extern const char kInvalidCommandName[];
 extern const char kCommandFailed[];
 extern const char kInvalidCommandVisibility[];
 extern const char kInvalidMinimalRole[];
+extern const char kCommandDestroyed[];
 }  // namespace commands
 }  // namespace errors
 

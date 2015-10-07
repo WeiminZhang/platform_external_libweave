@@ -182,7 +182,7 @@ void CommandManager::AddCommandRemovedCallback(
 
 void CommandManager::AddCommandHandler(
     const std::string& command_name,
-    const CommandQueue::CommandCallback& callback) {
+    const Device::CommandHandlerCallback& callback) {
   CHECK(command_name.empty() || base_dictionary_.FindCommand(command_name))
       << "Command undefined: " << command_name;
   command_queue_.AddCommandHandler(command_name, callback);

@@ -36,7 +36,7 @@ class CommandManager final {
   void AddCommandAddedCallback(const CommandQueue::CommandCallback& callback);
   void AddCommandRemovedCallback(const CommandQueue::CommandCallback& callback);
   void AddCommandHandler(const std::string& command_name,
-                         const CommandQueue::CommandCallback& callback);
+                         const Device::CommandHandlerCallback& callback);
 
   // Sets callback which is called when command definitions is changed.
   void AddCommandDefChanged(const base::Closure& callback);

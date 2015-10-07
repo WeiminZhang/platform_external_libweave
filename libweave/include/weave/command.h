@@ -27,25 +27,6 @@ enum class CommandOrigin { kLocal, kCloud };
 
 class Command {
  public:
-  // This interface lets the command to notify clients about changes.
-  class Observer {
-   public:
-    virtual void OnResultsChanged() = 0;
-    virtual void OnStatusChanged() = 0;
-    virtual void OnProgressChanged() = 0;
-    virtual void OnCommandDestroyed() = 0;
-
-   protected:
-    virtual ~Observer() = default;
-  };
-
-  // Adds an observer for this command. The observer object is not owned by this
-  // class.
-  virtual void AddObserver(Observer* observer) = 0;
-
-  // Removes an observer for this command.
-  virtual void RemoveObserver(Observer* observer) = 0;
-
   // Returns the full command ID.
   virtual const std::string& GetID() const = 0;
 

@@ -37,6 +37,12 @@ const EnumToStringMap<CommandOrigin>::Map kMapOrigin[] = {
     {CommandOrigin::kCloud, "cloud"},
 };
 
+void ReportDestroyedError(ErrorPtr* error) {
+  Error::AddTo(error, FROM_HERE, errors::commands::kDomain,
+               errors::commands::kCommandDestroyed,
+               "Command has been destroyed");
+}
+
 }  // namespace
 
 template <>
@@ -92,6 +98,10 @@ std::unique_ptr<base::DictionaryValue> CommandInstance::GetResults() const {
 
 bool CommandInstance::SetProgress(const base::DictionaryValue& progress,
                                   ErrorPtr* error) {
+  if (!command_definition_) {
+    ReportDestroyedError(error);
+    return false;
+  }
   ObjectPropType obj_prop_type;
   obj_prop_type.SetObjectSchema(command_definition_->GetProgress()->Clone());
 
@@ -110,6 +120,10 @@ bool CommandInstance::SetProgress(const base::DictionaryValue& progress,
 
 bool CommandInstance::SetResults(const base::DictionaryValue& results,
                                  ErrorPtr* error) {
+  if (!command_definition_) {
+    ReportDestroyedError(error);
+    return false;
+  }
   ObjectPropType obj_prop_type;
   obj_prop_type.SetObjectSchema(command_definition_->GetResults()->Clone());
 

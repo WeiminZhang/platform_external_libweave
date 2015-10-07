@@ -46,7 +46,11 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
                                         weak_ptr_factory_.GetWeakPtr()));
 }
 
-void BaseApiHandler::UpdateBaseConfiguration(Command* command) {
+void BaseApiHandler::UpdateBaseConfiguration(
+    const std::weak_ptr<Command>& cmd) {
+  auto command = cmd.lock();
+  if (!command)
+    return;
   CHECK(command->GetStatus() == CommandStatus::kQueued)
       << EnumToString(command->GetStatus());
   command->SetProgress(base::DictionaryValue{}, nullptr);
@@ -83,7 +87,10 @@ void BaseApiHandler::OnConfigChanged(const Settings& settings) {
   device_->SetStateProperties(state, nullptr);
 }
 
-void BaseApiHandler::UpdateDeviceInfo(Command* command) {
+void BaseApiHandler::UpdateDeviceInfo(const std::weak_ptr<Command>& cmd) {
+  auto command = cmd.lock();
+  if (!command)
+    return;
   CHECK(command->GetStatus() == CommandStatus::kQueued)
       << EnumToString(command->GetStatus());
   command->SetProgress(base::DictionaryValue{}, nullptr);
