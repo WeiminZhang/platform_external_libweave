@@ -39,6 +39,10 @@ class StateManager final {
   ~StateManager();
 
   void AddChangedCallback(const base::Closure& callback);
+  bool LoadStateDefinition(const base::DictionaryValue& dict, ErrorPtr* error);
+  bool LoadStateDefinition(const std::string& json, ErrorPtr* error);
+  bool LoadStateDefaults(const base::DictionaryValue& dict, ErrorPtr* error);
+  bool LoadStateDefaults(const std::string& json, ErrorPtr* error);
   bool SetProperties(const base::DictionaryValue& property_set,
                      ErrorPtr* error);
   std::unique_ptr<base::Value> GetProperty(const std::string& name) const;
@@ -75,24 +79,10 @@ class StateManager final {
                         const base::Time& timestamp,
                         ErrorPtr* error);
 
-  // Loads a device state fragment from a JSON object.
-  bool LoadStateDefinition(const base::DictionaryValue& dict,
-                           ErrorPtr* error);
-
-  // Loads a device state fragment JSON.
-  bool LoadStateDefinition(const std::string& json,
-                           ErrorPtr* error);
-
   // Loads the base device state fragment JSON. This state fragment
   // defines the standard state properties from the 'base' package as defined
   // by GCD specification.
   bool LoadBaseStateDefinition(const std::string& json, ErrorPtr* error);
-
-  // Loads state default values from JSON object.
-  bool LoadStateDefaults(const base::DictionaryValue& dict, ErrorPtr* error);
-
-  // Loads state default values from JSON.
-  bool LoadStateDefaults(const std::string& json, ErrorPtr* error);
 
   // Finds a package by its name. Returns nullptr if not found.
   StatePackage* FindPackage(const std::string& package_name);
