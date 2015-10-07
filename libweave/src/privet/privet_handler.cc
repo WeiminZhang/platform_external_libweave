@@ -23,6 +23,7 @@
 #include "src/privet/security_delegate.h"
 #include "src/privet/wifi_delegate.h"
 #include "src/string_utils.h"
+#include "src/utils.h"
 
 namespace weave {
 namespace privet {
@@ -90,8 +91,6 @@ const char kAuthScopeKey[] = "scope";
 
 const char kAuthorizationHeaderPrefix[] = "Privet";
 
-const char kErrorCodeKey[] = "code";
-const char kErrorMessageKey[] = "message";
 const char kErrorDebugInfoKey[] = "debugInfo";
 
 const char kSetupStartSsidKey[] = "ssid";
@@ -154,13 +153,6 @@ AuthScope AuthScopeFromString(const std::string& scope, AuthScope auto_scope) {
 
 std::string GetAuthTokenFromAuthHeader(const std::string& auth_header) {
   return SplitAtFirst(auth_header, " ", true).second;
-}
-
-std::unique_ptr<base::DictionaryValue> ErrorInfoToJson(const Error& error) {
-  std::unique_ptr<base::DictionaryValue> output{new base::DictionaryValue};
-  output->SetString(kErrorMessageKey, error.GetMessage());
-  output->SetString(kErrorCodeKey, error.GetCode());
-  return output;
 }
 
 // Creates JSON similar to GCD server error format.

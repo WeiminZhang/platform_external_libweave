@@ -64,7 +64,7 @@ class CommandInstance final : public Command {
                    ErrorPtr* error) override;
   bool SetResults(const base::DictionaryValue& results,
                   ErrorPtr* error) override;
-  void Abort() override;
+  void Abort(const Error* error) override;
   void Cancel() override;
   void Done() override;
 
@@ -128,6 +128,8 @@ class CommandInstance final : public Command {
   ValueMap results_;
   // Current command status.
   CommandStatus status_ = CommandStatus::kQueued;
+  // Error encountered during execution of the command.
+  ErrorPtr error_;
   // Command observers.
   base::ObserverList<Observer> observers_;
   // Pointer to the command queue this command instance is added to.

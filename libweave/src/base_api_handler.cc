@@ -7,6 +7,7 @@
 #include <base/bind.h>
 #include <weave/device.h>
 
+#include "src/commands/schema_constants.h"
 #include "src/device_registration_info.h"
 
 namespace weave {
@@ -68,7 +69,12 @@ void BaseApiHandler::UpdateBaseConfiguration(
 
   AuthScope auth_scope{AuthScope::kNone};
   if (!StringToEnum(anonymous_access_role, &auth_scope)) {
-    return command->Abort();
+    ErrorPtr error;
+    Error::AddToPrintf(&error, FROM_HERE, errors::commands::kDomain,
+                       errors::commands::kInvalidPropValue,
+                       "Invalid localAnonymousAccessMaxRole value '%s'",
+                       anonymous_access_role.c_str());
+    return command->Abort(error.get());
   }
 
   device_info_->UpdateBaseConfig(auth_scope, discovery_enabled,

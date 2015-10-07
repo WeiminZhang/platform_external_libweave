@@ -16,6 +16,7 @@
 #include "src/commands/schema_constants.h"
 #include "src/commands/schema_utils.h"
 #include "src/json_error_codes.h"
+#include "src/utils.h"
 
 namespace weave {
 
@@ -250,6 +251,10 @@ std::unique_ptr<base::DictionaryValue> CommandInstance::ToJson() const {
   json->Set(commands::attributes::kCommand_Results,
             TypedValueToJson(results_).release());
   json->SetString(commands::attributes::kCommand_State, EnumToString(status_));
+  if (error_) {
+    json->Set(commands::attributes::kCommand_Error,
+              ErrorInfoToJson(*error_).release());
+  }
 
   return json;
 }
@@ -262,7 +267,9 @@ void CommandInstance::RemoveObserver(Observer* observer) {
   observers_.RemoveObserver(observer);
 }
 
-void CommandInstance::Abort() {
+void CommandInstance::Abort(const Error* error) {
+  if (error)
+    error_ = error->Clone();
   SetStatus(CommandStatus::kAborted);
   RemoveFromQueue();
   // The command will be destroyed after that, so do not access any members.
