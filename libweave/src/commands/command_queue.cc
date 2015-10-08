@@ -32,7 +32,7 @@ void CommandQueue::AddCommandHandler(
         << "Commands specific handler are not allowed after default one";
 
     for (const auto& command : map_) {
-      if (command.second->GetStatus() == CommandStatus::kQueued &&
+      if (command.second->GetState() == Command::State::kQueued &&
           command.second->GetName() == command_name) {
         callback.Run(command.second);
       }
@@ -43,7 +43,7 @@ void CommandQueue::AddCommandHandler(
 
   } else {
     for (const auto& command : map_) {
-      if (command.second->GetStatus() == CommandStatus::kQueued &&
+      if (command.second->GetState() == Command::State::kQueued &&
           command_callbacks_.find(command.second->GetName()) ==
               command_callbacks_.end()) {
         callback.Run(command.second);

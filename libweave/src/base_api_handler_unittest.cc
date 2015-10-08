@@ -64,15 +64,15 @@ class BaseApiHandlerTest : public ::testing::Test {
   void AddCommand(const std::string& command) {
     auto command_instance = CommandInstance::FromJson(
         test::CreateDictionaryValue(command.c_str()).get(),
-        CommandOrigin::kLocal, command_manager_->GetCommandDictionary(),
+        Command::Origin::kLocal, command_manager_->GetCommandDictionary(),
         nullptr, nullptr);
     EXPECT_TRUE(!!command_instance);
 
     std::string id{base::IntToString(++command_id_)};
     command_instance->SetID(id);
     command_manager_->AddCommand(std::move(command_instance));
-    EXPECT_EQ(CommandStatus::kDone,
-              command_manager_->FindCommand(id)->GetStatus());
+    EXPECT_EQ(Command::State::kDone,
+              command_manager_->FindCommand(id)->GetState());
   }
 
   provider::test::MockConfigStore config_store_;

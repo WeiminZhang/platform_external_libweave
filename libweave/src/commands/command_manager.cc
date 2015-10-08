@@ -114,8 +114,9 @@ bool CommandManager::AddCommand(const base::DictionaryValue& command,
                                 UserRole role,
                                 std::string* id,
                                 ErrorPtr* error) {
-  auto command_instance = CommandInstance::FromJson(
-      &command, CommandOrigin::kLocal, GetCommandDictionary(), nullptr, error);
+  auto command_instance =
+      CommandInstance::FromJson(&command, Command::Origin::kLocal,
+                                GetCommandDictionary(), nullptr, error);
   if (!command_instance)
     return false;
 

@@ -52,8 +52,8 @@ void BaseApiHandler::UpdateBaseConfiguration(
   auto command = cmd.lock();
   if (!command)
     return;
-  CHECK(command->GetStatus() == CommandStatus::kQueued)
-      << EnumToString(command->GetStatus());
+  CHECK(command->GetState() == Command::State::kQueued)
+      << EnumToString(command->GetState());
   command->SetProgress(base::DictionaryValue{}, nullptr);
 
   const auto& settings = device_info_->GetSettings();
@@ -98,8 +98,8 @@ void BaseApiHandler::UpdateDeviceInfo(const std::weak_ptr<Command>& cmd) {
   auto command = cmd.lock();
   if (!command)
     return;
-  CHECK(command->GetStatus() == CommandStatus::kQueued)
-      << EnumToString(command->GetStatus());
+  CHECK(command->GetState() == Command::State::kQueued)
+      << EnumToString(command->GetState());
   command->SetProgress(base::DictionaryValue{}, nullptr);
 
   const auto& settings = device_info_->GetSettings();

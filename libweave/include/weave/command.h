@@ -12,32 +12,32 @@
 
 namespace weave {
 
-enum class CommandStatus {
-  kQueued,
-  kInProgress,
-  kPaused,
-  kError,
-  kDone,
-  kCancelled,
-  kAborted,
-  kExpired,
-};
-
-enum class CommandOrigin { kLocal, kCloud };
-
 class Command {
  public:
+  enum class State {
+    kQueued,
+    kInProgress,
+    kPaused,
+    kError,
+    kDone,
+    kCancelled,
+    kAborted,
+    kExpired,
+  };
+
+  enum class Origin { kLocal, kCloud };
+
   // Returns the full command ID.
   virtual const std::string& GetID() const = 0;
 
   // Returns the full name of the command.
   virtual const std::string& GetName() const = 0;
 
-  // Returns the command status.
-  virtual CommandStatus GetStatus() const = 0;
+  // Returns the command state.
+  virtual Command::State GetState() const = 0;
 
   // Returns the origin of the command.
-  virtual CommandOrigin GetOrigin() const = 0;
+  virtual Command::Origin GetOrigin() const = 0;
 
   // Returns the command parameters.
   virtual std::unique_ptr<base::DictionaryValue> GetParameters() const = 0;
