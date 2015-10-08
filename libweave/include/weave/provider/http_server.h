@@ -18,22 +18,19 @@ class HttpServer {
  public:
   class Request {
    public:
-    virtual const std::string& GetPath() const = 0;
-    virtual std::string GetFirstHeader(const std::string& name) const = 0;
-    virtual const std::vector<uint8_t>& GetData() const = 0;
-    virtual std::unique_ptr<Stream> GetDataStream() const = 0;
-
-   protected:
     virtual ~Request() = default;
+
+    virtual std::string GetPath() const = 0;
+    virtual std::string GetFirstHeader(const std::string& name) const = 0;
+    virtual InputStream* GetDataStream() = 0;
+
+    virtual void SendReply(int status_code,
+                           const std::string& data,
+                           const std::string& mime_type) = 0;
   };
 
-  using OnReplyCallback = base::Callback<void(int status_code,
-                                              const std::string& data,
-                                              const std::string& mime_type)>;
-
   using OnRequestCallback =
-      base::Callback<void(const Request& request,
-                          const OnReplyCallback& callback)>;
+      base::Callback<void(std::unique_ptr<Request> request)>;
 
   // Adds callback called on new http/https requests with the given path prefix.
   virtual void AddRequestHandler(const std::string& path_prefix,

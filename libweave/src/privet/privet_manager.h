@@ -44,11 +44,10 @@ class SecurityManager;
 
 class Manager : public CloudDelegate::Observer {
  public:
-  Manager();
+  explicit Manager(provider::TaskRunner* task_runner);
   ~Manager() override;
 
-  void Start(provider::TaskRunner* task_runner,
-             provider::Network* network,
+  void Start(provider::Network* network,
              provider::DnsServiceDiscovery* dns_sd,
              provider::HttpServer* http_server,
              provider::Wifi* wifi,
@@ -67,11 +66,14 @@ class Manager : public CloudDelegate::Observer {
   void OnDeviceInfoChanged() override;
 
   void PrivetRequestHandler(
-      const provider::HttpServer::Request& request,
-      const provider::HttpServer::OnReplyCallback& callback);
+      std::unique_ptr<provider::HttpServer::Request> request);
+
+  void PrivetRequestHandlerWithData(
+      const std::shared_ptr<provider::HttpServer::Request>& request,
+      const std::string& data);
 
   void PrivetResponseHandler(
-      const provider::HttpServer::OnReplyCallback& callback,
+      const std::shared_ptr<provider::HttpServer::Request>& request,
       int status,
       const base::DictionaryValue& output);
 
@@ -81,6 +83,7 @@ class Manager : public CloudDelegate::Observer {
   void SaveDeviceSecret(Config* config);
 
   bool disable_security_{false};
+  provider::TaskRunner* task_runner_{nullptr};
   std::unique_ptr<CloudDelegate> cloud_;
   std::unique_ptr<DeviceDelegate> device_;
   std::unique_ptr<SecurityManager> security_;
