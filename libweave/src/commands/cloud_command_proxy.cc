@@ -88,7 +88,12 @@ void CloudCommandProxy::QueueCommandUpdate(
     }
   }
   // Send out an update request to the server, if needed.
-  SendCommandUpdate();
+
+  // Post to accumulate more changes during the current message loop task run.
+  task_runner_->PostDelayedTask(
+      FROM_HERE, base::Bind(&CloudCommandProxy::SendCommandUpdate,
+                            backoff_weak_ptr_factory_.GetWeakPtr()),
+      {});
 }
 
 void CloudCommandProxy::SendCommandUpdate() {
