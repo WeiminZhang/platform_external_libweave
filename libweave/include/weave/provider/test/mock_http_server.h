@@ -18,7 +18,6 @@ namespace test {
 
 class MockHttpServer : public HttpServer {
  public:
-  MOCK_METHOD1(AddOnStateChangedCallback, void(const OnStateChangedCallback&));
   MOCK_METHOD2(AddRequestHandler,
                void(const std::string&, const OnRequestCallback&));
 

@@ -207,11 +207,6 @@ class WeaveTest : public ::testing::Test {
                           const provider::HttpServer::OnRequestCallback& cb) {
               http_server_request_cb_.push_back(cb);
             }));
-    EXPECT_CALL(http_server_, AddOnStateChangedCallback(_))
-        .WillRepeatedly(Invoke(
-            [this](const provider::HttpServer::OnStateChangedCallback& cb) {
-              http_server_changed_cb_.push_back(cb);
-            }));
   }
 
   void InitDefaultExpectations() {
@@ -232,9 +227,6 @@ class WeaveTest : public ::testing::Test {
     device_->AddStateDefinitionsFromJson(kStateDefs);
     device_->SetStatePropertiesFromJson(kStateDefaults, nullptr);
 
-    for (const auto& cb : http_server_changed_cb_)
-      cb.Run(http_server_);
-
     task_runner_.Run();
   }
 
@@ -246,8 +238,6 @@ class WeaveTest : public ::testing::Test {
     }
   }
 
-  std::vector<provider::HttpServer::OnStateChangedCallback>
-      http_server_changed_cb_;
   std::vector<provider::HttpServer::OnRequestCallback> http_server_request_cb_;
 
   StrictMock<provider::test::MockConfigStore> config_store_;
@@ -288,9 +278,6 @@ TEST_F(WeaveTest, StartNoWifi) {
                                   &network_, &dns_sd_, &http_server_, nullptr,
                                   &bluetooth_);
   device_->AddCommandDefinitionsFromJson(kCommandDefs);
-
-  for (const auto& cb : http_server_changed_cb_)
-    cb.Run(http_server_);
 
   task_runner_.Run();
 }
