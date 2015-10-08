@@ -59,7 +59,7 @@ void WifiBootstrapManager::Init() {
 }
 
 void WifiBootstrapManager::StartBootstrapping() {
-  if (network_->GetConnectionState() == Network::State::kConnected) {
+  if (network_->GetConnectionState() == Network::State::kOnline) {
     // If one of the devices we monitor for connectivity is online, we need not
     // start an AP.  For most devices, this is a situation which happens in
     // testing when we have an ethernet connection.  If you need to always
@@ -122,7 +122,7 @@ void WifiBootstrapManager::StartMonitoring() {
   // connectivity state.  See OnConnectivityChange().
   UpdateState(State::kMonitoring);
 
-  if (network_->GetConnectionState() == Network::State::kConnected) {
+  if (network_->GetConnectionState() == Network::State::kOnline) {
     monitor_until_ = {};
   } else {
     if (monitor_until_.is_null()) {
@@ -225,7 +225,7 @@ void WifiBootstrapManager::OnConnectivityChange() {
 
   if (state_ == State::kMonitoring ||  // Reset monitoring timeout.
       (state_ != State::kDisabled &&
-       network_->GetConnectionState() == Network::State::kConnected)) {
+       network_->GetConnectionState() == Network::State::kOnline)) {
     StartMonitoring();
   }
 }
@@ -246,7 +246,7 @@ void WifiBootstrapManager::UpdateConnectionState() {
     case Network::State::kOffline:
       connection_state_ = ConnectionState{ConnectionState::kOffline};
       return;
-    case Network::State::kFailure: {
+    case Network::State::kError: {
       // TODO(wiley) Pull error information from somewhere.
       ErrorPtr error;
       Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
@@ -257,7 +257,7 @@ void WifiBootstrapManager::UpdateConnectionState() {
     case Network::State::kConnecting:
       connection_state_ = ConnectionState{ConnectionState::kConnecting};
       return;
-    case Network::State::kConnected:
+    case Network::State::kOnline:
       connection_state_ = ConnectionState{ConnectionState::kOnline};
       return;
   }

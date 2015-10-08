@@ -60,13 +60,13 @@ weave::provider::Network::State NetlinkNetworkImpl::GetInterfaceState(
   auto refill_result = nl_cache_refill(nl_sock_.get(), nl_cache_.get());
   if (refill_result < 0) {
     LOG(ERROR) << "failed to refresh netlink cache: " << refill_result;
-    return Network::State::kFailure;
+    return Network::State::kError;
   }
   std::unique_ptr<rtnl_link, Deleter> nl_link{
       rtnl_link_get(nl_cache_.get(), if_index)};
   if (!nl_link) {
     LOG(ERROR) << "failed to get interface 0";
-    return Network::State::kFailure;
+    return Network::State::kError;
   }
 
   int state = rtnl_link_get_operstate(nl_link.get());
@@ -77,13 +77,13 @@ weave::provider::Network::State NetlinkNetworkImpl::GetInterfaceState(
     case IF_OPER_DORMANT:
       return Network::State::kConnecting;
     case IF_OPER_UP:
-      return Network::State::kConnected;
+      return Network::State::kOnline;
     case IF_OPER_TESTING:
     case IF_OPER_NOTPRESENT:
     case IF_OPER_UNKNOWN:
     default:
       LOG(ERROR) << "unknown interface state: " << state;
-      return Network::State::kFailure;
+      return Network::State::kError;
   }
 }
 

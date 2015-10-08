@@ -132,9 +132,9 @@ void NetworkImpl::UpdateNetworkState() {
   if (force_bootstrapping_)
     return;
   if (std::system("ping talk.google.com -c 1") == 0)
-    network_state_ = State::kConnected;
+    network_state_ = State::kOnline;
   else if (std::system("nmcli dev"))
-    network_state_ = State::kFailure;
+    network_state_ = State::kError;
   else if (std::system("nmcli dev | grep connecting") == 0)
     network_state_ = State::kConnecting;
 
