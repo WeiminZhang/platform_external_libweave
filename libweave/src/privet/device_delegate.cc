@@ -15,7 +15,8 @@ namespace {
 
 class DeviceDelegateImpl : public DeviceDelegate {
  public:
-  DeviceDelegateImpl() = default;
+  DeviceDelegateImpl(uint16_t http_port, uint16_t https_port)
+      : http_port_{http_port}, https_port_{https_port} {}
   ~DeviceDelegateImpl() override = default;
 
   std::pair<uint16_t, uint16_t> GetHttpEnpoint() const override {
@@ -45,8 +46,11 @@ DeviceDelegate::DeviceDelegate() {}
 DeviceDelegate::~DeviceDelegate() {}
 
 // static
-std::unique_ptr<DeviceDelegate> DeviceDelegate::CreateDefault() {
-  return std::unique_ptr<DeviceDelegate>(new DeviceDelegateImpl());
+std::unique_ptr<DeviceDelegate> DeviceDelegate::CreateDefault(
+    uint16_t http_port,
+    uint16_t https_port) {
+  return std::unique_ptr<DeviceDelegate>(
+      new DeviceDelegateImpl(http_port, https_port));
 }
 
 }  // namespace privet

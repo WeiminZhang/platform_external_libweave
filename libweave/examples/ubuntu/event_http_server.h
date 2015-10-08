@@ -28,8 +28,6 @@ class HttpServerImpl : public provider::HttpServer {
 
   explicit HttpServerImpl(EventTaskRunner* task_runner);
 
-  void AddOnStateChangedCallback(
-      const OnStateChangedCallback& callback) override;
   void AddRequestHandler(const std::string& path_prefix,
                          const OnRequestCallback& callback) override;
   uint16_t GetHttpPort() const override;

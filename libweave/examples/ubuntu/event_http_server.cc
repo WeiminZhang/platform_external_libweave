@@ -199,11 +199,6 @@ void HttpServerImpl::ProcessReply(std::shared_ptr<RequestImpl> request,
   evhttp_send_reply(req, status_code, "None", buf.get());
 }
 
-void HttpServerImpl::AddOnStateChangedCallback(
-    const OnStateChangedCallback& callback) {
-  callback.Run(*this);
-}
-
 void HttpServerImpl::AddRequestHandler(const std::string& path_prefix,
                                        const OnRequestCallback& callback) {
   handlers_.emplace(path_prefix, callback);

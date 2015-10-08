@@ -38,7 +38,8 @@ class DeviceDelegate {
   virtual void SetHttpsPort(uint16_t port) = 0;
 
   // Create default instance.
-  static std::unique_ptr<DeviceDelegate> CreateDefault();
+  static std::unique_ptr<DeviceDelegate> CreateDefault(uint16_t http_port,
+                                                       uint16_t https_port);
 };
 
 }  // namespace privet
