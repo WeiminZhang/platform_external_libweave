@@ -28,7 +28,7 @@ class FakeTaskRunner : public TaskRunner {
                        base::TimeDelta delay) override;
 
   bool RunOnce();
-  void Run();
+  void Run(size_t number_of_iterations = 1000);
   void Break();
   base::Clock* GetClock();
 
