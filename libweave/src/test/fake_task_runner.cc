@@ -32,9 +32,9 @@ bool FakeTaskRunner::RunOnce() {
   return true;
 }
 
-void FakeTaskRunner::Run() {
+void FakeTaskRunner::Run(size_t number_of_iterations) {
   break_ = false;
-  for (size_t i = 0; i < 1000 && !break_ && RunOnce(); ++i) {
+  for (size_t i = 0; i < number_of_iterations && !break_ && RunOnce(); ++i) {
   }
 }
 
