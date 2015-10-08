@@ -41,8 +41,7 @@ class HttpServer {
 
   virtual uint16_t GetHttpPort() const = 0;
   virtual uint16_t GetHttpsPort() const = 0;
-  virtual const std::vector<uint8_t>& GetHttpsCertificateFingerprint()
-      const = 0;
+  virtual std::vector<uint8_t> GetHttpsCertificateFingerprint() const = 0;
 
  protected:
   virtual ~HttpServer() = default;

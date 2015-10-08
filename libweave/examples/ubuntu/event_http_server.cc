@@ -212,8 +212,7 @@ uint16_t HttpServerImpl::GetHttpsPort() const {
   return 7781;
 }
 
-const std::vector<uint8_t>& HttpServerImpl::GetHttpsCertificateFingerprint()
-    const {
+std::vector<uint8_t> HttpServerImpl::GetHttpsCertificateFingerprint() const {
   return cert_fingerprint_;
 }
 

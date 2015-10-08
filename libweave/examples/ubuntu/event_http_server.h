@@ -32,7 +32,7 @@ class HttpServerImpl : public provider::HttpServer {
                          const OnRequestCallback& callback) override;
   uint16_t GetHttpPort() const override;
   uint16_t GetHttpsPort() const override;
-  const std::vector<uint8_t>& GetHttpsCertificateFingerprint() const override;
+  std::vector<uint8_t> GetHttpsCertificateFingerprint() const override;
 
  private:
   void GenerateX509();
