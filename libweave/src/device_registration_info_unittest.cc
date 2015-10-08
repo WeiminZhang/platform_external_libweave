@@ -502,54 +502,51 @@ TEST_F(DeviceRegistrationInfoTest, OOBRegistrationStatus) {
   EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 }
 
-TEST_F(DeviceRegistrationInfoTest, UpdateCommand) {
-  ReloadSettings();
-  SetAccessToken();
+class DeviceRegistrationInfoUpdateCommandTest
+    : public DeviceRegistrationInfoTest {
+ protected:
+  void SetUp() override {
+    DeviceRegistrationInfoTest::SetUp();
 
-  auto json_cmds = CreateDictionaryValue(R"({
-    'robot': {
-      '_jump': {
-        'parameters': {'_height': 'integer'},
-        'progress': {'progress': 'integer'},
-        'results': {'status': 'string'},
-        'minimalRole': 'user'
+    ReloadSettings();
+    SetAccessToken();
+
+    auto json_cmds = CreateDictionaryValue(R"({
+      'robot': {
+        '_jump': {
+          'parameters': {'_height': 'integer'},
+          'progress': {'progress': 'integer'},
+          'results': {'status': 'string'},
+          'minimalRole': 'user'
+        }
       }
-    }
-  })");
-  EXPECT_TRUE(command_manager_->LoadCommands(*json_cmds, nullptr));
+    })");
+    EXPECT_TRUE(command_manager_->LoadCommands(*json_cmds, nullptr));
 
-  const std::string command_url = dev_reg_->GetServiceURL("commands/1234");
+    command_url_ = dev_reg_->GetServiceURL("commands/1234");
 
-  auto commands_json = CreateValue(R"([{
-    'name':'robot._jump',
-    'id':'1234',
-    'parameters': {'_height': 100},
-    'minimalRole': 'user'
-  }])");
-  ASSERT_NE(nullptr, commands_json.get());
-  const base::ListValue* command_list = nullptr;
-  ASSERT_TRUE(commands_json->GetAsList(&command_list));
-  PublishCommands(*command_list);
-  auto command = command_manager_->FindCommand("1234");
-  ASSERT_NE(nullptr, command);
+    auto commands_json = CreateValue(R"([{
+      'name':'robot._jump',
+      'id':'1234',
+      'parameters': {'_height': 100},
+      'minimalRole': 'user'
+    }])");
+    ASSERT_NE(nullptr, commands_json.get());
+    const base::ListValue* command_list = nullptr;
+    ASSERT_TRUE(commands_json->GetAsList(&command_list));
+    PublishCommands(*command_list);
+    command_ = command_manager_->FindCommand("1234");
+    ASSERT_NE(nullptr, command_);
+  }
 
+  Command* command_{nullptr};
+  std::string command_url_;
+};
+
+TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetProgress) {
   EXPECT_CALL(http_client_,
               MockSendRequest(
-                  http::kPatch, command_url,
-                  HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
-      .WillOnce(WithArgs<3>(Invoke([](const std::string& data) {
-        EXPECT_JSON_EQ(R"({"results":{"status":"Ok"}})",
-                       *CreateDictionaryValue(data));
-        base::DictionaryValue json;
-        return ReplyWithJson(200, json);
-      })));
-  EXPECT_TRUE(
-      command->SetResults(*CreateDictionaryValue("{'status': 'Ok'}"), nullptr));
-  Mock::VerifyAndClearExpectations(&http_client_);
-
-  EXPECT_CALL(http_client_,
-              MockSendRequest(
-                  http::kPatch, command_url,
+                  http::kPatch, command_url_,
                   HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
       .WillOnce(WithArgs<3>(Invoke([](const std::string& data) {
         EXPECT_JSON_EQ(R"({"state":"inProgress"})",
@@ -563,13 +560,36 @@ TEST_F(DeviceRegistrationInfoTest, UpdateCommand) {
         base::DictionaryValue json;
         return ReplyWithJson(200, json);
       })));
-  EXPECT_TRUE(
-      command->SetProgress(*CreateDictionaryValue("{'progress':18}"), nullptr));
+  EXPECT_TRUE(command_->SetProgress(*CreateDictionaryValue("{'progress':18}"),
+                                    nullptr));
   Mock::VerifyAndClearExpectations(&http_client_);
+}
 
+TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetResults) {
   EXPECT_CALL(http_client_,
               MockSendRequest(
-                  http::kPatch, command_url,
+                  http::kPatch, command_url_,
+                  HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
+      .WillOnce(WithArgs<3>(Invoke([](const std::string& data) {
+        EXPECT_JSON_EQ(R"({"results":{"status":"Ok"}})",
+                       *CreateDictionaryValue(data));
+        base::DictionaryValue json;
+        return ReplyWithJson(200, json);
+      })))
+      .WillOnce(WithArgs<3>(Invoke([](const std::string& data) {
+        EXPECT_JSON_EQ(R"({"state":"done"})", *CreateDictionaryValue(data));
+        base::DictionaryValue json;
+        return ReplyWithJson(200, json);
+      })));
+  EXPECT_TRUE(command_->SetResults(*CreateDictionaryValue("{'status': 'Ok'}"),
+                                   nullptr));
+  Mock::VerifyAndClearExpectations(&http_client_);
+}
+
+TEST_F(DeviceRegistrationInfoUpdateCommandTest, Cancel) {
+  EXPECT_CALL(http_client_,
+              MockSendRequest(
+                  http::kPatch, command_url_,
                   HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
       .WillOnce(WithArgs<3>(Invoke([](const std::string& data) {
         EXPECT_JSON_EQ(R"({"state":"cancelled"})",
@@ -577,7 +597,7 @@ TEST_F(DeviceRegistrationInfoTest, UpdateCommand) {
         base::DictionaryValue json;
         return ReplyWithJson(200, json);
       })));
-  command->Cancel();
+  EXPECT_TRUE(command_->Cancel(nullptr));
   Mock::VerifyAndClearExpectations(&http_client_);
 }
 
