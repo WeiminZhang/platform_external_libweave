@@ -860,7 +860,7 @@ void DeviceRegistrationInfo::NotifyCommandAborted(const std::string& command_id,
                                                   ErrorPtr error) {
   base::DictionaryValue command_patch;
   command_patch.SetString(commands::attributes::kCommand_State,
-                          EnumToString(CommandStatus::kAborted));
+                          EnumToString(Command::State::kAborted));
   if (error) {
     command_patch.Set(commands::attributes::kCommand_Error,
                       ErrorInfoToJson(*error).release());
@@ -1080,8 +1080,8 @@ void DeviceRegistrationInfo::PublishCommand(
   std::string command_id;
   ErrorPtr error;
   auto command_instance = CommandInstance::FromJson(
-      &command, CommandOrigin::kCloud, command_manager_->GetCommandDictionary(),
-      &command_id, &error);
+      &command, Command::Origin::kCloud,
+      command_manager_->GetCommandDictionary(), &command_id, &error);
   if (!command_instance) {
     LOG(WARNING) << "Failed to parse a command instance: " << command;
     if (!command_id.empty())

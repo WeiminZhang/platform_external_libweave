@@ -23,8 +23,8 @@ class MockCommand : public Command {
   MOCK_CONST_METHOD0(GetID, const std::string&());
   MOCK_CONST_METHOD0(GetName, const std::string&());
   MOCK_CONST_METHOD0(GetCategory, const std::string&());
-  MOCK_CONST_METHOD0(GetStatus, CommandStatus());
-  MOCK_CONST_METHOD0(GetOrigin, CommandOrigin());
+  MOCK_CONST_METHOD0(GetState, Command::State());
+  MOCK_CONST_METHOD0(GetOrigin, Command::Origin());
   MOCK_CONST_METHOD0(MockGetParameters, const std::string&());
   MOCK_CONST_METHOD0(MockGetProgress, const std::string&());
   MOCK_CONST_METHOD0(MockGetResults, const std::string&());

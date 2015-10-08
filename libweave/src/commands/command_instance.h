@@ -37,7 +37,7 @@ class CommandInstance final : public Command {
     virtual void OnErrorChanged() = 0;
     virtual void OnProgressChanged() = 0;
     virtual void OnResultsChanged() = 0;
-    virtual void OnStatusChanged() = 0;
+    virtual void OnStateChanged() = 0;
 
    protected:
     virtual ~Observer() = default;
@@ -47,7 +47,7 @@ class CommandInstance final : public Command {
   // be in format "<package_name>.<command_name>", a command |category| and
   // a list of parameters and their values specified in |parameters|.
   CommandInstance(const std::string& name,
-                  CommandOrigin origin,
+                  Command::Origin origin,
                   const CommandDefinition* command_definition,
                   const ValueMap& parameters);
   ~CommandInstance() override;
@@ -55,8 +55,8 @@ class CommandInstance final : public Command {
   // Command overrides.
   const std::string& GetID() const override;
   const std::string& GetName() const override;
-  CommandStatus GetStatus() const override;
-  CommandOrigin GetOrigin() const override;
+  Command::State GetState() const override;
+  Command::Origin GetOrigin() const override;
   std::unique_ptr<base::DictionaryValue> GetParameters() const override;
   std::unique_ptr<base::DictionaryValue> GetProgress() const override;
   std::unique_ptr<base::DictionaryValue> GetResults() const override;
@@ -85,7 +85,7 @@ class CommandInstance final : public Command {
   // This is used to report parse failures back to the server.
   static std::unique_ptr<CommandInstance> FromJson(
       const base::Value* value,
-      CommandOrigin origin,
+      Command::Origin origin,
       const CommandDictionary& dictionary,
       std::string* command_id,
       ErrorPtr* error);
@@ -110,7 +110,7 @@ class CommandInstance final : public Command {
  private:
   // Helper function to update the command status.
   // Used by Abort(), Cancel(), Done() methods.
-  bool SetStatus(CommandStatus status, ErrorPtr* error);
+  bool SetStatus(Command::State status, ErrorPtr* error);
   // Helper method that removes this command from the command queue.
   // Note that since the command queue owns the lifetime of the command instance
   // object, removing a command from the queue will also destroy it.
@@ -121,7 +121,7 @@ class CommandInstance final : public Command {
   // Full command name as "<package_name>.<command_name>".
   std::string name_;
   // The origin of the command, either "local" or "cloud".
-  CommandOrigin origin_ = CommandOrigin::kLocal;
+  Command::Origin origin_ = Command::Origin::kLocal;
   // Command definition.
   const CommandDefinition* command_definition_{nullptr};
   // Command parameters and their values.
@@ -130,8 +130,8 @@ class CommandInstance final : public Command {
   ValueMap progress_;
   // Command results.
   ValueMap results_;
-  // Current command status.
-  CommandStatus status_ = CommandStatus::kQueued;
+  // Current command state.
+  Command::State state_ = Command::State::kQueued;
   // Error encountered during execution of the command.
   ErrorPtr error_;
   // Command observers.
