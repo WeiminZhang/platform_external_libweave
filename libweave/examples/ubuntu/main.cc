@@ -51,7 +51,10 @@ class CommandHandler {
       "_greeter": {
         "_greet": {
           "minimalRole": "user",
-          "parameters": { "_name": "string", "_count": {"minimum": 1, "maximum": 100}},
+          "parameters": {
+            "_name": "string",
+            "_count": {"minimum": 1, "maximum": 100}
+          },
           "progress": { "_todo": "integer"},
           "results": { "_greeting": "string" }
         }
