@@ -58,9 +58,9 @@ const EnumToStringMap<AuthScope>::Map kAuthScopeMap[] = {
 
 const EnumToStringMap<Network::State>::Map kNetworkStateMap[] = {
     {Network::State::kOffline, "offline"},
-    {Network::State::kFailure, "failure"},
+    {Network::State::kError, "error"},
     {Network::State::kConnecting, "connecting"},
-    {Network::State::kConnected, "connected"},
+    {Network::State::kOnline, "online"},
 };
 
 }  // namespace
