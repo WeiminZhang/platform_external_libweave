@@ -49,13 +49,16 @@ void Manager::Start(TaskRunner* task_runner,
                     StateManager* state_manager) {
   disable_security_ = device->GetSettings().disable_security;
 
-  device_ = DeviceDelegate::CreateDefault();
+  device_ = DeviceDelegate::CreateDefault(http_server->GetHttpPort(),
+                                          http_server->GetHttpsPort());
   cloud_ = CloudDelegate::CreateDefault(task_runner, device, command_manager,
                                         state_manager);
   cloud_observer_.Add(cloud_.get());
   security_.reset(new SecurityManager(
       device->GetSettings().secret, device->GetSettings().pairing_modes,
       device->GetSettings().embedded_code, disable_security_, task_runner));
+  security_->SetCertificateFingerprint(
+      http_server->GetHttpsCertificateFingerprint());
   if (device->GetSettings().secret.empty()) {
     // TODO(vitalybuka): Post all Config::Transaction to avoid following.
     task_runner->PostDelayedTask(
@@ -83,8 +86,6 @@ void Manager::Start(TaskRunner* task_runner,
                                           security_.get(),
                                           wifi_bootstrap_manager_.get()));
 
-  http_server->AddOnStateChangedCallback(base::Bind(
-      &Manager::OnHttpServerStatusChanged, weak_ptr_factory_.GetWeakPtr()));
   http_server->AddRequestHandler("/privet/",
                                  base::Bind(&Manager::PrivetRequestHandler,
                                             weak_ptr_factory_.GetWeakPtr()));
@@ -150,16 +151,6 @@ void Manager::OnChanged() {
 
 void Manager::OnConnectivityChanged() {
   OnChanged();
-}
-
-void Manager::OnHttpServerStatusChanged(const HttpServer& server) {
-  if (device_->GetHttpEnpoint().first != server.GetHttpPort()) {
-    device_->SetHttpPort(server.GetHttpPort());
-    if (publisher_)  // Only HTTP port is published
-      publisher_->Update();
-  }
-  device_->SetHttpsPort(server.GetHttpsPort());
-  security_->SetCertificateFingerprint(server.GetHttpsCertificateFingerprint());
 }
 
 void Manager::SaveDeviceSecret(Config* config) {

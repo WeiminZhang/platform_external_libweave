@@ -27,8 +27,6 @@ class HttpServer {
     virtual ~Request() = default;
   };
 
-  using OnStateChangedCallback = base::Callback<void(const HttpServer& server)>;
-
   using OnReplyCallback = base::Callback<void(int status_code,
                                               const std::string& data,
                                               const std::string& mime_type)>;
@@ -36,10 +34,6 @@ class HttpServer {
   using OnRequestCallback =
       base::Callback<void(const Request& request,
                           const OnReplyCallback& callback)>;
-
-  // Adds notification callback for server started/stopped serving requests.
-  virtual void AddOnStateChangedCallback(
-      const OnStateChangedCallback& callback) = 0;
 
   // Adds callback called on new http/https requests with the given path prefix.
   virtual void AddRequestHandler(const std::string& path_prefix,

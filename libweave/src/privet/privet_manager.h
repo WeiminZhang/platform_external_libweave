@@ -78,7 +78,6 @@ class Manager : public CloudDelegate::Observer {
   void OnChanged();
   void OnConnectivityChanged();
 
-  void OnHttpServerStatusChanged(const provider::HttpServer& server);
   void SaveDeviceSecret(Config* config);
 
   bool disable_security_{false};
