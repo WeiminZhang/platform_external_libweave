@@ -16,11 +16,12 @@
 #include "src/commands/unittest_utils.h"
 #include "src/states/mock_state_change_queue_interface.h"
 
-using testing::SaveArg;
+using testing::_;
+using testing::DoAll;
 using testing::Invoke;
 using testing::Return;
 using testing::ReturnPointee;
-using testing::_;
+using testing::SaveArg;
 
 namespace weave {
 
@@ -148,6 +149,7 @@ TEST_F(CloudCommandProxyTest, ImmediateUpdate) {
   const char expected[] = "{'state':'done'}";
   EXPECT_CALL(cloud_updater_, UpdateCommand(kCmdID, MatchJson(expected), _, _));
   command_instance_->SetResults({}, nullptr);
+  task_runner_.RunOnce();
 }
 
 TEST_F(CloudCommandProxyTest, DelayedUpdate) {
@@ -169,17 +171,17 @@ TEST_F(CloudCommandProxyTest, InFlightRequest) {
   //    progress={...}
   // The first state update is sent immediately, the second should be delayed.
   base::Closure on_success;
-  EXPECT_CALL(cloud_updater_,
-              UpdateCommand(kCmdID, MatchJson("{'state':'inProgress'}"), _, _))
+  EXPECT_CALL(
+      cloud_updater_,
+      UpdateCommand(
+          kCmdID,
+          MatchJson("{'state':'inProgress', 'progress':{'status':'ready'}}"), _,
+          _))
       .WillOnce(SaveArg<2>(&on_success));
   EXPECT_TRUE(command_instance_->SetProgress(
       *CreateDictionaryValue("{'status': 'ready'}"), nullptr));
 
-  // Now simulate the first request completing.
-  // The second request should be sent now.
-  const char expected[] = "{'progress':{'status':'ready'}}";
-  EXPECT_CALL(cloud_updater_, UpdateCommand(kCmdID, MatchJson(expected), _, _));
-  on_success.Run();
+  task_runner_.RunOnce();
 }
 
 TEST_F(CloudCommandProxyTest, CombineMultiple) {
@@ -203,40 +205,32 @@ TEST_F(CloudCommandProxyTest, CombineMultiple) {
 }
 
 TEST_F(CloudCommandProxyTest, RetryFailed) {
+  base::Closure on_success;
   base::Closure on_error;
-  const char expect1[] = "{'state':'inProgress'}";
-  EXPECT_CALL(cloud_updater_, UpdateCommand(kCmdID, MatchJson(expect1), _, _))
-      .WillOnce(SaveArg<3>(&on_error));
+
+  const char expect[] =
+      "{'state':'inProgress', 'progress': {'status': 'ready'}}";
+  EXPECT_CALL(cloud_updater_, UpdateCommand(kCmdID, MatchJson(expect), _, _))
+      .Times(3)
+      .WillRepeatedly(DoAll(SaveArg<2>(&on_success), SaveArg<3>(&on_error)));
+  auto started = task_runner_.GetClock()->Now();
   EXPECT_TRUE(command_instance_->SetProgress(
       *CreateDictionaryValue("{'status': 'ready'}"), nullptr));
-
-  // Now pretend the first command update request has failed.
-  // We should retry with both state and progress fields updated this time,
-  // after the initial backoff (which should be 1s in our case).
-  base::TimeDelta expected_delay = base::TimeDelta::FromSeconds(1);
+  task_runner_.Run();
   on_error.Run();
+  task_runner_.Run();
+  EXPECT_GE(task_runner_.GetClock()->Now() - started,
+            base::TimeDelta::FromSecondsD(0.9));
 
-  // Execute the delayed request. But pretend that it failed too.
-  const char expect2[] = R"({
-    'progress': {'status':'ready'},
-    'state':'inProgress'
-  })";
-  EXPECT_CALL(cloud_updater_, UpdateCommand(kCmdID, MatchJson(expect2), _, _))
-      .WillOnce(SaveArg<3>(&on_error));
-  task_runner_.RunOnce();
-
-  // Now backoff should be 2 seconds.
-  expected_delay = base::TimeDelta::FromSeconds(2);
   on_error.Run();
+  task_runner_.Run();
+  EXPECT_GE(task_runner_.GetClock()->Now() - started,
+            base::TimeDelta::FromSecondsD(2.9));
 
-  // Retry the task.
-  base::Closure on_success;
-  EXPECT_CALL(cloud_updater_, UpdateCommand(kCmdID, MatchJson(expect2), _, _))
-      .WillOnce(SaveArg<2>(&on_success));
-  task_runner_.RunOnce();
-
-  // Pretend it succeeds this time.
   on_success.Run();
+  task_runner_.Run();
+  EXPECT_GE(task_runner_.GetClock()->Now() - started,
+            base::TimeDelta::FromSecondsD(2.9));
 }
 
 TEST_F(CloudCommandProxyTest, GateOnStateUpdates) {
@@ -361,6 +355,7 @@ TEST_F(CloudCommandProxyTest, EmptyStateChangeQueue) {
   const char expected[] = "{'state':'done'}";
   EXPECT_CALL(cloud_updater_, UpdateCommand(kCmdID, MatchJson(expected), _, _));
   command_instance_->SetResults({}, nullptr);
+  task_runner_.RunOnce();
 }
 
 TEST_F(CloudCommandProxyTest, NonEmptyStateChangeQueue) {
