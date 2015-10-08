@@ -74,13 +74,14 @@ void BaseApiHandler::UpdateBaseConfiguration(
                        errors::commands::kInvalidPropValue,
                        "Invalid localAnonymousAccessMaxRole value '%s'",
                        anonymous_access_role.c_str());
-    return command->Abort(error.get());
+    command->Abort(error.get(), nullptr);
+    return;
   }
 
   device_info_->UpdateBaseConfig(auth_scope, discovery_enabled,
                                  pairing_enabled);
 
-  command->Done();
+  command->SetResults({}, nullptr);
 }
 
 void BaseApiHandler::OnConfigChanged(const Settings& settings) {
@@ -112,7 +113,7 @@ void BaseApiHandler::UpdateDeviceInfo(const std::weak_ptr<Command>& cmd) {
   parameters->GetString("location", &location);
 
   device_info_->UpdateDeviceInfo(name, description, location);
-  command->Done();
+  command->SetResults({}, nullptr);
 }
 
 }  // namespace weave

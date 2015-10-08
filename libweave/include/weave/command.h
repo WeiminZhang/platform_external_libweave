@@ -48,6 +48,9 @@ class Command {
   // Returns the command results.
   virtual std::unique_ptr<base::DictionaryValue> GetResults() const = 0;
 
+  // Returns the command error.
+  virtual const Error* GetError() const = 0;
+
   // Updates the command progress. The |progress| should match the schema.
   // Returns false if |progress| value is incorrect.
   virtual bool SetProgress(const base::DictionaryValue& progress,
@@ -55,17 +58,26 @@ class Command {
 
   // Updates the command results. The |results| should match the schema.
   // Returns false if |results| value is incorrect.
+  // Sets command into terminal "done" state.
+  // TODO(vitalybuka): Rename to Complete.
   virtual bool SetResults(const base::DictionaryValue& results,
                           ErrorPtr* error) = 0;
 
+  // Sets command into paused state.
+  // This is not terminal state. Command can be resumed with |SetProgress| call.
+  virtual bool Pause(ErrorPtr* error) = 0;
+
+  // Sets command into error state and assign error.
+  // This is not terminal state. Command can be resumed with |SetProgress| call.
+  virtual bool SetError(const Error* command_error, ErrorPtr* error) = 0;
+
   // Aborts command execution.
-  virtual void Abort(const Error* error) = 0;
+  // Sets command into terminal "aborted" state.
+  virtual bool Abort(const Error* command_error, ErrorPtr* error) = 0;
 
   // Cancels command execution.
-  virtual void Cancel() = 0;
-
-  // Marks the command as completed successfully.
-  virtual void Done() = 0;
+  // Sets command into terminal "canceled" state.
+  virtual bool Cancel(ErrorPtr* error) = 0;
 
  protected:
   virtual ~Command() = default;

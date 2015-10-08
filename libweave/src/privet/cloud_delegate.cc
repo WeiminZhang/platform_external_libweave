@@ -196,10 +196,8 @@ class CloudDelegateImpl : public CloudDelegate {
     CHECK(user_info.scope() != AuthScope::kNone);
     ErrorPtr error;
     auto command = GetCommandInternal(id, user_info, &error);
-    if (!command)
+    if (!command || !command->Cancel(&error))
       return error_callback.Run(error.get());
-
-    command->Cancel();
     success_callback.Run(*command->ToJson());
   }
 

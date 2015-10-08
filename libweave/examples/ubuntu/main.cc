@@ -119,10 +119,7 @@ class CommandHandler {
     result.SetString("_greeting", "Hello " + name);
     cmd->SetResults(result, nullptr);
     LOG(INFO) << cmd->GetName() << " command finished: " << result;
-
     LOG(INFO) << "New state: " << *device_->GetState();
-
-    cmd->Done();
   }
 
   void OnGreetCommand(const std::weak_ptr<weave::Command>& command) {
@@ -157,12 +154,13 @@ class CommandHandler {
       if (cmd_value != cur_state) {
         UpdateLedState();
       }
-      return cmd->Done();
+      cmd->SetResults({}, nullptr);
+      return;
     }
     weave::ErrorPtr error;
     weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
                         "Invalid parameters");
-    cmd->Abort(error.get());
+    cmd->Abort(error.get(), nullptr);
   }
 
   void OnFlasherToggleCommand(const std::weak_ptr<weave::Command>& command) {
@@ -177,12 +175,13 @@ class CommandHandler {
       led_status_[led_index] = ~led_status_[led_index];
 
       UpdateLedState();
-      return cmd->Done();
+      cmd->SetResults({}, nullptr);
+      return;
     }
     weave::ErrorPtr error;
     weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
                         "Invalid parameters");
-    cmd->Abort(error.get());
+    cmd->Abort(error.get(), nullptr);
   }
 
   void OnUnhandledCommand(const std::weak_ptr<weave::Command>& command) {
