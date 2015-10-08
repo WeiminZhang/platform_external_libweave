@@ -200,7 +200,7 @@ class WeaveTest : public ::testing::Test {
     EXPECT_CALL(http_server_, GetHttpPort()).WillRepeatedly(Return(11));
     EXPECT_CALL(http_server_, GetHttpsPort()).WillRepeatedly(Return(12));
     EXPECT_CALL(http_server_, GetHttpsCertificateFingerprint())
-        .WillRepeatedly(ReturnRefOfCopy(std::vector<uint8_t>{1, 2, 3}));
+        .WillRepeatedly(Return(std::vector<uint8_t>{1, 2, 3}));
     EXPECT_CALL(http_server_, AddRequestHandler(_, _))
         .WillRepeatedly(
             Invoke([this](const std::string& path_prefix,
