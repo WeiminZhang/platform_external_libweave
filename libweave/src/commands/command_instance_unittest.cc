@@ -212,15 +212,37 @@ TEST_F(CommandInstanceTest, ToJson) {
   EXPECT_TRUE(instance->SetResults(*CreateDictionaryValue("{'testResult': 17}"),
                                    nullptr));
 
-  ErrorPtr error;
-  Error::AddTo(&error, FROM_HERE, "DOMAIN", "CODE", "MESSAGE");
-  instance->Abort(error.get());
-
   json->MergeDictionary(CreateDictionaryValue(R"({
     'id': 'testId',
     'progress': {'progress': 15},
+    'state': 'done',
+    'results': {'testResult': 17}
+  })").get());
+
+  auto converted = instance->ToJson();
+  EXPECT_PRED2([](const base::Value& val1,
+                  const base::Value& val2) { return val1.Equals(&val2); },
+               *json, *converted);
+}
+
+TEST_F(CommandInstanceTest, ToJsonError) {
+  auto json = CreateDictionaryValue(R"({
+    'name': 'base.reboot',
+    'parameters': {}
+  })");
+  auto instance = CommandInstance::FromJson(json.get(), CommandOrigin::kCloud,
+                                            dict_, nullptr, nullptr);
+  instance->SetID("testId");
+
+  ErrorPtr error;
+  Error::AddTo(&error, FROM_HERE, "DOMAIN", "CODE", "MESSAGE");
+  instance->Abort(error.get(), nullptr);
+
+  json->MergeDictionary(CreateDictionaryValue(R"({
+    'id': 'testId',
     'state': 'aborted',
-    'results': {'testResult': 17},
+    'progress': {},
+    'results': {},
     'error': {'code': 'CODE', 'message': 'MESSAGE'}
   })").get());
 

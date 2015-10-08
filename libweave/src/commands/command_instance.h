@@ -59,13 +59,15 @@ class CommandInstance final : public Command {
   std::unique_ptr<base::DictionaryValue> GetParameters() const override;
   std::unique_ptr<base::DictionaryValue> GetProgress() const override;
   std::unique_ptr<base::DictionaryValue> GetResults() const override;
+  const Error* GetError() const override;
   bool SetProgress(const base::DictionaryValue& progress,
                    ErrorPtr* error) override;
   bool SetResults(const base::DictionaryValue& results,
                   ErrorPtr* error) override;
-  void Abort(const Error* error) override;
-  void Cancel() override;
-  void Done() override;
+  bool Pause(ErrorPtr* error) override;
+  bool SetError(const Error* command_error, ErrorPtr* error) override;
+  bool Abort(const Error* command_error, ErrorPtr* error) override;
+  bool Cancel(ErrorPtr* error) override;
 
   // Returns command definition.
   const CommandDefinition* GetCommandDefinition() const {
@@ -107,7 +109,7 @@ class CommandInstance final : public Command {
  private:
   // Helper function to update the command status.
   // Used by Abort(), Cancel(), Done() methods.
-  void SetStatus(CommandStatus status);
+  bool SetStatus(CommandStatus status, ErrorPtr* error);
   // Helper method that removes this command from the command queue.
   // Note that since the command queue owns the lifetime of the command instance
   // object, removing a command from the queue will also destroy it.
