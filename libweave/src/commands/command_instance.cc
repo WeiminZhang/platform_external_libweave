@@ -159,6 +159,7 @@ bool CommandInstance::SetResults(const base::DictionaryValue& results,
 
 bool CommandInstance::SetError(const Error* command_error, ErrorPtr* error) {
   error_ = command_error ? command_error->Clone() : nullptr;
+  FOR_EACH_OBSERVER(Observer, observers_, OnErrorChanged());
   return SetStatus(CommandStatus::kError, error);
 }
 
@@ -296,6 +297,7 @@ bool CommandInstance::Pause(ErrorPtr* error) {
 
 bool CommandInstance::Abort(const Error* command_error, ErrorPtr* error) {
   error_ = command_error ? command_error->Clone() : nullptr;
+  FOR_EACH_OBSERVER(Observer, observers_, OnErrorChanged());
   bool result = SetStatus(CommandStatus::kAborted, error);
   RemoveFromQueue();
   // The command will be destroyed after that, so do not access any members.

@@ -33,10 +33,11 @@ class CommandInstance final : public Command {
  public:
   class Observer {
    public:
+    virtual void OnCommandDestroyed() = 0;
+    virtual void OnErrorChanged() = 0;
+    virtual void OnProgressChanged() = 0;
     virtual void OnResultsChanged() = 0;
     virtual void OnStatusChanged() = 0;
-    virtual void OnProgressChanged() = 0;
-    virtual void OnCommandDestroyed() = 0;
 
    protected:
     virtual ~Observer() = default;

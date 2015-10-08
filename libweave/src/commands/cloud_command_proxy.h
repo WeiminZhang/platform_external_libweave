@@ -39,10 +39,11 @@ class CloudCommandProxy final : public CommandInstance::Observer {
   ~CloudCommandProxy() override = default;
 
   // CommandProxyInterface implementation/overloads.
+  void OnCommandDestroyed() override;
+  void OnErrorChanged() override;
+  void OnProgressChanged() override;
   void OnResultsChanged() override;
   void OnStatusChanged() override;
-  void OnProgressChanged() override;
-  void OnCommandDestroyed() override;
 
  private:
   using UpdateID = StateChangeQueueInterface::UpdateID;
