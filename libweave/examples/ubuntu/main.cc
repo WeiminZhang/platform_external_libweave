@@ -51,7 +51,7 @@ class CommandHandler {
       "_greeter": {
         "_greet": {
           "minimalRole": "user",
-          "parameters": { "_name": "string", "_count": "integer"},
+          "parameters": { "_name": "string", "_count": {"minimum": 1, "maximum": 100}},
           "progress": { "_todo": "integer"},
           "results": { "_greeting": "string" }
         }
@@ -92,10 +92,15 @@ class CommandHandler {
       return;
 
     std::string name;
-    if (!cmd->GetParameters()->GetString("_name", &name))
-      name = "anonymous";
+    if (!cmd->GetParameters()->GetString("_name", &name)) {
+      weave::ErrorPtr error;
+      weave::Error::AddTo(&error, FROM_HERE, "example",
+                          "invalid_parameter_value", "Name is missing");
+      cmd->Abort(error.get(), nullptr);
+      return;
+    }
 
-    if (todo > 0) {
+    if (todo-- > 0) {
       LOG(INFO) << "Hello " << name;
 
       base::DictionaryValue progress;
@@ -107,7 +112,7 @@ class CommandHandler {
       device_->SetStateProperties(state, nullptr);
     }
 
-    if (--todo > 0) {
+    if (todo > 0) {
       task_runner_->PostDelayedTask(
           FROM_HERE, base::Bind(&CommandHandler::DoGreet,
                                 weak_ptr_factory_.GetWeakPtr(), command, todo),
