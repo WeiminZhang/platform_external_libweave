@@ -43,7 +43,7 @@ class CloudCommandProxy final : public CommandInstance::Observer {
   void OnErrorChanged() override;
   void OnProgressChanged() override;
   void OnResultsChanged() override;
-  void OnStatusChanged() override;
+  void OnStateChanged() override;
 
  private:
   using UpdateID = StateChangeQueueInterface::UpdateID;

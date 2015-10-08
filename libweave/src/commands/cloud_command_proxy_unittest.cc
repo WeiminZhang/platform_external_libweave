@@ -113,7 +113,7 @@ class CloudCommandProxyTest : public ::testing::Test {
     CHECK(command_json.get());
 
     command_instance_ =
-        CommandInstance::FromJson(command_json.get(), CommandOrigin::kCloud,
+        CommandInstance::FromJson(command_json.get(), Command::Origin::kCloud,
                                   command_dictionary_, nullptr, nullptr);
     CHECK(command_instance_.get());
 

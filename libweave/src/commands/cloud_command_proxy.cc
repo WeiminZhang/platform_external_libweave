@@ -49,10 +49,10 @@ void CloudCommandProxy::OnResultsChanged() {
   QueueCommandUpdate(std::move(patch));
 }
 
-void CloudCommandProxy::OnStatusChanged() {
+void CloudCommandProxy::OnStateChanged() {
   std::unique_ptr<base::DictionaryValue> patch{new base::DictionaryValue};
   patch->SetString(commands::attributes::kCommand_State,
-                   EnumToString(command_instance_->GetStatus()));
+                   EnumToString(command_instance_->GetState()));
   QueueCommandUpdate(std::move(patch));
 }
 
