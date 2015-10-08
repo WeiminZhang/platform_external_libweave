@@ -349,7 +349,7 @@ class WeaveWiFiSetupTest : public WeaveTest {
     InitDnsSd();
 
     EXPECT_CALL(network_, GetConnectionState())
-        .WillRepeatedly(Return(provider::Network::State::kConnected));
+        .WillRepeatedly(Return(provider::Network::State::kOnline));
   }
 };
 
@@ -358,7 +358,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineNoPrevSsid) {
 
   // Short disconnect.
   NotifyNetworkChanged(provider::Network::State::kOffline, {});
-  NotifyNetworkChanged(provider::Network::State::kConnected,
+  NotifyNetworkChanged(provider::Network::State::kOnline,
                        base::TimeDelta::FromSeconds(10));
   task_runner_.Run();
 
@@ -406,7 +406,7 @@ TEST_F(WeaveWiFiSetupTest, StartOnlineWithPrevSsid) {
     task_runner_.Run();
   }
 
-  NotifyNetworkChanged(Network::State::kConnected, {});
+  NotifyNetworkChanged(Network::State::kOnline, {});
   task_runner_.Run();
 }
 

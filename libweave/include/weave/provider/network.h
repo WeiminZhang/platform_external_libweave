@@ -20,9 +20,9 @@ class Network {
  public:
   enum class State {
     kOffline = 0,
-    kFailure,
+    kError,
     kConnecting,
-    kConnected,
+    kOnline,
   };
 
   // Callback type for AddConnectionChangedCallback.
