@@ -30,7 +30,7 @@ bufferevent* BuffetEventCallback(event_base* base, void* arg) {
       base, -1, SSL_new(ctx), BUFFEREVENT_SSL_ACCEPTING, BEV_OPT_CLOSE_ON_FREE);
 }
 
-class MemoryReadStream : public Stream {
+class MemoryReadStream : public InputStream {
  public:
   MemoryReadStream(const std::vector<uint8_t>& data,
                    provider::TaskRunner* task_runner)
@@ -45,21 +45,13 @@ class MemoryReadStream : public Stream {
     if (size_read > 0)
       memcpy(buffer, data_.data() + read_position_, size_read);
     read_position_ += size_read;
-    success_callback.Run(size_read);
+    task_runner_->PostDelayedTask(FROM_HERE,
+                                  base::Bind(success_callback, size_read), {});
   }
-
-  void Write(const void* buffer,
-             size_t size_to_write,
-             const SuccessCallback& success_callback,
-             const ErrorCallback& error_callback) override {
-    LOG(FATAL) << "Unsupported";
-  }
-
-  void CancelPendingOperations() override {}
 
  private:
   std::vector<uint8_t> data_;
-  provider::TaskRunner* task_runner_;
+  provider::TaskRunner* task_runner_{nullptr};
   size_t read_position_{0};
 };
 
@@ -67,38 +59,45 @@ class MemoryReadStream : public Stream {
 
 class HttpServerImpl::RequestImpl : public Request {
  public:
-  explicit RequestImpl(evhttp_request* req, provider::TaskRunner* task_runner)
+  RequestImpl(evhttp_request* req, provider::TaskRunner* task_runner)
       : path_{evhttp_request_uri(req)}, task_runner_{task_runner} {
     path_ = path_.substr(0, path_.find("?"));
     path_ = path_.substr(0, path_.find("#"));
     req_.reset(req);
 
-    data_.resize(evbuffer_get_length(req_->input_buffer));
-    evbuffer_remove(req_->input_buffer, data_.data(), data_.size());
+    std::vector<uint8_t> data(evbuffer_get_length(req_->input_buffer));
+    evbuffer_remove(req_->input_buffer, data.data(), data.size());
+
+    data_.reset(new MemoryReadStream{data, task_runner_});
   }
 
   ~RequestImpl() {}
 
-  const std::string& GetPath() const override { return path_; }
+  std::string GetPath() const override { return path_; }
   std::string GetFirstHeader(const std::string& name) const override {
     const char* header = evhttp_find_header(req_->input_headers, name.c_str());
     if (!header)
       return {};
     return header;
   }
-  const std::vector<uint8_t>& GetData() const override { return data_; }
-  std::unique_ptr<Stream> GetDataStream() const override {
-    return std::unique_ptr<Stream>{new MemoryReadStream{data_, task_runner_}};
+  InputStream* GetDataStream() { return data_.get(); }
+
+  void SendReply(int status_code,
+                 const std::string& data,
+                 const std::string& mime_type) override {
+    std::unique_ptr<evbuffer, decltype(&evbuffer_free)> buf{evbuffer_new(),
+                                                            &evbuffer_free};
+    evbuffer_add(buf.get(), data.data(), data.size());
+    evhttp_add_header(req_->output_headers, "Content-Type", mime_type.c_str());
+    evhttp_send_reply(req_.release(), status_code, "None", buf.get());
   }
 
-  evhttp_request* ReleaseHandler() { return req_.release(); }
-
  private:
-  std::vector<uint8_t> data_;
+  std::unique_ptr<InputStream> data_;
   std::unique_ptr<evhttp_request, decltype(&evhttp_cancel_request)> req_{
       nullptr, &evhttp_cancel_request};
   std::string path_;
-  provider::TaskRunner* task_runner_;
+  provider::TaskRunner* task_runner_{nullptr};
 };
 
 HttpServerImpl::HttpServerImpl(EventTaskRunner* task_runner)
@@ -178,10 +177,8 @@ void HttpServerImpl::ProcessRequest(evhttp_request* req) {
   std::string path = evhttp_request_uri(req);
   for (auto i = handlers_.rbegin(); i != handlers_.rend(); ++i) {
     if (path.compare(0, i->first.size(), i->first) == 0) {
-      auto request = std::make_shared<RequestImpl>(req, task_runner_);
-      i->second.Run(*request,
-                    base::Bind(&HttpServerImpl::ProcessReply,
-                               weak_ptr_factory_.GetWeakPtr(), request));
+      std::unique_ptr<RequestImpl> request{new RequestImpl{req, task_runner_}};
+      i->second.Run(std::move(request));
       return;
     }
   }
@@ -191,12 +188,7 @@ void HttpServerImpl::ProcessReply(std::shared_ptr<RequestImpl> request,
                                   int status_code,
                                   const std::string& data,
                                   const std::string& mime_type) {
-  std::unique_ptr<evbuffer, decltype(&evbuffer_free)> buf{evbuffer_new(),
-                                                          &evbuffer_free};
-  evbuffer_add(buf.get(), data.data(), data.size());
-  evhttp_request* req = request->ReleaseHandler();
-  evhttp_add_header(req->output_headers, "Content-Type", mime_type.c_str());
-  evhttp_send_reply(req, status_code, "None", buf.get());
+
 }
 
 void HttpServerImpl::AddRequestHandler(const std::string& path_prefix,

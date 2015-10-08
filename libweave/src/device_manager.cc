@@ -77,10 +77,9 @@ void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
                                 provider::HttpServer* http_server,
                                 provider::Wifi* wifi,
                                 provider::Bluetooth* bluetooth) {
-  privet_.reset(new privet::Manager{});
-  privet_->Start(task_runner, network, dns_sd, http_server, wifi,
-                 device_info_.get(), command_manager_.get(),
-                 state_manager_.get());
+  privet_.reset(new privet::Manager{task_runner});
+  privet_->Start(network, dns_sd, http_server, wifi, device_info_.get(),
+                 command_manager_.get(), state_manager_.get());
 }
 
 GcdState DeviceManager::GetGcdState() const {
