@@ -438,8 +438,8 @@ void DeviceRegistrationInfo::StartNotificationChannel() {
   LOG(INFO) << "Starting notification channel";
 
   // If no TaskRunner assume we're in test.
-  if (!task_runner_) {
-    LOG(INFO) << "No TaskRunner, not starting notification channel";
+  if (!network_) {
+    LOG(INFO) << "No Network, not starting notification channel";
     return;
   }
 

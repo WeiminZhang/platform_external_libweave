@@ -8,6 +8,7 @@
 #include <base/json/json_writer.h>
 #include <base/values.h>
 #include <gtest/gtest.h>
+#include <weave/provider/test/fake_task_runner.h>
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/provider/test/mock_http_client.h>
 
@@ -123,7 +124,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
     std::unique_ptr<Config> config{new Config{&config_store_}};
     config_ = config.get();
     dev_reg_.reset(new DeviceRegistrationInfo{command_manager_, state_manager_,
-                                              std::move(config), nullptr,
+                                              std::move(config), &task_runner_,
                                               &http_client_, nullptr});
 
     ReloadDefaults();
@@ -182,6 +183,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
 
   GcdState GetGcdState() const { return dev_reg_->GetGcdState(); }
 
+  provider::test::FakeTaskRunner task_runner_;
   provider::test::MockConfigStore config_store_;
   StrictMock<MockHttpClient> http_client_;
   base::DictionaryValue data_;
@@ -539,6 +541,11 @@ class DeviceRegistrationInfoUpdateCommandTest
     ASSERT_NE(nullptr, command_);
   }
 
+  void TearDown() override {
+    task_runner_.RunOnce();
+    DeviceRegistrationInfoTest::TearDown();
+  }
+
   Command* command_{nullptr};
   std::string command_url_;
 };
@@ -549,20 +556,13 @@ TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetProgress) {
                   http::kPatch, command_url_,
                   HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
       .WillOnce(WithArgs<3>(Invoke([](const std::string& data) {
-        EXPECT_JSON_EQ(R"({"state":"inProgress"})",
-                       *CreateDictionaryValue(data));
-        base::DictionaryValue json;
-        return ReplyWithJson(200, json);
-      })))
-      .WillOnce(WithArgs<3>(Invoke([](const std::string& data) {
-        EXPECT_JSON_EQ(R"({"progress":{"progress":18}})",
+        EXPECT_JSON_EQ(R"({"state":"inProgress", "progress":{"progress":18}})",
                        *CreateDictionaryValue(data));
         base::DictionaryValue json;
         return ReplyWithJson(200, json);
       })));
   EXPECT_TRUE(command_->SetProgress(*CreateDictionaryValue("{'progress':18}"),
                                     nullptr));
-  Mock::VerifyAndClearExpectations(&http_client_);
 }
 
 TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetResults) {
@@ -571,19 +571,13 @@ TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetResults) {
                   http::kPatch, command_url_,
                   HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
       .WillOnce(WithArgs<3>(Invoke([](const std::string& data) {
-        EXPECT_JSON_EQ(R"({"results":{"status":"Ok"}})",
+        EXPECT_JSON_EQ(R"({"state":"done", "results":{"status":"Ok"}})",
                        *CreateDictionaryValue(data));
-        base::DictionaryValue json;
-        return ReplyWithJson(200, json);
-      })))
-      .WillOnce(WithArgs<3>(Invoke([](const std::string& data) {
-        EXPECT_JSON_EQ(R"({"state":"done"})", *CreateDictionaryValue(data));
         base::DictionaryValue json;
         return ReplyWithJson(200, json);
       })));
   EXPECT_TRUE(command_->SetResults(*CreateDictionaryValue("{'status': 'Ok'}"),
                                    nullptr));
-  Mock::VerifyAndClearExpectations(&http_client_);
 }
 
 TEST_F(DeviceRegistrationInfoUpdateCommandTest, Cancel) {
@@ -598,7 +592,6 @@ TEST_F(DeviceRegistrationInfoUpdateCommandTest, Cancel) {
         return ReplyWithJson(200, json);
       })));
   EXPECT_TRUE(command_->Cancel(nullptr));
-  Mock::VerifyAndClearExpectations(&http_client_);
 }
 
 }  // namespace weave
