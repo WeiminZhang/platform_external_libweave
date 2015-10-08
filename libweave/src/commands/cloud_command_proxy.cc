@@ -12,6 +12,7 @@
 #include "src/commands/prop_constraints.h"
 #include "src/commands/prop_types.h"
 #include "src/commands/schema_constants.h"
+#include "src/utils.h"
 
 namespace weave {
 
@@ -30,6 +31,15 @@ CloudCommandProxy::CloudCommandProxy(
       base::Bind(&CloudCommandProxy::OnDeviceStateUpdated,
                  weak_ptr_factory_.GetWeakPtr()));
   observer_.Add(command_instance);
+}
+
+void CloudCommandProxy::OnErrorChanged() {
+  std::unique_ptr<base::DictionaryValue> patch{new base::DictionaryValue};
+  patch->Set(commands::attributes::kCommand_Error,
+             command_instance_->GetError()
+                 ? ErrorInfoToJson(*command_instance_->GetError()).release()
+                 : base::Value::CreateNullValue().release());
+  QueueCommandUpdate(std::move(patch));
 }
 
 void CloudCommandProxy::OnResultsChanged() {
