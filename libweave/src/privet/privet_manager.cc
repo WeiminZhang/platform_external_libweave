@@ -17,6 +17,7 @@
 #include <base/values.h>
 #include <weave/provider/network.h>
 
+#include "src/bind_lambda.h"
 #include "src/device_registration_info.h"
 #include "src/http_constants.h"
 #include "src/privet/cloud_delegate.h"
@@ -24,6 +25,7 @@
 #include "src/privet/device_delegate.h"
 #include "src/privet/privet_handler.h"
 #include "src/privet/publisher.h"
+#include "src/streams.h"
 #include "src/string_utils.h"
 
 namespace weave {
@@ -35,12 +37,11 @@ using provider::DnsServiceDiscovery;
 using provider::HttpServer;
 using provider::Wifi;
 
-Manager::Manager() {}
+Manager::Manager(TaskRunner* task_runner) : task_runner_{task_runner} {}
 
 Manager::~Manager() {}
 
-void Manager::Start(TaskRunner* task_runner,
-                    Network* network,
+void Manager::Start(Network* network,
                     DnsServiceDiscovery* dns_sd,
                     HttpServer* http_server,
                     Wifi* wifi,
@@ -51,17 +52,17 @@ void Manager::Start(TaskRunner* task_runner,
 
   device_ = DeviceDelegate::CreateDefault(http_server->GetHttpPort(),
                                           http_server->GetHttpsPort());
-  cloud_ = CloudDelegate::CreateDefault(task_runner, device, command_manager,
+  cloud_ = CloudDelegate::CreateDefault(task_runner_, device, command_manager,
                                         state_manager);
   cloud_observer_.Add(cloud_.get());
   security_.reset(new SecurityManager(
       device->GetSettings().secret, device->GetSettings().pairing_modes,
-      device->GetSettings().embedded_code, disable_security_, task_runner));
+      device->GetSettings().embedded_code, disable_security_, task_runner_));
   security_->SetCertificateFingerprint(
       http_server->GetHttpsCertificateFingerprint());
   if (device->GetSettings().secret.empty()) {
     // TODO(vitalybuka): Post all Config::Transaction to avoid following.
-    task_runner->PostDelayedTask(
+    task_runner_->PostDelayedTask(
         FROM_HERE,
         base::Bind(&Manager::SaveDeviceSecret, weak_ptr_factory_.GetWeakPtr(),
                    base::Unretained(device->GetMutableConfig())),
@@ -73,7 +74,7 @@ void Manager::Start(TaskRunner* task_runner,
   if (wifi && device->GetSettings().wifi_auto_setup_enabled) {
     VLOG(1) << "Enabling WiFi bootstrapping.";
     wifi_bootstrap_manager_.reset(new WifiBootstrapManager(
-        device->GetMutableConfig(), task_runner, network, wifi, cloud_.get()));
+        device->GetMutableConfig(), task_runner_, network, wifi, cloud_.get()));
     wifi_bootstrap_manager_->Init();
   }
 
@@ -108,40 +109,69 @@ void Manager::OnDeviceInfoChanged() {
 }
 
 void Manager::PrivetRequestHandler(
-    const HttpServer::Request& request,
-    const HttpServer::OnReplyCallback& callback) {
-  std::string auth_header = request.GetFirstHeader(http::kAuthorization);
-  if (auth_header.empty() && disable_security_)
-    auth_header = "Privet anonymous";
-  std::string data(request.GetData().begin(), request.GetData().end());
-  VLOG(3) << "Input: " << data;
-
-  base::DictionaryValue empty;
-  std::unique_ptr<base::Value> value;
-  const base::DictionaryValue* dictionary = &empty;
+    std::unique_ptr<provider::HttpServer::Request> req) {
+  std::shared_ptr<provider::HttpServer::Request> request{std::move(req)};
 
   std::string content_type =
-      SplitAtFirst(request.GetFirstHeader(http::kContentType), ";", true).first;
-  if (content_type == http::kJson) {
-    value.reset(base::JSONReader::Read(data).release());
-    if (value)
-      value->GetAsDictionary(&dictionary);
-  }
+      SplitAtFirst(request->GetFirstHeader(http::kContentType), ";", true)
+          .first;
 
-  privet_handler_->HandleRequest(
-      request.GetPath(), auth_header, dictionary,
-      base::Bind(&Manager::PrivetResponseHandler,
-                 weak_ptr_factory_.GetWeakPtr(), callback));
+  if (content_type != http::kJson)
+    return PrivetRequestHandlerWithData(request, {});
+
+  std::unique_ptr<MemoryStream> mem_stream{new MemoryStream{{}, task_runner_}};
+  auto copier = std::make_shared<StreamCopier>(request->GetDataStream(),
+                                               mem_stream.get());
+  auto on_success = [request, copier](const base::WeakPtr<Manager>& weak_ptr,
+                                      std::unique_ptr<MemoryStream> mem_stream,
+                                      size_t size) {
+    if (weak_ptr) {
+      std::string data{mem_stream->GetData().begin(),
+                       mem_stream->GetData().end()};
+      weak_ptr->PrivetRequestHandlerWithData(request, data);
+    }
+  };
+  auto on_error = [request](const base::WeakPtr<Manager>& weak_ptr,
+                            const Error* error) {
+    if (weak_ptr)
+      weak_ptr->PrivetRequestHandlerWithData(request, {});
+  };
+
+  copier->Copy(base::Bind(on_success, weak_ptr_factory_.GetWeakPtr(),
+                          base::Passed(&mem_stream)),
+               base::Bind(on_error, weak_ptr_factory_.GetWeakPtr()));
 }
 
-void Manager::PrivetResponseHandler(const HttpServer::OnReplyCallback& callback,
-                                    int status,
-                                    const base::DictionaryValue& output) {
+void Manager::PrivetRequestHandlerWithData(
+    const std::shared_ptr<provider::HttpServer::Request>& request,
+    const std::string& data) {
+  std::string auth_header = request->GetFirstHeader(http::kAuthorization);
+  if (auth_header.empty() && disable_security_)
+    auth_header = "Privet anonymous";
+
+  base::DictionaryValue empty;
+  auto value = base::JSONReader::Read(data);
+  const base::DictionaryValue* dictionary = &empty;
+  if (value)
+    value->GetAsDictionary(&dictionary);
+
+  VLOG(3) << "Input: " << *dictionary;
+
+  privet_handler_->HandleRequest(
+      request->GetPath(), auth_header, dictionary,
+      base::Bind(&Manager::PrivetResponseHandler,
+                 weak_ptr_factory_.GetWeakPtr(), request));
+}
+
+void Manager::PrivetResponseHandler(
+    const std::shared_ptr<provider::HttpServer::Request>& request,
+    int status,
+    const base::DictionaryValue& output) {
   VLOG(3) << "status: " << status << ", Output: " << output;
   std::string data;
   base::JSONWriter::WriteWithOptions(
       output, base::JSONWriter::OPTIONS_PRETTY_PRINT, &data);
-  callback.Run(status, data, http::kJson);
+  request->SendReply(status, data, http::kJson);
 }
 
 void Manager::OnChanged() {
