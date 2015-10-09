@@ -64,7 +64,9 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   void AddGcdStateChangedCallback(
       const Device::GcdStateChangedCallback& callback);
-  std::string RegisterDevice(const std::string& ticket_id, ErrorPtr* error);
+  void RegisterDevice(const std::string& ticket_id,
+                      const SuccessCallback& success_callback,
+                      const ErrorCallback& error_callback);
 
   void UpdateDeviceInfo(const std::string& name,
                         const std::string& description,

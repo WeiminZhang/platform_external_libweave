@@ -219,6 +219,14 @@ class CommandHandler {
   base::WeakPtrFactory<CommandHandler> weak_ptr_factory_{this};
 };
 
+void RegisterDeviceSuccess(weave::Device* device) {
+  LOG(INFO) << "Device registered: " << device->GetSettings().cloud_id;
+}
+
+void RegisterDeviceError(const weave::Error* error) {
+  LOG(ERROR) << "Fail to register device: " << error->GetMessage();
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -262,13 +270,9 @@ int main(int argc, char** argv) {
       &bluetooth);
 
   if (!registration_ticket.empty()) {
-    weave::ErrorPtr error;
-    auto device_id = device->Register(registration_ticket, &error);
-    if (error != nullptr) {
-      LOG(ERROR) << "Fail to register device: " << error->GetMessage();
-    } else {
-      LOG(INFO) << "Device registered: " << device_id;
-    }
+    device->Register(registration_ticket,
+                     base::Bind(&RegisterDeviceSuccess, device.get()),
+                     base::Bind(&RegisterDeviceError));
   }
 
   CommandHandler handler(device.get(), &task_runner);

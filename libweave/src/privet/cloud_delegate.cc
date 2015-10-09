@@ -284,12 +284,21 @@ class CloudDelegateImpl : public CloudDelegate {
       return;
     }
 
-    if (!device_->RegisterDevice(ticket_id, &error).empty()) {
-      backoff_entry_.InformOfRequest(true);
-      setup_state_ = SetupState(SetupState::kSuccess);
-      return;
-    }
+    device_->RegisterDevice(
+        ticket_id, base::Bind(&CloudDelegateImpl::RegisterDeviceSuccess,
+                              setup_weak_factory_.GetWeakPtr()),
+        base::Bind(&CloudDelegateImpl::RegisterDeviceError,
+                   setup_weak_factory_.GetWeakPtr(), ticket_id, deadline));
+  }
 
+  void RegisterDeviceSuccess() {
+    backoff_entry_.InformOfRequest(true);
+    setup_state_ = SetupState(SetupState::kSuccess);
+  }
+
+  void RegisterDeviceError(const std::string& ticket_id,
+                           const base::Time& deadline,
+                           const Error* error) {
     // Registration failed. Retry with backoff.
     backoff_entry_.InformOfRequest(false);
     task_runner_->PostDelayedTask(

@@ -44,8 +44,10 @@ class MockDevice : public Device {
   MOCK_CONST_METHOD0(GetGcdState, GcdState());
   MOCK_METHOD1(AddGcdStateChangedCallback,
                void(const GcdStateChangedCallback& callback));
-  MOCK_METHOD2(Register,
-               std::string(const std::string& ticket_id, ErrorPtr* error));
+  MOCK_METHOD3(Register,
+               void(const std::string& ticket_id,
+                    const SuccessCallback& success_callback,
+                    const ErrorCallback& error_callback));
   MOCK_METHOD2(AddPairingChangedCallbacks,
                void(const PairingBeginCallback& begin_callback,
                     const PairingEndCallback& end_callback));
