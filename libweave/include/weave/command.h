@@ -56,12 +56,11 @@ class Command {
   virtual bool SetProgress(const base::DictionaryValue& progress,
                            ErrorPtr* error) = 0;
 
+  // Sets command into terminal "done" state.
   // Updates the command results. The |results| should match the schema.
   // Returns false if |results| value is incorrect.
-  // Sets command into terminal "done" state.
-  // TODO(vitalybuka): Rename to Complete.
-  virtual bool SetResults(const base::DictionaryValue& results,
-                          ErrorPtr* error) = 0;
+  virtual bool Complete(const base::DictionaryValue& results,
+                        ErrorPtr* error) = 0;
 
   // Sets command into paused state.
   // This is not terminal state. Command can be resumed with |SetProgress| call.

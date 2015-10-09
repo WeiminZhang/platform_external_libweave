@@ -30,7 +30,7 @@ class MockCommand : public Command {
   MOCK_CONST_METHOD0(MockGetResults, const std::string&());
   MOCK_CONST_METHOD0(GetError, const Error*());
   MOCK_METHOD2(SetProgress, bool(const base::DictionaryValue&, ErrorPtr*));
-  MOCK_METHOD2(SetResults, bool(const base::DictionaryValue&, ErrorPtr*));
+  MOCK_METHOD2(Complete, bool(const base::DictionaryValue&, ErrorPtr*));
   MOCK_METHOD1(Pause, bool(ErrorPtr*));
   MOCK_METHOD2(SetError, bool(const Error*, ErrorPtr*));
   MOCK_METHOD2(Abort, bool(const Error*, ErrorPtr*));

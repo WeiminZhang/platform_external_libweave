@@ -135,8 +135,8 @@ bool CommandInstance::SetProgress(const base::DictionaryValue& progress,
   return true;
 }
 
-bool CommandInstance::SetResults(const base::DictionaryValue& results,
-                                 ErrorPtr* error) {
+bool CommandInstance::Complete(const base::DictionaryValue& results,
+                               ErrorPtr* error) {
   if (!command_definition_)
     return ReportDestroyedError(error);
   ObjectPropType obj_prop_type;

@@ -81,7 +81,7 @@ void BaseApiHandler::UpdateBaseConfiguration(
   device_info_->UpdateBaseConfig(auth_scope, discovery_enabled,
                                  pairing_enabled);
 
-  command->SetResults({}, nullptr);
+  command->Complete({}, nullptr);
 }
 
 void BaseApiHandler::OnConfigChanged(const Settings& settings) {
@@ -113,7 +113,7 @@ void BaseApiHandler::UpdateDeviceInfo(const std::weak_ptr<Command>& cmd) {
   parameters->GetString("location", &location);
 
   device_info_->UpdateDeviceInfo(name, description, location);
-  command->SetResults({}, nullptr);
+  command->Complete({}, nullptr);
 }
 
 }  // namespace weave
