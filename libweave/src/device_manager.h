@@ -58,7 +58,9 @@ class DeviceManager final : public Device {
                         const base::Value& value,
                         ErrorPtr* error) override;
   std::unique_ptr<base::DictionaryValue> GetState() const override;
-  std::string Register(const std::string& ticket_id, ErrorPtr* error) override;
+  void Register(const std::string& ticket_id,
+                const SuccessCallback& success_callback,
+                const ErrorCallback& error_callback) override;
   GcdState GetGcdState() const override;
   void AddGcdStateChangedCallback(
       const GcdStateChangedCallback& callback) override;

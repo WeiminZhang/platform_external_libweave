@@ -329,7 +329,15 @@ TEST_F(WeaveBasicTest, Register) {
 
   InitDnsSdPublishing(true, "DB");
 
-  EXPECT_EQ("CLOUD_ID", device_->Register("TICKET_ID", nullptr));
+  bool done = false;
+  device_->Register("TICKET_ID", base::Bind([this, &done]() {
+                      done = true;
+                      task_runner_.Break();
+                      EXPECT_EQ("CLOUD_ID", device_->GetSettings().cloud_id);
+                    }),
+                    base::Bind([](const Error* error) { ADD_FAILURE(); }));
+  task_runner_.Run();
+  EXPECT_TRUE(done);
 }
 
 class WeaveWiFiSetupTest : public WeaveTest {

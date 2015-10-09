@@ -118,10 +118,11 @@ class Device {
   virtual void AddGcdStateChangedCallback(
       const GcdStateChangedCallback& callback) = 0;
 
-  // Registers the device. Returns a device ID on success.
+  // Registers the device.
   // This is testing method and should not be used by applications.
-  virtual std::string Register(const std::string& ticket_id,
-                               ErrorPtr* error) = 0;
+  virtual void Register(const std::string& ticket_id,
+                        const SuccessCallback& success_callback,
+                        const ErrorCallback& error_callback) = 0;
 
   // Handler should display pin code to the user.
   using PairingBeginCallback =
