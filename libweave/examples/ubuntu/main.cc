@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include <bitset>
+
 #include <base/bind.h>
 #include <base/values.h>
 #include <weave/device.h>
@@ -25,6 +26,7 @@ void ShowUsage(const std::string& name) {
   LOG(ERROR) << "\nUsage: " << name << " <option(s)>"
              << "\nOptions:\n"
              << "\t-h,--help                    Show this help message\n"
+             << "\t--v=LEVEL                    Logging level\n"
              << "\t-b,--bootstrapping           Force WiFi bootstrapping\n"
              << "\t-d,--disable_security        Disable privet security\n"
              << "\t--registration_ticket=TICKET Register device with the "
@@ -249,6 +251,13 @@ int main(int argc, char** argv) {
         return 1;
       }
       registration_ticket = arg.substr(pos + 1);
+    } else if (arg.find("--v") != std::string::npos) {
+      auto pos = arg.find("=");
+      if (pos == std::string::npos) {
+        ShowUsage(argv[0]);
+        return 1;
+      }
+      logging::SetMinLogLevel(-std::stoi(arg.substr(pos + 1)));
     } else {
       ShowUsage(argv[0]);
       return 1;

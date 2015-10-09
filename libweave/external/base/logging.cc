@@ -83,11 +83,6 @@ int GetVlogVerbosity() {
   return std::max(-1, LOG_INFO - GetMinLogLevel());
 }
 
-int GetVlogLevelHelper(const char* file, size_t N) {
-  DCHECK_GT(N, 0U);
-  return 0;
-}
-
 void SetLogItems(bool enable_process_id, bool enable_thread_id,
                  bool enable_timestamp, bool enable_tickcount) {
   g_log_timestamp = enable_timestamp;
