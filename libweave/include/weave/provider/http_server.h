@@ -33,9 +33,13 @@ class HttpServer {
   using RequestHandlerCallback =
       base::Callback<void(std::unique_ptr<Request> request)>;
 
-  // Adds callback called on new http/https requests with the given path prefix.
-  virtual void AddRequestHandler(const std::string& path_prefix,
-                                 const RequestHandlerCallback& callback) = 0;
+  // Adds callback called on new http/https requests with the given path.
+  virtual void AddHttpRequestHandler(
+      const std::string& path,
+      const RequestHandlerCallback& callback) = 0;
+  virtual void AddHttpsRequestHandler(
+      const std::string& path,
+      const RequestHandlerCallback& callback) = 0;
 
   virtual uint16_t GetHttpPort() const = 0;
   virtual uint16_t GetHttpsPort() const = 0;

@@ -28,8 +28,10 @@ class HttpServerImpl : public provider::HttpServer {
 
   explicit HttpServerImpl(EventTaskRunner* task_runner);
 
-  void AddRequestHandler(const std::string& path_prefix,
-                         const RequestHandlerCallback& callback) override;
+  void AddHttpRequestHandler(const std::string& path_prefix,
+                             const RequestHandlerCallback& callback) override;
+  void AddHttpsRequestHandler(const std::string& path_prefix,
+                              const RequestHandlerCallback& callback) override;
   uint16_t GetHttpPort() const override;
   uint16_t GetHttpsPort() const override;
   std::vector<uint8_t> GetHttpsCertificateFingerprint() const override;
