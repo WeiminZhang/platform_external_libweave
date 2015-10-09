@@ -125,7 +125,7 @@ class CommandHandler {
 
     base::DictionaryValue result;
     result.SetString("_greeting", "Hello " + name);
-    cmd->SetResults(result, nullptr);
+    cmd->Complete(result, nullptr);
     LOG(INFO) << cmd->GetName() << " command finished: " << result;
     LOG(INFO) << "New state: " << *device_->GetState();
   }
@@ -162,7 +162,7 @@ class CommandHandler {
       if (cmd_value != cur_state) {
         UpdateLedState();
       }
-      cmd->SetResults({}, nullptr);
+      cmd->Complete({}, nullptr);
       return;
     }
     weave::ErrorPtr error;
@@ -183,7 +183,7 @@ class CommandHandler {
       led_status_[led_index] = ~led_status_[led_index];
 
       UpdateLedState();
-      cmd->SetResults({}, nullptr);
+      cmd->Complete({}, nullptr);
       return;
     }
     weave::ErrorPtr error;

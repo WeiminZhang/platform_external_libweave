@@ -80,7 +80,7 @@ TEST_F(CommandInstanceTest, Test) {
                            dict_.FindCommand("robot.speak"), params};
 
   EXPECT_TRUE(
-      instance.SetResults(*CreateDictionaryValue("{'foo': 239}"), nullptr));
+      instance.Complete(*CreateDictionaryValue("{'foo': 239}"), nullptr));
 
   EXPECT_EQ("", instance.GetID());
   EXPECT_EQ("robot.speak", instance.GetName());
@@ -209,8 +209,8 @@ TEST_F(CommandInstanceTest, ToJson) {
   EXPECT_TRUE(instance->SetProgress(*CreateDictionaryValue("{'progress': 15}"),
                                     nullptr));
   instance->SetID("testId");
-  EXPECT_TRUE(instance->SetResults(*CreateDictionaryValue("{'testResult': 17}"),
-                                   nullptr));
+  EXPECT_TRUE(instance->Complete(*CreateDictionaryValue("{'testResult': 17}"),
+                                 nullptr));
 
   json->MergeDictionary(CreateDictionaryValue(R"({
     'id': 'testId',
