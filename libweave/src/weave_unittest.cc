@@ -151,7 +151,7 @@ class WeaveTest : public ::testing::Test {
               .WillRepeatedly(Return("application/json; charset=utf-8"));
           EXPECT_CALL(*response, GetData())
               .Times(AtLeast(1))
-              .WillRepeatedly(ReturnRefOfCopy(json_response));
+              .WillRepeatedly(Return(json_response));
           return response;
         }));
   }

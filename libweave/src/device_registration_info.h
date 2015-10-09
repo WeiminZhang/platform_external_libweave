@@ -275,6 +275,22 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Wipes out the device registration information and stops server connections.
   void MarkDeviceUnregistered();
 
+  class RegisterCallbacks;
+  void RegisterDeviceError(const std::shared_ptr<RegisterCallbacks>& callbacks,
+                           const Error* error);
+  void RegisterDeviceOnTicketSent(
+      const std::string& ticket_id,
+      const std::shared_ptr<RegisterCallbacks>& callbacks,
+      const provider::HttpClient::Response& response);
+  void RegisterDeviceOnTicketFinalized(
+      const std::shared_ptr<RegisterCallbacks>& callbacks,
+      const provider::HttpClient::Response& response);
+  void RegisterDeviceOnAuthCodeSent(
+      const std::string& cloud_id,
+      const std::string& robot_account,
+      const std::shared_ptr<RegisterCallbacks>& callbacks,
+      const provider::HttpClient::Response& response);
+
   // Transient data
   std::string access_token_;
   base::Time access_token_expiration_;

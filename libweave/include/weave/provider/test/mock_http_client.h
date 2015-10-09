@@ -20,7 +20,7 @@ class MockHttpClientResponse : public HttpClient::Response {
  public:
   MOCK_CONST_METHOD0(GetStatusCode, int());
   MOCK_CONST_METHOD0(GetContentType, std::string());
-  MOCK_CONST_METHOD0(GetData, const std::string&());
+  MOCK_CONST_METHOD0(GetData, std::string());
 };
 
 class MockHttpClient : public HttpClient {
@@ -33,12 +33,6 @@ class MockHttpClient : public HttpClient {
                          const Headers&,
                          const std::string&,
                          ErrorPtr*));
-
-  std::unique_ptr<Response> SendRequestAndBlock(const std::string& method,
-                                                const std::string& url,
-                                                const Headers& headers,
-                                                const std::string& data,
-                                                ErrorPtr* error) override;
 
   void SendRequest(const std::string& method,
                    const std::string& url,
