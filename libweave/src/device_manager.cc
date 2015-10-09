@@ -151,9 +151,10 @@ std::unique_ptr<base::DictionaryValue> DeviceManager::GetState() const {
   return state_manager_->GetState();
 }
 
-std::string DeviceManager::Register(const std::string& ticket_id,
-                                    ErrorPtr* error) {
-  return device_info_->RegisterDevice(ticket_id, error);
+void DeviceManager::Register(const std::string& ticket_id,
+                             const SuccessCallback& success_callback,
+                             const ErrorCallback& error_callback) {
+  device_info_->RegisterDevice(ticket_id, success_callback, error_callback);
 }
 
 void DeviceManager::AddPairingChangedCallbacks(

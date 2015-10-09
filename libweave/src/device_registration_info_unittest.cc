@@ -482,17 +482,23 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
         return ReplyWithJson(200, json);
       })));
 
-  std::string cloud_id =
-      dev_reg_->RegisterDevice(test_data::kClaimTicketId, nullptr);
+  bool done = false;
+  dev_reg_->RegisterDevice(
+      test_data::kClaimTicketId, base::Bind([this, &done]() {
+        done = true;
+        task_runner_.Break();
+        EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
-  EXPECT_EQ(test_data::kDeviceId, cloud_id);
-  EXPECT_EQ(GcdState::kConnecting, GetGcdState());
-
-  // Validate the device info saved to storage...
-  EXPECT_EQ(test_data::kDeviceId, dev_reg_->GetSettings().cloud_id);
-  EXPECT_EQ(test_data::kRefreshToken, dev_reg_->GetSettings().refresh_token);
-  EXPECT_EQ(test_data::kRobotAccountEmail,
-            dev_reg_->GetSettings().robot_account);
+        // Validate the device info saved to storage...
+        EXPECT_EQ(test_data::kDeviceId, dev_reg_->GetSettings().cloud_id);
+        EXPECT_EQ(test_data::kRefreshToken,
+                  dev_reg_->GetSettings().refresh_token);
+        EXPECT_EQ(test_data::kRobotAccountEmail,
+                  dev_reg_->GetSettings().robot_account);
+      }),
+      base::Bind([](const Error* error) { ADD_FAILURE(); }));
+  task_runner_.Run();
+  EXPECT_TRUE(done);
 }
 
 TEST_F(DeviceRegistrationInfoTest, OOBRegistrationStatus) {

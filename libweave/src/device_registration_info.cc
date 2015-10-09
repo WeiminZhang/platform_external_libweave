@@ -525,12 +525,22 @@ void DeviceRegistrationInfo::GetDeviceInfo(
                  error_callback);
 }
 
-std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
-                                                   ErrorPtr* error) {
+void DeviceRegistrationInfo::RegisterDevice(
+    const std::string& ticket_id,
+    const SuccessCallback& success_callback,
+    const ErrorCallback& error_callback) {
+  ErrorPtr error;
+
+  auto on_error = [this, &error_callback](ErrorPtr error) {
+    task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(error_callback, base::Owned(error.release())),
+        {});
+  };
+
   std::unique_ptr<base::DictionaryValue> device_draft =
-      BuildDeviceResource(error);
+      BuildDeviceResource(&error);
   if (!device_draft)
-    return std::string();
+    return on_error(std::move(error));
 
   base::DictionaryValue req_json;
   req_json.SetString("id", ticket_id);
@@ -542,29 +552,29 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
 
   RequestSender sender{http::kPatch, url, http_client_};
   sender.SetJsonData(req_json);
-  auto response = sender.SendAndBlock(error);
+  auto response = sender.SendAndBlock(&error);
 
   if (!response)
-    return std::string();
-  auto json_resp = ParseJsonResponse(*response, error);
+    return on_error(std::move(error));
+  auto json_resp = ParseJsonResponse(*response, &error);
   if (!json_resp)
-    return std::string();
+    return on_error(std::move(error));
   if (!IsSuccessful(*response)) {
-    ParseGCDError(json_resp.get(), error);
-    return std::string();
+    ParseGCDError(json_resp.get(), &error);
+    return on_error(std::move(error));
   }
 
   url = GetServiceURL("registrationTickets/" + ticket_id + "/finalize",
                       {{"key", GetSettings().api_key}});
-  response = RequestSender{http::kPost, url, http_client_}.SendAndBlock(error);
+  response = RequestSender{http::kPost, url, http_client_}.SendAndBlock(&error);
   if (!response)
-    return std::string();
-  json_resp = ParseJsonResponse(*response, error);
+    return on_error(std::move(error));
+  json_resp = ParseJsonResponse(*response, &error);
   if (!json_resp)
-    return std::string();
+    return on_error(std::move(error));
   if (!IsSuccessful(*response)) {
-    ParseGCDError(json_resp.get(), error);
-    return std::string();
+    ParseGCDError(json_resp.get(), &error);
+    return on_error(std::move(error));
   }
 
   std::string auth_code;
@@ -575,9 +585,9 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
       !json_resp->GetString("robotAccountAuthorizationCode", &auth_code) ||
       !json_resp->GetDictionary("deviceDraft", &device_draft_response) ||
       !device_draft_response->GetString("id", &cloud_id)) {
-    Error::AddTo(error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
+    Error::AddTo(&error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
                  "Device account missing in response");
-    return std::string();
+    return on_error(std::move(error));
   }
 
   UpdateDeviceInfoTimestamp(*device_draft_response);
@@ -591,21 +601,21 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
        {"redirect_uri", "oob"},
        {"scope", "https://www.googleapis.com/auth/clouddevices"},
        {"grant_type", "authorization_code"}});
-  response = sender2.SendAndBlock(error);
+  response = sender2.SendAndBlock(&error);
 
   if (!response)
-    return std::string();
+    return on_error(std::move(error));
 
-  json_resp = ParseOAuthResponse(*response, error);
+  json_resp = ParseOAuthResponse(*response, &error);
   int expires_in = 0;
   std::string refresh_token;
   if (!json_resp || !json_resp->GetString("access_token", &access_token_) ||
       !json_resp->GetString("refresh_token", &refresh_token) ||
       !json_resp->GetInteger("expires_in", &expires_in) ||
       access_token_.empty() || refresh_token.empty() || expires_in <= 0) {
-    Error::AddTo(error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
+    Error::AddTo(&error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
                  "Device access_token missing in response");
-    return std::string();
+    return on_error(std::move(error));
   }
 
   access_token_expiration_ =
@@ -617,12 +627,13 @@ std::string DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
   change.set_refresh_token(refresh_token);
   change.Commit();
 
+  task_runner_->PostDelayedTask(FROM_HERE, success_callback, {});
+
   StartNotificationChannel();
 
   // We're going to respond with our success immediately and we'll connect to
   // cloud shortly after.
-  ScheduleCloudConnection(base::TimeDelta::FromSeconds(0));
-  return cloud_id;
+  ScheduleCloudConnection({});
 }
 
 void DeviceRegistrationInfo::DoCloudRequest(
