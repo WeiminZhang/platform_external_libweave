@@ -21,21 +21,20 @@ std::unique_ptr<HttpClient::Response> MockHttpClient::SendRequestAndBlock(
       MockSendRequest(method, url, headers, data, error)};
 }
 
-int MockHttpClient::SendRequest(const std::string& method,
-                                const std::string& url,
-                                const Headers& headers,
-                                const std::string& data,
-                                const SuccessCallback& success_callback,
-                                const ErrorCallback& error_callback) {
+void MockHttpClient::SendRequest(const std::string& method,
+                                 const std::string& url,
+                                 const Headers& headers,
+                                 const std::string& data,
+                                 const SuccessCallback& success_callback,
+                                 const ErrorCallback& error_callback) {
   ErrorPtr error;
   std::unique_ptr<Response> response{
       MockSendRequest(method, url, headers, data, &error)};
   if (response) {
-    success_callback.Run(0, *response);
+    success_callback.Run(*response);
   } else {
-    error_callback.Run(0, error.get());
+    error_callback.Run(error.get());
   }
-  return 0;
 }
 
 }  // namespace test

@@ -14,9 +14,9 @@ namespace examples {
 namespace {
 
 struct ResponseImpl : public provider::HttpClient::Response {
-  int GetStatusCode() const { return status; }
-  std::string GetContentType() const { return content_type; }
-  const std::string& GetData() const { return data; }
+  int GetStatusCode() const override { return status; }
+  std::string GetContentType() const override { return content_type; }
+  const std::string& GetData() const override { return data; }
 
   int status;
   std::string content_type;
@@ -106,41 +106,37 @@ CurlHttpClient::SendRequestAndBlock(const std::string& method,
   return std::move(response);
 }
 
-int CurlHttpClient::SendRequest(const std::string& method,
-                                const std::string& url,
-                                const Headers& headers,
-                                const std::string& data,
-                                const SuccessCallback& success_callback,
-                                const ErrorCallback& error_callback) {
-  ++request_id_;
+void CurlHttpClient::SendRequest(const std::string& method,
+                                 const std::string& url,
+                                 const Headers& headers,
+                                 const std::string& data,
+                                 const SuccessCallback& success_callback,
+                                 const ErrorCallback& error_callback) {
   ErrorPtr error;
   auto response = SendRequestAndBlock(method, url, headers, data, &error);
   if (response) {
     task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(&CurlHttpClient::RunSuccessCallback,
                               weak_ptr_factory_.GetWeakPtr(), success_callback,
-                              request_id_, base::Passed(&response)),
+                              base::Passed(&response)),
         {});
   } else {
     task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(&CurlHttpClient::RunErrorCallback,
                               weak_ptr_factory_.GetWeakPtr(), error_callback,
-                              request_id_, base::Passed(&error)),
+                              base::Passed(&error)),
         {});
   }
-  return request_id_;
 }
 
 void CurlHttpClient::RunSuccessCallback(const SuccessCallback& success_callback,
-                                        int id,
                                         std::unique_ptr<Response> response) {
-  success_callback.Run(id, *response);
+  success_callback.Run(*response);
 }
 
 void CurlHttpClient::RunErrorCallback(const ErrorCallback& error_callback,
-                                      int id,
                                       ErrorPtr error) {
-  error_callback.Run(id, error.get());
+  error_callback.Run(error.get());
 }
 
 }  // namespace examples
