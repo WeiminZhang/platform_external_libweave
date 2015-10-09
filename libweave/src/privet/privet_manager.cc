@@ -124,30 +124,9 @@ void Manager::PrivetRequestHandler(
       SplitAtFirst(request->GetFirstHeader(http::kContentType), ";", true)
           .first;
 
-  if (content_type != http::kJson)
-    return PrivetRequestHandlerWithData(request, {});
-
-  std::unique_ptr<MemoryStream> mem_stream{new MemoryStream{{}, task_runner_}};
-  auto copier = std::make_shared<StreamCopier>(request->GetDataStream(),
-                                               mem_stream.get());
-  auto on_success = [request, copier](const base::WeakPtr<Manager>& weak_ptr,
-                                      std::unique_ptr<MemoryStream> mem_stream,
-                                      size_t size) {
-    if (weak_ptr) {
-      std::string data{mem_stream->GetData().begin(),
-                       mem_stream->GetData().end()};
-      weak_ptr->PrivetRequestHandlerWithData(request, data);
-    }
-  };
-  auto on_error = [request](const base::WeakPtr<Manager>& weak_ptr,
-                            const Error* error) {
-    if (weak_ptr)
-      weak_ptr->PrivetRequestHandlerWithData(request, {});
-  };
-
-  copier->Copy(base::Bind(on_success, weak_ptr_factory_.GetWeakPtr(),
-                          base::Passed(&mem_stream)),
-               base::Bind(on_error, weak_ptr_factory_.GetWeakPtr()));
+  return PrivetRequestHandlerWithData(request, content_type == http::kJson
+                                                   ? request->GetData()
+                                                   : std::string{});
 }
 
 void Manager::PrivetRequestHandlerWithData(

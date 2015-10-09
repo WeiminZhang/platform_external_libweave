@@ -22,7 +22,7 @@ class HttpServer {
 
     virtual std::string GetPath() const = 0;
     virtual std::string GetFirstHeader(const std::string& name) const = 0;
-    virtual InputStream* GetDataStream() = 0;
+    virtual std::string GetData() = 0;
 
     virtual void SendReply(int status_code,
                            const std::string& data,

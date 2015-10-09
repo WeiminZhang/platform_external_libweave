@@ -63,11 +63,6 @@ class HttpServerImpl::RequestImpl : public Request {
       : task_runner_{task_runner} {
     req_.reset(req);
     uri_ = evhttp_request_get_evhttp_uri(req_.get());
-
-    std::vector<uint8_t> data(evbuffer_get_length(req_->input_buffer));
-    evbuffer_remove(req_->input_buffer, data.data(), data.size());
-
-    data_.reset(new MemoryReadStream{data, task_runner_});
   }
 
   ~RequestImpl() {}
@@ -82,7 +77,12 @@ class HttpServerImpl::RequestImpl : public Request {
       return {};
     return header;
   }
-  InputStream* GetDataStream() { return data_.get(); }
+  std::string GetData() {
+    std::string data;
+    data.resize(evbuffer_get_length(req_->input_buffer));
+    evbuffer_remove(req_->input_buffer, &data[0], data.size());
+    return data;
+  }
 
   void SendReply(int status_code,
                  const std::string& data,
