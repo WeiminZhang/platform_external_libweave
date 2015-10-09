@@ -118,14 +118,8 @@ class RequestSender final {
                 HttpClient* transport)
       : method_{method}, url_{url}, transport_{transport} {}
 
-  std::unique_ptr<provider::HttpClient::Response> SendAndBlock(
-      ErrorPtr* error) {
-    return transport_->SendRequestAndBlock(method_, url_, GetFullHeaders(),
-                                           data_, error);
-  }
-
   void Send(const HttpClient::SuccessCallback& success_callback,
-            const HttpClient::ErrorCallback& error_callback) {
+            const ErrorCallback& error_callback) {
     static int debug_id = 0;
     ++debug_id;
     VLOG(1) << "Sending request. id:" << debug_id << " method:" << method_
@@ -139,8 +133,7 @@ class RequestSender final {
       VLOG(2) << "Response data: " << response.GetData();
       success_callback.Run(response);
     };
-    auto on_error = [](int debug_id,
-                       const HttpClient::ErrorCallback& error_callback,
+    auto on_error = [](int debug_id, const ErrorCallback& error_callback,
                        const Error* error) {
       VLOG(1) << "Request failed, id=" << debug_id
               << ", reason: " << error->GetCode()
@@ -543,22 +536,35 @@ void DeviceRegistrationInfo::GetDeviceInfo(
                  error_callback);
 }
 
+struct DeviceRegistrationInfo::RegisterCallbacks {
+  RegisterCallbacks(const SuccessCallback& success, const ErrorCallback& error)
+      : success_callback{success}, error_callback{error} {}
+  SuccessCallback success_callback;
+  ErrorCallback error_callback;
+};
+
+void DeviceRegistrationInfo::RegisterDeviceError(
+    const std::shared_ptr<RegisterCallbacks>& callbacks,
+    const Error* error) {
+  ErrorPtr error_clone = error->Clone();
+  task_runner_->PostDelayedTask(
+      FROM_HERE,
+      base::Bind(callbacks->error_callback, base::Owned(error_clone.release())),
+      {});
+}
+
 void DeviceRegistrationInfo::RegisterDevice(
     const std::string& ticket_id,
     const SuccessCallback& success_callback,
     const ErrorCallback& error_callback) {
+  auto callbacks =
+      std::make_shared<RegisterCallbacks>(success_callback, error_callback);
+
   ErrorPtr error;
-
-  auto on_error = [this, &error_callback](ErrorPtr error) {
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(error_callback, base::Owned(error.release())),
-        {});
-  };
-
   std::unique_ptr<base::DictionaryValue> device_draft =
       BuildDeviceResource(&error);
   if (!device_draft)
-    return on_error(std::move(error));
+    return RegisterDeviceError(callbacks, error.get());
 
   base::DictionaryValue req_json;
   req_json.SetString("id", ticket_id);
@@ -570,29 +576,46 @@ void DeviceRegistrationInfo::RegisterDevice(
 
   RequestSender sender{http::kPatch, url, http_client_};
   sender.SetJsonData(req_json);
-  auto response = sender.SendAndBlock(&error);
+  sender.Send(base::Bind(&DeviceRegistrationInfo::RegisterDeviceOnTicketSent,
+                         weak_factory_.GetWeakPtr(), ticket_id, callbacks),
+              base::Bind(&DeviceRegistrationInfo::RegisterDeviceError,
+                         weak_factory_.GetWeakPtr(), callbacks));
+}
 
-  if (!response)
-    return on_error(std::move(error));
-  auto json_resp = ParseJsonResponse(*response, &error);
+void DeviceRegistrationInfo::RegisterDeviceOnTicketSent(
+    const std::string& ticket_id,
+    const std::shared_ptr<RegisterCallbacks>& callbacks,
+    const provider::HttpClient::Response& response) {
+  ErrorPtr error;
+  auto json_resp = ParseJsonResponse(response, &error);
   if (!json_resp)
-    return on_error(std::move(error));
-  if (!IsSuccessful(*response)) {
+    return RegisterDeviceError(callbacks, error.get());
+
+  if (!IsSuccessful(response)) {
     ParseGCDError(json_resp.get(), &error);
-    return on_error(std::move(error));
+    return RegisterDeviceError(callbacks, error.get());
   }
 
-  url = GetServiceURL("registrationTickets/" + ticket_id + "/finalize",
-                      {{"key", GetSettings().api_key}});
-  response = RequestSender{http::kPost, url, http_client_}.SendAndBlock(&error);
-  if (!response)
-    return on_error(std::move(error));
-  json_resp = ParseJsonResponse(*response, &error);
+  std::string url =
+      GetServiceURL("registrationTickets/" + ticket_id + "/finalize",
+                    {{"key", GetSettings().api_key}});
+  RequestSender{http::kPost, url, http_client_}.Send(
+      base::Bind(&DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized,
+                 weak_factory_.GetWeakPtr(), callbacks),
+      base::Bind(&DeviceRegistrationInfo::RegisterDeviceError,
+                 weak_factory_.GetWeakPtr(), callbacks));
+}
+
+void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
+    const std::shared_ptr<RegisterCallbacks>& callbacks,
+    const provider::HttpClient::Response& response) {
+  ErrorPtr error;
+  auto json_resp = ParseJsonResponse(response, &error);
   if (!json_resp)
-    return on_error(std::move(error));
-  if (!IsSuccessful(*response)) {
+    return RegisterDeviceError(callbacks, error.get());
+  if (!IsSuccessful(response)) {
     ParseGCDError(json_resp.get(), &error);
-    return on_error(std::move(error));
+    return RegisterDeviceError(callbacks, error.get());
   }
 
   std::string auth_code;
@@ -605,7 +628,7 @@ void DeviceRegistrationInfo::RegisterDevice(
       !device_draft_response->GetString("id", &cloud_id)) {
     Error::AddTo(&error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
                  "Device account missing in response");
-    return on_error(std::move(error));
+    return RegisterDeviceError(callbacks, error.get());
   }
 
   UpdateDeviceInfoTimestamp(*device_draft_response);
@@ -619,12 +642,20 @@ void DeviceRegistrationInfo::RegisterDevice(
        {"redirect_uri", "oob"},
        {"scope", "https://www.googleapis.com/auth/clouddevices"},
        {"grant_type", "authorization_code"}});
-  response = sender2.SendAndBlock(&error);
+  sender2.Send(base::Bind(&DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent,
+                          weak_factory_.GetWeakPtr(), cloud_id, robot_account,
+                          callbacks),
+               base::Bind(&DeviceRegistrationInfo::RegisterDeviceError,
+                          weak_factory_.GetWeakPtr(), callbacks));
+}
 
-  if (!response)
-    return on_error(std::move(error));
-
-  json_resp = ParseOAuthResponse(*response, &error);
+void DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent(
+    const std::string& cloud_id,
+    const std::string& robot_account,
+    const std::shared_ptr<RegisterCallbacks>& callbacks,
+    const provider::HttpClient::Response& response) {
+  ErrorPtr error;
+  auto json_resp = ParseOAuthResponse(response, &error);
   int expires_in = 0;
   std::string refresh_token;
   if (!json_resp || !json_resp->GetString("access_token", &access_token_) ||
@@ -633,7 +664,7 @@ void DeviceRegistrationInfo::RegisterDevice(
       access_token_.empty() || refresh_token.empty() || expires_in <= 0) {
     Error::AddTo(&error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
                  "Device access_token missing in response");
-    return on_error(std::move(error));
+    return RegisterDeviceError(callbacks, error.get());
   }
 
   access_token_expiration_ =
@@ -645,7 +676,7 @@ void DeviceRegistrationInfo::RegisterDevice(
   change.set_refresh_token(refresh_token);
   change.Commit();
 
-  task_runner_->PostDelayedTask(FROM_HERE, success_callback, {});
+  task_runner_->PostDelayedTask(FROM_HERE, callbacks->success_callback, {});
 
   StartNotificationChannel();
 

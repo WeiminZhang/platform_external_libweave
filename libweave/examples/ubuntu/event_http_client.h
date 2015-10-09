@@ -20,11 +20,6 @@ class EventHttpClient : public provider::HttpClient {
  public:
   explicit EventHttpClient(EventTaskRunner* task_runner);
 
-  std::unique_ptr<Response> SendRequestAndBlock(const std::string& method,
-                                                const std::string& url,
-                                                const Headers& headers,
-                                                const std::string& data,
-                                                ErrorPtr* error) override;
   void SendRequest(const std::string& method,
                    const std::string& url,
                    const Headers& headers,

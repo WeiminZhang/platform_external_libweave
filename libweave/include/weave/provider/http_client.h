@@ -21,23 +21,13 @@ class HttpClient {
    public:
     virtual int GetStatusCode() const = 0;
     virtual std::string GetContentType() const = 0;
-    virtual const std::string& GetData() const = 0;
+    virtual std::string GetData() const = 0;
 
-    // TODO(vitalybuka): Hide when SendRequestAndBlock is removed.
     virtual ~Response() = default;
   };
 
   using Headers = std::vector<std::pair<std::string, std::string>>;
   using SuccessCallback = base::Callback<void(const Response&)>;
-  using ErrorCallback = base::Callback<void(const Error*)>;
-
-  // TODO(vitalybuka): Remove blocking version.
-  virtual std::unique_ptr<Response> SendRequestAndBlock(
-      const std::string& method,
-      const std::string& url,
-      const Headers& headers,
-      const std::string& data,
-      ErrorPtr* error) = 0;
 
   virtual void SendRequest(const std::string& method,
                            const std::string& url,

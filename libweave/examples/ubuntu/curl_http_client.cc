@@ -16,9 +16,9 @@ namespace {
 struct ResponseImpl : public provider::HttpClient::Response {
   int GetStatusCode() const override { return status; }
   std::string GetContentType() const override { return content_type; }
-  const std::string& GetData() const override { return data; }
+  std::string GetData() const override { return data; }
 
-  int status;
+  long status{0};
   std::string content_type;
   std::string data;
 };

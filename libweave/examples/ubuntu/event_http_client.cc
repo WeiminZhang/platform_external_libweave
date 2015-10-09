@@ -49,7 +49,7 @@ class EventHttpResponse : public weave::provider::HttpClient::Response {
  public:
   int GetStatusCode() const override { return status; }
   std::string GetContentType() const override { return content_type; }
-  const std::string& GetData() const { return data; }
+  std::string GetData() const { return data; }
 
   int status;
   std::string content_type;
@@ -61,7 +61,7 @@ struct EventRequestState {
   std::unique_ptr<evhttp_uri, EventDeleter> http_uri_;
   std::unique_ptr<evhttp_connection, EventDeleter> evcon_;
   HttpClient::SuccessCallback success_callback_;
-  HttpClient::ErrorCallback error_callback_;
+  ErrorCallback error_callback_;
 };
 
 void RequestDoneCallback(evhttp_request* req, void* ctx) {
@@ -92,15 +92,6 @@ void RequestDoneCallback(evhttp_request* req, void* ctx) {
 
 EventHttpClient::EventHttpClient(EventTaskRunner* task_runner)
     : task_runner_{task_runner} {}
-
-std::unique_ptr<provider::HttpClient::Response>
-EventHttpClient::SendRequestAndBlock(const std::string& method,
-                                     const std::string& url,
-                                     const Headers& headers,
-                                     const std::string& data,
-                                     ErrorPtr* error) {
-  return nullptr;
-}
 
 void EventHttpClient::SendRequest(const std::string& method,
                                   const std::string& url,

@@ -11,16 +11,6 @@ namespace weave {
 namespace provider {
 namespace test {
 
-std::unique_ptr<HttpClient::Response> MockHttpClient::SendRequestAndBlock(
-    const std::string& method,
-    const std::string& url,
-    const Headers& headers,
-    const std::string& data,
-    ErrorPtr* error) {
-  return std::unique_ptr<Response>{
-      MockSendRequest(method, url, headers, data, error)};
-}
-
 void MockHttpClient::SendRequest(const std::string& method,
                                  const std::string& url,
                                  const Headers& headers,
