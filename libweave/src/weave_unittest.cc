@@ -202,9 +202,9 @@ class WeaveTest : public ::testing::Test {
     EXPECT_CALL(http_server_, GetHttpsCertificateFingerprint())
         .WillRepeatedly(Return(std::vector<uint8_t>{1, 2, 3}));
     EXPECT_CALL(http_server_, AddRequestHandler(_, _))
-        .WillRepeatedly(
-            Invoke([this](const std::string& path_prefix,
-                          const provider::HttpServer::OnRequestCallback& cb) {
+        .WillRepeatedly(Invoke(
+            [this](const std::string& path_prefix,
+                   const provider::HttpServer::RequestHandlerCallback& cb) {
               http_server_request_cb_.push_back(cb);
             }));
   }
@@ -238,7 +238,8 @@ class WeaveTest : public ::testing::Test {
     }
   }
 
-  std::vector<provider::HttpServer::OnRequestCallback> http_server_request_cb_;
+  std::vector<provider::HttpServer::RequestHandlerCallback>
+      http_server_request_cb_;
 
   StrictMock<provider::test::MockConfigStore> config_store_;
   StrictMock<provider::test::FakeTaskRunner> task_runner_;

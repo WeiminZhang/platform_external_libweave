@@ -192,7 +192,7 @@ void HttpServerImpl::ProcessReply(std::shared_ptr<RequestImpl> request,
 }
 
 void HttpServerImpl::AddRequestHandler(const std::string& path_prefix,
-                                       const OnRequestCallback& callback) {
+                                       const RequestHandlerCallback& callback) {
   handlers_.emplace(path_prefix, callback);
 }
 
