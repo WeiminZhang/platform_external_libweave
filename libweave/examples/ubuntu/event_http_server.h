@@ -29,7 +29,7 @@ class HttpServerImpl : public provider::HttpServer {
   explicit HttpServerImpl(EventTaskRunner* task_runner);
 
   void AddRequestHandler(const std::string& path_prefix,
-                         const OnRequestCallback& callback) override;
+                         const RequestHandlerCallback& callback) override;
   uint16_t GetHttpPort() const override;
   uint16_t GetHttpsPort() const override;
   std::vector<uint8_t> GetHttpsCertificateFingerprint() const override;
@@ -44,7 +44,7 @@ class HttpServerImpl : public provider::HttpServer {
                     const std::string& mime_type);
   void NotFound(evhttp_request* req);
 
-  std::map<std::string, OnRequestCallback> handlers_;
+  std::map<std::string, RequestHandlerCallback> handlers_;
 
   std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)> ec_key_{nullptr,
                                                           &EC_KEY_free};
