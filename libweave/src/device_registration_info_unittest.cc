@@ -565,7 +565,7 @@ TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetProgress) {
                                     nullptr));
 }
 
-TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetResults) {
+TEST_F(DeviceRegistrationInfoUpdateCommandTest, Complete) {
   EXPECT_CALL(http_client_,
               MockSendRequest(
                   http::kPatch, command_url_,
@@ -576,8 +576,8 @@ TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetResults) {
         base::DictionaryValue json;
         return ReplyWithJson(200, json);
       })));
-  EXPECT_TRUE(command_->SetResults(*CreateDictionaryValue("{'status': 'Ok'}"),
-                                   nullptr));
+  EXPECT_TRUE(
+      command_->Complete(*CreateDictionaryValue("{'status': 'Ok'}"), nullptr));
 }
 
 TEST_F(DeviceRegistrationInfoUpdateCommandTest, Cancel) {

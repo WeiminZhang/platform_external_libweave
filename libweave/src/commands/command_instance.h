@@ -63,8 +63,7 @@ class CommandInstance final : public Command {
   const Error* GetError() const override;
   bool SetProgress(const base::DictionaryValue& progress,
                    ErrorPtr* error) override;
-  bool SetResults(const base::DictionaryValue& results,
-                  ErrorPtr* error) override;
+  bool Complete(const base::DictionaryValue& results, ErrorPtr* error) override;
   bool Pause(ErrorPtr* error) override;
   bool SetError(const Error* command_error, ErrorPtr* error) override;
   bool Abort(const Error* command_error, ErrorPtr* error) override;

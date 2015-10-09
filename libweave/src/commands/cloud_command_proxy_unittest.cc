@@ -148,7 +148,7 @@ class CloudCommandProxyTest : public ::testing::Test {
 TEST_F(CloudCommandProxyTest, ImmediateUpdate) {
   const char expected[] = "{'state':'done'}";
   EXPECT_CALL(cloud_updater_, UpdateCommand(kCmdID, MatchJson(expected), _, _));
-  command_instance_->SetResults({}, nullptr);
+  command_instance_->Complete({}, nullptr);
   task_runner_.RunOnce();
 }
 
@@ -156,7 +156,7 @@ TEST_F(CloudCommandProxyTest, DelayedUpdate) {
   // Simulate that the current device state has changed.
   current_state_update_id_ = 20;
   // No command update is expected here.
-  command_instance_->SetResults({}, nullptr);
+  command_instance_->Complete({}, nullptr);
   // Still no command update here...
   callbacks_.Notify(19);
   // Now we should get the update...
@@ -241,7 +241,7 @@ TEST_F(CloudCommandProxyTest, GateOnStateUpdates) {
   EXPECT_TRUE(command_instance_->SetProgress(
       *CreateDictionaryValue("{'status': 'busy'}"), nullptr));
   current_state_update_id_ = 22;
-  command_instance_->SetResults({}, nullptr);
+  command_instance_->Complete({}, nullptr);
 
   // Device state #20 updated.
   base::Closure on_success;
@@ -280,7 +280,7 @@ TEST_F(CloudCommandProxyTest, CombineSomeStates) {
   EXPECT_TRUE(command_instance_->SetProgress(
       *CreateDictionaryValue("{'status': 'busy'}"), nullptr));
   current_state_update_id_ = 22;
-  command_instance_->SetResults({}, nullptr);
+  command_instance_->Complete({}, nullptr);
 
   // Device state 20-21 updated.
   base::Closure on_success;
@@ -309,7 +309,7 @@ TEST_F(CloudCommandProxyTest, CombineAllStates) {
   EXPECT_TRUE(command_instance_->SetProgress(
       *CreateDictionaryValue("{'status': 'busy'}"), nullptr));
   current_state_update_id_ = 22;
-  command_instance_->SetResults({}, nullptr);
+  command_instance_->Complete({}, nullptr);
 
   // Device state 30 updated.
   const char expected[] = R"({
@@ -328,9 +328,8 @@ TEST_F(CloudCommandProxyTest, CoalesceUpdates) {
       *CreateDictionaryValue("{'status': 'busy'}"), nullptr));
   EXPECT_TRUE(command_instance_->SetProgress(
       *CreateDictionaryValue("{'status': 'finished'}"), nullptr));
-  EXPECT_TRUE(command_instance_->SetResults(
-      *CreateDictionaryValue("{'sum': 30}"), nullptr));
-  command_instance_->SetResults({}, nullptr);
+  EXPECT_TRUE(command_instance_->Complete(*CreateDictionaryValue("{'sum': 30}"),
+                                          nullptr));
 
   const char expected[] = R"({
     'progress': {'status':'finished'},
@@ -354,7 +353,7 @@ TEST_F(CloudCommandProxyTest, EmptyStateChangeQueue) {
   // As soon as we change the command, the update to the server should be sent.
   const char expected[] = "{'state':'done'}";
   EXPECT_CALL(cloud_updater_, UpdateCommand(kCmdID, MatchJson(expected), _, _));
-  command_instance_->SetResults({}, nullptr);
+  command_instance_->Complete({}, nullptr);
   task_runner_.RunOnce();
 }
 
@@ -367,7 +366,7 @@ TEST_F(CloudCommandProxyTest, NonEmptyStateChangeQueue) {
   CreateCommandInstance();
 
   // No command updates right now.
-  command_instance_->SetResults({}, nullptr);
+  command_instance_->Complete({}, nullptr);
 
   // Only when the state #20 is published we should update the command
   const char expected[] = "{'state':'done'}";
