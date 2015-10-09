@@ -18,9 +18,10 @@ namespace test {
 
 class MockHttpServer : public HttpServer {
  public:
-  MOCK_METHOD2(AddRequestHandler,
+  MOCK_METHOD2(AddHttpRequestHandler,
                void(const std::string&, const RequestHandlerCallback&));
-
+  MOCK_METHOD2(AddHttpsRequestHandler,
+               void(const std::string&, const RequestHandlerCallback&));
   MOCK_CONST_METHOD0(GetHttpPort, uint16_t());
   MOCK_CONST_METHOD0(GetHttpsPort, uint16_t());
   MOCK_CONST_METHOD0(GetHttpsCertificateFingerprint, std::vector<uint8_t>());

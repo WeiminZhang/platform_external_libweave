@@ -48,6 +48,9 @@ class PrivetHandler : public CloudDelegate::Observer {
   void OnCommandDefsChanged() override;
   void OnStateChanged() override;
 
+  std::vector<std::string> GetHttpPaths() const;
+  std::vector<std::string> GetHttpsPaths() const;
+
   // Handles HTTP/HTTPS Privet request.
   // |api| is the path from the HTTP request, e.g /privet/info.
   // |auth_header| is the Authentication header from HTTP request.

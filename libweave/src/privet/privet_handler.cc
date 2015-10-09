@@ -343,6 +343,18 @@ AuthScope GetAnonymousMaxScope(const CloudDelegate& cloud,
 
 }  // namespace
 
+std::vector<std::string> PrivetHandler::GetHttpPaths() const {
+  // TODO(vitalybuka): Should be subset only.
+  return GetHttpsPaths();
+}
+
+std::vector<std::string> PrivetHandler::GetHttpsPaths() const {
+  std::vector<std::string> result;
+  for (const auto& pair : handlers_)
+    result.push_back(pair.first);
+  return result;
+}
+
 PrivetHandler::PrivetHandler(CloudDelegate* cloud,
                              DeviceDelegate* device,
                              SecurityDelegate* security,
