@@ -87,9 +87,17 @@ void Manager::Start(Network* network,
                                           security_.get(),
                                           wifi_bootstrap_manager_.get()));
 
-  http_server->AddRequestHandler("/privet/",
-                                 base::Bind(&Manager::PrivetRequestHandler,
-                                            weak_ptr_factory_.GetWeakPtr()));
+  for (const auto& path : privet_handler_->GetHttpPaths()) {
+    http_server->AddHttpRequestHandler(
+        path, base::Bind(&Manager::PrivetRequestHandler,
+                         weak_ptr_factory_.GetWeakPtr()));
+  }
+
+  for (const auto& path : privet_handler_->GetHttpsPaths()) {
+    http_server->AddHttpsRequestHandler(
+        path, base::Bind(&Manager::PrivetRequestHandler,
+                         weak_ptr_factory_.GetWeakPtr()));
+  }
 }
 
 std::string Manager::GetCurrentlyConnectedSsid() const {
