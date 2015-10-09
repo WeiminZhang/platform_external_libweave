@@ -40,12 +40,12 @@ class MockHttpClient : public HttpClient {
                                                 const std::string& data,
                                                 ErrorPtr* error) override;
 
-  int SendRequest(const std::string& method,
-                  const std::string& url,
-                  const Headers& headers,
-                  const std::string& data,
-                  const SuccessCallback& success_callback,
-                  const ErrorCallback& error_callback) override;
+  void SendRequest(const std::string& method,
+                   const std::string& url,
+                   const Headers& headers,
+                   const std::string& data,
+                   const SuccessCallback& success_callback,
+                   const ErrorCallback& error_callback) override;
 };
 
 }  // namespace test
