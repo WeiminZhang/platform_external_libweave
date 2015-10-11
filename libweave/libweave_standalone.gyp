@@ -6,9 +6,9 @@
     'libraries': [
       '-lcrypto',
       '-lexpat',
-      '-lpthread',
       '-lgtest',
       '-lgmock',
+      '-lpthread',
     ],
   },
   'targets': [

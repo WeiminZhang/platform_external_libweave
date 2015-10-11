@@ -34,12 +34,18 @@ size_t WriteFunction(void* contents, size_t size, size_t nmemb, void* userp) {
 CurlHttpClient::CurlHttpClient(provider::TaskRunner* task_runner)
     : task_runner_{task_runner} {}
 
-std::unique_ptr<provider::HttpClient::Response>
-CurlHttpClient::SendRequestAndBlock(const std::string& method,
-                                    const std::string& url,
-                                    const Headers& headers,
-                                    const std::string& data,
-                                    ErrorPtr* error) {
+void CurlHttpClient::PostError(const ErrorCallback& error_callback,
+                               ErrorPtr error) {
+  task_runner_->PostDelayedTask(
+      FROM_HERE, base::Bind(error_callback, base::Owned(error.release())), {});
+}
+
+void CurlHttpClient::SendRequest(const std::string& method,
+                                 const std::string& url,
+                                 const Headers& headers,
+                                 const std::string& data,
+                                 const SuccessCallback& success_callback,
+                                 const ErrorCallback& error_callback) {
   std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> curl{curl_easy_init(),
                                                            &curl_easy_cleanup};
   CHECK(curl);
@@ -80,18 +86,19 @@ CurlHttpClient::SendRequestAndBlock(const std::string& method,
   if (chunk)
     curl_slist_free_all(chunk);
 
+  ErrorPtr error;
   if (res != CURLE_OK) {
-    Error::AddTo(error, FROM_HERE, "curl", "curl_easy_perform_error",
+    Error::AddTo(&error, FROM_HERE, "curl", "curl_easy_perform_error",
                  curl_easy_strerror(res));
-    return nullptr;
+    return PostError(error_callback, std::move(error));
   }
 
   const std::string kContentType = "\r\nContent-Type:";
   auto pos = response->content_type.find(kContentType);
   if (pos == std::string::npos) {
-    Error::AddTo(error, FROM_HERE, "curl", "no_content_header",
+    Error::AddTo(&error, FROM_HERE, "curl", "no_content_header",
                  "Content-Type header is missing");
-    return nullptr;
+    return PostError(error_callback, std::move(error));
   }
   pos += kContentType.size();
   auto pos_end = response->content_type.find("\r\n", pos);
@@ -103,40 +110,17 @@ CurlHttpClient::SendRequestAndBlock(const std::string& method,
 
   CHECK_EQ(CURLE_OK, curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE,
                                        &response->status));
-  return std::move(response);
-}
 
-void CurlHttpClient::SendRequest(const std::string& method,
-                                 const std::string& url,
-                                 const Headers& headers,
-                                 const std::string& data,
-                                 const SuccessCallback& success_callback,
-                                 const ErrorCallback& error_callback) {
-  ErrorPtr error;
-  auto response = SendRequestAndBlock(method, url, headers, data, &error);
-  if (response) {
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(&CurlHttpClient::RunSuccessCallback,
-                              weak_ptr_factory_.GetWeakPtr(), success_callback,
-                              base::Passed(&response)),
-        {});
-  } else {
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(&CurlHttpClient::RunErrorCallback,
-                              weak_ptr_factory_.GetWeakPtr(), error_callback,
-                              base::Passed(&error)),
-        {});
-  }
+  task_runner_->PostDelayedTask(
+      FROM_HERE, base::Bind(&CurlHttpClient::RunSuccessCallback,
+                            weak_ptr_factory_.GetWeakPtr(), success_callback,
+                            base::Passed(&response)),
+      {});
 }
 
 void CurlHttpClient::RunSuccessCallback(const SuccessCallback& success_callback,
                                         std::unique_ptr<Response> response) {
   success_callback.Run(*response);
-}
-
-void CurlHttpClient::RunErrorCallback(const ErrorCallback& error_callback,
-                                      ErrorPtr error) {
-  error_callback.Run(error.get());
 }
 
 }  // namespace examples
