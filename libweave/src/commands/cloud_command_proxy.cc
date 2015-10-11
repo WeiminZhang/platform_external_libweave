@@ -139,10 +139,8 @@ void CloudCommandProxy::SendCommandUpdate() {
   command_update_in_progress_ = true;
   cloud_command_updater_->UpdateCommand(
       command_instance_->GetID(), *update_queue_.front().second,
-      base::Bind(&CloudCommandProxy::OnUpdateCommandFinished,
-                 weak_ptr_factory_.GetWeakPtr(), true),
-      base::Bind(&CloudCommandProxy::OnUpdateCommandFinished,
-                 weak_ptr_factory_.GetWeakPtr(), false));
+      base::Bind(&CloudCommandProxy::OnUpdateCommandDone,
+                 weak_ptr_factory_.GetWeakPtr()));
 }
 
 void CloudCommandProxy::ResendCommandUpdate() {
@@ -150,10 +148,10 @@ void CloudCommandProxy::ResendCommandUpdate() {
   SendCommandUpdate();
 }
 
-void CloudCommandProxy::OnUpdateCommandFinished(bool success) {
+void CloudCommandProxy::OnUpdateCommandDone(ErrorPtr error) {
   command_update_in_progress_ = false;
-  cloud_backoff_entry_->InformOfRequest(success);
-  if (success) {
+  cloud_backoff_entry_->InformOfRequest(!error);
+  if (!error) {
     // Remove the succeeded update from the queue.
     update_queue_.pop_front();
   }

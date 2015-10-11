@@ -221,12 +221,11 @@ class CommandHandler {
   base::WeakPtrFactory<CommandHandler> weak_ptr_factory_{this};
 };
 
-void RegisterDeviceSuccess(weave::Device* device) {
-  LOG(INFO) << "Device registered: " << device->GetSettings().cloud_id;
-}
-
-void RegisterDeviceError(weave::ErrorPtr error) {
-  LOG(ERROR) << "Fail to register device: " << error->GetMessage();
+void OnRegisterDeviceDone(weave::Device* device, weave::ErrorPtr error) {
+  if (error)
+    LOG(ERROR) << "Fail to register device: " << error->GetMessage();
+  else
+    LOG(INFO) << "Device registered: " << device->GetSettings().cloud_id;
 }
 
 }  // namespace
@@ -280,8 +279,7 @@ int main(int argc, char** argv) {
 
   if (!registration_ticket.empty()) {
     device->Register(registration_ticket,
-                     base::Bind(&RegisterDeviceSuccess, device.get()),
-                     base::Bind(&RegisterDeviceError));
+                     base::Bind(&OnRegisterDeviceDone, device.get()));
   }
 
   CommandHandler handler(device.get(), &task_runner);

@@ -35,18 +35,11 @@ size_t WriteFunction(void* contents, size_t size, size_t nmemb, void* userp) {
 CurlHttpClient::CurlHttpClient(provider::TaskRunner* task_runner)
     : task_runner_{task_runner} {}
 
-void CurlHttpClient::PostError(const ErrorCallback& error_callback,
-                               ErrorPtr error) {
-  task_runner_->PostDelayedTask(
-      FROM_HERE, base::Bind(error_callback, base::Passed(&error)), {});
-}
-
 void CurlHttpClient::SendRequest(Method method,
                                  const std::string& url,
                                  const Headers& headers,
                                  const std::string& data,
-                                 const SuccessCallback& success_callback,
-                                 const ErrorCallback& error_callback) {
+                                 const SendRequestCallback& callback) {
   std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> curl{curl_easy_init(),
                                                            &curl_easy_cleanup};
   CHECK(curl);
@@ -96,7 +89,8 @@ void CurlHttpClient::SendRequest(Method method,
   if (res != CURLE_OK) {
     Error::AddTo(&error, FROM_HERE, "curl", "curl_easy_perform_error",
                  curl_easy_strerror(res));
-    return PostError(error_callback, std::move(error));
+    return task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(callback, nullptr, base::Passed(&error)), {});
   }
 
   const std::string kContentType = "\r\nContent-Type:";
@@ -104,7 +98,8 @@ void CurlHttpClient::SendRequest(Method method,
   if (pos == std::string::npos) {
     Error::AddTo(&error, FROM_HERE, "curl", "no_content_header",
                  "Content-Type header is missing");
-    return PostError(error_callback, std::move(error));
+    return task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(callback, nullptr, base::Passed(&error)), {});
   }
   pos += kContentType.size();
   auto pos_end = response->content_type.find("\r\n", pos);
@@ -118,15 +113,7 @@ void CurlHttpClient::SendRequest(Method method,
                                        &response->status));
 
   task_runner_->PostDelayedTask(
-      FROM_HERE, base::Bind(&CurlHttpClient::RunSuccessCallback,
-                            weak_ptr_factory_.GetWeakPtr(), success_callback,
-                            base::Passed(&response)),
-      {});
-}
-
-void CurlHttpClient::RunSuccessCallback(const SuccessCallback& success_callback,
-                                        std::unique_ptr<Response> response) {
-  success_callback.Run(*response);
+      FROM_HERE, base::Bind(callback, base::Passed(&response), nullptr), {});
 }
 
 }  // namespace examples

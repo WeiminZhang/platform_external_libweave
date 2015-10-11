@@ -18,15 +18,14 @@ class InputStream {
   virtual ~InputStream() = default;
 
   // Callback type for Read.
-  using ReadSuccessCallback = base::Callback<void(size_t size)>;
+  using ReadCallback = base::Callback<void(size_t size, ErrorPtr error)>;
 
-  // Implementation should return immediately and post either success_callback
-  // or error_callback. Caller guarantees that buffet is alive until either of
-  // callback is called.
+  // Implementation should return immediately and post callback after
+  // completing operation. Caller guarantees that buffet is alive until callback
+  // is called.
   virtual void Read(void* buffer,
                     size_t size_to_read,
-                    const ReadSuccessCallback& success_callback,
-                    const ErrorCallback& error_callback) = 0;
+                    const ReadCallback& callback) = 0;
 };
 
 // Interface for async input streaming.
@@ -34,14 +33,15 @@ class OutputStream {
  public:
   virtual ~OutputStream() = default;
 
-  // Implementation should return immediately and post either success_callback
-  // or error_callback. Caller guarantees that buffet is alive until either of
-  // callback is called.
+  using WriteCallback = base::Callback<void(ErrorPtr error)>;
+
+  // Implementation should return immediately and post callback after
+  // completing operation. Caller guarantees that buffet is alive until either
+  // of callback is called.
   // Success callback must be called only after all data is written.
   virtual void Write(const void* buffer,
                      size_t size_to_write,
-                     const SuccessCallback& success_callback,
-                     const ErrorCallback& error_callback) = 0;
+                     const WriteCallback& callback) = 0;
 };
 
 // Interface for async bi-directional streaming.

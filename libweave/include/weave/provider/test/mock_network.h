@@ -20,11 +20,10 @@ class MockNetwork : public Network {
   MOCK_METHOD1(AddConnectionChangedCallback,
                void(const ConnectionChangedCallback&));
   MOCK_CONST_METHOD0(GetConnectionState, State());
-  MOCK_METHOD4(OpenSslSocket,
+  MOCK_METHOD3(OpenSslSocket,
                void(const std::string&,
                     uint16_t,
-                    const OpenSslSocketSuccessCallback&,
-                    const ErrorCallback&));
+                    const OpenSslSocketCallback&));
 };
 
 }  // namespace test

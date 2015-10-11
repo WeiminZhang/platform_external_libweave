@@ -154,25 +154,19 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_CONST_METHOD0(GetCloudId, std::string());
   MOCK_CONST_METHOD0(GetState, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetCommandDef, const base::DictionaryValue&());
-  MOCK_METHOD4(AddCommand,
+  MOCK_METHOD3(AddCommand,
                void(const base::DictionaryValue&,
                     const UserInfo&,
-                    const CommandSuccessCallback&,
-                    const ErrorCallback&));
-  MOCK_METHOD4(GetCommand,
+                    const CommandDoneCallback&));
+  MOCK_METHOD3(GetCommand,
                void(const std::string&,
                     const UserInfo&,
-                    const CommandSuccessCallback&,
-                    const ErrorCallback&));
-  MOCK_METHOD4(CancelCommand,
+                    const CommandDoneCallback&));
+  MOCK_METHOD3(CancelCommand,
                void(const std::string&,
                     const UserInfo&,
-                    const CommandSuccessCallback&,
-                    const ErrorCallback&));
-  MOCK_METHOD3(ListCommands,
-               void(const UserInfo&,
-                    const CommandSuccessCallback&,
-                    const ErrorCallback&));
+                    const CommandDoneCallback&));
+  MOCK_METHOD2(ListCommands, void(const UserInfo&, const CommandDoneCallback&));
 
   MockCloudDelegate() {
     EXPECT_CALL(*this, GetDeviceId()).WillRepeatedly(Return("TestId"));

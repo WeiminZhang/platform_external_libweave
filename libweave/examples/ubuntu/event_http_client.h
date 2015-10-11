@@ -24,8 +24,7 @@ class EventHttpClient : public provider::HttpClient {
                    const std::string& url,
                    const Headers& headers,
                    const std::string& data,
-                   const SuccessCallback& success_callback,
-                   const ErrorCallback& error_callback) override;
+                   const SendRequestCallback& callback) override;
 
  private:
   EventTaskRunner* task_runner_{nullptr};

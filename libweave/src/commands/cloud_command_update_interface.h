@@ -18,8 +18,7 @@ class CloudCommandUpdateInterface {
  public:
   virtual void UpdateCommand(const std::string& command_id,
                              const base::DictionaryValue& command_patch,
-                             const base::Closure& on_success,
-                             const base::Closure& on_error) = 0;
+                             const DoneCallback& callback) = 0;
 
  protected:
   virtual ~CloudCommandUpdateInterface() = default;

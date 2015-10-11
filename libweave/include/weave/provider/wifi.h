@@ -20,8 +20,7 @@ class Wifi {
   // should post either of callbacks.
   virtual void Connect(const std::string& ssid,
                        const std::string& passphrase,
-                       const SuccessCallback& success_callback,
-                       const ErrorCallback& error_callback) = 0;
+                       const DoneCallback& callback) = 0;
 
   // Starts WiFi access point for wifi setup.
   virtual void StartAccessPoint(const std::string& ssid) = 0;

@@ -27,13 +27,12 @@ class MockHttpClient : public HttpClient {
  public:
   ~MockHttpClient() override = default;
 
-  MOCK_METHOD6(SendRequest,
+  MOCK_METHOD5(SendRequest,
                void(Method,
                     const std::string&,
                     const Headers&,
                     const std::string&,
-                    const SuccessCallback&,
-                    const ErrorCallback&));
+                    const SendRequestCallback&));
 };
 
 }  // namespace test
