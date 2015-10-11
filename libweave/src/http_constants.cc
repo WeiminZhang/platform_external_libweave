@@ -4,8 +4,8 @@
 
 #include "src/http_constants.h"
 
-#include <weave/provider/http_client.h>
 #include <weave/enum_to_string.h>
+#include <weave/provider/http_client.h>
 
 namespace weave {
 namespace http {
