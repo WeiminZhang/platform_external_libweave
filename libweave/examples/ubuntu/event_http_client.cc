@@ -93,14 +93,14 @@ void RequestDoneCallback(evhttp_request* req, void* ctx) {
 EventHttpClient::EventHttpClient(EventTaskRunner* task_runner)
     : task_runner_{task_runner} {}
 
-void EventHttpClient::SendRequest(const std::string& method,
+void EventHttpClient::SendRequest(Method method,
                                   const std::string& url,
                                   const Headers& headers,
                                   const std::string& data,
                                   const SuccessCallback& success_callback,
                                   const ErrorCallback& error_callback) {
   evhttp_cmd_type method_id;
-  CHECK(weave::StringToEnum(method, &method_id));
+  CHECK(weave::StringToEnum(weave::EnumToString(method), &method_id));
   std::unique_ptr<evhttp_uri, EventDeleter> http_uri{
       evhttp_uri_parse(url.c_str())};
   CHECK(http_uri);
@@ -146,7 +146,8 @@ void EventHttpClient::SendRequest(const std::string& method,
     return;
   ErrorPtr error;
   Error::AddToPrintf(&error, FROM_HERE, "http_client", "request_failed",
-                     "request failed: %s %s", method.c_str(), url.c_str());
+                     "request failed: %s %s", EnumToString(method).c_str(),
+                     url.c_str());
   task_runner_->PostDelayedTask(FROM_HERE,
                                 base::Bind(error_callback, error.get()), {});
 }

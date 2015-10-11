@@ -28,7 +28,7 @@ class MockHttpClient : public HttpClient {
   ~MockHttpClient() override = default;
 
   MOCK_METHOD6(SendRequest,
-               void(const std::string&,
+               void(Method,
                     const std::string&,
                     const Headers&,
                     const std::string&,

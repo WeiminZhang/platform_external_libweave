@@ -17,6 +17,13 @@ namespace provider {
 
 class HttpClient {
  public:
+  enum class Method {
+    kGet,
+    kPatch,
+    kPost,
+    kPut,
+  };
+
   class Response {
    public:
     virtual int GetStatusCode() const = 0;
@@ -29,7 +36,7 @@ class HttpClient {
   using Headers = std::vector<std::pair<std::string, std::string>>;
   using SuccessCallback = base::Callback<void(const Response&)>;
 
-  virtual void SendRequest(const std::string& method,
+  virtual void SendRequest(Method method,
                            const std::string& url,
                            const Headers& headers,
                            const std::string& data,

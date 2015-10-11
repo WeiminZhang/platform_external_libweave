@@ -7,6 +7,7 @@
 #include <base/bind.h>
 #include <curl/curl.h>
 #include <weave/provider/task_runner.h>
+#include <weave/enum_to_string.h>
 
 namespace weave {
 namespace examples {
@@ -40,7 +41,7 @@ void CurlHttpClient::PostError(const ErrorCallback& error_callback,
       FROM_HERE, base::Bind(error_callback, base::Owned(error.release())), {});
 }
 
-void CurlHttpClient::SendRequest(const std::string& method,
+void CurlHttpClient::SendRequest(Method method,
                                  const std::string& url,
                                  const Headers& headers,
                                  const std::string& data,
@@ -50,13 +51,18 @@ void CurlHttpClient::SendRequest(const std::string& method,
                                                            &curl_easy_cleanup};
   CHECK(curl);
 
-  if (method == "GET") {
+  switch (method) {
+    case Method::kGet:
     CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_HTTPGET, 1L));
-  } else if (method == "POST") {
+    break;
+    case Method::kPost:
     CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_HTTPPOST, 1L));
-  } else {
-    CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_CUSTOMREQUEST,
-                                        method.c_str()));
+    break;
+    case Method::kPatch:
+    case Method::kPut:
+      CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_CUSTOMREQUEST,
+                                          weave::EnumToString(method).c_str()));
+      break;
   }
 
   CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str()));
@@ -67,7 +73,7 @@ void CurlHttpClient::SendRequest(const std::string& method,
 
   CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, chunk));
 
-  if (!data.empty() || method == "POST") {
+  if (!data.empty() || method == Method::kPost) {
     CHECK_EQ(CURLE_OK,
              curl_easy_setopt(curl.get(), CURLOPT_POSTFIELDS, data.c_str()));
   }
