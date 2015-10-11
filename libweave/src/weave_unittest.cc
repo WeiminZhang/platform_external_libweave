@@ -139,10 +139,11 @@ class WeaveTest : public ::testing::Test {
   void ExpectRequest(const std::string& method,
                      const std::string& url,
                      const std::string& json_response) {
-    EXPECT_CALL(http_client_, MockSendRequest(method, url, _, _, _))
-        .WillOnce(InvokeWithoutArgs([json_response]() {
-          provider::test::MockHttpClientResponse* response =
-              new StrictMock<provider::test::MockHttpClientResponse>;
+    EXPECT_CALL(http_client_, SendRequest(method, url, _, _, _, _))
+        .WillOnce(WithArgs<4>(Invoke([json_response](
+            const provider::HttpClient::SuccessCallback& callback) {
+          std::unique_ptr<provider::test::MockHttpClientResponse> response{
+              new StrictMock<provider::test::MockHttpClientResponse>};
           EXPECT_CALL(*response, GetStatusCode())
               .Times(AtLeast(1))
               .WillRepeatedly(Return(200));
@@ -152,8 +153,8 @@ class WeaveTest : public ::testing::Test {
           EXPECT_CALL(*response, GetData())
               .Times(AtLeast(1))
               .WillRepeatedly(Return(json_response));
-          return response;
-        }));
+          callback.Run(*response);
+        })));
   }
 
   void InitConfigStore() {
