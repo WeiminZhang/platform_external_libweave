@@ -1297,6 +1297,8 @@ void DeviceRegistrationInfo::OnCommandCreated(
   if (!connected_to_cloud_)
     return;
 
+  VLOG(1) << "Command notification received: " << command;
+
   if (!command.empty()) {
     // GCD spec indicates that the command parameter in notification object
     // "may be empty if command size is too big".
