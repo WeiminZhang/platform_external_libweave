@@ -50,7 +50,7 @@ void Publisher::ExposeService() {
   std::string model_id{cloud_->GetModelId()};
   DCHECK_EQ(model_id.size(), 5U);
 
-  VLOG(1) << "Starting peerd advertising.";
+  VLOG(2) << "DNS-SD update requested";
   const uint16_t port = device_->GetHttpEnpoint().first;
   DCHECK_NE(port, 0);
 
@@ -77,6 +77,7 @@ void Publisher::ExposeService() {
   auto new_data = std::make_pair(port, txt_record);
   if (published_ == new_data)
     return;
+  VLOG(1) << "Updating DNS-SD";
   published_ = new_data;
   dns_sd_->PublishService(kPrivetServiceType, port, txt_record);
 }
@@ -85,7 +86,7 @@ void Publisher::RemoveService() {
   if (!published_.first)
     return;
   published_ = {};
-  VLOG(1) << "Stopping service publishing.";
+  VLOG(1) << "Stopping service publishing";
   dns_sd_->StopPublishing(kPrivetServiceType);
 }
 
