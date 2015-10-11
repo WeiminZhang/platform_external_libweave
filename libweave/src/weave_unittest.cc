@@ -36,10 +36,11 @@ using testing::WithArgs;
 
 namespace weave {
 
+using provider::HttpClient;
+using provider::Network;
+using provider::test::MockHttpClientResponse;
 using test::CreateDictionaryValue;
 using test::ValueToString;
-using provider::test::MockHttpClientResponse;
-using provider::Network;
 
 const char kCommandDefs[] = R"({
   "base": {
@@ -136,12 +137,12 @@ class WeaveTest : public ::testing::Test {
  protected:
   void SetUp() override {}
 
-  void ExpectRequest(const std::string& method,
+  void ExpectRequest(HttpClient::Method method,
                      const std::string& url,
                      const std::string& json_response) {
     EXPECT_CALL(http_client_, SendRequest(method, url, _, _, _, _))
         .WillOnce(WithArgs<4>(Invoke([json_response](
-            const provider::HttpClient::SuccessCallback& callback) {
+            const HttpClient::SuccessCallback& callback) {
           std::unique_ptr<provider::test::MockHttpClientResponse> response{
               new StrictMock<provider::test::MockHttpClientResponse>};
           EXPECT_CALL(*response, GetStatusCode())
@@ -312,7 +313,7 @@ TEST_F(WeaveBasicTest, Register) {
   auto response = CreateDictionaryValue(kRegistrationResponse);
   response->Set("deviceDraft", draft->DeepCopy());
   ExpectRequest(
-      "PATCH",
+      HttpClient::Method::kPatch,
       "https://www.googleapis.com/clouddevices/v1/registrationTickets/"
       "TICKET_ID?key=TEST_API_KEY",
       ValueToString(*response));
@@ -320,12 +321,13 @@ TEST_F(WeaveBasicTest, Register) {
   response = CreateDictionaryValue(kRegistrationFinalResponse);
   response->Set("deviceDraft", draft->DeepCopy());
   ExpectRequest(
-      "POST",
+      HttpClient::Method::kPost,
       "https://www.googleapis.com/clouddevices/v1/registrationTickets/"
       "TICKET_ID/finalize?key=TEST_API_KEY",
       ValueToString(*response));
 
-  ExpectRequest("POST", "https://accounts.google.com/o/oauth2/token",
+  ExpectRequest(HttpClient::Method::kPost,
+                "https://accounts.google.com/o/oauth2/token",
                 kAuthTokenResponse);
 
   InitDnsSdPublishing(true, "DB");

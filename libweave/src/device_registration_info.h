@@ -176,7 +176,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // and device removal.  It is a recommended way to do cloud API
   // requests.
   // TODO(antonm): Consider moving into some other class.
-  void DoCloudRequest(const std::string& method,
+  void DoCloudRequest(provider::HttpClient::Method method,
                       const std::string& url,
                       const base::DictionaryValue* body,
                       const CloudRequestCallback& success_callback,
@@ -184,7 +184,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   // Helper for DoCloudRequest().
   struct CloudRequestData {
-    std::string method;
+    provider::HttpClient::Method method;
     std::string url;
     std::string body;
     CloudRequestCallback success_callback;
