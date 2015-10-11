@@ -91,23 +91,22 @@ weave::provider::Network::State NetlinkNetworkImpl::GetConnectionState() const {
   return network_state_;
 }
 
-void NetlinkNetworkImpl::OpenSslSocket(
-    const std::string& host,
-    uint16_t port,
-    const OpenSslSocketSuccessCallback& success_callback,
-    const ErrorCallback& error_callback) {
+void NetlinkNetworkImpl::OpenSslSocket(const std::string& host,
+                                       uint16_t port,
+                                       const OpenSslSocketCallback& callback) {
   // Connect to SSL port instead of upgrading to TLS.
   std::unique_ptr<SSLStream> tls_stream{new SSLStream{task_runner_}};
 
   if (tls_stream->Init(host, port)) {
     task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(success_callback, base::Passed(&tls_stream)), {});
+        FROM_HERE, base::Bind(callback, base::Passed(&tls_stream), nullptr),
+        {});
   } else {
     ErrorPtr error;
     Error::AddTo(&error, FROM_HERE, "tls", "tls_init_failed",
                  "Failed to initialize TLS stream.");
     task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(error_callback, base::Passed(&error)), {});
+        FROM_HERE, base::Bind(callback, nullptr, base::Passed(&error)), {});
   }
 }
 

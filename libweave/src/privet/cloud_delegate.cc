@@ -154,8 +154,7 @@ class CloudDelegateImpl : public CloudDelegate {
 
   void AddCommand(const base::DictionaryValue& command,
                   const UserInfo& user_info,
-                  const CommandSuccessCallback& success_callback,
-                  const ErrorCallback& error_callback) override {
+                  const CommandDoneCallback& callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
     CHECK_NE(user_info.user_id(), 0u);
 
@@ -166,44 +165,41 @@ class CloudDelegateImpl : public CloudDelegate {
       Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                          errors::kInvalidParams, "Invalid role: '%s'",
                          str_scope.c_str());
-      return error_callback.Run(std::move(error));
+      return callback.Run({}, std::move(error));
     }
 
     std::string id;
     if (!command_manager_->AddCommand(command, role, &id, &error))
-      return error_callback.Run(std::move(error));
+      return callback.Run({}, std::move(error));
 
     command_owners_[id] = user_info.user_id();
-    success_callback.Run(*command_manager_->FindCommand(id)->ToJson());
+    callback.Run(*command_manager_->FindCommand(id)->ToJson(), nullptr);
   }
 
   void GetCommand(const std::string& id,
                   const UserInfo& user_info,
-                  const CommandSuccessCallback& success_callback,
-                  const ErrorCallback& error_callback) override {
+                  const CommandDoneCallback& callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
     ErrorPtr error;
     auto command = GetCommandInternal(id, user_info, &error);
     if (!command)
-      return error_callback.Run(std::move(error));
-    success_callback.Run(*command->ToJson());
+      return callback.Run({}, std::move(error));
+    callback.Run(*command->ToJson(), nullptr);
   }
 
   void CancelCommand(const std::string& id,
                      const UserInfo& user_info,
-                     const CommandSuccessCallback& success_callback,
-                     const ErrorCallback& error_callback) override {
+                     const CommandDoneCallback& callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
     ErrorPtr error;
     auto command = GetCommandInternal(id, user_info, &error);
     if (!command || !command->Cancel(&error))
-      return error_callback.Run(std::move(error));
-    success_callback.Run(*command->ToJson());
+      return callback.Run({}, std::move(error));
+    callback.Run(*command->ToJson(), nullptr);
   }
 
   void ListCommands(const UserInfo& user_info,
-                    const CommandSuccessCallback& success_callback,
-                    const ErrorCallback& error_callback) override {
+                    const CommandDoneCallback& callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
 
     base::ListValue list_value;
@@ -218,7 +214,7 @@ class CloudDelegateImpl : public CloudDelegate {
     base::DictionaryValue commands_json;
     commands_json.Set("commands", list_value.DeepCopy());
 
-    success_callback.Run(commands_json);
+    callback.Run(commands_json, nullptr);
   }
 
  private:
@@ -285,27 +281,25 @@ class CloudDelegateImpl : public CloudDelegate {
     }
 
     device_->RegisterDevice(
-        ticket_id, base::Bind(&CloudDelegateImpl::RegisterDeviceSuccess,
-                              setup_weak_factory_.GetWeakPtr()),
-        base::Bind(&CloudDelegateImpl::RegisterDeviceError,
+        ticket_id,
+        base::Bind(&CloudDelegateImpl::RegisterDeviceDone,
                    setup_weak_factory_.GetWeakPtr(), ticket_id, deadline));
   }
 
-  void RegisterDeviceSuccess() {
+  void RegisterDeviceDone(const std::string& ticket_id,
+                          const base::Time& deadline,
+                          ErrorPtr error) {
+    if (error) {
+      // Registration failed. Retry with backoff.
+      backoff_entry_.InformOfRequest(false);
+      return task_runner_->PostDelayedTask(
+          FROM_HERE,
+          base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
+                     setup_weak_factory_.GetWeakPtr(), ticket_id, deadline),
+          backoff_entry_.GetTimeUntilRelease());
+    }
     backoff_entry_.InformOfRequest(true);
     setup_state_ = SetupState(SetupState::kSuccess);
-  }
-
-  void RegisterDeviceError(const std::string& ticket_id,
-                           const base::Time& deadline,
-                           ErrorPtr error) {
-    // Registration failed. Retry with backoff.
-    backoff_entry_.InformOfRequest(false);
-    task_runner_->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
-                   setup_weak_factory_.GetWeakPtr(), ticket_id, deadline),
-        backoff_entry_.GetTimeUntilRelease());
   }
 
   CommandInstance* GetCommandInternal(const std::string& command_id,

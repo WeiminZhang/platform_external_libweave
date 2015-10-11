@@ -88,8 +88,9 @@ class FakeXmppChannel : public XmppChannel {
         stream_{new test::FakeStream{task_runner_}},
         fake_stream_{stream_.get()} {}
 
-  void Connect(const base::Callback<void(std::unique_ptr<Stream>)>& callback) {
-    callback.Run(std::move(stream_));
+  void Connect(const base::Callback<void(std::unique_ptr<Stream>,
+                                         ErrorPtr error)>& callback) {
+    callback.Run(std::move(stream_), nullptr);
   }
 
   XmppState state() const { return state_; }
@@ -121,7 +122,7 @@ class MockNetwork : public provider::test::MockNetwork {
 class XmppChannelTest : public ::testing::Test {
  protected:
   XmppChannelTest() {
-    EXPECT_CALL(network_, OpenSslSocket("talk.google.com", 5223, _, _))
+    EXPECT_CALL(network_, OpenSslSocket("talk.google.com", 5223, _))
         .WillOnce(
             WithArgs<2>(Invoke(&xmpp_client_, &FakeXmppChannel::Connect)));
   }

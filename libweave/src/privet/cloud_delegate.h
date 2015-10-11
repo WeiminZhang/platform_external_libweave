@@ -39,8 +39,9 @@ class CloudDelegate {
   CloudDelegate();
   virtual ~CloudDelegate();
 
-  using CommandSuccessCallback =
-      base::Callback<void(const base::DictionaryValue& commands)>;
+  using CommandDoneCallback =
+      base::Callback<void(const base::DictionaryValue& commands,
+                          ErrorPtr error)>;
 
   class Observer {
    public:
@@ -107,25 +108,21 @@ class CloudDelegate {
   // Adds command created from the given JSON representation.
   virtual void AddCommand(const base::DictionaryValue& command,
                           const UserInfo& user_info,
-                          const CommandSuccessCallback& success_callback,
-                          const ErrorCallback& error_callback) = 0;
+                          const CommandDoneCallback& callback) = 0;
 
   // Returns command with the given ID.
   virtual void GetCommand(const std::string& id,
                           const UserInfo& user_info,
-                          const CommandSuccessCallback& success_callback,
-                          const ErrorCallback& error_callback) = 0;
+                          const CommandDoneCallback& callback) = 0;
 
   // Cancels command with the given ID.
   virtual void CancelCommand(const std::string& id,
                              const UserInfo& user_info,
-                             const CommandSuccessCallback& success_callback,
-                             const ErrorCallback& error_callback) = 0;
+                             const CommandDoneCallback& callback) = 0;
 
   // Lists commands.
   virtual void ListCommands(const UserInfo& user_info,
-                            const CommandSuccessCallback& success_callback,
-                            const ErrorCallback& error_callback) = 0;
+                            const CommandDoneCallback& callback) = 0;
 
   void AddObserver(Observer* observer) { observer_list_.AddObserver(observer); }
   void RemoveObserver(Observer* observer) {

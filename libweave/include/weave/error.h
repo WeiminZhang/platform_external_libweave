@@ -126,8 +126,13 @@ class LIBWEAVE_EXPORT Error final {
   DISALLOW_COPY_AND_ASSIGN(Error);
 };
 
-using SuccessCallback = base::Closure;
-using ErrorCallback = base::Callback<void(ErrorPtr error)>;
+// Default callback type for async operations.
+// Function having this callback as argument should call the callback exactly
+// one time.
+// Successfully completed operation should run callback with |error| set to
+// null. Failed operation should run callback with |error| containing error
+// details.
+using DoneCallback = base::Callback<void(ErrorPtr error)>;
 
 }  // namespace weave
 

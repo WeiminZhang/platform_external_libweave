@@ -31,12 +31,10 @@ class FakeStream : public Stream {
   void CancelPendingOperations() override;
   void Read(void* buffer,
             size_t size_to_read,
-            const ReadSuccessCallback& success_callback,
-            const ErrorCallback& error_callback) override;
+            const ReadCallback& callback) override;
   void Write(const void* buffer,
              size_t size_to_write,
-             const SuccessCallback& success_callback,
-             const ErrorCallback& error_callback) override;
+             const WriteCallback& callback) override;
 
  private:
   provider::TaskRunner* task_runner_{nullptr};

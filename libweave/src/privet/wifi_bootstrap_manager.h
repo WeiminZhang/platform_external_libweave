@@ -87,8 +87,8 @@ class WifiBootstrapManager : public WifiDelegate {
   // to return to monitoring mode periodically in case our connectivity issues
   // were temporary.
   void OnBootstrapTimeout();
-  void OnConnectSuccess(const std::string& ssid);
-  void OnConnectError(ErrorPtr error);
+  void OnConnectDone(const std::string& ssid, ErrorPtr error);
+  void OnConnectTimeout();
   void OnConnectivityChange();
   void OnMonitorTimeout();
   void UpdateConnectionState();

@@ -34,14 +34,14 @@ class HttpClient {
   };
 
   using Headers = std::vector<std::pair<std::string, std::string>>;
-  using SuccessCallback = base::Callback<void(const Response&)>;
+  using SendRequestCallback =
+      base::Callback<void(std::unique_ptr<Response> response, ErrorPtr error)>;
 
   virtual void SendRequest(Method method,
                            const std::string& url,
                            const Headers& headers,
                            const std::string& data,
-                           const SuccessCallback& success_callback,
-                           const ErrorCallback& error_callback) = 0;
+                           const SendRequestCallback& callback) = 0;
 
  protected:
   virtual ~HttpClient() = default;

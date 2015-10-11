@@ -106,10 +106,12 @@ XmppChannel::XmppChannel(const std::string& account,
   }
 }
 
-void XmppChannel::OnMessageRead(size_t size) {
+void XmppChannel::OnMessageRead(size_t size, ErrorPtr error) {
+  read_pending_ = false;
+  if (error)
+    return Restart();
   std::string msg(read_socket_data_.data(), size);
   VLOG(2) << "Received XMPP packet: '" << msg << "'";
-  read_pending_ = false;
 
   if (!size)
     return Restart();
@@ -286,32 +288,30 @@ void XmppChannel::CreateSslSocket() {
   LOG(INFO) << "Starting XMPP connection to " << kDefaultXmppHost << ":"
             << kDefaultXmppPort;
 
-  network_->OpenSslSocket(
-      kDefaultXmppHost, kDefaultXmppPort,
-      base::Bind(&XmppChannel::OnSslSocketReady,
-                 task_ptr_factory_.GetWeakPtr()),
-      base::Bind(&XmppChannel::OnSslError, task_ptr_factory_.GetWeakPtr()));
+  network_->OpenSslSocket(kDefaultXmppHost, kDefaultXmppPort,
+                          base::Bind(&XmppChannel::OnSslSocketReady,
+                                     task_ptr_factory_.GetWeakPtr()));
 }
 
-void XmppChannel::OnSslSocketReady(std::unique_ptr<Stream> stream) {
+void XmppChannel::OnSslSocketReady(std::unique_ptr<Stream> stream,
+                                   ErrorPtr error) {
+  if (error) {
+    LOG(ERROR) << "TLS handshake failed. Restarting XMPP connection";
+    backoff_entry_.InformOfRequest(false);
+
+    LOG(INFO) << "Delaying connection to XMPP server for "
+              << backoff_entry_.GetTimeUntilRelease();
+    return task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(&XmppChannel::CreateSslSocket,
+                              task_ptr_factory_.GetWeakPtr()),
+        backoff_entry_.GetTimeUntilRelease());
+  }
   CHECK(XmppState::kConnecting == state_);
   backoff_entry_.InformOfRequest(true);
   stream_ = std::move(stream);
   state_ = XmppState::kConnected;
   RestartXmppStream();
   ScheduleRegularPing();
-}
-
-void XmppChannel::OnSslError(ErrorPtr error) {
-  LOG(ERROR) << "TLS handshake failed. Restarting XMPP connection";
-  backoff_entry_.InformOfRequest(false);
-
-  LOG(INFO) << "Delaying connection to XMPP server for "
-            << backoff_entry_.GetTimeUntilRelease();
-  task_runner_->PostDelayedTask(
-      FROM_HERE,
-      base::Bind(&XmppChannel::CreateSslSocket, task_ptr_factory_.GetWeakPtr()),
-      backoff_entry_.GetTimeUntilRelease());
 }
 
 void XmppChannel::SendMessage(const std::string& message) {
@@ -327,13 +327,13 @@ void XmppChannel::SendMessage(const std::string& message) {
   write_pending_ = true;
   stream_->Write(
       write_socket_data_.data(), write_socket_data_.size(),
-      base::Bind(&XmppChannel::OnMessageSent, task_ptr_factory_.GetWeakPtr()),
-      base::Bind(&XmppChannel::OnWriteError, task_ptr_factory_.GetWeakPtr()));
+      base::Bind(&XmppChannel::OnMessageSent, task_ptr_factory_.GetWeakPtr()));
 }
 
-void XmppChannel::OnMessageSent() {
-  ErrorPtr error;
+void XmppChannel::OnMessageSent(ErrorPtr error) {
   write_pending_ = false;
+  if (error)
+    return Restart();
   if (queued_write_data_.empty()) {
     WaitForMessage();
   } else {
@@ -348,18 +348,7 @@ void XmppChannel::WaitForMessage() {
   read_pending_ = true;
   stream_->Read(
       read_socket_data_.data(), read_socket_data_.size(),
-      base::Bind(&XmppChannel::OnMessageRead, task_ptr_factory_.GetWeakPtr()),
-      base::Bind(&XmppChannel::OnReadError, task_ptr_factory_.GetWeakPtr()));
-}
-
-void XmppChannel::OnReadError(ErrorPtr error) {
-  read_pending_ = false;
-  Restart();
-}
-
-void XmppChannel::OnWriteError(ErrorPtr error) {
-  write_pending_ = false;
-  Restart();
+      base::Bind(&XmppChannel::OnMessageRead, task_ptr_factory_.GetWeakPtr()));
 }
 
 std::string XmppChannel::GetName() const {

@@ -63,9 +63,7 @@ class CloudCommandProxy final : public CommandInstance::Observer {
   void ResendCommandUpdate();
 
   // Callback invoked by the asynchronous PATCH request to the server.
-  // Called both in a case of successfully updating server command resource
-  // and in case of an error, indicated by the |success| parameter.
-  void OnUpdateCommandFinished(bool success);
+  void OnUpdateCommandDone(ErrorPtr error);
 
   // Callback invoked by the device state change queue to notify of the
   // successful device state update. |update_id| is the ID of the state that

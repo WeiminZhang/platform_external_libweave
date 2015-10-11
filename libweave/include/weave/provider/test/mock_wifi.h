@@ -17,11 +17,10 @@ namespace test {
 
 class MockWifi : public Wifi {
  public:
-  MOCK_METHOD4(Connect,
+  MOCK_METHOD3(Connect,
                void(const std::string&,
                     const std::string&,
-                    const base::Closure&,
-                    const ErrorCallback&));
+                    const DoneCallback&));
   MOCK_METHOD1(StartAccessPoint, void(const std::string&));
   MOCK_METHOD0(StopAccessPoint, void());
 };

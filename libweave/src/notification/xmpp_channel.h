@@ -97,15 +97,12 @@ class XmppChannel : public NotificationChannel,
   void RestartXmppStream();
 
   void CreateSslSocket();
-  void OnSslSocketReady(std::unique_ptr<Stream> stream);
-  void OnSslError(ErrorPtr error);
+  void OnSslSocketReady(std::unique_ptr<Stream> stream, ErrorPtr error);
 
   void WaitForMessage();
 
-  void OnMessageRead(size_t size);
-  void OnMessageSent();
-  void OnReadError(ErrorPtr error);
-  void OnWriteError(ErrorPtr error);
+  void OnMessageRead(size_t size, ErrorPtr error);
+  void OnMessageSent(ErrorPtr error);
   void Restart();
   void CloseStream();
 

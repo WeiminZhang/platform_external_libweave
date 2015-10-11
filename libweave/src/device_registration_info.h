@@ -50,8 +50,9 @@ extern const char kErrorDomainGCDServer[];
 class DeviceRegistrationInfo : public NotificationDelegate,
                                public CloudCommandUpdateInterface {
  public:
-  using CloudRequestCallback =
-      base::Callback<void(const base::DictionaryValue& response)>;
+  using CloudRequestDoneCallback =
+      base::Callback<void(const base::DictionaryValue& response,
+                          ErrorPtr error)>;
 
   DeviceRegistrationInfo(const std::shared_ptr<CommandManager>& command_manager,
                          const std::shared_ptr<StateManager>& state_manager,
@@ -65,8 +66,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void AddGcdStateChangedCallback(
       const Device::GcdStateChangedCallback& callback);
   void RegisterDevice(const std::string& ticket_id,
-                      const SuccessCallback& success_callback,
-                      const ErrorCallback& error_callback);
+                      const DoneCallback& callback);
 
   void UpdateDeviceInfo(const std::string& name,
                         const std::string& description,
@@ -81,8 +81,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
                            const std::string& service_url,
                            ErrorPtr* error);
 
-  void GetDeviceInfo(const CloudRequestCallback& success_callback,
-                     const ErrorCallback& error_callback);
+  void GetDeviceInfo(const CloudRequestDoneCallback& callback);
 
   // Returns the GCD service request URL. If |subpath| is specified, it is
   // appended to the base URL which is normally
@@ -120,8 +119,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Updates a command (override from CloudCommandUpdateInterface).
   void UpdateCommand(const std::string& command_id,
                      const base::DictionaryValue& command_patch,
-                     const base::Closure& on_success,
-                     const base::Closure& on_error) override;
+                     const DoneCallback& callback) override;
 
   // TODO(vitalybuka): remove getters and pass config to dependent code.
   const Config::Settings& GetSettings() const { return config_->GetSettings(); }
@@ -143,22 +141,17 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Initiates the connection to the cloud server.
   // Device will do required start up chores and then start to listen
   // to new commands.
-  void ConnectToCloud();
+  void ConnectToCloud(ErrorPtr error);
   // Notification called when ConnectToCloud() succeeds.
-  void OnConnectedToCloud();
+  void OnConnectedToCloud(ErrorPtr error);
 
   // Forcibly refreshes the access token.
-  void RefreshAccessToken(const base::Closure& success_callback,
-                          const ErrorCallback& error_callback);
+  void RefreshAccessToken(const DoneCallback& callback);
 
   // Callbacks for RefreshAccessToken().
-  void OnRefreshAccessTokenSuccess(
-      const std::shared_ptr<base::Closure>& success_callback,
-      const std::shared_ptr<ErrorCallback>& error_callback,
-      const provider::HttpClient::Response& response);
-  void OnRefreshAccessTokenError(
-      const std::shared_ptr<base::Closure>& success_callback,
-      const std::shared_ptr<ErrorCallback>& error_callback,
+  void OnRefreshAccessTokenDone(
+      const DoneCallback& callback,
+      std::unique_ptr<provider::HttpClient::Response> response,
       ErrorPtr error);
 
   // Parse the OAuth response, and sets registration status to
@@ -179,40 +172,36 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void DoCloudRequest(provider::HttpClient::Method method,
                       const std::string& url,
                       const base::DictionaryValue* body,
-                      const CloudRequestCallback& success_callback,
-                      const ErrorCallback& error_callback);
+                      const CloudRequestDoneCallback& callback);
 
   // Helper for DoCloudRequest().
   struct CloudRequestData {
     provider::HttpClient::Method method;
     std::string url;
     std::string body;
-    CloudRequestCallback success_callback;
-    ErrorCallback error_callback;
+    CloudRequestDoneCallback callback;
   };
   void SendCloudRequest(const std::shared_ptr<const CloudRequestData>& data);
-  void OnCloudRequestSuccess(
+  void OnCloudRequestDone(
       const std::shared_ptr<const CloudRequestData>& data,
-      const provider::HttpClient::Response& response);
-  void OnCloudRequestError(const std::shared_ptr<const CloudRequestData>& data,
-                           ErrorPtr error);
+      std::unique_ptr<provider::HttpClient::Response> response,
+      ErrorPtr error);
   void RetryCloudRequest(const std::shared_ptr<const CloudRequestData>& data);
   void OnAccessTokenRefreshed(
-      const std::shared_ptr<const CloudRequestData>& data);
-  void OnAccessTokenError(const std::shared_ptr<const CloudRequestData>& data,
-                          ErrorPtr error);
+      const std::shared_ptr<const CloudRequestData>& data,
+      ErrorPtr error);
   void CheckAccessTokenError(ErrorPtr error);
 
-  void UpdateDeviceResource(const base::Closure& on_success,
-                            const ErrorCallback& on_failure);
+  void UpdateDeviceResource(const DoneCallback& callback);
   void StartQueuedUpdateDeviceResource();
-  // Success/failure callbacks for UpdateDeviceResource().
-  void OnUpdateDeviceResourceSuccess(const base::DictionaryValue& device_info);
+  void OnUpdateDeviceResourceDone(const base::DictionaryValue& device_info,
+                                  ErrorPtr error);
   void OnUpdateDeviceResourceError(ErrorPtr error);
 
   // Callback from GetDeviceInfo() to retrieve the device resource timestamp
   // and retry UpdateDeviceResource() call.
-  void OnDeviceInfoRetrieved(const base::DictionaryValue& device_info);
+  void OnDeviceInfoRetrieved(const base::DictionaryValue& device_info,
+                             ErrorPtr error);
 
   // Extracts the timestamp from the device resource and sets it to
   // |last_device_resource_updated_timestamp_|.
@@ -221,13 +210,11 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   bool UpdateDeviceInfoTimestamp(const base::DictionaryValue& device_info);
 
   void FetchCommands(
-      const base::Callback<void(const base::ListValue&)>& on_success,
-      const ErrorCallback& on_failure);
-  // Success/failure callbacks for FetchCommands().
-  void OnFetchCommandsSuccess(
-      const base::Callback<void(const base::ListValue&)>& callback,
-      const base::DictionaryValue& json);
-  void OnFetchCommandsError(const ErrorCallback& callback, ErrorPtr error);
+      const base::Callback<void(const base::ListValue&, ErrorPtr)>& callback);
+  void OnFetchCommandsDone(
+      const base::Callback<void(const base::ListValue&, ErrorPtr)>& callback,
+      const base::DictionaryValue& json,
+      ErrorPtr);
   // Called when FetchCommands completes (with either success or error).
   // This method reschedules any pending/queued fetch requests.
   void OnFetchCommandsReturned();
@@ -235,9 +222,10 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Processes the command list that is fetched from the server on connection.
   // Aborts commands which are in transitional states and publishes queued
   // commands which are queued.
-  void ProcessInitialCommandList(const base::ListValue& commands);
+  void ProcessInitialCommandList(const base::ListValue& commands,
+                                 ErrorPtr error);
 
-  void PublishCommands(const base::ListValue& commands);
+  void PublishCommands(const base::ListValue& commands, ErrorPtr error);
   void PublishCommand(const base::DictionaryValue& command);
 
   // Helper function to pull the pending command list from the server using
@@ -245,8 +233,9 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void FetchAndPublishCommands();
 
   void PublishStateUpdates();
-  void OnPublishStateSuccess(StateChangeQueueInterface::UpdateID update_id,
-                             const base::DictionaryValue& reply);
+  void OnPublishStateDone(StateChangeQueueInterface::UpdateID update_id,
+                          const base::DictionaryValue& reply,
+                          ErrorPtr error);
   void OnPublishStateError(ErrorPtr error);
 
   // If unrecoverable error occurred (e.g. error parsing command instance),
@@ -275,21 +264,22 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Wipes out the device registration information and stops server connections.
   void MarkDeviceUnregistered();
 
-  struct RegisterCallbacks;
-  void RegisterDeviceError(const std::shared_ptr<RegisterCallbacks>& callbacks,
-                           ErrorPtr error);
+  void RegisterDeviceError(const DoneCallback& callback, ErrorPtr error);
   void RegisterDeviceOnTicketSent(
       const std::string& ticket_id,
-      const std::shared_ptr<RegisterCallbacks>& callbacks,
-      const provider::HttpClient::Response& response);
+      const DoneCallback& callback,
+      std::unique_ptr<provider::HttpClient::Response> response,
+      ErrorPtr error);
   void RegisterDeviceOnTicketFinalized(
-      const std::shared_ptr<RegisterCallbacks>& callbacks,
-      const provider::HttpClient::Response& response);
+      const DoneCallback& callback,
+      std::unique_ptr<provider::HttpClient::Response> response,
+      ErrorPtr error);
   void RegisterDeviceOnAuthCodeSent(
       const std::string& cloud_id,
       const std::string& robot_account,
-      const std::shared_ptr<RegisterCallbacks>& callbacks,
-      const provider::HttpClient::Response& response);
+      const DoneCallback& callback,
+      std::unique_ptr<provider::HttpClient::Response> response,
+      ErrorPtr error);
 
   // Transient data
   std::string access_token_;
@@ -327,13 +317,12 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // another one was in flight.
   bool fetch_commands_request_queued_{false};
 
-  using ResourceUpdateCallbackList =
-      std::vector<std::pair<base::Closure, ErrorCallback>>;
-  // Success/error callbacks for device resource update request currently in
-  // flight to the cloud server.
+  using ResourceUpdateCallbackList = std::vector<DoneCallback>;
+  // Callbacks for device resource update request currently in flight to the
+  // cloud server.
   ResourceUpdateCallbackList in_progress_resource_update_callbacks_;
-  // Success/error callbacks for device resource update requests queued while
-  // another request is in flight to the cloud server.
+  // Callbacks for device resource update requests queued while another request
+  // is in flight to the cloud server.
   ResourceUpdateCallbackList queued_resource_update_callbacks_;
 
   std::unique_ptr<NotificationChannel> primary_notification_channel_;
