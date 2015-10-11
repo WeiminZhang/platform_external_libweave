@@ -51,9 +51,8 @@ void SSLStream::Read(void* buffer,
                "SSL error");
   task_runner_->PostDelayedTask(
       FROM_HERE,
-      base::Bind(
-          &SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
-          base::Bind(error_callback, base::Owned(weave_error.release()))),
+      base::Bind(&SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
+                 base::Bind(error_callback, base::Passed(&weave_error))),
       {});
   return;
 }
@@ -100,9 +99,8 @@ void SSLStream::Write(const void* buffer,
                "SSL error");
   task_runner_->PostDelayedTask(
       FROM_HERE,
-      base::Bind(
-          &SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
-          base::Bind(error_callback, base::Owned(weave_error.release()))),
+      base::Bind(&SSLStream::RunDelayedTask, weak_ptr_factory_.GetWeakPtr(),
+                 base::Bind(error_callback, base::Passed(&weave_error))),
       {});
   return;
 }

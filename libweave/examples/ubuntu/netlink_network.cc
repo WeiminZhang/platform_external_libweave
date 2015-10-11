@@ -106,8 +106,8 @@ void NetlinkNetworkImpl::OpenSslSocket(
     ErrorPtr error;
     Error::AddTo(&error, FROM_HERE, "tls", "tls_init_failed",
                  "Failed to initialize TLS stream.");
-    task_runner_->PostDelayedTask(FROM_HERE,
-                                  base::Bind(error_callback, error.get()), {});
+    task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(error_callback, base::Passed(&error)), {});
   }
 }
 

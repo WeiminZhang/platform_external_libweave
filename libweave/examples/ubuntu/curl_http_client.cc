@@ -38,7 +38,7 @@ CurlHttpClient::CurlHttpClient(provider::TaskRunner* task_runner)
 void CurlHttpClient::PostError(const ErrorCallback& error_callback,
                                ErrorPtr error) {
   task_runner_->PostDelayedTask(
-      FROM_HERE, base::Bind(error_callback, base::Owned(error.release())), {});
+      FROM_HERE, base::Bind(error_callback, base::Passed(&error)), {});
 }
 
 void CurlHttpClient::SendRequest(Method method,

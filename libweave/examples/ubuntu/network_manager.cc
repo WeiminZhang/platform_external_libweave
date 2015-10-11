@@ -57,13 +57,12 @@ void NetworkImpl::AddConnectionChangedCallback(
   callbacks_.push_back(callback);
 }
 
-void NetworkImpl::TryToConnect(
-    const std::string& ssid,
-    const std::string& passphrase,
-    int pid,
-    base::Time until,
-    const SuccessCallback& success_callback,
-    const ErrorCallback& error_callback) {
+void NetworkImpl::TryToConnect(const std::string& ssid,
+                               const std::string& passphrase,
+                               int pid,
+                               base::Time until,
+                               const SuccessCallback& success_callback,
+                               const ErrorCallback& error_callback) {
   if (pid) {
     int status = 0;
     if (pid == waitpid(pid, &status, WNOWAIT)) {
@@ -95,8 +94,7 @@ void NetworkImpl::TryToConnect(
     Error::AddTo(&error, FROM_HERE, "wifi", "timeout",
                  "Timeout connecting to WiFI network.");
     task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(error_callback, base::Owned(error.release())),
-        {});
+        FROM_HERE, base::Bind(error_callback, base::Passed(&error)), {});
     return;
   }
 
@@ -117,8 +115,7 @@ void NetworkImpl::Connect(const std::string& ssid,
     ErrorPtr error;
     Error::AddTo(&error, FROM_HERE, "wifi", "busy", "Running Access Point.");
     task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(error_callback, base::Owned(error.release())),
-        {});
+        FROM_HERE, base::Bind(error_callback, base::Passed(&error)), {});
     return;
   }
 
@@ -218,6 +215,8 @@ void NetworkImpl::OpenSslSocket(
     ErrorPtr error;
     Error::AddTo(&error, FROM_HERE, "tls", "tls_init_failed",
                  "Failed to initialize TLS stream.");
+    task_runner_->PostDelayedTask(
+        FROM_HERE, base::Bind(error_callback, base::Passed(&error)), {});
   }
 }
 
