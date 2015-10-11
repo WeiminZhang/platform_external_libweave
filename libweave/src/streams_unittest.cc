@@ -27,7 +27,7 @@ TEST(Stream, CopyStreams) {
     done = true;
     EXPECT_EQ(test_data, destination.GetData());
   });
-  auto on_error = base::Bind([](const Error* error) { ADD_FAILURE(); });
+  auto on_error = base::Bind([](ErrorPtr error) { ADD_FAILURE(); });
   StreamCopier copier{&source, &destination};
   copier.Copy(on_success, on_error);
 

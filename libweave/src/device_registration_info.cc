@@ -98,9 +98,9 @@ std::string BuildURL(const std::string& url,
   return AppendQueryParams(result, params);
 }
 
-void IgnoreCloudError(const Error*) {}
+void IgnoreCloudError(ErrorPtr) {}
 
-void IgnoreCloudErrorWithCallback(const base::Closure& cb, const Error*) {
+void IgnoreCloudErrorWithCallback(const base::Closure& cb, ErrorPtr) {
   cb.Run();
 }
 
@@ -134,11 +134,11 @@ class RequestSender final {
       success_callback.Run(response);
     };
     auto on_error = [](int debug_id, const ErrorCallback& error_callback,
-                       const Error* error) {
+                       ErrorPtr error) {
       VLOG(1) << "Request failed, id=" << debug_id
               << ", reason: " << error->GetCode()
               << ", message: " << error->GetMessage();
-      error_callback.Run(error);
+      error_callback.Run(std::move(error));
     };
     transport_->SendRequest(method_, url_, GetFullHeaders(), data_,
                             base::Bind(on_success, debug_id, success_callback),
@@ -357,7 +357,7 @@ void DeviceRegistrationInfo::RefreshAccessToken(
 
   ErrorPtr error;
   if (!VerifyRegistrationCredentials(&error)) {
-    error_callback.Run(error.get());
+    error_callback.Run(std::move(error));
     return;
   }
 
@@ -405,10 +405,8 @@ void DeviceRegistrationInfo::OnRefreshAccessTokenSuccess(
   oauth2_backoff_entry_->InformOfRequest(true);
   ErrorPtr error;
   auto json = ParseOAuthResponse(response, &error);
-  if (!json) {
-    error_callback->Run(error.get());
-    return;
-  }
+  if (!json)
+    return error_callback->Run(std::move(error));
 
   int expires_in = 0;
   if (!json->GetString("access_token", &access_token_) ||
@@ -417,8 +415,7 @@ void DeviceRegistrationInfo::OnRefreshAccessTokenSuccess(
     LOG(ERROR) << "Access token unavailable.";
     Error::AddTo(&error, FROM_HERE, kErrorDomainOAuth2,
                  "unexpected_server_response", "Access token unavailable");
-    error_callback->Run(error.get());
-    return;
+    return error_callback->Run(std::move(error));
   }
   access_token_expiration_ =
       base::Time::Now() + base::TimeDelta::FromSeconds(expires_in);
@@ -437,7 +434,7 @@ void DeviceRegistrationInfo::OnRefreshAccessTokenSuccess(
 void DeviceRegistrationInfo::OnRefreshAccessTokenError(
     const std::shared_ptr<base::Closure>& success_callback,
     const std::shared_ptr<ErrorCallback>& error_callback,
-    const Error* error) {
+    ErrorPtr error) {
   VLOG(1) << "Refresh access token failed";
   oauth2_backoff_entry_->InformOfRequest(false);
   RefreshAccessToken(*success_callback, *error_callback);
@@ -530,7 +527,7 @@ void DeviceRegistrationInfo::GetDeviceInfo(
   ErrorPtr error;
   if (!VerifyRegistrationCredentials(&error)) {
     if (!error_callback.is_null())
-      error_callback.Run(error.get());
+      error_callback.Run(std::move(error));
     return;
   }
   DoCloudRequest(HttpClient::Method::kGet, GetDeviceURL(), nullptr,
@@ -546,11 +543,9 @@ struct DeviceRegistrationInfo::RegisterCallbacks {
 
 void DeviceRegistrationInfo::RegisterDeviceError(
     const std::shared_ptr<RegisterCallbacks>& callbacks,
-    const Error* error) {
-  ErrorPtr error_clone = error->Clone();
+    ErrorPtr error) {
   task_runner_->PostDelayedTask(
-      FROM_HERE,
-      base::Bind(callbacks->error_callback, base::Owned(error_clone.release())),
+      FROM_HERE, base::Bind(callbacks->error_callback, base::Passed(&error)),
       {});
 }
 
@@ -565,7 +560,7 @@ void DeviceRegistrationInfo::RegisterDevice(
   std::unique_ptr<base::DictionaryValue> device_draft =
       BuildDeviceResource(&error);
   if (!device_draft)
-    return RegisterDeviceError(callbacks, error.get());
+    return RegisterDeviceError(callbacks, std::move(error));
 
   base::DictionaryValue req_json;
   req_json.SetString("id", ticket_id);
@@ -590,11 +585,11 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketSent(
   ErrorPtr error;
   auto json_resp = ParseJsonResponse(response, &error);
   if (!json_resp)
-    return RegisterDeviceError(callbacks, error.get());
+    return RegisterDeviceError(callbacks, std::move(error));
 
   if (!IsSuccessful(response)) {
     ParseGCDError(json_resp.get(), &error);
-    return RegisterDeviceError(callbacks, error.get());
+    return RegisterDeviceError(callbacks, std::move(error));
   }
 
   std::string url =
@@ -613,10 +608,10 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
   ErrorPtr error;
   auto json_resp = ParseJsonResponse(response, &error);
   if (!json_resp)
-    return RegisterDeviceError(callbacks, error.get());
+    return RegisterDeviceError(callbacks, std::move(error));
   if (!IsSuccessful(response)) {
     ParseGCDError(json_resp.get(), &error);
-    return RegisterDeviceError(callbacks, error.get());
+    return RegisterDeviceError(callbacks, std::move(error));
   }
 
   std::string auth_code;
@@ -629,7 +624,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
       !device_draft_response->GetString("id", &cloud_id)) {
     Error::AddTo(&error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
                  "Device account missing in response");
-    return RegisterDeviceError(callbacks, error.get());
+    return RegisterDeviceError(callbacks, std::move(error));
   }
 
   UpdateDeviceInfoTimestamp(*device_draft_response);
@@ -666,7 +661,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent(
       access_token_.empty() || refresh_token.empty() || expires_in <= 0) {
     Error::AddTo(&error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
                  "Device access_token missing in response");
-    return RegisterDeviceError(callbacks, error.get());
+    return RegisterDeviceError(callbacks, std::move(error));
   }
 
   access_token_expiration_ =
@@ -715,19 +710,17 @@ void DeviceRegistrationInfo::SendCloudRequest(
 
   ErrorPtr error;
   if (!VerifyRegistrationCredentials(&error)) {
-    data->error_callback.Run(error.get());
-    return;
+    return data->error_callback.Run(std::move(error));
   }
 
   if (cloud_backoff_entry_->ShouldRejectRequest()) {
     VLOG(1) << "Cloud request delayed for "
             << cloud_backoff_entry_->GetTimeUntilRelease()
             << " due to backoff policy";
-    task_runner_->PostDelayedTask(
+    return task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(&DeviceRegistrationInfo::SendCloudRequest,
                               AsWeakPtr(), data),
         cloud_backoff_entry_->GetTimeUntilRelease());
-    return;
   }
 
   RequestSender sender{data->method, data->url, http_client_};
@@ -765,9 +758,8 @@ void DeviceRegistrationInfo::OnCloudRequestSuccess(
   ErrorPtr error;
   auto json_resp = ParseJsonResponse(response, &error);
   if (!json_resp) {
-    data->error_callback.Run(error.get());
     cloud_backoff_entry_->InformOfRequest(true);
-    return;
+    return data->error_callback.Run(std::move(error));
   }
 
   if (!IsSuccessful(response)) {
@@ -775,12 +767,10 @@ void DeviceRegistrationInfo::OnCloudRequestSuccess(
     if (status_code == http::kForbidden &&
         error->HasError(kErrorDomainGCDServer, "rateLimitExceeded")) {
       // If we exceeded server quota, retry the request later.
-      RetryCloudRequest(data);
-      return;
+      return RetryCloudRequest(data);
     }
     cloud_backoff_entry_->InformOfRequest(true);
-    data->error_callback.Run(error.get());
-    return;
+    return data->error_callback.Run(std::move(error));
   }
 
   cloud_backoff_entry_->InformOfRequest(true);
@@ -790,7 +780,7 @@ void DeviceRegistrationInfo::OnCloudRequestSuccess(
 
 void DeviceRegistrationInfo::OnCloudRequestError(
     const std::shared_ptr<const CloudRequestData>& data,
-    const Error* error) {
+    ErrorPtr error) {
   RetryCloudRequest(data);
 }
 
@@ -809,12 +799,12 @@ void DeviceRegistrationInfo::OnAccessTokenRefreshed(
 
 void DeviceRegistrationInfo::OnAccessTokenError(
     const std::shared_ptr<const CloudRequestData>& data,
-    const Error* error) {
-  CheckAccessTokenError(error);
-  data->error_callback.Run(error);
+    ErrorPtr error) {
+  CheckAccessTokenError(error->Clone());
+  data->error_callback.Run(std::move(error));
 }
 
-void DeviceRegistrationInfo::CheckAccessTokenError(const Error* error) {
+void DeviceRegistrationInfo::CheckAccessTokenError(ErrorPtr error) {
   if (error->HasError(kErrorDomainOAuth2, "invalid_grant"))
     MarkDeviceUnregistered();
 }
@@ -963,8 +953,7 @@ void DeviceRegistrationInfo::StartQueuedUpdateDeviceResource() {
   std::unique_ptr<base::DictionaryValue> device_resource =
       BuildDeviceResource(&error);
   if (!device_resource) {
-    OnUpdateDeviceResourceError(error.get());
-    return;
+    return OnUpdateDeviceResourceError(std::move(error));
   }
 
   std::string url = GetDeviceURL(
@@ -1010,7 +999,7 @@ void DeviceRegistrationInfo::OnUpdateDeviceResourceSuccess(
   StartQueuedUpdateDeviceResource();
 }
 
-void DeviceRegistrationInfo::OnUpdateDeviceResourceError(const Error* error) {
+void DeviceRegistrationInfo::OnUpdateDeviceResourceError(ErrorPtr error) {
   if (error->HasError(kErrorDomainGCDServer, "invalid_last_update_time_ms")) {
     // If the server rejected our previous request, retrieve the latest
     // timestamp from the server and retry.
@@ -1027,7 +1016,7 @@ void DeviceRegistrationInfo::OnUpdateDeviceResourceError(const Error* error) {
   // over.
   auto callback_list = std::move(in_progress_resource_update_callbacks_);
   for (const auto& callback_pair : callback_list)
-    callback_pair.second.Run(error);
+    callback_pair.second.Run(error->Clone());
 
   StartQueuedUpdateDeviceResource();
 }
@@ -1045,9 +1034,9 @@ void DeviceRegistrationInfo::OnFetchCommandsSuccess(
 }
 
 void DeviceRegistrationInfo::OnFetchCommandsError(const ErrorCallback& callback,
-                                                  const Error* error) {
+                                                  ErrorPtr error) {
   OnFetchCommandsReturned();
-  callback.Run(error);
+  callback.Run(std::move(error));
 }
 
 void DeviceRegistrationInfo::OnFetchCommandsReturned() {
@@ -1216,7 +1205,7 @@ void DeviceRegistrationInfo::OnPublishStateSuccess(
   PublishStateUpdates();
 }
 
-void DeviceRegistrationInfo::OnPublishStateError(const Error* error) {
+void DeviceRegistrationInfo::OnPublishStateError(ErrorPtr error) {
   LOG(ERROR) << "Permanent failure while trying to update device state";
   device_state_update_pending_ = false;
 }

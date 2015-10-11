@@ -24,6 +24,7 @@ using testing::DoAll;
 using testing::Invoke;
 using testing::Return;
 using testing::SetArgPointee;
+using testing::WithArgs;
 
 namespace weave {
 namespace privet {
@@ -669,7 +670,9 @@ TEST_F(PrivetHandlerSetupTest, CommandsStatus) {
   ErrorPtr error;
   Error::AddTo(&error, FROM_HERE, errors::kDomain, "notFound", "");
   EXPECT_CALL(cloud_, GetCommand(_, _, _, _))
-      .WillOnce(RunCallback<3>(error.get()));
+      .WillOnce(WithArgs<3>(Invoke([&error](const ErrorCallback& callback) {
+        callback.Run(std::move(error));
+      })));
 
   EXPECT_PRED2(IsEqualError, CodeWithReason(404, "notFound"),
                HandleRequest("/privet/v3/commands/status", "{'id': '15'}"));
@@ -688,7 +691,9 @@ TEST_F(PrivetHandlerSetupTest, CommandsCancel) {
   ErrorPtr error;
   Error::AddTo(&error, FROM_HERE, errors::kDomain, "notFound", "");
   EXPECT_CALL(cloud_, CancelCommand(_, _, _, _))
-      .WillOnce(RunCallback<3>(error.get()));
+      .WillOnce(WithArgs<3>(Invoke([&error](const ErrorCallback& callback) {
+        callback.Run(std::move(error));
+      })));
 
   EXPECT_PRED2(IsEqualError, CodeWithReason(404, "notFound"),
                HandleRequest("/privet/v3/commands/cancel", "{'id': '11'}"));

@@ -302,7 +302,7 @@ void XmppChannel::OnSslSocketReady(std::unique_ptr<Stream> stream) {
   ScheduleRegularPing();
 }
 
-void XmppChannel::OnSslError(const Error* error) {
+void XmppChannel::OnSslError(ErrorPtr error) {
   LOG(ERROR) << "TLS handshake failed. Restarting XMPP connection";
   backoff_entry_.InformOfRequest(false);
 
@@ -352,12 +352,12 @@ void XmppChannel::WaitForMessage() {
       base::Bind(&XmppChannel::OnReadError, task_ptr_factory_.GetWeakPtr()));
 }
 
-void XmppChannel::OnReadError(const Error* error) {
+void XmppChannel::OnReadError(ErrorPtr error) {
   read_pending_ = false;
   Restart();
 }
 
-void XmppChannel::OnWriteError(const Error* error) {
+void XmppChannel::OnWriteError(ErrorPtr error) {
   write_pending_ = false;
   Restart();
 }

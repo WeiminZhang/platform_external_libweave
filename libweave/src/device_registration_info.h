@@ -159,7 +159,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void OnRefreshAccessTokenError(
       const std::shared_ptr<base::Closure>& success_callback,
       const std::shared_ptr<ErrorCallback>& error_callback,
-      const Error* error);
+      ErrorPtr error);
 
   // Parse the OAuth response, and sets registration status to
   // kInvalidCredentials if our registration is no longer valid.
@@ -195,20 +195,20 @@ class DeviceRegistrationInfo : public NotificationDelegate,
       const std::shared_ptr<const CloudRequestData>& data,
       const provider::HttpClient::Response& response);
   void OnCloudRequestError(const std::shared_ptr<const CloudRequestData>& data,
-                           const Error* error);
+                           ErrorPtr error);
   void RetryCloudRequest(const std::shared_ptr<const CloudRequestData>& data);
   void OnAccessTokenRefreshed(
       const std::shared_ptr<const CloudRequestData>& data);
   void OnAccessTokenError(const std::shared_ptr<const CloudRequestData>& data,
-                          const Error* error);
-  void CheckAccessTokenError(const Error* error);
+                          ErrorPtr error);
+  void CheckAccessTokenError(ErrorPtr error);
 
   void UpdateDeviceResource(const base::Closure& on_success,
                             const ErrorCallback& on_failure);
   void StartQueuedUpdateDeviceResource();
   // Success/failure callbacks for UpdateDeviceResource().
   void OnUpdateDeviceResourceSuccess(const base::DictionaryValue& device_info);
-  void OnUpdateDeviceResourceError(const Error* error);
+  void OnUpdateDeviceResourceError(ErrorPtr error);
 
   // Callback from GetDeviceInfo() to retrieve the device resource timestamp
   // and retry UpdateDeviceResource() call.
@@ -227,7 +227,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void OnFetchCommandsSuccess(
       const base::Callback<void(const base::ListValue&)>& callback,
       const base::DictionaryValue& json);
-  void OnFetchCommandsError(const ErrorCallback& callback, const Error* error);
+  void OnFetchCommandsError(const ErrorCallback& callback, ErrorPtr error);
   // Called when FetchCommands completes (with either success or error).
   // This method reschedules any pending/queued fetch requests.
   void OnFetchCommandsReturned();
@@ -247,7 +247,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void PublishStateUpdates();
   void OnPublishStateSuccess(StateChangeQueueInterface::UpdateID update_id,
                              const base::DictionaryValue& reply);
-  void OnPublishStateError(const Error* error);
+  void OnPublishStateError(ErrorPtr error);
 
   // If unrecoverable error occurred (e.g. error parsing command instance),
   // notify the server that the command is aborted by the device.
@@ -277,7 +277,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   struct RegisterCallbacks;
   void RegisterDeviceError(const std::shared_ptr<RegisterCallbacks>& callbacks,
-                           const Error* error);
+                           ErrorPtr error);
   void RegisterDeviceOnTicketSent(
       const std::string& ticket_id,
       const std::shared_ptr<RegisterCallbacks>& callbacks,

@@ -74,7 +74,8 @@ void RequestDoneCallback(evhttp_request* req, void* ctx) {
                        "request failed: %s",
                        evutil_socket_error_to_string(err));
     state->task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(state->error_callback_, error.get()), {});
+        FROM_HERE, base::Bind(state->error_callback_, base::Passed(&error)),
+        {});
     return;
   }
   std::unique_ptr<EventHttpResponse> response{new EventHttpResponse()};
@@ -148,8 +149,8 @@ void EventHttpClient::SendRequest(Method method,
   Error::AddToPrintf(&error, FROM_HERE, "http_client", "request_failed",
                      "request failed: %s %s", EnumToString(method).c_str(),
                      url.c_str());
-  task_runner_->PostDelayedTask(FROM_HERE,
-                                base::Bind(error_callback, error.get()), {});
+  task_runner_->PostDelayedTask(
+      FROM_HERE, base::Bind(error_callback, base::Passed(&error)), {});
 }
 
 }  // namespace examples

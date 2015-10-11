@@ -172,9 +172,9 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   bool RefreshAccessToken(ErrorPtr* error) const {
     bool succeeded = false;
     auto on_success = [&succeeded]() { succeeded = true; };
-    auto on_failure = [&error](const Error* in_error) {
+    auto on_failure = [&error](ErrorPtr in_error) {
       if (error)
-        *error = in_error->Clone();
+        *error = std::move(in_error);
     };
     dev_reg_->RefreshAccessToken(base::Bind(on_success),
                                  base::Bind(on_failure));
@@ -342,9 +342,7 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
     EXPECT_EQ(test_data::kDeviceId, id);
     succeeded = true;
   };
-  auto on_failure = [](const Error* error) {
-    FAIL() << "Should not be called";
-  };
+  auto on_failure = [](ErrorPtr error) { FAIL() << "Should not be called"; };
   dev_reg_->GetDeviceInfo(base::Bind(on_success), base::Bind(on_failure));
   EXPECT_TRUE(succeeded);
 }
@@ -514,7 +512,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
         EXPECT_EQ(test_data::kRobotAccountEmail,
                   dev_reg_->GetSettings().robot_account);
       }),
-      base::Bind([](const Error* error) { ADD_FAILURE(); }));
+      base::Bind([](ErrorPtr error) { ADD_FAILURE(); }));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }

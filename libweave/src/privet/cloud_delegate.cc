@@ -166,12 +166,12 @@ class CloudDelegateImpl : public CloudDelegate {
       Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                          errors::kInvalidParams, "Invalid role: '%s'",
                          str_scope.c_str());
-      return error_callback.Run(error.get());
+      return error_callback.Run(std::move(error));
     }
 
     std::string id;
     if (!command_manager_->AddCommand(command, role, &id, &error))
-      return error_callback.Run(error.get());
+      return error_callback.Run(std::move(error));
 
     command_owners_[id] = user_info.user_id();
     success_callback.Run(*command_manager_->FindCommand(id)->ToJson());
@@ -185,7 +185,7 @@ class CloudDelegateImpl : public CloudDelegate {
     ErrorPtr error;
     auto command = GetCommandInternal(id, user_info, &error);
     if (!command)
-      return error_callback.Run(error.get());
+      return error_callback.Run(std::move(error));
     success_callback.Run(*command->ToJson());
   }
 
@@ -197,7 +197,7 @@ class CloudDelegateImpl : public CloudDelegate {
     ErrorPtr error;
     auto command = GetCommandInternal(id, user_info, &error);
     if (!command || !command->Cancel(&error))
-      return error_callback.Run(error.get());
+      return error_callback.Run(std::move(error));
     success_callback.Run(*command->ToJson());
   }
 
@@ -298,7 +298,7 @@ class CloudDelegateImpl : public CloudDelegate {
 
   void RegisterDeviceError(const std::string& ticket_id,
                            const base::Time& deadline,
-                           const Error* error) {
+                           ErrorPtr error) {
     // Registration failed. Retry with backoff.
     backoff_entry_.InformOfRequest(false);
     task_runner_->PostDelayedTask(

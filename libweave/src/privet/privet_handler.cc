@@ -203,7 +203,7 @@ void OnCommandRequestSucceeded(const PrivetHandler::RequestCallback& callback,
 }
 
 void OnCommandRequestFailed(const PrivetHandler::RequestCallback& callback,
-                            const Error* error) {
+                            ErrorPtr error) {
   if (error->HasError("gcd", "unknown_command")) {
     ErrorPtr new_error = error->Clone();
     Error::AddTo(&new_error, FROM_HERE, errors::kDomain, errors::kNotFound,
