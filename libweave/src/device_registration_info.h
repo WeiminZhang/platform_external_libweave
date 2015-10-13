@@ -275,7 +275,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Wipes out the device registration information and stops server connections.
   void MarkDeviceUnregistered();
 
-  class RegisterCallbacks;
+  struct RegisterCallbacks;
   void RegisterDeviceError(const std::shared_ptr<RegisterCallbacks>& callbacks,
                            const Error* error);
   void RegisterDeviceOnTicketSent(
