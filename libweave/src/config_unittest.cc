@@ -79,8 +79,35 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().secret);
 }
 
+TEST_F(ConfigTest, LoadStateV0) {
+  EXPECT_CALL(config_store_, LoadSettings())
+      .WillOnce(Return(R"({
+    "device_id": "state_device_id"
+  })"));
+
+  EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
+  config_.Load();
+
+  EXPECT_EQ("state_device_id", GetSettings().cloud_id);
+  EXPECT_FALSE(GetSettings().device_id.empty());
+  EXPECT_NE(GetSettings().cloud_id, GetSettings().device_id);
+
+  EXPECT_CALL(config_store_, LoadSettings())
+      .WillOnce(Return(R"({
+    "device_id": "state_device_id",
+    "cloud_id": "state_cloud_id"
+  })"));
+
+  EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
+  config_.Load();
+
+  EXPECT_EQ("state_cloud_id", GetSettings().cloud_id);
+  EXPECT_EQ("state_device_id", GetSettings().device_id);
+}
+
 TEST_F(ConfigTest, LoadState) {
   auto state = R"({
+    "version": 1,
     "api_key": "state_api_key",
     "client_id": "state_client_id",
     "client_secret": "state_client_secret",
@@ -205,6 +232,7 @@ TEST_F(ConfigTest, Setters) {
   EXPECT_CALL(config_store_, SaveSettings(_))
       .WillOnce(Invoke([](const std::string& json) {
         auto expected = R"({
+          'version': 1,
           'api_key': 'set_api_key',
           'client_id': 'set_client_id',
           'client_secret': 'set_client_secret',

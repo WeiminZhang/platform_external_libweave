@@ -195,6 +195,7 @@ class WeaveTest : public ::testing::Test {
     }
 
     EXPECT_CALL(dns_sd_, PublishService("_privet._tcp", 11, MatchTxt(txt)))
+        .Times(AtMost(1))
         .WillOnce(Return());
   }
 
