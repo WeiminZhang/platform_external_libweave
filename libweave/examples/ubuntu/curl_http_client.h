@@ -32,17 +32,10 @@ class CurlHttpClient : public provider::HttpClient {
                    const ErrorCallback& error_callback) override;
 
  private:
-  std::unique_ptr<Response> SendRequestAndBlock(const std::string& method,
-                                                const std::string& url,
-                                                const Headers& headers,
-                                                const std::string& data,
-                                                ErrorPtr* error);
+  void PostError(const ErrorCallback& error_callback, ErrorPtr error);
 
   void RunSuccessCallback(const SuccessCallback& success_callback,
                           std::unique_ptr<Response> response);
-  void RunErrorCallback(const ErrorCallback& error_callback,
-                        ErrorPtr error);
-
   provider::TaskRunner* task_runner_{nullptr};
 
   base::WeakPtrFactory<CurlHttpClient> weak_ptr_factory_{this};
