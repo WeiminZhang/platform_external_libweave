@@ -1,0 +1,47 @@
+Source: libweave
+Priority: optional
+Section: net
+Maintainer: Stefan Sauer <ensonic@google.com>
+Build-Depends: devscripts,
+ debhelper (>= 9),
+ gyp,
+ libavahi-client-dev,
+ libcurl4-openssl-dev,
+ libexpat1-dev,
+ libssl-dev,
+ libtool
+Standards-Version: 3.9.4
+Homepage: http://developers.google.com/weave
+#Vcs-Git: git://git.debian.org/collab-maint/libweave.git
+#Vcs-Browser: http://weave.googlesource.com
+
+Package: libweave-dev
+Section: libdevel
+Architecture: any
+Depends: ${misc:Depends}, libweave0 (= ${binary:Version})
+Description: device side implementation of Weave protocol - runtime
+ libWeave is the library to with device side implementation of Weave
+ protocol.
+ .
+ This package provide development headers.
+
+Package: libweave0
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, hostapd
+Description: device side implementation of Weave protocol - development
+ libWeave is the library to with device side implementation of Weave
+ protocol.
+ .
+ This package provide the dynamic library.
+
+Package: libweave0-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: ${misc:Depends}, libweave0 (= ${binary:Version})
+Description: device side implementation of Weave protocol - debug symbols
+ libWeave is the library to with device side implementation of Weave
+ protocol.
+ .
+ This package contains the debugging symbols.

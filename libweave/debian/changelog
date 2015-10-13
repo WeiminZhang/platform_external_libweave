@@ -1,0 +1,5 @@
+libweave (0.0.1-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)
+
+ -- Stefan Sauer <ensonic@google.com>  Thu, 24 Sep 2015 16:07:30 +0200

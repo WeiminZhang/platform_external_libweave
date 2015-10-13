@@ -1,0 +1,109 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+
+include /usr/share/dpkg/default.mk
+
+# FIXME: define version, API and ABI
+# see e.g. http://anonscm.debian.org/cgit/collab-maint/libv8.git/tree/debian/rules#n19
+SOVER=0
+VER=$(SOVER).0.1
+SONAME=$(DEB_SOURCE).so.$(SOVER)
+
+DESTDIR_BIN = $(CURDIR)/debian/$(DEB_SOURCE)$(SOVER)
+DESTDIR_DBG = $(CURDIR)/debian/$(DEB_SOURCE)$(SOVER)-dbg
+DESTDIR_DEV = $(CURDIR)/debian/$(DEB_SOURCE)-dev
+
+SOURCEDIR = $(CURDIR)
+BUILDDIR = out
+
+export SOVER
+export SONAME
+
+%:
+	dh $@ --buildsystem=makefile --builddirectory=$(BUILDDIR)
+
+.PHONY: override_dh_strip
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -f Makefile libweave_standalone.Makefile \
+		libweave-test.target.mk libweave.target.mk libweave_common.target.mk \
+		libweave_exports_testrunner.target.mk libweave_testrunner.target.mk
+	( \
+		for SUB_DIR in googlemock/gtest googlemock; do \
+			cd $(SOURCEDIR)/third_party/googletest/$$SUB_DIR || exit 1; \
+			test -e Makefile && make clean distclean || /bin/true; \
+		done; \
+	)
+
+override_dh_auto_configure:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	( \
+		for SUB_DIR in googlemock/gtest googlemock; do \
+			cd $(SOURCEDIR)/third_party/googletest/googlemock || exit 1; \
+			autoreconf -fvi || exit 1; \
+			./configure --disable-shared || exit 1; \
+			make || exit 1; \
+			cp -rf include/* $(SOURCEDIR)/third_party/include/ || exit 1; \
+			cp -rf lib/.libs/* $(SOURCEDIR)/third_party/lib/ || exit 1; \
+		done; \
+	) || exit -1
+endif
+	gyp -Ilibweave_common.gypi  --depth=. libweave_standalone.gyp -f make
+
+# FIXME: BUILDTYPE=Debug/Release
+# objdump -p ./debian/libweave0/usr/lib/libweave.so.0.0.1 | grep SONAME
+# -Wl,-soname,$(SONAME)
+override_dh_auto_build: CXXFLAGS += -Ithird_party/include/
+override_dh_auto_build: LDFLAGS += -Lthird_party/lib
+override_dh_auto_build:
+ifneq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	make libweave
+else
+	make
+endif
+	gzip -9c $(SOURCEDIR)/ChangeLog >$(BUILDDIR)/ChangeLog.gz
+
+#override_dh_makeshlibs:
+#	dh_makeshlibs -s -V
+
+override_dh_strip:
+	dh_strip --dbg-package=libweave0-dbg
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	  $(BUILDDIR)/Debug/libweave_testrunner && \
+	  $(BUILDDIR)/Debug/libweave_exports_testrunner
+endif
+
+# FIXME: handle Debug/Release
+override_dh_auto_install:
+	# libweave0
+	install -D $(BUILDDIR)/Debug/lib.target/libweave.so.0 $(DESTDIR_BIN)/usr/lib/$(DEB_SOURCE).so.$(VER)
+	install -D $(BUILDDIR)/ChangeLog.gz $(DESTDIR_BIN)/usr/share/doc/$(DEB_SOURCE)$(SOVER)/changelog.gz
+	# libweave0-dbg
+	install -D $(BUILDDIR)/ChangeLog.gz $(DESTDIR_DBG)/usr/share/doc/$(DEB_SOURCE)$(SOVER)-dbg/changelog.gz
+	# libweave-dev
+	install -D $(BUILDDIR)/ChangeLog.gz $(DESTDIR_DEV)/usr/share/doc/$(DEB_SOURCE)-dev/changelog.gz
+	install -d $(DESTDIR_DEV)/usr/include
+	cp -r $(SOURCEDIR)/include/weave $(DESTDIR_DEV)/usr/include
+	# meh: we need to cherry pick headers from a bunch of cpp classes
+	#cp -r third_party/chromium/base $(DESTDIR_DEV)/usr/include/weave
+	cd $(SOURCEDIR)/third_party/chromium; \
+	for h in $$(find "base" -name "*.h"); do \
+    install -D "$(SOURCEDIR)/third_party/chromium/$$h" "$(DESTDIR_DEV)/usr/include/weave/$$h"; \
+  done
+	install -d $(DESTDIR_DEV)/usr/lib/pkgconfig
+	sed \
+	  -e "s/@BSLOT@/$(VER)/g" \
+	  -e "s/@PRIVATE_PC@//g" \
+	  "libweave.pc.in" > "$(DESTDIR_DEV)/usr/lib/pkgconfig/libweave-$(SOVER).pc"
+	sed \
+	  -e "s/@BSLOT@/$(VER)/g" \
+	  -e "s/@PRIVATE_PC@//g" \
+	  "libweave-test.pc.in" > "$(DESTDIR_DEV)/usr/lib/pkgconfig/libweave-test-${SOVER}.pc"
+

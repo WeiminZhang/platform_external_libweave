@@ -1,0 +1,31 @@
+Description: add soname version
+ Add option to ensure that .0 ends up in the soname.
+ .
+ libweave (0.0.1-1) unstable; urgency=low
+ .
+   * Initial release (Closes: #nnnn)
+Author: Stefan Sauer <ensonic@google.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- libweave-0.0.1.orig/libweave_standalone.gyp
++++ libweave-0.0.1/libweave_standalone.gyp
+@@ -35,6 +35,7 @@
+       'sources': [
+         'src/empty.cc'
+       ],
++      'product_extension': 'so.0',
+     },
+     {
+       'target_name': 'libweave-test',
