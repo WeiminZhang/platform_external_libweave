@@ -30,31 +30,6 @@ bufferevent* BuffetEventCallback(event_base* base, void* arg) {
       base, -1, SSL_new(ctx), BUFFEREVENT_SSL_ACCEPTING, BEV_OPT_CLOSE_ON_FREE);
 }
 
-class MemoryReadStream : public InputStream {
- public:
-  MemoryReadStream(const std::vector<uint8_t>& data,
-                   provider::TaskRunner* task_runner)
-      : data_{data}, task_runner_{task_runner} {}
-
-  void Read(void* buffer,
-            size_t size_to_read,
-            const ReadSuccessCallback& success_callback,
-            const ErrorCallback& error_callback) override {
-    CHECK_LE(read_position_, data_.size());
-    size_t size_read = std::min(size_to_read, data_.size() - read_position_);
-    if (size_read > 0)
-      memcpy(buffer, data_.data() + read_position_, size_read);
-    read_position_ += size_read;
-    task_runner_->PostDelayedTask(FROM_HERE,
-                                  base::Bind(success_callback, size_read), {});
-  }
-
- private:
-  std::vector<uint8_t> data_;
-  provider::TaskRunner* task_runner_{nullptr};
-  size_t read_position_{0};
-};
-
 }  // namespace
 
 class HttpServerImpl::RequestImpl : public Request {
@@ -63,6 +38,9 @@ class HttpServerImpl::RequestImpl : public Request {
       : task_runner_{task_runner} {
     req_.reset(req);
     uri_ = evhttp_request_get_evhttp_uri(req_.get());
+
+    data_.resize(evbuffer_get_length(req_->input_buffer));
+    evbuffer_remove(req_->input_buffer, &data_[0], data_.size());
   }
 
   ~RequestImpl() {}
@@ -77,12 +55,7 @@ class HttpServerImpl::RequestImpl : public Request {
       return {};
     return header;
   }
-  std::string GetData() {
-    std::string data;
-    data.resize(evbuffer_get_length(req_->input_buffer));
-    evbuffer_remove(req_->input_buffer, &data[0], data.size());
-    return data;
-  }
+  std::string GetData() { return data_; }
 
   void SendReply(int status_code,
                  const std::string& data,
@@ -98,7 +71,7 @@ class HttpServerImpl::RequestImpl : public Request {
   std::unique_ptr<evhttp_request, decltype(&evhttp_cancel_request)> req_{
       nullptr, &evhttp_cancel_request};
   provider::TaskRunner* task_runner_{nullptr};
-  std::unique_ptr<InputStream> data_;
+  std::string data_;
   const evhttp_uri* uri_{nullptr};
 };
 
