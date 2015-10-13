@@ -106,11 +106,10 @@ void WifiBootstrapManager::StartConnecting(const std::string& ssid,
                             tasks_weak_factory_.GetWeakPtr()));
 }
 
-void WifiBootstrapManager::OnConnectError(const Error* error) {
-  ErrorPtr new_error = error ? error->Clone() : nullptr;
-  Error::AddTo(&new_error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+void WifiBootstrapManager::OnConnectError(ErrorPtr error) {
+  Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
                "Failed to connect to provided network");
-  setup_state_ = SetupState{std::move(new_error)};
+  setup_state_ = SetupState{std::move(error)};
   StartBootstrapping();
 }
 

@@ -98,14 +98,14 @@ class XmppChannel : public NotificationChannel,
 
   void CreateSslSocket();
   void OnSslSocketReady(std::unique_ptr<Stream> stream);
-  void OnSslError(const Error* error);
+  void OnSslError(ErrorPtr error);
 
   void WaitForMessage();
 
   void OnMessageRead(size_t size);
   void OnMessageSent();
-  void OnReadError(const Error* error);
-  void OnWriteError(const Error* error);
+  void OnReadError(ErrorPtr error);
+  void OnWriteError(ErrorPtr error);
   void Restart();
   void CloseStream();
 

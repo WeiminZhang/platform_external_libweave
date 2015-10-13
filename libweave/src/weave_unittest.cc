@@ -338,7 +338,7 @@ TEST_F(WeaveBasicTest, Register) {
                       task_runner_.Break();
                       EXPECT_EQ("CLOUD_ID", device_->GetSettings().cloud_id);
                     }),
-                    base::Bind([](const Error* error) { ADD_FAILURE(); }));
+                    base::Bind([](ErrorPtr error) { ADD_FAILURE(); }));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }

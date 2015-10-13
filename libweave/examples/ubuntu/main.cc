@@ -225,7 +225,7 @@ void RegisterDeviceSuccess(weave::Device* device) {
   LOG(INFO) << "Device registered: " << device->GetSettings().cloud_id;
 }
 
-void RegisterDeviceError(const weave::Error* error) {
+void RegisterDeviceError(weave::ErrorPtr error) {
   LOG(ERROR) << "Fail to register device: " << error->GetMessage();
 }
 
