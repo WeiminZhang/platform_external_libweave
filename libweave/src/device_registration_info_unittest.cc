@@ -91,7 +91,7 @@ HttpClient::Response* ReplyWithJson(int status_code, const base::Value& json) {
       .WillRepeatedly(Return(http::kJsonUtf8));
   EXPECT_CALL(*response, GetData())
       .Times(AtLeast(1))
-      .WillRepeatedly(ReturnRefOfCopy(text));
+      .WillRepeatedly(Return(text));
   return response;
 }
 

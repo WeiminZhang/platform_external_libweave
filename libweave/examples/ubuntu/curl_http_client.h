@@ -24,11 +24,6 @@ class CurlHttpClient : public provider::HttpClient {
  public:
   explicit CurlHttpClient(provider::TaskRunner* task_runner);
 
-  std::unique_ptr<Response> SendRequestAndBlock(const std::string& method,
-                                                const std::string& url,
-                                                const Headers& headers,
-                                                const std::string& data,
-                                                ErrorPtr* error) override;
   void SendRequest(const std::string& method,
                    const std::string& url,
                    const Headers& headers,
@@ -37,6 +32,12 @@ class CurlHttpClient : public provider::HttpClient {
                    const ErrorCallback& error_callback) override;
 
  private:
+  std::unique_ptr<Response> SendRequestAndBlock(const std::string& method,
+                                                const std::string& url,
+                                                const Headers& headers,
+                                                const std::string& data,
+                                                ErrorPtr* error);
+
   void RunSuccessCallback(const SuccessCallback& success_callback,
                           std::unique_ptr<Response> response);
   void RunErrorCallback(const ErrorCallback& error_callback,
