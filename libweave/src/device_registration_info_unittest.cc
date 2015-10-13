@@ -233,9 +233,10 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
   EXPECT_FALSE(dev_reg_->HaveRegistrationCredentials());
   ReloadSettings();
 
-  EXPECT_CALL(http_client_,
-              SendRequest(http::kPost, dev_reg_->GetOAuthURL("token"),
-                          HttpClient::Headers{GetFormHeader()}, _, _, _))
+  EXPECT_CALL(
+      http_client_,
+      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
+                  HttpClient::Headers{GetFormHeader()}, _, _, _))
       .WillOnce(WithArgs<3, 4>(Invoke([](
           const std::string& data,
           const HttpClient::SuccessCallback& callback) {
@@ -261,9 +262,10 @@ TEST_F(DeviceRegistrationInfoTest, CheckAuthenticationFailure) {
   ReloadSettings();
   EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
-  EXPECT_CALL(http_client_,
-              SendRequest(http::kPost, dev_reg_->GetOAuthURL("token"),
-                          HttpClient::Headers{GetFormHeader()}, _, _, _))
+  EXPECT_CALL(
+      http_client_,
+      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
+                  HttpClient::Headers{GetFormHeader()}, _, _, _))
       .WillOnce(WithArgs<3, 4>(Invoke([](
           const std::string& data,
           const HttpClient::SuccessCallback& callback) {
@@ -289,9 +291,10 @@ TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
   ReloadSettings();
   EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
-  EXPECT_CALL(http_client_,
-              SendRequest(http::kPost, dev_reg_->GetOAuthURL("token"),
-                          HttpClient::Headers{GetFormHeader()}, _, _, _))
+  EXPECT_CALL(
+      http_client_,
+      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
+                  HttpClient::Headers{GetFormHeader()}, _, _, _))
       .WillOnce(WithArgs<3, 4>(Invoke([](
           const std::string& data,
           const HttpClient::SuccessCallback& callback) {
@@ -318,7 +321,7 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
   SetAccessToken();
 
   EXPECT_CALL(http_client_,
-              SendRequest(http::kGet, dev_reg_->GetDeviceURL(),
+              SendRequest(HttpClient::Method::kGet, dev_reg_->GetDeviceURL(),
                           HttpClient::Headers{GetAuthHeader(), GetJsonHeader()},
                           _, _, _))
       .WillOnce(WithArgs<3, 4>(
@@ -382,10 +385,10 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
 
   std::string ticket_url = dev_reg_->GetServiceURL("registrationTickets/") +
                            test_data::kClaimTicketId;
-  EXPECT_CALL(
-      http_client_,
-      SendRequest(http::kPatch, ticket_url + "?key=" + test_data::kApiKey,
-                  HttpClient::Headers{GetJsonHeader()}, _, _, _))
+  EXPECT_CALL(http_client_,
+              SendRequest(HttpClient::Method::kPatch,
+                          ticket_url + "?key=" + test_data::kApiKey,
+                          HttpClient::Headers{GetJsonHeader()}, _, _, _))
       .WillOnce(WithArgs<3, 4>(Invoke([](
           const std::string& data,
           const HttpClient::SuccessCallback& callback) {
@@ -452,7 +455,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
       })));
 
   EXPECT_CALL(http_client_,
-              SendRequest(http::kPost,
+              SendRequest(HttpClient::Method::kPost,
                           ticket_url + "/finalize?key=" + test_data::kApiKey,
                           HttpClient::Headers{}, _, _, _))
       .WillOnce(
@@ -471,9 +474,10 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
             callback.Run(*ReplyWithJson(200, json));
           })));
 
-  EXPECT_CALL(http_client_,
-              SendRequest(http::kPost, dev_reg_->GetOAuthURL("token"),
-                          HttpClient::Headers{GetFormHeader()}, _, _, _))
+  EXPECT_CALL(
+      http_client_,
+      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
+                  HttpClient::Headers{GetFormHeader()}, _, _, _))
       .WillOnce(WithArgs<3, 4>(Invoke([](
           const std::string& data,
           const HttpClient::SuccessCallback& callback) {
@@ -572,7 +576,7 @@ class DeviceRegistrationInfoUpdateCommandTest
 
 TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetProgress) {
   EXPECT_CALL(http_client_,
-              SendRequest(http::kPatch, command_url_,
+              SendRequest(HttpClient::Method::kPatch, command_url_,
                           HttpClient::Headers{GetAuthHeader(), GetJsonHeader()},
                           _, _, _))
       .WillOnce(WithArgs<3, 4>(Invoke([](
@@ -589,7 +593,7 @@ TEST_F(DeviceRegistrationInfoUpdateCommandTest, SetProgress) {
 
 TEST_F(DeviceRegistrationInfoUpdateCommandTest, Complete) {
   EXPECT_CALL(http_client_,
-              SendRequest(http::kPatch, command_url_,
+              SendRequest(HttpClient::Method::kPatch, command_url_,
                           HttpClient::Headers{GetAuthHeader(), GetJsonHeader()},
                           _, _, _))
       .WillOnce(WithArgs<3, 4>(Invoke([](
@@ -606,7 +610,7 @@ TEST_F(DeviceRegistrationInfoUpdateCommandTest, Complete) {
 
 TEST_F(DeviceRegistrationInfoUpdateCommandTest, Cancel) {
   EXPECT_CALL(http_client_,
-              SendRequest(http::kPatch, command_url_,
+              SendRequest(HttpClient::Method::kPatch, command_url_,
                           HttpClient::Headers{GetAuthHeader(), GetJsonHeader()},
                           _, _, _))
       .WillOnce(WithArgs<3, 4>(Invoke([](

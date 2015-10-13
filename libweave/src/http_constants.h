@@ -18,11 +18,6 @@ const int kInternalServerError = 500;
 const int kServiceUnavailable = 503;
 const int kNotSupported = 501;
 
-extern const char kGet[];
-extern const char kPatch[];
-extern const char kPost[];
-extern const char kPut[];
-
 extern const char kAuthorization[];
 extern const char kContentType[];
 

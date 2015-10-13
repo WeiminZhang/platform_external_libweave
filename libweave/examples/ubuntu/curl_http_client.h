@@ -24,7 +24,7 @@ class CurlHttpClient : public provider::HttpClient {
  public:
   explicit CurlHttpClient(provider::TaskRunner* task_runner);
 
-  void SendRequest(const std::string& method,
+  void SendRequest(Method method,
                    const std::string& url,
                    const Headers& headers,
                    const std::string& data,

@@ -52,7 +52,7 @@ std::string EnumToString(T id) {
       return m.name;
     }
   }
-  NOTREACHED();
+  NOTREACHED() << static_cast<int>(id);
   return std::string();
 }
 
