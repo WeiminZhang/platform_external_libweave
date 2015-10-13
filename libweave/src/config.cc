@@ -22,6 +22,8 @@ namespace weave {
 
 namespace config_keys {
 
+const char kVersion[] = "version";
+
 const char kClientId[] = "client_id";
 const char kClientSecret[] = "client_secret";
 const char kApiKey[] = "api_key";
@@ -43,6 +45,17 @@ const char kSecret[] = "secret";
 }  // namespace config_keys
 
 namespace {
+
+const int kCurrentConfigVersion = 1;
+
+void MigrateFromV0(base::DictionaryValue* dict) {
+  std::string cloud_id;
+  if (dict->GetString(config_keys::kCloudId, &cloud_id) && !cloud_id.empty())
+    return;
+  scoped_ptr<base::Value> tmp;
+  if (dict->Remove(config_keys::kDeviceId, &tmp))
+    dict->Set(config_keys::kCloudId, std::move(tmp));
+}
 
 Config::Settings CreateDefaultSettings() {
   Config::Settings result;
@@ -115,10 +128,23 @@ void Config::Transaction::LoadState() {
     return;
 
   auto value = base::JSONReader::Read(json_string);
-  const base::DictionaryValue* dict = nullptr;
+  base::DictionaryValue* dict = nullptr;
   if (!value || !value->GetAsDictionary(&dict)) {
     LOG(ERROR) << "Failed to parse settings.";
     return;
+  }
+
+  int loaded_version = 0;
+  dict->GetInteger(config_keys::kVersion, &loaded_version);
+
+  if (loaded_version != kCurrentConfigVersion) {
+    LOG(INFO) << "State version mismatch. expected: " << kCurrentConfigVersion
+              << ", loaded: " << loaded_version;
+    save_ = true;
+  }
+
+  if (loaded_version == 0) {
+    MigrateFromV0(dict);
   }
 
   std::string tmp;
@@ -184,6 +210,8 @@ void Config::Save() {
     return;
 
   base::DictionaryValue dict;
+  dict.SetInteger(config_keys::kVersion, kCurrentConfigVersion);
+
   dict.SetString(config_keys::kClientId, settings_.client_id);
   dict.SetString(config_keys::kClientSecret, settings_.client_secret);
   dict.SetString(config_keys::kApiKey, settings_.api_key);
