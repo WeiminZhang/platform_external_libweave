@@ -162,6 +162,7 @@ void Manager::PrivetResponseHandler(
 }
 
 void Manager::OnChanged() {
+  VLOG(1) << "Manager::OnChanged";
   if (publisher_)
     publisher_->Update();
 }
