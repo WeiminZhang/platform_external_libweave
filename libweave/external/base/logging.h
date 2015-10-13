@@ -195,7 +195,9 @@ BASE_EXPORT int GetVlogVerbosity();
 // __FILE__).
 
 // Note that |N| is the size *with* the null terminator.
-int GetVlogLevelHelper(const char* file_start, size_t N);
+inline int GetVlogLevelHelper(const char* file_start, size_t N) {
+  return GetVlogVerbosity();
+}
 
 template <size_t N>
 int GetVlogLevel(const char (&file)[N]) {
