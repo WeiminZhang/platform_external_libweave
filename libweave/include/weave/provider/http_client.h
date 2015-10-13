@@ -28,8 +28,8 @@ class HttpClient {
   };
 
   using Headers = std::vector<std::pair<std::string, std::string>>;
-  using SuccessCallback = base::Callback<void(int, const Response&)>;
-  using ErrorCallback = base::Callback<void(int, const Error*)>;
+  using SuccessCallback = base::Callback<void(const Response&)>;
+  using ErrorCallback = base::Callback<void(const Error*)>;
 
   // TODO(vitalybuka): Remove blocking version.
   virtual std::unique_ptr<Response> SendRequestAndBlock(
@@ -39,12 +39,12 @@ class HttpClient {
       const std::string& data,
       ErrorPtr* error) = 0;
 
-  virtual int SendRequest(const std::string& method,
-                          const std::string& url,
-                          const Headers& headers,
-                          const std::string& data,
-                          const SuccessCallback& success_callback,
-                          const ErrorCallback& error_callback) = 0;
+  virtual void SendRequest(const std::string& method,
+                           const std::string& url,
+                           const Headers& headers,
+                           const std::string& data,
+                           const SuccessCallback& success_callback,
+                           const ErrorCallback& error_callback) = 0;
 
  protected:
   virtual ~HttpClient() = default;

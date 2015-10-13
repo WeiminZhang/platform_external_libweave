@@ -29,23 +29,20 @@ class CurlHttpClient : public provider::HttpClient {
                                                 const Headers& headers,
                                                 const std::string& data,
                                                 ErrorPtr* error) override;
-  int SendRequest(const std::string& method,
-                  const std::string& url,
-                  const Headers& headers,
-                  const std::string& data,
-                  const SuccessCallback& success_callback,
-                  const ErrorCallback& error_callback) override;
+  void SendRequest(const std::string& method,
+                   const std::string& url,
+                   const Headers& headers,
+                   const std::string& data,
+                   const SuccessCallback& success_callback,
+                   const ErrorCallback& error_callback) override;
 
  private:
   void RunSuccessCallback(const SuccessCallback& success_callback,
-                          int id,
                           std::unique_ptr<Response> response);
   void RunErrorCallback(const ErrorCallback& error_callback,
-                        int id,
                         ErrorPtr error);
 
   provider::TaskRunner* task_runner_{nullptr};
-  int request_id_ = 0;
 
   base::WeakPtrFactory<CurlHttpClient> weak_ptr_factory_{this};
 };

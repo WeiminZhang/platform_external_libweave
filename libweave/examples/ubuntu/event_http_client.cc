@@ -47,8 +47,8 @@ class EventDeleter {
 
 class EventHttpResponse : public weave::provider::HttpClient::Response {
  public:
-  int GetStatusCode() const { return status; }
-  std::string GetContentType() const { return content_type; }
+  int GetStatusCode() const override { return status; }
+  std::string GetContentType() const override { return content_type; }
   const std::string& GetData() const { return data; }
 
   int status;
@@ -58,7 +58,6 @@ class EventHttpResponse : public weave::provider::HttpClient::Response {
 
 struct EventRequestState {
   TaskRunner* task_runner_;
-  int request_id_;
   std::unique_ptr<evhttp_uri, EventDeleter> http_uri_;
   std::unique_ptr<evhttp_connection, EventDeleter> evcon_;
   HttpClient::SuccessCallback success_callback_;
@@ -75,9 +74,7 @@ void RequestDoneCallback(evhttp_request* req, void* ctx) {
                        "request failed: %s",
                        evutil_socket_error_to_string(err));
     state->task_runner_->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(state->error_callback_, state->request_id_, error.get()),
-        {});
+        FROM_HERE, base::Bind(state->error_callback_, error.get()), {});
     return;
   }
   std::unique_ptr<EventHttpResponse> response{new EventHttpResponse()};
@@ -88,8 +85,7 @@ void RequestDoneCallback(evhttp_request* req, void* ctx) {
   auto n = evbuffer_remove(buffer, &response->data[0], length);
   CHECK_EQ(n, int(length));
   state->task_runner_->PostDelayedTask(
-      FROM_HERE,
-      base::Bind(state->success_callback_, state->request_id_, *response), {});
+      FROM_HERE, base::Bind(state->success_callback_, *response), {});
 }
 
 }  // namespace
@@ -106,14 +102,12 @@ EventHttpClient::SendRequestAndBlock(const std::string& method,
   return nullptr;
 }
 
-int EventHttpClient::SendRequest(const std::string& method,
-                                 const std::string& url,
-                                 const Headers& headers,
-                                 const std::string& data,
-                                 const SuccessCallback& success_callback,
-                                 const ErrorCallback& error_callback) {
-  ++request_id_;
-
+void EventHttpClient::SendRequest(const std::string& method,
+                                  const std::string& url,
+                                  const Headers& headers,
+                                  const std::string& data,
+                                  const SuccessCallback& success_callback,
+                                  const ErrorCallback& error_callback) {
   evhttp_cmd_type method_id;
   CHECK(weave::StringToEnum(method, &method_id));
   std::unique_ptr<evhttp_uri, EventDeleter> http_uri{
@@ -142,9 +136,8 @@ int EventHttpClient::SendRequest(const std::string& method,
   CHECK(conn);
   std::unique_ptr<evhttp_request, EventDeleter> req{evhttp_request_new(
       &RequestDoneCallback,
-      new EventRequestState{task_runner_, request_id_, std::move(http_uri),
-                            std::move(conn), success_callback,
-                            error_callback})};
+      new EventRequestState{task_runner_, std::move(http_uri), std::move(conn),
+                            success_callback, error_callback})};
   CHECK(req);
   auto output_headers = evhttp_request_get_output_headers(req.get());
   evhttp_add_header(output_headers, "Host", host);
@@ -158,15 +151,13 @@ int EventHttpClient::SendRequest(const std::string& method,
   }
   auto res =
       evhttp_make_request(conn.get(), req.release(), method_id, uri.c_str());
-  if (res < 0) {
-    ErrorPtr error;
-    Error::AddToPrintf(&error, FROM_HERE, "http_client", "request_failed",
-                       "request failed: %s %s", method.c_str(), url.c_str());
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(error_callback, request_id_, error.get()), {});
-    return request_id_;
-  }
-  return request_id_;
+  if (res >= 0)
+    return;
+  ErrorPtr error;
+  Error::AddToPrintf(&error, FROM_HERE, "http_client", "request_failed",
+                     "request failed: %s %s", method.c_str(), url.c_str());
+  task_runner_->PostDelayedTask(FROM_HERE,
+                                base::Bind(error_callback, error.get()), {});
 }
 
 }  // namespace examples

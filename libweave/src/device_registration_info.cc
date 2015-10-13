@@ -124,10 +124,32 @@ class RequestSender final {
                                            data_, error);
   }
 
-  int Send(const HttpClient::SuccessCallback& success_callback,
-           const HttpClient::ErrorCallback& error_callback) {
-    return transport_->SendRequest(method_, url_, GetFullHeaders(), data_,
-                                   success_callback, error_callback);
+  void Send(const HttpClient::SuccessCallback& success_callback,
+            const HttpClient::ErrorCallback& error_callback) {
+    static int debug_id = 0;
+    ++debug_id;
+    VLOG(1) << "Sending request. id:" << debug_id << " method:" << method_
+            << " url:" << url_;
+    VLOG(2) << "Request data: " << data_;
+    auto on_success = [](int debug_id,
+                         const HttpClient::SuccessCallback& success_callback,
+                         const HttpClient::Response& response) {
+      VLOG(1) << "Request succeeded. id:" << debug_id << " status:" <<
+      response.GetStatusCode();
+      VLOG(2) << "Response data: " << response.GetData();
+      success_callback.Run(response);
+    };
+    auto on_error = [](int debug_id,
+                       const HttpClient::ErrorCallback& error_callback,
+                       const Error* error) {
+      VLOG(1) << "Request failed, id=" << debug_id
+              << ", reason: " << error->GetCode()
+              << ", message: " << error->GetMessage();
+      error_callback.Run(error);
+    };
+    transport_->SendRequest(method_, url_, GetFullHeaders(), data_,
+                            base::Bind(on_success, debug_id, success_callback),
+                            base::Bind(on_error, debug_id, error_callback));
   }
 
   void SetAccessToken(const std::string& access_token) {
@@ -372,23 +394,20 @@ void DeviceRegistrationInfo::RefreshAccessToken(
       {"client_secret", GetSettings().client_secret},
       {"grant_type", "refresh_token"},
   });
-  int request_id = sender.Send(
-      base::Bind(&DeviceRegistrationInfo::OnRefreshAccessTokenSuccess,
-                 weak_factory_.GetWeakPtr(), shared_success_callback,
-                 shared_error_callback),
-      base::Bind(&DeviceRegistrationInfo::OnRefreshAccessTokenError,
-                 weak_factory_.GetWeakPtr(), shared_success_callback,
-                 shared_error_callback));
-  VLOG(1) << "Refresh access token request dispatched. Request ID = "
-          << request_id;
+  sender.Send(base::Bind(&DeviceRegistrationInfo::OnRefreshAccessTokenSuccess,
+                         weak_factory_.GetWeakPtr(), shared_success_callback,
+                         shared_error_callback),
+              base::Bind(&DeviceRegistrationInfo::OnRefreshAccessTokenError,
+                         weak_factory_.GetWeakPtr(), shared_success_callback,
+                         shared_error_callback));
+  VLOG(1) << "Refresh access token request dispatched";
 }
 
 void DeviceRegistrationInfo::OnRefreshAccessTokenSuccess(
     const std::shared_ptr<base::Closure>& success_callback,
     const std::shared_ptr<ErrorCallback>& error_callback,
-    int id,
     const HttpClient::Response& response) {
-  VLOG(1) << "Refresh access token request with ID " << id << " completed";
+  VLOG(1) << "Refresh access token request completed";
   oauth2_backoff_entry_->InformOfRequest(true);
   ErrorPtr error;
   auto json = ParseOAuthResponse(response, &error);
@@ -424,9 +443,8 @@ void DeviceRegistrationInfo::OnRefreshAccessTokenSuccess(
 void DeviceRegistrationInfo::OnRefreshAccessTokenError(
     const std::shared_ptr<base::Closure>& success_callback,
     const std::shared_ptr<ErrorCallback>& error_callback,
-    int id,
     const Error* error) {
-  VLOG(1) << "Refresh access token request with ID " << id << " failed";
+  VLOG(1) << "Refresh access token failed";
   oauth2_backoff_entry_->InformOfRequest(false);
   RefreshAccessToken(*success_callback, *error_callback);
 }
@@ -662,8 +680,6 @@ void DeviceRegistrationInfo::SendCloudRequest(
   // forget about 5xx when fetching new access token).
   // TODO(antonm): Add support for device removal.
 
-  VLOG(1) << "Sending cloud request '" << data->method << "' to '" << data->url
-          << "' with request body '" << data->body << "'";
   ErrorPtr error;
   if (!VerifyRegistrationCredentials(&error)) {
     data->error_callback.Run(error.get());
@@ -684,21 +700,16 @@ void DeviceRegistrationInfo::SendCloudRequest(
   RequestSender sender{data->method, data->url, http_client_};
   sender.SetData(data->body, http::kJsonUtf8);
   sender.SetAccessToken(access_token_);
-  int request_id =
-      sender.Send(base::Bind(&DeviceRegistrationInfo::OnCloudRequestSuccess,
-                             AsWeakPtr(), data),
-                  base::Bind(&DeviceRegistrationInfo::OnCloudRequestError,
-                             AsWeakPtr(), data));
-  VLOG(1) << "Cloud request with ID " << request_id << " successfully sent";
+  sender.Send(base::Bind(&DeviceRegistrationInfo::OnCloudRequestSuccess,
+                         AsWeakPtr(), data),
+              base::Bind(&DeviceRegistrationInfo::OnCloudRequestError,
+                         AsWeakPtr(), data));
 }
 
 void DeviceRegistrationInfo::OnCloudRequestSuccess(
     const std::shared_ptr<const CloudRequestData>& data,
-    int request_id,
     const HttpClient::Response& response) {
   int status_code = response.GetStatusCode();
-  VLOG(1) << "Response for cloud request with ID " << request_id
-          << " received with status code " << status_code;
   if (status_code == http::kDenied) {
     cloud_backoff_entry_->InformOfRequest(true);
     RefreshAccessToken(
@@ -746,9 +757,7 @@ void DeviceRegistrationInfo::OnCloudRequestSuccess(
 
 void DeviceRegistrationInfo::OnCloudRequestError(
     const std::shared_ptr<const CloudRequestData>& data,
-    int request_id,
     const Error* error) {
-  VLOG(1) << "Cloud request with ID " << request_id << " failed";
   RetryCloudRequest(data);
 }
 

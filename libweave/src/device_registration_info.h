@@ -155,12 +155,10 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void OnRefreshAccessTokenSuccess(
       const std::shared_ptr<base::Closure>& success_callback,
       const std::shared_ptr<ErrorCallback>& error_callback,
-      int id,
       const provider::HttpClient::Response& response);
   void OnRefreshAccessTokenError(
       const std::shared_ptr<base::Closure>& success_callback,
       const std::shared_ptr<ErrorCallback>& error_callback,
-      int id,
       const Error* error);
 
   // Parse the OAuth response, and sets registration status to
@@ -195,10 +193,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void SendCloudRequest(const std::shared_ptr<const CloudRequestData>& data);
   void OnCloudRequestSuccess(
       const std::shared_ptr<const CloudRequestData>& data,
-      int request_id,
       const provider::HttpClient::Response& response);
   void OnCloudRequestError(const std::shared_ptr<const CloudRequestData>& data,
-                           int request_id,
                            const Error* error);
   void RetryCloudRequest(const std::shared_ptr<const CloudRequestData>& data);
   void OnAccessTokenRefreshed(
