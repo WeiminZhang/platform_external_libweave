@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "third_party/chromium/crypto/p224.h"
+
 #include <stdio.h>
 #include <string.h>
 
 #include <gtest/gtest.h>
 
-#include "external/crypto/p224.h"
-
-namespace weave {
 namespace crypto {
 
 using p224::Point;
@@ -823,4 +822,3 @@ TEST(P224, Infinity) {
 }
 
 }  // namespace crypto
-}  // namespace weave
