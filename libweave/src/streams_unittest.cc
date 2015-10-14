@@ -23,13 +23,14 @@ TEST(Stream, CopyStreams) {
 
   bool done = false;
 
-  auto on_success = base::Bind([&test_data, &done, &destination](size_t size) {
-    done = true;
-    EXPECT_EQ(test_data, destination.GetData());
-  });
-  auto on_error = base::Bind([](ErrorPtr error) { ADD_FAILURE(); });
+  auto callback = base::Bind(
+      [&test_data, &done, &destination](size_t size, ErrorPtr error) {
+        EXPECT_FALSE(error);
+        done = true;
+        EXPECT_EQ(test_data, destination.GetData());
+      });
   StreamCopier copier{&source, &destination};
-  copier.Copy(on_success, on_error);
+  copier.Copy(callback);
 
   task_runner.Run(test_data.size());
   EXPECT_TRUE(done);

@@ -121,8 +121,7 @@ class Device {
   // Registers the device.
   // This is testing method and should not be used by applications.
   virtual void Register(const std::string& ticket_id,
-                        const SuccessCallback& success_callback,
-                        const ErrorCallback& error_callback) = 0;
+                        const DoneCallback& callback) = 0;
 
   // Handler should display pin code to the user.
   using PairingBeginCallback =

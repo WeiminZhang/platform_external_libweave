@@ -29,8 +29,7 @@ class NetlinkNetworkImpl : public weave::provider::Network {
   State GetConnectionState() const override;
   void OpenSslSocket(const std::string& host,
                      uint16_t port,
-                     const OpenSslSocketSuccessCallback& success_callback,
-                     const ErrorCallback& error_callback) override;
+                     const OpenSslSocketCallback& callback) override;
 
  private:
   class Deleter {

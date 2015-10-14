@@ -198,23 +198,20 @@ void ReturnError(const Error& error,
 }
 
 void OnCommandRequestSucceeded(const PrivetHandler::RequestCallback& callback,
-                               const base::DictionaryValue& output) {
-  callback.Run(http::kOk, output);
-}
+                               const base::DictionaryValue& output,
+                               ErrorPtr error) {
+  if (!error)
+    return callback.Run(http::kOk, output);
 
-void OnCommandRequestFailed(const PrivetHandler::RequestCallback& callback,
-                            ErrorPtr error) {
   if (error->HasError("gcd", "unknown_command")) {
-    ErrorPtr new_error = error->Clone();
-    Error::AddTo(&new_error, FROM_HERE, errors::kDomain, errors::kNotFound,
+    Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kNotFound,
                  "Unknown command ID");
-    return ReturnError(*new_error, callback);
+    return ReturnError(*error, callback);
   }
   if (error->HasError("gcd", "access_denied")) {
-    ErrorPtr new_error = error->Clone();
-    Error::AddTo(&new_error, FROM_HERE, errors::kDomain, errors::kAccessDenied,
+    Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kAccessDenied,
                  error->GetMessage());
-    return ReturnError(*new_error, callback);
+    return ReturnError(*error, callback);
   }
   return ReturnError(*error, callback);
 }
@@ -768,8 +765,7 @@ void PrivetHandler::HandleCommandsExecute(const base::DictionaryValue& input,
                                           const UserInfo& user_info,
                                           const RequestCallback& callback) {
   cloud_->AddCommand(input, user_info,
-                     base::Bind(&OnCommandRequestSucceeded, callback),
-                     base::Bind(&OnCommandRequestFailed, callback));
+                     base::Bind(&OnCommandRequestSucceeded, callback));
 }
 
 void PrivetHandler::HandleCommandsStatus(const base::DictionaryValue& input,
@@ -784,16 +780,14 @@ void PrivetHandler::HandleCommandsStatus(const base::DictionaryValue& input,
     return ReturnError(*error, callback);
   }
   cloud_->GetCommand(id, user_info,
-                     base::Bind(&OnCommandRequestSucceeded, callback),
-                     base::Bind(&OnCommandRequestFailed, callback));
+                     base::Bind(&OnCommandRequestSucceeded, callback));
 }
 
 void PrivetHandler::HandleCommandsList(const base::DictionaryValue& input,
                                        const UserInfo& user_info,
                                        const RequestCallback& callback) {
   cloud_->ListCommands(user_info,
-                       base::Bind(&OnCommandRequestSucceeded, callback),
-                       base::Bind(&OnCommandRequestFailed, callback));
+                       base::Bind(&OnCommandRequestSucceeded, callback));
 }
 
 void PrivetHandler::HandleCommandsCancel(const base::DictionaryValue& input,
@@ -808,8 +802,7 @@ void PrivetHandler::HandleCommandsCancel(const base::DictionaryValue& input,
     return ReturnError(*error, callback);
   }
   cloud_->CancelCommand(id, user_info,
-                        base::Bind(&OnCommandRequestSucceeded, callback),
-                        base::Bind(&OnCommandRequestFailed, callback));
+                        base::Bind(&OnCommandRequestSucceeded, callback));
 }
 
 }  // namespace privet

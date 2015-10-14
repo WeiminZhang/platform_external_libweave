@@ -649,8 +649,11 @@ TEST_F(PrivetHandlerSetupTest, CommandsExecute) {
   base::DictionaryValue command;
   LoadTestJson(kInput, &command);
   LoadTestJson("{'id':'5'}", &command);
-  EXPECT_CALL(cloud_, AddCommand(_, _, _, _))
-      .WillOnce(RunCallback<2, const base::DictionaryValue&>(command));
+  EXPECT_CALL(cloud_, AddCommand(_, _, _))
+      .WillOnce(WithArgs<2>(Invoke(
+          [&command](const CloudDelegate::CommandDoneCallback& callback) {
+            callback.Run(command, nullptr);
+          })));
 
   EXPECT_PRED2(IsEqualJson, "{'name':'test', 'id':'5'}",
                HandleRequest("/privet/v3/commands/execute", kInput));
@@ -661,18 +664,22 @@ TEST_F(PrivetHandlerSetupTest, CommandsStatus) {
   base::DictionaryValue command;
   LoadTestJson(kInput, &command);
   LoadTestJson("{'name':'test'}", &command);
-  EXPECT_CALL(cloud_, GetCommand(_, _, _, _))
-      .WillOnce(RunCallback<2, const base::DictionaryValue&>(command));
+  EXPECT_CALL(cloud_, GetCommand(_, _, _))
+      .WillOnce(WithArgs<2>(Invoke(
+          [&command](const CloudDelegate::CommandDoneCallback& callback) {
+            callback.Run(command, nullptr);
+          })));
 
   EXPECT_PRED2(IsEqualJson, "{'name':'test', 'id':'5'}",
                HandleRequest("/privet/v3/commands/status", kInput));
 
   ErrorPtr error;
   Error::AddTo(&error, FROM_HERE, errors::kDomain, "notFound", "");
-  EXPECT_CALL(cloud_, GetCommand(_, _, _, _))
-      .WillOnce(WithArgs<3>(Invoke([&error](const ErrorCallback& callback) {
-        callback.Run(std::move(error));
-      })));
+  EXPECT_CALL(cloud_, GetCommand(_, _, _))
+      .WillOnce(WithArgs<2>(
+          Invoke([&error](const CloudDelegate::CommandDoneCallback& callback) {
+            callback.Run({}, std::move(error));
+          })));
 
   EXPECT_PRED2(IsEqualError, CodeWithReason(404, "notFound"),
                HandleRequest("/privet/v3/commands/status", "{'id': '15'}"));
@@ -682,18 +689,22 @@ TEST_F(PrivetHandlerSetupTest, CommandsCancel) {
   const char kExpected[] = "{'id': '5', 'name':'test', 'state':'cancelled'}";
   base::DictionaryValue command;
   LoadTestJson(kExpected, &command);
-  EXPECT_CALL(cloud_, CancelCommand(_, _, _, _))
-      .WillOnce(RunCallback<2, const base::DictionaryValue&>(command));
+  EXPECT_CALL(cloud_, CancelCommand(_, _, _))
+      .WillOnce(WithArgs<2>(Invoke(
+          [&command](const CloudDelegate::CommandDoneCallback& callback) {
+            callback.Run(command, nullptr);
+          })));
 
   EXPECT_PRED2(IsEqualJson, kExpected,
                HandleRequest("/privet/v3/commands/cancel", "{'id': '8'}"));
 
   ErrorPtr error;
   Error::AddTo(&error, FROM_HERE, errors::kDomain, "notFound", "");
-  EXPECT_CALL(cloud_, CancelCommand(_, _, _, _))
-      .WillOnce(WithArgs<3>(Invoke([&error](const ErrorCallback& callback) {
-        callback.Run(std::move(error));
-      })));
+  EXPECT_CALL(cloud_, CancelCommand(_, _, _))
+      .WillOnce(WithArgs<2>(
+          Invoke([&error](const CloudDelegate::CommandDoneCallback& callback) {
+            callback.Run({}, std::move(error));
+          })));
 
   EXPECT_PRED2(IsEqualError, CodeWithReason(404, "notFound"),
                HandleRequest("/privet/v3/commands/cancel", "{'id': '11'}"));
@@ -709,8 +720,11 @@ TEST_F(PrivetHandlerSetupTest, CommandsList) {
   base::DictionaryValue commands;
   LoadTestJson(kExpected, &commands);
 
-  EXPECT_CALL(cloud_, ListCommands(_, _, _))
-      .WillOnce(RunCallback<1, const base::DictionaryValue&>(commands));
+  EXPECT_CALL(cloud_, ListCommands(_, _))
+      .WillOnce(WithArgs<1>(Invoke(
+          [&commands](const CloudDelegate::CommandDoneCallback& callback) {
+            callback.Run(commands, nullptr);
+          })));
 
   EXPECT_PRED2(IsEqualJson, kExpected,
                HandleRequest("/privet/v3/commands/list", "{}"));

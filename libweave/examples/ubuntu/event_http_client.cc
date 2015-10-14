@@ -60,8 +60,7 @@ struct EventRequestState {
   TaskRunner* task_runner_;
   std::unique_ptr<evhttp_uri, EventDeleter> http_uri_;
   std::unique_ptr<evhttp_connection, EventDeleter> evcon_;
-  HttpClient::SuccessCallback success_callback_;
-  ErrorCallback error_callback_;
+  HttpClient::SendRequestCallback callback_;
 };
 
 void RequestDoneCallback(evhttp_request* req, void* ctx) {
@@ -74,7 +73,7 @@ void RequestDoneCallback(evhttp_request* req, void* ctx) {
                        "request failed: %s",
                        evutil_socket_error_to_string(err));
     state->task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(state->error_callback_, base::Passed(&error)),
+        FROM_HERE, base::Bind(state->callback_, nullptr, base::Passed(&error)),
         {});
     return;
   }
@@ -86,7 +85,8 @@ void RequestDoneCallback(evhttp_request* req, void* ctx) {
   auto n = evbuffer_remove(buffer, &response->data[0], length);
   CHECK_EQ(n, int(length));
   state->task_runner_->PostDelayedTask(
-      FROM_HERE, base::Bind(state->success_callback_, *response), {});
+      FROM_HERE, base::Bind(state->callback_, base::Passed(&response), nullptr),
+      {});
 }
 
 }  // namespace
@@ -98,8 +98,7 @@ void EventHttpClient::SendRequest(Method method,
                                   const std::string& url,
                                   const Headers& headers,
                                   const std::string& data,
-                                  const SuccessCallback& success_callback,
-                                  const ErrorCallback& error_callback) {
+                                  const SendRequestCallback& callback) {
   evhttp_cmd_type method_id;
   CHECK(weave::StringToEnum(weave::EnumToString(method), &method_id));
   std::unique_ptr<evhttp_uri, EventDeleter> http_uri{
@@ -129,7 +128,7 @@ void EventHttpClient::SendRequest(Method method,
   std::unique_ptr<evhttp_request, EventDeleter> req{evhttp_request_new(
       &RequestDoneCallback,
       new EventRequestState{task_runner_, std::move(http_uri), std::move(conn),
-                            success_callback, error_callback})};
+                            callback})};
   CHECK(req);
   auto output_headers = evhttp_request_get_output_headers(req.get());
   evhttp_add_header(output_headers, "Host", host);
@@ -150,7 +149,7 @@ void EventHttpClient::SendRequest(Method method,
                      "request failed: %s %s", EnumToString(method).c_str(),
                      url.c_str());
   task_runner_->PostDelayedTask(
-      FROM_HERE, base::Bind(error_callback, base::Passed(&error)), {});
+      FROM_HERE, base::Bind(callback, nullptr, base::Passed(&error)), {});
 }
 
 }  // namespace examples

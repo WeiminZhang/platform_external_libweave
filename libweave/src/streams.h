@@ -21,13 +21,11 @@ class MemoryStream : public InputStream, public OutputStream {
 
   void Read(void* buffer,
             size_t size_to_read,
-            const ReadSuccessCallback& success_callback,
-            const ErrorCallback& error_callback) override;
+            const ReadCallback& callback) override;
 
   void Write(const void* buffer,
              size_t size_to_write,
-             const SuccessCallback& success_callback,
-             const ErrorCallback& error_callback) override;
+             const WriteCallback& callback) override;
 
   const std::vector<uint8_t>& GetData() const { return data_; }
 
@@ -41,13 +39,13 @@ class StreamCopier {
  public:
   StreamCopier(InputStream* source, OutputStream* destination);
 
-  void Copy(const InputStream::ReadSuccessCallback& success_callback,
-            const ErrorCallback& error_callback);
+  void Copy(const InputStream::ReadCallback& callback);
 
  private:
-  void OnSuccessRead(const InputStream::ReadSuccessCallback& success_callback,
-                     const ErrorCallback& error_callback,
-                     size_t size);
+  void OnWriteDone(const InputStream::ReadCallback& callback, ErrorPtr error);
+  void OnReadDone(const InputStream::ReadCallback& callback,
+                  size_t size,
+                  ErrorPtr error);
 
   InputStream* source_{nullptr};
   OutputStream* destination_{nullptr};

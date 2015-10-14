@@ -140,9 +140,9 @@ class WeaveTest : public ::testing::Test {
   void ExpectRequest(HttpClient::Method method,
                      const std::string& url,
                      const std::string& json_response) {
-    EXPECT_CALL(http_client_, SendRequest(method, url, _, _, _, _))
+    EXPECT_CALL(http_client_, SendRequest(method, url, _, _, _))
         .WillOnce(WithArgs<4>(Invoke([json_response](
-            const HttpClient::SuccessCallback& callback) {
+            const HttpClient::SendRequestCallback& callback) {
           std::unique_ptr<provider::test::MockHttpClientResponse> response{
               new StrictMock<provider::test::MockHttpClientResponse>};
           EXPECT_CALL(*response, GetStatusCode())
@@ -154,7 +154,7 @@ class WeaveTest : public ::testing::Test {
           EXPECT_CALL(*response, GetData())
               .Times(AtLeast(1))
               .WillRepeatedly(Return(json_response));
-          callback.Run(*response);
+          callback.Run(std::move(response), nullptr);
         })));
   }
 
@@ -306,7 +306,7 @@ TEST_F(WeaveBasicTest, Start) {
 }
 
 TEST_F(WeaveBasicTest, Register) {
-  EXPECT_CALL(network_, OpenSslSocket(_, _, _, _)).WillRepeatedly(Return());
+  EXPECT_CALL(network_, OpenSslSocket(_, _, _)).WillRepeatedly(Return());
   StartDevice();
 
   auto draft = CreateDictionaryValue(kDeviceResource);
@@ -333,12 +333,12 @@ TEST_F(WeaveBasicTest, Register) {
   InitDnsSdPublishing(true, "DB");
 
   bool done = false;
-  device_->Register("TICKET_ID", base::Bind([this, &done]() {
+  device_->Register("TICKET_ID", base::Bind([this, &done](ErrorPtr error) {
+                      EXPECT_FALSE(error);
                       done = true;
                       task_runner_.Break();
                       EXPECT_EQ("CLOUD_ID", device_->GetSettings().cloud_id);
-                    }),
-                    base::Bind([](ErrorPtr error) { ADD_FAILURE(); }));
+                    }));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }

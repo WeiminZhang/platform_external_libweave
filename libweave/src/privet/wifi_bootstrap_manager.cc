@@ -96,21 +96,12 @@ void WifiBootstrapManager::StartConnecting(const std::string& ssid,
           << ", pass=" << passphrase << ").";
   UpdateState(State::kConnecting);
   task_runner_->PostDelayedTask(
-      FROM_HERE, base::Bind(&WifiBootstrapManager::OnConnectError,
-                            tasks_weak_factory_.GetWeakPtr(), nullptr),
+      FROM_HERE, base::Bind(&WifiBootstrapManager::OnConnectTimeout,
+                            tasks_weak_factory_.GetWeakPtr()),
       base::TimeDelta::FromMinutes(3));
   wifi_->Connect(ssid, passphrase,
-                 base::Bind(&WifiBootstrapManager::OnConnectSuccess,
-                            tasks_weak_factory_.GetWeakPtr(), ssid),
-                 base::Bind(&WifiBootstrapManager::OnConnectError,
-                            tasks_weak_factory_.GetWeakPtr()));
-}
-
-void WifiBootstrapManager::OnConnectError(ErrorPtr error) {
-  Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
-               "Failed to connect to provided network");
-  setup_state_ = SetupState{std::move(error)};
-  StartBootstrapping();
+                 base::Bind(&WifiBootstrapManager::OnConnectDone,
+                            tasks_weak_factory_.GetWeakPtr(), ssid));
 }
 
 void WifiBootstrapManager::EndConnecting() {}
@@ -203,13 +194,28 @@ std::set<WifiType> WifiBootstrapManager::GetTypes() const {
   return {WifiType::kWifi24};
 }
 
-void WifiBootstrapManager::OnConnectSuccess(const std::string& ssid) {
+void WifiBootstrapManager::OnConnectDone(const std::string& ssid,
+                                         ErrorPtr error) {
+  if (error) {
+    Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+                 "Failed to connect to provided network");
+    setup_state_ = SetupState{std::move(error)};
+    return StartBootstrapping();
+  }
   VLOG(1) << "Wifi was connected successfully";
   Config::Transaction change{config_};
   change.set_last_configured_ssid(ssid);
   change.Commit();
   setup_state_ = SetupState{SetupState::kSuccess};
   StartMonitoring();
+}
+
+void WifiBootstrapManager::OnConnectTimeout() {
+  ErrorPtr error;
+  Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+               "Timeout connecting to provided network");
+  setup_state_ = SetupState{std::move(error)};
+  return StartBootstrapping();
 }
 
 void WifiBootstrapManager::OnBootstrapTimeout() {
