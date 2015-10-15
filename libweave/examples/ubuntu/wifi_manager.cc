@@ -42,9 +42,6 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
 WifiImpl::WifiImpl(provider::TaskRunner* task_runner,
                          bool force_bootstrapping)
     : force_bootstrapping_{force_bootstrapping}, task_runner_{task_runner} {
-  SSL_load_error_strings();
-  SSL_library_init();
-
   StopAccessPoint();
 }
 WifiImpl::~WifiImpl() {

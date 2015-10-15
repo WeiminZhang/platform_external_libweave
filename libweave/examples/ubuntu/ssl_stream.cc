@@ -10,8 +10,17 @@
 namespace weave {
 namespace examples {
 
+namespace {
+int GetSSLError(const SSL* ssl, int ret) {
+  SSL_load_error_strings();
+  return SSL_get_error(ssl, ret);
+}
+}  // namespace
+
 SSLStream::SSLStream(provider::TaskRunner* task_runner)
-    : task_runner_{task_runner} {}
+    : task_runner_{task_runner} {
+  SSL_library_init();
+}
 
 SSLStream::~SSLStream() {
   CancelPendingOperations();
@@ -34,7 +43,7 @@ void SSLStream::Read(void* buffer,
     return;
   }
 
-  int err = SSL_get_error(ssl_.get(), res);
+  int err = GetSSLError(ssl_.get(), res);
 
   if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
     task_runner_->PostDelayedTask(
@@ -79,7 +88,7 @@ void SSLStream::Write(const void* buffer,
     return;
   }
 
-  int err = SSL_get_error(ssl_.get(), res);
+  int err = GetSSLError(ssl_.get(), res);
 
   if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
     task_runner_->PostDelayedTask(
@@ -129,7 +138,7 @@ bool SSLStream::Init(const std::string& host, uint16_t port) {
       return true;
     }
 
-    res = SSL_get_error(ssl_.get(), res);
+    res = GetSSLError(ssl_.get(), res);
 
     if (res != SSL_ERROR_WANT_READ || res != SSL_ERROR_WANT_WRITE) {
       return false;
