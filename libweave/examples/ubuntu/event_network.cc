@@ -19,6 +19,7 @@ namespace examples {
 namespace {
 const char kNetworkProbeHostname[] = "talk.google.com";
 const int kNetworkProbePort = 5223;
+const int kNetworkProbeTimeoutS = 2;
 }  // namespace
 
 void EventNetworkImpl::Deleter::operator()(evdns_base* dns_base) {
@@ -43,6 +44,8 @@ void EventNetworkImpl::UpdateNetworkState() {
   std::unique_ptr<bufferevent, Deleter> bev{
       bufferevent_socket_new(task_runner_->GetEventBase(), -1,
                              BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS)};
+  timeval timeout{kNetworkProbeTimeoutS, 0};
+  bufferevent_set_timeouts(bev.get(), &timeout, &timeout);
   bufferevent_setcb(
       bev.get(), nullptr, nullptr,
       [](struct bufferevent* buf, short events, void* ctx) {
