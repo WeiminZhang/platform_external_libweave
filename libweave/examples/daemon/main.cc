@@ -31,7 +31,8 @@ void ShowUsage(const std::string& name) {
              << "\t-b,--bootstrapping           Force WiFi bootstrapping\n"
              << "\t-d,--disable_security        Disable privet security\n"
              << "\t--registration_ticket=TICKET Register device with the "
-                                                "given ticket\n";
+                "given ticket\n"
+             << "\t--disable_privet             Disable local privet\n";
 }
 
 class CommandHandler {
@@ -234,6 +235,7 @@ void OnRegisterDeviceDone(weave::Device* device, weave::ErrorPtr error) {
 int main(int argc, char** argv) {
   bool force_bootstrapping = false;
   bool disable_security = false;
+  bool disable_privet = false;
   std::string registration_ticket;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -244,6 +246,8 @@ int main(int argc, char** argv) {
       force_bootstrapping = true;
     } else if (arg == "-d" || arg == "--disable_security") {
       disable_security = true;
+    } else if (arg == "--disable_privet") {
+      disable_privet = true;
     } else if (arg.find("--registration_ticket") != std::string::npos) {
       auto pos = arg.find("=");
       if (pos == std::string::npos) {
@@ -268,16 +272,23 @@ int main(int argc, char** argv) {
   weave::examples::EventTaskRunner task_runner;
   weave::examples::CurlHttpClient http_client{&task_runner};
   weave::examples::EventNetworkImpl network{&task_runner};
-  weave::examples::WifiImpl wifi{&task_runner, force_bootstrapping};
-  weave::examples::AvahiClient dns_sd;
-  weave::examples::HttpServerImpl http_server{&task_runner};
   weave::examples::BluetoothImpl bluetooth;
 
-  auto device = weave::Device::Create(
-      &config_store, &task_runner, &http_client, &network, &dns_sd,
-      &http_server,
-      weave::examples::WifiImpl::HasWifiCapability() ? &wifi : nullptr,
-      &bluetooth);
+  std::unique_ptr<weave::Device> device;
+  if (disable_privet) {
+    device =
+        weave::Device::Create(&config_store, &task_runner, &http_client,
+                              &network, nullptr, nullptr, nullptr, &bluetooth);
+  } else {
+    weave::examples::AvahiClient dns_sd;
+    weave::examples::HttpServerImpl http_server{&task_runner};
+    weave::examples::WifiImpl wifi{&task_runner, force_bootstrapping};
+    device = weave::Device::Create(
+        &config_store, &task_runner, &http_client, &network, &dns_sd,
+        &http_server,
+        weave::examples::WifiImpl::HasWifiCapability() ? &wifi : nullptr,
+        &bluetooth);
+  }
 
   if (!registration_ticket.empty()) {
     device->Register(registration_ticket,
