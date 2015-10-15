@@ -91,7 +91,7 @@ Everywhere below Debug can be replaced with Release.
 
 Generate ninja build files:
 
-  gyp -I libweave_common.gypi --toplevel-dir=. \
+  gyp -I libweave_common.gypi --toplevel-dir=. --depth=. \
       -f ninja libweave_standalone.gyp
 
 Build library with tests:
