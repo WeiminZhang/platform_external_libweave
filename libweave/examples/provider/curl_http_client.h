@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_EXAMPLES_UBUNTU_CURL_HTTP_CLIENT_H_
-#define LIBWEAVE_EXAMPLES_UBUNTU_CURL_HTTP_CLIENT_H_
+#ifndef LIBWEAVE_EXAMPLES_PROVIDER_CURL_HTTP_CLIENT_H_
+#define LIBWEAVE_EXAMPLES_PROVIDER_CURL_HTTP_CLIENT_H_
 
 #include <string>
 
@@ -39,4 +39,4 @@ class CurlHttpClient : public provider::HttpClient {
 }  // namespace examples
 }  // namespace weave
 
-#endif  // LIBWEAVE_EXAMPLES_UBUNTU_CURL_HTTP_CLIENT_H_
+#endif  // LIBWEAVE_EXAMPLES_PROVIDER_CURL_HTTP_CLIENT_H_

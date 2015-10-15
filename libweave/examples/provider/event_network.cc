@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "examples/ubuntu/event_network.h"
+#include "examples/provider/event_network.h"
 
 #include <weave/enum_to_string.h>
 
@@ -10,8 +10,8 @@
 #include <event2/dns.h>
 #include <event2/bufferevent.h>
 
-#include "examples/ubuntu/event_task_runner.h"
-#include "examples/ubuntu/ssl_stream.h"
+#include "examples/provider/event_task_runner.h"
+#include "examples/provider/ssl_stream.h"
 
 namespace weave {
 namespace examples {

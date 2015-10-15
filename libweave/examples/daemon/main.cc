@@ -9,14 +9,14 @@
 #include <weave/device.h>
 #include <weave/error.h>
 
-#include "examples/ubuntu/avahi_client.h"
-#include "examples/ubuntu/bluez_client.h"
-#include "examples/ubuntu/curl_http_client.h"
-#include "examples/ubuntu/event_http_server.h"
-#include "examples/ubuntu/event_network.h"
-#include "examples/ubuntu/event_task_runner.h"
-#include "examples/ubuntu/file_config_store.h"
-#include "examples/ubuntu/wifi_manager.h"
+#include "examples/provider/avahi_client.h"
+#include "examples/provider/bluez_client.h"
+#include "examples/provider/curl_http_client.h"
+#include "examples/provider/event_http_server.h"
+#include "examples/provider/event_network.h"
+#include "examples/provider/event_task_runner.h"
+#include "examples/provider/file_config_store.h"
+#include "examples/provider/wifi_manager.h"
 
 namespace {
 

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_EXAMPLES_UBUNTU_SSL_STREAM_H_
-#define LIBWEAVE_EXAMPLES_UBUNTU_SSL_STREAM_H_
+#ifndef LIBWEAVE_EXAMPLES_PROVIDER_SSL_STREAM_H_
+#define LIBWEAVE_EXAMPLES_PROVIDER_SSL_STREAM_H_
 
 #include <openssl/ssl.h>
 
@@ -49,4 +49,4 @@ class SSLStream : public Stream {
 }  // namespace examples
 }  // namespace weave
 
-#endif  // LIBWEAVE_EXAMPLES_UBUNTU_SSL_STREAM_H_
+#endif  // LIBWEAVE_EXAMPLES_PROVIDER_SSL_STREAM_H_
