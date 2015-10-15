@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "examples/ubuntu/network_manager.h"
+#include "examples/ubuntu/wifi_manager.h"
 
 #include <arpa/inet.h>
 #include <linux/wireless.h>
@@ -39,25 +39,19 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
 
 }  // namespace
 
-NetworkImpl::NetworkImpl(provider::TaskRunner* task_runner,
+WifiImpl::WifiImpl(provider::TaskRunner* task_runner,
                          bool force_bootstrapping)
     : force_bootstrapping_{force_bootstrapping}, task_runner_{task_runner} {
   SSL_load_error_strings();
   SSL_library_init();
 
   StopAccessPoint();
-  UpdateNetworkState();
 }
-NetworkImpl::~NetworkImpl() {
+WifiImpl::~WifiImpl() {
   StopAccessPoint();
 }
 
-void NetworkImpl::AddConnectionChangedCallback(
-    const ConnectionChangedCallback& callback) {
-  callbacks_.push_back(callback);
-}
-
-void NetworkImpl::TryToConnect(const std::string& ssid,
+void WifiImpl::TryToConnect(const std::string& ssid,
                                const std::string& passphrase,
                                int pid,
                                base::Time until,
@@ -100,12 +94,12 @@ void NetworkImpl::TryToConnect(const std::string& ssid,
 
   task_runner_->PostDelayedTask(
       FROM_HERE,
-      base::Bind(&NetworkImpl::TryToConnect, weak_ptr_factory_.GetWeakPtr(),
+      base::Bind(&WifiImpl::TryToConnect, weak_ptr_factory_.GetWeakPtr(),
                  ssid, passphrase, pid, until, callback),
       base::TimeDelta::FromSeconds(1));
 }
 
-void NetworkImpl::Connect(const std::string& ssid,
+void WifiImpl::Connect(const std::string& ssid,
                           const std::string& passphrase,
                           const DoneCallback& callback) {
   force_bootstrapping_ = false;
@@ -122,34 +116,9 @@ void NetworkImpl::Connect(const std::string& ssid,
                base::Time::Now() + base::TimeDelta::FromMinutes(1), callback);
 }
 
-void NetworkImpl::UpdateNetworkState() {
-  network_state_ = Network::State::kOffline;
-  if (force_bootstrapping_)
-    return;
-  if (std::system("ping talk.google.com -c 1") == 0)
-    network_state_ = State::kOnline;
-  else if (std::system("nmcli dev"))
-    network_state_ = State::kError;
-  else if (std::system("nmcli dev | grep connecting") == 0)
-    network_state_ = State::kConnecting;
-
-  task_runner_->PostDelayedTask(FROM_HERE,
-                                base::Bind(&NetworkImpl::UpdateNetworkState,
-                                           weak_ptr_factory_.GetWeakPtr()),
-                                base::TimeDelta::FromSeconds(10));
-  for (const auto& cb : callbacks_)
-    cb.Run();
-}
-
-provider::Network::State NetworkImpl::GetConnectionState() const {
-  return network_state_;
-}
-
-void NetworkImpl::StartAccessPoint(const std::string& ssid) {
+void WifiImpl::StartAccessPoint(const std::string& ssid) {
   if (hostapd_started_)
     return;
-
-  network_state_ = State::kOffline;
 
   // Release wlan0 interface.
   CHECK_EQ(0, std::system("nmcli nm wifi off"));
@@ -187,34 +156,15 @@ void NetworkImpl::StartAccessPoint(const std::string& ssid) {
   CHECK_EQ(0, std::system(("dnsmasq --conf-file=" + dnsmasq_conf).c_str()));
 }
 
-void NetworkImpl::StopAccessPoint() {
+void WifiImpl::StopAccessPoint() {
   base::IgnoreResult(std::system("pkill -f dnsmasq.*/tmp/weave"));
   base::IgnoreResult(std::system("pkill -f hostapd.*/tmp/weave"));
   CHECK_EQ(0, std::system("nmcli nm wifi on"));
   hostapd_started_ = false;
 }
 
-bool NetworkImpl::HasWifiCapability() {
+bool WifiImpl::HasWifiCapability() {
   return std::system("nmcli dev | grep ^wlan0") == 0;
-}
-
-void NetworkImpl::OpenSslSocket(const std::string& host,
-                                uint16_t port,
-                                const OpenSslSocketCallback& callback) {
-  // Connect to SSL port instead of upgrading to TLS.
-  std::unique_ptr<SSLStream> tls_stream{new SSLStream{task_runner_}};
-
-  if (tls_stream->Init(host, port)) {
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(callback, base::Passed(&tls_stream), nullptr),
-        {});
-  } else {
-    ErrorPtr error;
-    Error::AddTo(&error, FROM_HERE, "tls", "tls_init_failed",
-                 "Failed to initialize TLS stream.");
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(callback, nullptr, base::Passed(&error)), {});
-  }
 }
 
 }  // namespace examples

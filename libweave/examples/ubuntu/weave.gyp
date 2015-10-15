@@ -37,7 +37,7 @@
         'file_config_store.cc',
         'main.cc',
         'event_network.cc',
-        'network_manager.cc',
+        'wifi_manager.cc',
         'ssl_stream.cc',
       ],
       'dependencies': [

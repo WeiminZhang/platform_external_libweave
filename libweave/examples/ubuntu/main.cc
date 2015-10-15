@@ -13,9 +13,10 @@
 #include "examples/ubuntu/bluez_client.h"
 #include "examples/ubuntu/curl_http_client.h"
 #include "examples/ubuntu/event_http_server.h"
+#include "examples/ubuntu/event_network.h"
 #include "examples/ubuntu/event_task_runner.h"
 #include "examples/ubuntu/file_config_store.h"
-#include "examples/ubuntu/network_manager.h"
+#include "examples/ubuntu/wifi_manager.h"
 
 namespace {
 
@@ -266,7 +267,8 @@ int main(int argc, char** argv) {
   weave::examples::FileConfigStore config_store{disable_security};
   weave::examples::EventTaskRunner task_runner;
   weave::examples::CurlHttpClient http_client{&task_runner};
-  weave::examples::NetworkImpl network{&task_runner, force_bootstrapping};
+  weave::examples::EventNetworkImpl network{&task_runner};
+  weave::examples::WifiImpl wifi{&task_runner, force_bootstrapping};
   weave::examples::AvahiClient dns_sd;
   weave::examples::HttpServerImpl http_server{&task_runner};
   weave::examples::BluetoothImpl bluetooth;
@@ -274,7 +276,7 @@ int main(int argc, char** argv) {
   auto device = weave::Device::Create(
       &config_store, &task_runner, &http_client, &network, &dns_sd,
       &http_server,
-      weave::examples::NetworkImpl::HasWifiCapability() ? &network : nullptr,
+      weave::examples::WifiImpl::HasWifiCapability() ? &wifi : nullptr,
       &bluetooth);
 
   if (!registration_ticket.empty()) {
