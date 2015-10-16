@@ -39,8 +39,7 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
 
 }  // namespace
 
-WifiImpl::WifiImpl(provider::TaskRunner* task_runner,
-                         bool force_bootstrapping)
+WifiImpl::WifiImpl(provider::TaskRunner* task_runner, bool force_bootstrapping)
     : force_bootstrapping_{force_bootstrapping}, task_runner_{task_runner} {
   StopAccessPoint();
 }
@@ -49,10 +48,10 @@ WifiImpl::~WifiImpl() {
 }
 
 void WifiImpl::TryToConnect(const std::string& ssid,
-                               const std::string& passphrase,
-                               int pid,
-                               base::Time until,
-                               const DoneCallback& callback) {
+                            const std::string& passphrase,
+                            int pid,
+                            base::Time until,
+                            const DoneCallback& callback) {
   if (pid) {
     int status = 0;
     if (pid == waitpid(pid, &status, WNOWAIT)) {
@@ -91,14 +90,14 @@ void WifiImpl::TryToConnect(const std::string& ssid,
 
   task_runner_->PostDelayedTask(
       FROM_HERE,
-      base::Bind(&WifiImpl::TryToConnect, weak_ptr_factory_.GetWeakPtr(),
-                 ssid, passphrase, pid, until, callback),
+      base::Bind(&WifiImpl::TryToConnect, weak_ptr_factory_.GetWeakPtr(), ssid,
+                 passphrase, pid, until, callback),
       base::TimeDelta::FromSeconds(1));
 }
 
 void WifiImpl::Connect(const std::string& ssid,
-                          const std::string& passphrase,
-                          const DoneCallback& callback) {
+                       const std::string& passphrase,
+                       const DoneCallback& callback) {
   force_bootstrapping_ = false;
   CHECK(!hostapd_started_);
   if (hostapd_started_) {

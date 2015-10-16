@@ -80,8 +80,10 @@ void EventNetworkImpl::UpdateNetworkState() {
 
 void EventNetworkImpl::UpdateNetworkStateCallback(
     provider::Network::State state) {
-  network_state_ = state;
-  LOG(INFO) << "network state updated: " << weave::EnumToString(state);
+  if (state != network_state_) {
+    LOG(INFO) << "network state updated: " << weave::EnumToString(state);
+    network_state_ = state;
+  }
   for (const auto& cb : callbacks_)
     cb.Run();
   // TODO(proppy): use netlink interface event instead of polling

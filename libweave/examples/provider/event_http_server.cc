@@ -159,9 +159,7 @@ void HttpServerImpl::ProcessRequest(evhttp_request* req) {
 void HttpServerImpl::ProcessReply(std::shared_ptr<RequestImpl> request,
                                   int status_code,
                                   const std::string& data,
-                                  const std::string& mime_type) {
-
-}
+                                  const std::string& mime_type) {}
 
 void HttpServerImpl::AddHttpRequestHandler(
     const std::string& path,

@@ -25,7 +25,7 @@ namespace examples {
 class WifiImpl : public provider::Wifi {
  public:
   explicit WifiImpl(provider::TaskRunner* task_runner,
-                       bool force_bootstrapping);
+                    bool force_bootstrapping);
   ~WifiImpl();
 
   // Wifi implementation.

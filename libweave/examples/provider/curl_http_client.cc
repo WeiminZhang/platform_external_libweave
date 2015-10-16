@@ -46,11 +46,11 @@ void CurlHttpClient::SendRequest(Method method,
 
   switch (method) {
     case Method::kGet:
-    CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_HTTPGET, 1L));
-    break;
+      CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_HTTPGET, 1L));
+      break;
     case Method::kPost:
-    CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_HTTPPOST, 1L));
-    break;
+      CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_HTTPPOST, 1L));
+      break;
     case Method::kPatch:
     case Method::kPut:
       CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_CUSTOMREQUEST,
