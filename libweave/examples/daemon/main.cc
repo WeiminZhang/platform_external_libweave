@@ -94,7 +94,8 @@ int main(int argc, char** argv) {
     dns_sd.reset(new weave::examples::AvahiClient);
     http_server.reset(new weave::examples::HttpServerImpl{&task_runner});
     if (weave::examples::WifiImpl::HasWifiCapability())
-      wifi.reset(new weave::examples::WifiImpl{&task_runner, force_bootstrapping});
+      wifi.reset(
+          new weave::examples::WifiImpl{&task_runner, force_bootstrapping});
   }
   std::unique_ptr<weave::Device> device{weave::Device::Create(
       &config_store, &task_runner, &http_client, &network, dns_sd.get(),
