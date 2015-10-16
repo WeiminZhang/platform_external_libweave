@@ -27,22 +27,12 @@ Implementation sources:
 Example of device code:
   examples/
 
-Optional dependencies:
-  external/
+Dependencies:
   third_party/
 
 Build files:
   libweave_standalone.gyp
   libweave_common.gypi
-
-ChromiumOS specific build files:
-  libweave-test.pc.in
-  libweave.pc.in
-  platform2.gyp
-  platform2_preinstall.sh
-
-AOSP specific build files:
-  Android.mk
 
 Quick start on Ubuntu
 ---------------------
