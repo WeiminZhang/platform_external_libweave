@@ -86,22 +86,19 @@ int main(int argc, char** argv) {
   weave::examples::CurlHttpClient http_client{&task_runner};
   weave::examples::EventNetworkImpl network{&task_runner};
   weave::examples::BluetoothImpl bluetooth;
+  std::unique_ptr<weave::examples::AvahiClient> dns_sd;
+  std::unique_ptr<weave::examples::HttpServerImpl> http_server;
+  std::unique_ptr<weave::examples::WifiImpl> wifi;
 
-  std::unique_ptr<weave::Device> device;
-  if (disable_privet) {
-    device =
-        weave::Device::Create(&config_store, &task_runner, &http_client,
-                              &network, nullptr, nullptr, nullptr, &bluetooth);
-  } else {
-    weave::examples::AvahiClient dns_sd;
-    weave::examples::HttpServerImpl http_server{&task_runner};
-    weave::examples::WifiImpl wifi{&task_runner, force_bootstrapping};
-    device = weave::Device::Create(
-        &config_store, &task_runner, &http_client, &network, &dns_sd,
-        &http_server,
-        weave::examples::WifiImpl::HasWifiCapability() ? &wifi : nullptr,
-        &bluetooth);
+  if (!disable_privet) {
+    dns_sd.reset(new weave::examples::AvahiClient);
+    http_server.reset(new weave::examples::HttpServerImpl{&task_runner});
+    if (weave::examples::WifiImpl::HasWifiCapability())
+      wifi.reset(new weave::examples::WifiImpl{&task_runner, force_bootstrapping});
   }
+  std::unique_ptr<weave::Device> device{weave::Device::Create(
+      &config_store, &task_runner, &http_client, &network, dns_sd.get(),
+      http_server.get(), wifi.get(), &bluetooth)};
 
   if (!registration_ticket.empty()) {
     device->Register(registration_ticket,
