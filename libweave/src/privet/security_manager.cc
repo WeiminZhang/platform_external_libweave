@@ -24,6 +24,10 @@
 #include "src/string_utils.h"
 #include "third_party/chromium/crypto/p224_spake.h"
 
+#if !defined(ARCH_CPU_LITTLE_ENDIAN)
+#error "Big-endian is not supported. See b/25017606"
+#endif
+
 namespace weave {
 namespace privet {
 

@@ -115,3 +115,7 @@ Upload CL:
   git push origin HEAD:refs/for/master
 
 Go to the url from the output of "push" and add reviewers.
+
+Known Issues
+------------
+* No big-endian support. Pairing fails on big-endian hardware.
