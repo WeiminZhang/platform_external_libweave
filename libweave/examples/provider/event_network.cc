@@ -83,9 +83,14 @@ void EventNetworkImpl::UpdateNetworkStateCallback(
   if (state != network_state_) {
     LOG(INFO) << "network state updated: " << weave::EnumToString(state);
     network_state_ = state;
+
+    // In general it's better to send false notification than miss one.
+    // However current implementation can only send them very often on every
+    // UpdateNetworkStateCallback or just here, guarder with this if condition.
+    for (const auto& cb : callbacks_)
+      cb.Run();
   }
-  for (const auto& cb : callbacks_)
-    cb.Run();
+
   // TODO(proppy): use netlink interface event instead of polling
   task_runner_->PostDelayedTask(
       FROM_HERE, base::Bind(&EventNetworkImpl::UpdateNetworkState,
