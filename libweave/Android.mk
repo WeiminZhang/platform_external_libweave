@@ -194,9 +194,6 @@ LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 
 LOCAL_SRC_FILES := \
-	external/crypto/p224_spake_unittest.cc \
-	external/crypto/p224_unittest.cc \
-	external/crypto/sha2_unittest.cc \
 	src/backoff_entry_unittest.cc \
 	src/base_api_handler_unittest.cc \
 	src/commands/cloud_command_proxy_unittest.cc \
@@ -225,5 +222,8 @@ LOCAL_SRC_FILES := \
 	src/string_utils_unittest.cc \
 	src/test/weave_testrunner.cc \
 	src/weave_unittest.cc \
+	third_party/chromium/crypto/p224_spake_unittest.cc \
+	third_party/chromium/crypto/p224_unittest.cc \
+	third_party/chromium/crypto/sha2_unittest.cc \
 
 include $(BUILD_NATIVE_TEST)
