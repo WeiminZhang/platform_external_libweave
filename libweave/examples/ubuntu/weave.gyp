@@ -12,8 +12,6 @@
           'expat',
           'libcurl',
           'libcrypto',
-          'libnl-3.0',
-          'libnl-route-3.0',
           'openssl',
         ]
       },
@@ -38,7 +36,7 @@
         'event_task_runner.cc',
         'file_config_store.cc',
         'main.cc',
-        'netlink_network.cc',
+        'event_network.cc',
         'network_manager.cc',
         'ssl_stream.cc',
       ],
