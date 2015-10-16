@@ -5,16 +5,15 @@
 // This code implements SPAKE2, a variant of EKE:
 //  http://www.di.ens.fr/~pointche/pub.php?reference=AbPo04
 
-#include "external/crypto/p224_spake.h"
+#include "third_party/chromium/crypto/p224_spake.h"
 
 #include <algorithm>
 
 #include <base/logging.h>
 #include <base/rand_util.h>
 
-#include "external/crypto/p224.h"
+#include "third_party/chromium/crypto/p224.h"
 
-namespace weave {
 namespace crypto {
 
 namespace {
@@ -283,4 +282,3 @@ void P224EncryptedKeyExchange::SetXForTesting(const std::string& x) {
 }
 
 }  // namespace crypto
-}  // namespace weave

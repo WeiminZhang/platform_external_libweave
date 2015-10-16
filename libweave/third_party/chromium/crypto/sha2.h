@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_EXTERNAL_CRYPTO_SHA2_H_
-#define LIBWEAVE_EXTERNAL_CRYPTO_SHA2_H_
+#ifndef LIBWEAVE_THIRD_PARTY_CHROMIUM_SHA2_H_
+#define LIBWEAVE_THIRD_PARTY_CHROMIUM_SHA2_H_
 
 #include <string>
 
-namespace weave {
 namespace crypto {
 
 // These functions perform SHA-256 operations.
@@ -26,6 +25,5 @@ void SHA256HashString(const std::string& str, uint8_t* output, size_t len);
 std::string SHA256HashString(const std::string& str);
 
 }  // namespace crypto
-}  // namespace weave
 
-#endif  // LIBWEAVE_EXTERNAL_CRYPTO_SHA2_H_
+#endif  // LIBWEAVE_THIRD_PARTY_CHROMIUM_SHA2_H_

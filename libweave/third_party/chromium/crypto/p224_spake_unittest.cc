@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "external/crypto/p224_spake.h"
+#include "third_party/chromium/crypto/p224_spake.h"
 
 #include <string>
 
@@ -10,7 +10,6 @@
 #include <base/strings/string_number_conversions.h>
 #include <gtest/gtest.h>
 
-namespace weave {
 namespace crypto {
 
 namespace {
@@ -173,4 +172,3 @@ TEST(MutualAuth, Fuzz) {
 }
 
 }  // namespace crypto
-}  // namespace weave

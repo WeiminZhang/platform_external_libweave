@@ -2,17 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_EXTERNAL_CRYPTO_P224_SPAKE_H_
-#define LIBWEAVE_EXTERNAL_CRYPTO_P224_SPAKE_H_
+#ifndef LIBWEAVE_THIRD_PARTY_CHROMIUM_P224_SPAKE_H_
 
 #include <string>
 
 #include <base/gtest_prod_util.h>
 
-#include "external/crypto/p224.h"
-#include "external/crypto/sha2.h"
+#include "third_party/chromium/crypto/p224.h"
+#include "third_party/chromium/crypto/sha2.h"
 
-namespace weave {
 namespace crypto {
 
 // P224EncryptedKeyExchange implements SPAKE2, a variant of Encrypted
@@ -124,6 +122,5 @@ class P224EncryptedKeyExchange {
 };
 
 }  // namespace crypto
-}  // namespace weave
 
-#endif  // LIBWEAVE_EXTERNAL_CRYPTO_P224_SPAKE_H_
+#endif  // LIBWEAVE_THIRD_PARTY_CHROMIUM_P224_SPAKE_H_

@@ -18,11 +18,11 @@
 #include <base/time/time.h>
 #include <weave/provider/task_runner.h>
 
-#include "external/crypto/p224_spake.h"
 #include "src/data_encoding.h"
 #include "src/privet/constants.h"
 #include "src/privet/openssl_utils.h"
 #include "src/string_utils.h"
+#include "third_party/chromium/crypto/p224_spake.h"
 
 namespace weave {
 namespace privet {

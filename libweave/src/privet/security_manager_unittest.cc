@@ -21,9 +21,9 @@
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>
 
-#include "external/crypto/p224_spake.h"
 #include "src/data_encoding.h"
 #include "src/privet/openssl_utils.h"
+#include "third_party/chromium/crypto/p224_spake.h"
 
 using testing::Eq;
 using testing::_;
