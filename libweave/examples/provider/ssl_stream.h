@@ -8,6 +8,7 @@
 #include <openssl/ssl.h>
 
 #include <base/memory/weak_ptr.h>
+#include <weave/provider/network.h>
 #include <weave/stream.h>
 
 namespace weave {
@@ -20,8 +21,6 @@ namespace examples {
 
 class SSLStream : public Stream {
  public:
-  explicit SSLStream(provider::TaskRunner* task_runner);
-
   ~SSLStream() override;
 
   void Read(void* buffer,
@@ -34,14 +33,35 @@ class SSLStream : public Stream {
 
   void CancelPendingOperations() override;
 
-  bool Init(const std::string& host, uint16_t port);
+  static void Connect(provider::TaskRunner* task_runner,
+                      const std::string& host,
+                      uint16_t port,
+                      const provider::Network::OpenSslSocketCallback& callback);
 
  private:
-  void RunDelayedTask(const base::Closure& task);
+  struct SslDeleter {
+    void operator()(BIO* bio) const;
+    void operator()(SSL* ssl) const;
+    void operator()(SSL_CTX* ctx) const;
+  };
+
+  SSLStream(provider::TaskRunner* task_runner,
+            std::unique_ptr<BIO, SslDeleter> stream_bio);
+
+  static void ConnectBio(
+      std::unique_ptr<SSLStream> stream,
+      const provider::Network::OpenSslSocketCallback& callback);
+  static void DoHandshake(
+      std::unique_ptr<SSLStream> stream,
+      const provider::Network::OpenSslSocketCallback& callback);
+
+  // Send task to this method with WeakPtr if callback should not be executed
+  // after SSLStream is destroyed.
+  void RunTask(const base::Closure& task);
 
   provider::TaskRunner* task_runner_{nullptr};
-  std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)> ctx_{nullptr, SSL_CTX_free};
-  std::unique_ptr<SSL, decltype(&SSL_free)> ssl_{nullptr, SSL_free};
+  std::unique_ptr<SSL_CTX, SslDeleter> ctx_;
+  std::unique_ptr<SSL, SslDeleter> ssl_;
 
   base::WeakPtrFactory<SSLStream> weak_ptr_factory_{this};
 };

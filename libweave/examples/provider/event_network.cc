@@ -100,20 +100,7 @@ weave::provider::Network::State EventNetworkImpl::GetConnectionState() const {
 void EventNetworkImpl::OpenSslSocket(const std::string& host,
                                      uint16_t port,
                                      const OpenSslSocketCallback& callback) {
-  // Connect to SSL port instead of upgrading to TLS.
-  std::unique_ptr<SSLStream> tls_stream{new SSLStream{task_runner_}};
-
-  if (tls_stream->Init(host, port)) {
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(callback, base::Passed(&tls_stream), nullptr),
-        {});
-  } else {
-    ErrorPtr error;
-    Error::AddTo(&error, FROM_HERE, "tls", "tls_init_failed",
-                 "Failed to initialize TLS stream.");
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(callback, nullptr, base::Passed(&error)), {});
-  }
+  SSLStream::Connect(task_runner_, host, port, callback);
 }
 
 }  // namespace examples
