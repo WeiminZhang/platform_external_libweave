@@ -54,9 +54,9 @@ LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/external
 
 LOCAL_SRC_FILES := \
-	external/crypto/p224.cc \
-	external/crypto/p224_spake.cc \
-	external/crypto/sha2.cc \
+	third_party/chromium/crypto/p224.cc \
+	third_party/chromium/crypto/p224_spake.cc \
+	third_party/chromium/crypto/sha2.cc \
 	third_party/modp_b64/modp_b64.cc \
 
 include $(BUILD_STATIC_LIBRARY)
