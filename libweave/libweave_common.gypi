@@ -24,7 +24,7 @@
     'include_dirs': [
       '.',
       'include',
-      'external',
+      'third_party/chromium',
       'third_party/include',
       'third_party/modp_b64/modp_b64',
     ],

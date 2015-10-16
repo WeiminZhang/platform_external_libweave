@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "external/crypto/sha2.h"
+#include "third_party/chromium/crypto/sha2.h"
 
 #include <algorithm>
 #include <openssl/sha.h>
 
 #include <base/memory/scoped_ptr.h>
 
-namespace weave {
 namespace crypto {
 
 void SHA256HashString(const std::string& str, uint8_t* output, size_t len) {
@@ -29,4 +28,3 @@ std::string SHA256HashString(const std::string& str) {
 }
 
 }  // namespace crypto
-}  // namespace weave

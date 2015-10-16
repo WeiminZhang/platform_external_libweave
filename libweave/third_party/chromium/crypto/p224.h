@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_EXTERNAL_CRYPTO_P224_H_
-#define LIBWEAVE_EXTERNAL_CRYPTO_P224_H_
+#ifndef LIBWEAVE_THIRD_PARTY_CHROMIUM_P224_H_
+#define LIBWEAVE_THIRD_PARTY_CHROMIUM_P224_H_
 
 #include <string>
 
 #include <base/basictypes.h>
 
-namespace weave {
 namespace crypto {
 
 // P224 implements an elliptic curve group, commonly known as P224 and defined
@@ -54,6 +53,5 @@ void Negate(const Point& a, Point* out);
 
 }  // namespace p224
 }  // namespace crypto
-}  // namespace weave
 
-#endif  // LIBWEAVE_EXTERNAL_CRYPTO_P224_H_
+#endif  // LIBWEAVE_THIRD_PARTY_CHROMIUM_P224_H_

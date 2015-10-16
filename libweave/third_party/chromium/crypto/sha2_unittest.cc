@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "external/crypto/sha2.h"
+#include "third_party/chromium/crypto/sha2.h"
 
 #include <base/basictypes.h>
 #include <gtest/gtest.h>

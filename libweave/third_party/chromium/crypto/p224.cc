@@ -7,11 +7,10 @@
 //
 // See http://www.imperialviolet.org/2010/12/04/ecc.html ([1]) for background.
 
-#include "external/crypto/p224.h"
+#include "third_party/chromium/crypto/p224.h"
 
 #include <string.h>
 
-namespace weave {
 namespace crypto {
 namespace p224 {
 
@@ -767,4 +766,3 @@ void Negate(const Point& in, Point* out) {
 
 }  // namespace p224
 }  // namespace crypto
-}  // namespace weave
