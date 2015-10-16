@@ -18,6 +18,8 @@ namespace {
 const size_t kLedCount = 3;
 }  // namespace
 
+// LedFlasherHandler is a complete command handler example that shows
+// how to handle commands that modify device state.
 class LedFlasherHandler {
  public:
   LedFlasherHandler() {}
@@ -84,7 +86,7 @@ class LedFlasherHandler {
     }
     ErrorPtr error;
     Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
-                        "Invalid parameters");
+                 "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }
 
@@ -105,7 +107,7 @@ class LedFlasherHandler {
     }
     ErrorPtr error;
     Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
-                        "Invalid parameters");
+                 "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }
 

@@ -7,6 +7,9 @@
 
 #include <base/bind.h>
 
+#include "examples/daemon/ledflasher_handler.h"
+#include "examples/daemon/sample_handler.h"
+
 #include "examples/provider/avahi_client.h"
 #include "examples/provider/bluez_client.h"
 #include "examples/provider/curl_http_client.h"
@@ -15,9 +18,6 @@
 #include "examples/provider/event_task_runner.h"
 #include "examples/provider/file_config_store.h"
 #include "examples/provider/wifi_manager.h"
-
-#include "examples/daemon/greeter_handler.h"
-#include "examples/daemon/ledflasher_handler.h"
 
 namespace {
 
@@ -108,9 +108,9 @@ int main(int argc, char** argv) {
                      base::Bind(&OnRegisterDeviceDone, device.get()));
   }
 
-  weave::examples::daemon::GreeterHandler greeter{&task_runner};
+  weave::examples::daemon::SampleHandler sample{&task_runner};
   weave::examples::daemon::LedFlasherHandler ledFlasher;
-  greeter.Register(device.get());
+  sample.Register(device.get());
   ledFlasher.Register(device.get());
 
   task_runner.Run();
