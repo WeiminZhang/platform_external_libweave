@@ -18,6 +18,45 @@
 namespace weave {
 namespace provider {
 
+// This interface should be implemented by the user of libweave and
+// provided during device creation in Device::Create(...)
+// libweave will use this interface to get default settings and load / save
+// settings to a persistent storage.
+//
+// Implementation of the LoadDefaults(...) method may load settings from
+// a file or just hardcode defaults for this device.
+// For example:
+//   bool FileConfigStore::LoadDefaults(Settings* settings) {
+//     settings->name = "My device";
+//     settings->pairing_modes.insert(kPinCode);
+//     // set all other required settings, see include/weave/settings.h
+//     return true;
+//   }
+//
+// Implementation of LoadSettings() method should load previously
+// stored settings from the persistent storage (file, flash, etc).
+// For example:
+//   std::string FileConfigStore::LoadSettings() {
+//     std::ifstream str("/var/lib/weave/weave_settings.json");
+//     return std::string(std::istreambuf_iterator<char>(str),
+//                        std::istreambuf_iterator<char>());
+//   }
+// If data stored encrypted (highly recommended), LoadSettings()
+// implementation should decrypt the data before returning it to libweave.
+//
+// Implementation of SaveSettings(...) method should store data in the
+// persistent storage (file, flash, etc).
+// For example:
+//   void FileConfigStore::SaveSettings(const std::string& settings) {
+//     std::ofstream str(kSettingsPath);
+//     str << settings;
+//   }
+// It is highly recommended to protected data using encryption with
+// hardware backed key.
+//
+// See libweave/examples/provider/file_config_store.cc for a complete
+// example.
+
 // Interface with methods to read/write libweave settings, device state and
 // commands definitions.
 class ConfigStore {
@@ -26,7 +65,7 @@ class ConfigStore {
   // a factory reset.
   virtual bool LoadDefaults(Settings* settings) = 0;
 
-  // Returns settings saved by SaveSettings during last run of libWeave.
+  // Returns settings saved by SaveSettings during last run of libweave.
   // Implementation should return data as-is without parsing or modifications.
   virtual std::string LoadSettings() = 0;
 
