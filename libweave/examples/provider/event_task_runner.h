@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_EXAMPLES_UBUNTU_EVENT_TASK_RUNNER_H_
-#define LIBWEAVE_EXAMPLES_UBUNTU_EVENT_TASK_RUNNER_H_
+#ifndef LIBWEAVE_EXAMPLES_PROVIDER_EVENT_TASK_RUNNER_H_
+#define LIBWEAVE_EXAMPLES_PROVIDER_EVENT_TASK_RUNNER_H_
 
 #include <queue>
 #include <utility>
@@ -56,4 +56,4 @@ class EventTaskRunner : public provider::TaskRunner {
 }  // namespace examples
 }  // namespace weave
 
-#endif  // LIBWEAVE_EXAMPLES_UBUNTU_EVENT_TASK_RUNNER_H_
+#endif  // LIBWEAVE_EXAMPLES_PROVIDER_EVENT_TASK_RUNNER_H_

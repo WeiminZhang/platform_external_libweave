@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "examples/ubuntu/event_http_server.h"
+#include "examples/provider/event_http_server.h"
 
 #include <vector>
 
@@ -11,7 +11,7 @@
 #include <event2/bufferevent_ssl.h>
 #include <openssl/err.h>
 
-#include "examples/ubuntu/event_task_runner.h"
+#include "examples/provider/event_task_runner.h"
 
 namespace weave {
 namespace examples {
@@ -159,9 +159,7 @@ void HttpServerImpl::ProcessRequest(evhttp_request* req) {
 void HttpServerImpl::ProcessReply(std::shared_ptr<RequestImpl> request,
                                   int status_code,
                                   const std::string& data,
-                                  const std::string& mime_type) {
-
-}
+                                  const std::string& mime_type) {}
 
 void HttpServerImpl::AddHttpRequestHandler(
     const std::string& path,

@@ -5,9 +5,9 @@ The wrapper implements OS dependent services for libweave
 Building
 --------
   - prepare environment
-        examples/ubuntu/prerequisites.sh
+        examples/prerequisites.sh
   - build daemon
-        examples/ubuntu/build.sh
+        examples/build.sh
   - binaries for daemon is at
         out/Debug/weave
 
@@ -48,7 +48,7 @@ Register device to cloud
 ------------------------
   - copy the ticket "id" generated above
         93019287-6b26-04a0-22ee-d55ad23a4226
-  - go to ubuntu terminal, register ubuntu and start daemon with
+  - go to terminal, register and start the daemon with
 
         sudo out/Debug/weave --registration_ticket=93019287-6b26-04a0-22ee-d55ad23a4226
 
@@ -75,8 +75,8 @@ Register device to cloud
         chrome: https://chrome.google.com/webstore/detail/weave-device-manager/pcdgflbjckpjmlofgopidgdfonmnodfm
         [need your whitelisted EAP account]
 
-Send Command to Ubuntu Device
------------------------------
+Send Command to the Daemon
+--------------------------
   - go to the oauthplayground used for registration ticket command
      in "Step 3", send base.identify with
         HTTP Method: POST

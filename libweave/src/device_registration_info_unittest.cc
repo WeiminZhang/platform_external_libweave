@@ -596,14 +596,14 @@ TEST_F(DeviceRegistrationInfoUpdateCommandTest, Complete) {
       http_client_,
       SendRequest(HttpClient::Method::kPatch, command_url_,
                   HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
-      .WillOnce(WithArgs<3, 4>(Invoke([](
-          const std::string& data,
-          const HttpClient::SendRequestCallback& callback) {
-        EXPECT_JSON_EQ(R"({"state":"done", "results":{"status":"Ok"}})",
-                       *CreateDictionaryValue(data));
-        base::DictionaryValue json;
-        callback.Run(ReplyWithJson(200, json), nullptr);
-      })));
+      .WillOnce(WithArgs<3, 4>(
+          Invoke([](const std::string& data,
+                    const HttpClient::SendRequestCallback& callback) {
+            EXPECT_JSON_EQ(R"({"state":"done", "results":{"status":"Ok"}})",
+                           *CreateDictionaryValue(data));
+            base::DictionaryValue json;
+            callback.Run(ReplyWithJson(200, json), nullptr);
+          })));
   EXPECT_TRUE(
       command_->Complete(*CreateDictionaryValue("{'status': 'Ok'}"), nullptr));
 }
