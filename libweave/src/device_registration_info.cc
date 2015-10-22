@@ -41,7 +41,7 @@ const char kErrorDomainGCDServer[] = "gcd_server";
 namespace {
 
 const int kPollingPeriodSeconds = 7;
-const int kBackupPollingPeriodSeconds = 30;
+const int kBackupPollingPeriodMinutes = 30;
 
 using provider::HttpClient;
 
@@ -1183,7 +1183,7 @@ void DeviceRegistrationInfo::OnConnected(const std::string& channel_name) {
   CHECK_EQ(primary_notification_channel_->GetName(), channel_name);
   notification_channel_starting_ = false;
   pull_channel_->UpdatePullInterval(
-      base::TimeDelta::FromSeconds(kBackupPollingPeriodSeconds));
+      base::TimeDelta::FromMinutes(kBackupPollingPeriodMinutes));
   current_notification_channel_ = primary_notification_channel_.get();
 
   // If we have not successfully connected to the cloud server and we have not
