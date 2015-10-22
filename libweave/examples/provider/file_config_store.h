@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_EXAMPLES_UBUNTU_FILE_CONFIG_STORE_H_
-#define LIBWEAVE_EXAMPLES_UBUNTU_FILE_CONFIG_STORE_H_
+#ifndef LIBWEAVE_EXAMPLES_PROVIDER_FILE_CONFIG_STORE_H_
+#define LIBWEAVE_EXAMPLES_PROVIDER_FILE_CONFIG_STORE_H_
 
 #include <map>
 #include <string>
@@ -29,4 +29,4 @@ class FileConfigStore : public provider::ConfigStore {
 }  // namespace examples
 }  // namespace weave
 
-#endif  // LIBWEAVE_EXAMPLES_UBUNTU_FILE_CONFIG_STORE_H_
+#endif  // LIBWEAVE_EXAMPLES_PROVIDER_FILE_CONFIG_STORE_H_

@@ -12,12 +12,14 @@
 
 namespace weave {
 
+const char kPullChannelName[] = "pull";
+
 PullChannel::PullChannel(base::TimeDelta pull_interval,
                          provider::TaskRunner* task_runner)
     : pull_interval_{pull_interval}, task_runner_{task_runner} {}
 
 std::string PullChannel::GetName() const {
-  return "pull";
+  return kPullChannelName;
 }
 
 bool PullChannel::IsConnected() const {
@@ -58,7 +60,7 @@ void PullChannel::OnTimer() {
   // Repost before delegate notification to give it a chance to stop channel.
   RePost();
   base::DictionaryValue empty_dict;
-  delegate_->OnCommandCreated(empty_dict);
+  delegate_->OnCommandCreated(empty_dict, GetName());
 }
 
 }  // namespace weave

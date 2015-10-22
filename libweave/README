@@ -34,16 +34,16 @@ Build files:
   libweave_standalone.gyp
   libweave_common.gypi
 
-Quick start on Ubuntu
----------------------
+Quick start on Debian/Ubuntu
+----------------------------
 
 Install prerequisites:
 
-  examples/ubuntu/prerequisites.sh
+  examples/prerequisites.sh
 
 Build library, tests, run tests, build example:
 
-  examples/ubuntu/build.sh
+  examples/build.sh
 
 Execute example:
 
@@ -115,3 +115,7 @@ Upload CL:
   git push origin HEAD:refs/for/master
 
 Go to the url from the output of "push" and add reviewers.
+
+Known Issues
+------------
+* No big-endian support. Pairing fails on big-endian hardware.

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_EXAMPLES_UBUNTU_AVAHI_CLIENT_H_
-#define LIBWEAVE_EXAMPLES_UBUNTU_AVAHI_CLIENT_H_
+#ifndef LIBWEAVE_EXAMPLES_PROVIDER_AVAHI_CLIENT_H_
+#define LIBWEAVE_EXAMPLES_PROVIDER_AVAHI_CLIENT_H_
 
 #include <map>
 #include <string>
@@ -44,4 +44,4 @@ class AvahiClient : public provider::DnsServiceDiscovery {
 }  // namespace examples
 }  // namespace weave
 
-#endif  // LIBWEAVE_EXAMPLES_UBUNTU_AVAHI_CLIENT_H_
+#endif  // LIBWEAVE_EXAMPLES_PROVIDER_AVAHI_CLIENT_H_

@@ -4,8 +4,8 @@
 {
   'targets': [
     {
-      'target_name': 'weave',
-      'type': 'executable',
+      'target_name': 'libweave_provider',
+      'type': 'static_library',
       'variables': {
         'deps': [
           'avahi-client',
@@ -19,35 +19,41 @@
         '>!@(pkg-config >(deps) --cflags)',
         '-pthread',
       ],
-      'link_settings': {
-        'ldflags+': [
-          '>!@(pkg-config >(deps) --libs-only-L --libs-only-other)',
-        ],
-        'libraries+': [
-          '>!(pkg-config >(deps) --libs-only-l)',
-        ],
-      },
       'sources': [
         'avahi_client.cc',
         'bluez_client.cc',
         'curl_http_client.cc',
         'event_http_client.cc',
         'event_http_server.cc',
+        'event_network.cc',
         'event_task_runner.cc',
         'file_config_store.cc',
-        'main.cc',
-        'event_network.cc',
-        'network_manager.cc',
+        'wifi_manager.cc',
         'ssl_stream.cc',
       ],
       'dependencies': [
         '../../libweave_standalone.gyp:libweave',
       ],
-      'libraries': [
-        '-levent',
-        '-levent_openssl',
-        '-lpthread',
-      ]
+      'direct_dependent_settings' : {
+        'variables': {
+          'parent_deps': [
+            '<@(deps)'
+          ]
+        },
+        'link_settings': {
+          'ldflags+': [
+            '>!@(pkg-config >(parent_deps) --libs-only-L --libs-only-other)',
+          ],
+          'libraries+': [
+            '>!(pkg-config >(parent_deps) --libs-only-l)',
+          ],
+        },
+        'libraries': [
+          '-levent',
+          '-levent_openssl',
+          '-lpthread',
+        ]
+      }
     }
   ]
 }

@@ -12,14 +12,15 @@ namespace {
 
 // Processes COMMAND_CREATED notifications.
 bool ParseCommandCreated(const base::DictionaryValue& notification,
-                         NotificationDelegate* delegate) {
+                         NotificationDelegate* delegate,
+                         const std::string& channel_name) {
   const base::DictionaryValue* command = nullptr;
   if (!notification.GetDictionary("command", &command)) {
     LOG(ERROR) << "COMMAND_CREATED notification is missing 'command' property";
     return false;
   }
 
-  delegate->OnCommandCreated(*command);
+  delegate->OnCommandCreated(*command, channel_name);
   return true;
 }
 
@@ -39,7 +40,8 @@ bool ParseDeviceDeleted(const base::DictionaryValue& notification,
 }  // anonymous namespace
 
 bool ParseNotificationJson(const base::DictionaryValue& notification,
-                           NotificationDelegate* delegate) {
+                           NotificationDelegate* delegate,
+                           const std::string& channel_name) {
   CHECK(delegate);
 
   std::string kind;
@@ -57,7 +59,7 @@ bool ParseNotificationJson(const base::DictionaryValue& notification,
   }
 
   if (type == "COMMAND_CREATED")
-    return ParseCommandCreated(notification, delegate);
+    return ParseCommandCreated(notification, delegate, channel_name);
 
   if (type == "DEVICE_DELETED")
     return ParseDeviceDeleted(notification, delegate);

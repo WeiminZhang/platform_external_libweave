@@ -4,7 +4,7 @@
 # found in the LICENSE file.
 
 DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-ROOT_DIR=$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)
+ROOT_DIR=$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)
 
 sudo apt-get install ${APT_GET_OPTS} \
   autoconf \
