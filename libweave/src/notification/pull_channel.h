@@ -20,6 +20,8 @@ namespace provider {
 class TaskRunner;
 }  // namespace
 
+extern const char kPullChannelName[];
+
 class PullChannel : public NotificationChannel {
  public:
   PullChannel(base::TimeDelta pull_interval, provider::TaskRunner* task_runner);

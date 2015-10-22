@@ -43,6 +43,15 @@ namespace {
 const int kPollingPeriodSeconds = 7;
 const int kBackupPollingPeriodMinutes = 30;
 
+namespace fetch_reason {
+
+const char kDeviceStart[] = "device_start";  // Initial queue fetch at startup.
+const char kRegularPull[] = "regular_pull";  // Regular fetch before XMPP is up.
+const char kNewCommand[] = "new_command";    // A new command is available.
+const char kJustInCase[] = "just_in_case";   // Backup fetch when XMPP is live.
+
+}  // namespace fetch_reason
+
 using provider::HttpClient;
 
 inline void SetUnexpectedError(ErrorPtr* error) {
@@ -789,7 +798,7 @@ void DeviceRegistrationInfo::OnConnectedToCloud(ErrorPtr error) {
   LOG(INFO) << "Device connected to cloud server";
   connected_to_cloud_ = true;
   FetchCommands(base::Bind(&DeviceRegistrationInfo::ProcessInitialCommandList,
-                           AsWeakPtr()));
+                           AsWeakPtr()), fetch_reason::kDeviceStart);
   // In case there are any pending state updates since we sent off the initial
   // UpdateDeviceResource() request, update the server with any state changes.
   PublishStateUpdates();
@@ -985,29 +994,33 @@ void DeviceRegistrationInfo::OnFetchCommandsReturned() {
   fetch_commands_request_sent_ = false;
   // If we have additional requests queued, send them out now.
   if (fetch_commands_request_queued_)
-    FetchAndPublishCommands();
+    FetchAndPublishCommands(queued_fetch_reason_);
 }
 
 void DeviceRegistrationInfo::FetchCommands(
-    const base::Callback<void(const base::ListValue&, ErrorPtr error)>&
-        callback) {
+    const base::Callback<void(const base::ListValue&, ErrorPtr)>& callback,
+    const std::string& reason) {
   fetch_commands_request_sent_ = true;
   fetch_commands_request_queued_ = false;
   DoCloudRequest(
       HttpClient::Method::kGet,
-      GetServiceURL("commands/queue", {{"deviceId", GetSettings().cloud_id}}),
+      GetServiceURL("commands/queue", {{"deviceId", GetSettings().cloud_id},
+                                       {"reason", reason}}),
       nullptr, base::Bind(&DeviceRegistrationInfo::OnFetchCommandsDone,
                           AsWeakPtr(), callback));
 }
 
-void DeviceRegistrationInfo::FetchAndPublishCommands() {
+void DeviceRegistrationInfo::FetchAndPublishCommands(
+    const std::string& reason) {
   if (fetch_commands_request_sent_) {
     fetch_commands_request_queued_ = true;
+    queued_fetch_reason_ = reason;
     return;
   }
 
   FetchCommands(base::Bind(&DeviceRegistrationInfo::PublishCommands,
-                           weak_factory_.GetWeakPtr()));
+                           weak_factory_.GetWeakPtr()),
+                reason);
 }
 
 void DeviceRegistrationInfo::ProcessInitialCommandList(
@@ -1200,7 +1213,7 @@ void DeviceRegistrationInfo::OnConnected(const std::string& channel_name) {
   UpdateDeviceResource(
       base::Bind(&IgnoreCloudErrorWithCallback,
                  base::Bind(&DeviceRegistrationInfo::FetchAndPublishCommands,
-                            AsWeakPtr())));
+                            AsWeakPtr(), fetch_reason::kRegularPull)));
 }
 
 void DeviceRegistrationInfo::OnDisconnected() {
@@ -1222,7 +1235,8 @@ void DeviceRegistrationInfo::OnPermanentFailure() {
 }
 
 void DeviceRegistrationInfo::OnCommandCreated(
-    const base::DictionaryValue& command) {
+    const base::DictionaryValue& command,
+    const std::string& channel_name) {
   if (!connected_to_cloud_)
     return;
 
@@ -1234,10 +1248,21 @@ void DeviceRegistrationInfo::OnCommandCreated(
     PublishCommand(command);
     return;
   }
+
+  // If this request comes from a Pull channel while the primary notification
+  // channel (XMPP) is active, we are doing a backup poll, so mark the request
+  // appropriately.
+  bool just_in_case =
+    (channel_name == kPullChannelName) &&
+    (current_notification_channel_ == primary_notification_channel_.get());
+
+  std::string reason =
+      just_in_case ? fetch_reason::kJustInCase : fetch_reason::kNewCommand;
+
   // If the command was too big to be delivered over a notification channel,
   // or OnCommandCreated() was initiated from the Pull notification,
   // perform a manual command fetch from the server here.
-  FetchAndPublishCommands();
+  FetchAndPublishCommands(reason);
 }
 
 void DeviceRegistrationInfo::OnDeviceDeleted(const std::string& cloud_id) {

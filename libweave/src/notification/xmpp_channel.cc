@@ -279,7 +279,7 @@ void XmppChannel::HandleMessageStanza(std::unique_ptr<XmlNode> stanza) {
   VLOG(2) << "XMPP push notification data: " << json_data;
   auto json_dict = LoadJsonDict(json_data, nullptr);
   if (json_dict && delegate_)
-    ParseNotificationJson(*json_dict, delegate_);
+    ParseNotificationJson(*json_dict, delegate_, GetName());
 }
 
 void XmppChannel::CreateSslSocket() {
