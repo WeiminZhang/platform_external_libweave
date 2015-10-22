@@ -17,7 +17,8 @@ namespace weave {
 // the appropriate method from the |delegate|.
 // Returns false if unexpected or malformed notification is received.
 bool ParseNotificationJson(const base::DictionaryValue& notification,
-                           NotificationDelegate* delegate);
+                           NotificationDelegate* delegate,
+                           const std::string& channel_name);
 
 }  // namespace weave
 

@@ -17,12 +17,17 @@ namespace weave {
 
 using test::CreateDictionaryValue;
 
+MATCHER_P(MatchDict, str, "") {
+  return arg.Equals(CreateDictionaryValue(str).get());
+}
+
 class MockNotificationDelegate : public NotificationDelegate {
  public:
   MOCK_METHOD1(OnConnected, void(const std::string&));
   MOCK_METHOD0(OnDisconnected, void());
   MOCK_METHOD0(OnPermanentFailure, void());
-  MOCK_METHOD1(OnCommandCreated, void(const base::DictionaryValue& command));
+  MOCK_METHOD2(OnCommandCreated, void(const base::DictionaryValue& command,
+                                      const std::string& channel_name));
   MOCK_METHOD1(OnDeviceDeleted, void(const std::string&));
 };
 
@@ -51,14 +56,6 @@ TEST_F(NotificationParserTest, CommandCreated) {
     "commandId": "command_id"
   })");
 
-  base::DictionaryValue command_instance;
-  auto on_command = [&command_instance](const base::DictionaryValue& command) {
-    command_instance.MergeDictionary(&command);
-  };
-
-  EXPECT_CALL(delegate_, OnCommandCreated(_)).WillOnce(Invoke(on_command));
-  EXPECT_TRUE(ParseNotificationJson(*json, &delegate_));
-
   const char expected_json[] = R"({
       "kind": "clouddevices#command",
       "deviceId": "device_id",
@@ -71,7 +68,10 @@ TEST_F(NotificationParserTest, CommandCreated) {
       "id": "command_id",
       "creationTimeMs": "1403444174811"
     })";
-  EXPECT_JSON_EQ(expected_json, command_instance);
+
+  EXPECT_CALL(delegate_, OnCommandCreated(MatchDict(expected_json), "foo"))
+      .Times(1);
+  EXPECT_TRUE(ParseNotificationJson(*json, &delegate_, "foo"));
 }
 
 TEST_F(NotificationParserTest, DeviceDeleted) {
@@ -83,7 +83,7 @@ TEST_F(NotificationParserTest, DeviceDeleted) {
 
   std::string device_id;
   EXPECT_CALL(delegate_, OnDeviceDeleted(_)).WillOnce(SaveArg<0>(&device_id));
-  EXPECT_TRUE(ParseNotificationJson(*json, &delegate_));
+  EXPECT_TRUE(ParseNotificationJson(*json, &delegate_, "foo"));
   EXPECT_EQ("some_device_id", device_id);
 }
 
@@ -106,7 +106,7 @@ TEST_F(NotificationParserTest, Failure_NoKind) {
     "commandId": "command_id"
   })");
 
-  EXPECT_FALSE(ParseNotificationJson(*json, &delegate_));
+  EXPECT_FALSE(ParseNotificationJson(*json, &delegate_, "bar"));
 }
 
 TEST_F(NotificationParserTest, Failure_NoType) {
@@ -128,7 +128,7 @@ TEST_F(NotificationParserTest, Failure_NoType) {
     "commandId": "command_id"
   })");
 
-  EXPECT_FALSE(ParseNotificationJson(*json, &delegate_));
+  EXPECT_FALSE(ParseNotificationJson(*json, &delegate_, "baz"));
 }
 
 TEST_F(NotificationParserTest, IgnoredNotificationType) {
@@ -151,7 +151,7 @@ TEST_F(NotificationParserTest, IgnoredNotificationType) {
     "commandId": "command_id"
   })");
 
-  EXPECT_TRUE(ParseNotificationJson(*json, &delegate_));
+  EXPECT_TRUE(ParseNotificationJson(*json, &delegate_, "quux"));
 }
 
 }  // namespace weave

@@ -1,8 +1,8 @@
-// Copyright 2015 The Chromium OS Authors. All rights reserved.
+// Copyright 2015 The Weave Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "examples/ubuntu/event_network.h"
+#include "examples/provider/event_network.h"
 
 #include <weave/enum_to_string.h>
 
@@ -10,8 +10,8 @@
 #include <event2/dns.h>
 #include <event2/bufferevent.h>
 
-#include "examples/ubuntu/event_task_runner.h"
-#include "examples/ubuntu/ssl_stream.h"
+#include "examples/provider/event_task_runner.h"
+#include "examples/provider/ssl_stream.h"
 
 namespace weave {
 namespace examples {
@@ -19,6 +19,7 @@ namespace examples {
 namespace {
 const char kNetworkProbeHostname[] = "talk.google.com";
 const int kNetworkProbePort = 5223;
+const int kNetworkProbeTimeoutS = 2;
 }  // namespace
 
 void EventNetworkImpl::Deleter::operator()(evdns_base* dns_base) {
@@ -43,6 +44,8 @@ void EventNetworkImpl::UpdateNetworkState() {
   std::unique_ptr<bufferevent, Deleter> bev{
       bufferevent_socket_new(task_runner_->GetEventBase(), -1,
                              BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS)};
+  timeval timeout{kNetworkProbeTimeoutS, 0};
+  bufferevent_set_timeouts(bev.get(), &timeout, &timeout);
   bufferevent_setcb(
       bev.get(), nullptr, nullptr,
       [](struct bufferevent* buf, short events, void* ctx) {
@@ -77,10 +80,17 @@ void EventNetworkImpl::UpdateNetworkState() {
 
 void EventNetworkImpl::UpdateNetworkStateCallback(
     provider::Network::State state) {
-  network_state_ = state;
-  LOG(INFO) << "network state updated: " << weave::EnumToString(state);
-  for (const auto& cb : callbacks_)
-    cb.Run();
+  if (state != network_state_) {
+    LOG(INFO) << "network state updated: " << weave::EnumToString(state);
+    network_state_ = state;
+
+    // In general it's better to send false notification than miss one.
+    // However current implementation can only send them very often on every
+    // UpdateNetworkStateCallback or just here, guarder with this if condition.
+    for (const auto& cb : callbacks_)
+      cb.Run();
+  }
+
   // TODO(proppy): use netlink interface event instead of polling
   task_runner_->PostDelayedTask(
       FROM_HERE, base::Bind(&EventNetworkImpl::UpdateNetworkState,
@@ -95,20 +105,7 @@ weave::provider::Network::State EventNetworkImpl::GetConnectionState() const {
 void EventNetworkImpl::OpenSslSocket(const std::string& host,
                                      uint16_t port,
                                      const OpenSslSocketCallback& callback) {
-  // Connect to SSL port instead of upgrading to TLS.
-  std::unique_ptr<SSLStream> tls_stream{new SSLStream{task_runner_}};
-
-  if (tls_stream->Init(host, port)) {
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(callback, base::Passed(&tls_stream), nullptr),
-        {});
-  } else {
-    ErrorPtr error;
-    Error::AddTo(&error, FROM_HERE, "tls", "tls_init_failed",
-                 "Failed to initialize TLS stream.");
-    task_runner_->PostDelayedTask(
-        FROM_HERE, base::Bind(callback, nullptr, base::Passed(&error)), {});
-  }
+  SSLStream::Connect(task_runner_, host, port, callback);
 }
 
 }  // namespace examples

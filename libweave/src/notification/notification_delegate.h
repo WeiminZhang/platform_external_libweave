@@ -18,7 +18,8 @@ class NotificationDelegate {
   virtual void OnDisconnected() = 0;
   virtual void OnPermanentFailure() = 0;
   // Called when a new command is sent via the notification channel.
-  virtual void OnCommandCreated(const base::DictionaryValue& command) = 0;
+  virtual void OnCommandCreated(const base::DictionaryValue& command,
+                                const std::string& channel_name) = 0;
   // Called when DEVICE_DELETED notification is received.
   virtual void OnDeviceDeleted(const std::string& cloud_id) = 0;
 

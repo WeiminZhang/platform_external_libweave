@@ -210,7 +210,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   bool UpdateDeviceInfoTimestamp(const base::DictionaryValue& device_info);
 
   void FetchCommands(
-      const base::Callback<void(const base::ListValue&, ErrorPtr)>& callback);
+      const base::Callback<void(const base::ListValue&, ErrorPtr)>& callback,
+      const std::string& reason);
   void OnFetchCommandsDone(
       const base::Callback<void(const base::ListValue&, ErrorPtr)>& callback,
       const base::DictionaryValue& json,
@@ -230,7 +231,9 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   // Helper function to pull the pending command list from the server using
   // FetchCommands() and make them available on D-Bus with PublishCommands().
-  void FetchAndPublishCommands();
+  // |backup_fetch| is set to true when performing backup ("just-in-case")
+  // command fetch while XMPP channel is up and running.
+  void FetchAndPublishCommands(const std::string& reason);
 
   void PublishStateUpdates();
   void OnPublishStateDone(StateChangeQueueInterface::UpdateID update_id,
@@ -258,7 +261,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void OnConnected(const std::string& channel_name) override;
   void OnDisconnected() override;
   void OnPermanentFailure() override;
-  void OnCommandCreated(const base::DictionaryValue& command) override;
+  void OnCommandCreated(const base::DictionaryValue& command,
+                        const std::string& channel_name) override;
   void OnDeviceDeleted(const std::string& cloud_id) override;
 
   // Wipes out the device registration information and stops server connections.
@@ -316,6 +320,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Set to true when another command queue fetch request is queued while
   // another one was in flight.
   bool fetch_commands_request_queued_{false};
+  // Specifies the reason for queued command fetch request.
+  std::string queued_fetch_reason_;
 
   using ResourceUpdateCallbackList = std::vector<DoneCallback>;
   // Callbacks for device resource update request currently in flight to the
