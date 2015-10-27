@@ -45,10 +45,6 @@ class StateManager final {
                    ErrorPtr* error);
   std::unique_ptr<base::DictionaryValue> GetState() const;
 
-  // Initializes the state manager and load device state fragments.
-  // Called by Buffet daemon at startup.
-  void Startup();
-
   // Returns the recorded state changes since last time this method has been
   // called.
   std::pair<StateChangeQueueInterface::UpdateID, std::vector<StateChange>>
@@ -72,11 +68,6 @@ class StateManager final {
                         const base::Value& value,
                         const base::Time& timestamp,
                         ErrorPtr* error);
-
-  // Loads the base device state fragment JSON. This state fragment
-  // defines the standard state properties from the 'base' package as defined
-  // by GCD specification.
-  bool LoadStandardStateDefinition(const std::string& json, ErrorPtr* error);
 
   // Finds a package by its name. Returns nullptr if not found.
   StatePackage* FindPackage(const std::string& package_name);

@@ -22,8 +22,15 @@ const char kBaseStatePairingEnabled[] = "base.localPairingEnabled";
 BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
                                Device* device)
     : device_info_{device_info}, device_{device} {
-  device_info_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
-      &BaseApiHandler::OnConfigChanged, weak_ptr_factory_.GetWeakPtr()));
+  device_->AddStateDefinitionsFromJson(R"({
+    "base": {
+      "firmwareVersion": "string",
+      "localDiscoveryEnabled": "boolean",
+      "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
+      "localPairingEnabled": "boolean"
+    }
+  })");
+  OnConfigChanged(device_->GetSettings());
 
   const auto& settings = device_info_->GetSettings();
   base::DictionaryValue state;
@@ -45,6 +52,9 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
   device_->AddCommandHandler("base.updateDeviceInfo",
                              base::Bind(&BaseApiHandler::UpdateDeviceInfo,
                                         weak_ptr_factory_.GetWeakPtr()));
+
+  device_info_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
+      &BaseApiHandler::OnConfigChanged, weak_ptr_factory_.GetWeakPtr()));
 }
 
 void BaseApiHandler::UpdateBaseConfiguration(

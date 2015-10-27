@@ -28,19 +28,6 @@ void StateManager::AddChangedCallback(const base::Closure& callback) {
   callback.Run();  // Force to read current state.
 }
 
-void StateManager::Startup() {
-  LOG(INFO) << "Initializing StateManager.";
-
-  // Load standard device state definition.
-  CHECK(LoadStandardStateDefinition(kStandardStateDefs, nullptr));
-
-  // Load standard device state defaults.
-  CHECK(SetPropertiesFromJson(kStandardStateDefaults, nullptr));
-
-  for (const auto& cb : on_changed_)
-    cb.Run();
-}
-
 std::unique_ptr<base::DictionaryValue> StateManager::GetState() const {
   std::unique_ptr<base::DictionaryValue> dict{new base::DictionaryValue};
   for (const auto& pair : packages_) {
@@ -159,20 +146,6 @@ bool StateManager::LoadStateDefinitionFromJson(const std::string& json,
     Error::AddToPrintf(error, FROM_HERE, errors::kErrorDomain,
                        errors::kSchemaError,
                        "Failed to load state definition: '%s'", json.c_str());
-    return false;
-  }
-  return true;
-}
-
-bool StateManager::LoadStandardStateDefinition(const std::string& json,
-                                               ErrorPtr* error) {
-  std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
-  if (!dict)
-    return false;
-  if (!LoadStateDefinition(*dict, error)) {
-    Error::AddToPrintf(
-        error, FROM_HERE, errors::kErrorDomain, errors::kSchemaError,
-        "Failed to load base state definition: '%s'", json.c_str());
     return false;
   }
   return true;

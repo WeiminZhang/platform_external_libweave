@@ -135,19 +135,34 @@ TEST_F(StateManagerTest, LoadStateDefinition) {
 TEST_F(StateManagerTest, Startup) {
   StateManager manager(&mock_state_change_queue_);
 
-  manager.Startup();
-  ASSERT_TRUE(manager.LoadStateDefinitionFromJson(
-      R"({"power": {"battery_level":"integer"}})", nullptr));
-  ASSERT_TRUE(manager.SetPropertiesFromJson(
-      R"({"power": {"battery_level":44}})", nullptr));
+  auto state_definition = R"({
+    "base": {
+      "firmwareVersion": "string",
+      "localDiscoveryEnabled": "boolean",
+      "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
+      "localPairingEnabled": "boolean"
+    },
+    "power": {"battery_level":"integer"}
+  })";
+  ASSERT_TRUE(manager.LoadStateDefinitionFromJson(state_definition, nullptr));
+
+  auto state_values = R"({
+    "base": {
+      "firmwareVersion": "unknown",
+      "localDiscoveryEnabled": false,
+      "localAnonymousAccessMaxRole": "none",
+      "localPairingEnabled": false
+    },
+    "power": {"battery_level":44}
+  })";
+  ASSERT_TRUE(manager.SetPropertiesFromJson(state_values, nullptr));
 
   auto expected = R"({
     'base': {
       'firmwareVersion': 'unknown',
       'localAnonymousAccessMaxRole': 'none',
       'localDiscoveryEnabled': false,
-      'localPairingEnabled': false,
-      'network': {}
+      'localPairingEnabled': false
     },
     'power': {
       'battery_level': 44

@@ -8,8 +8,6 @@
 namespace weave {
 
 extern const char kStandardCommandDefs[];
-extern const char kStandardStateDefs[];
-extern const char kStandardStateDefaults[];
 
 }  // namespace weave
 

@@ -23,6 +23,7 @@ using testing::AnyOf;
 using testing::Eq;
 using testing::Invoke;
 using testing::Return;
+using testing::ReturnRef;
 using testing::StrictMock;
 
 namespace weave {
@@ -37,8 +38,12 @@ class BaseApiHandlerTest : public ::testing::Test {
     command_manager_->Startup();
 
     state_manager_ = std::make_shared<StateManager>(&mock_state_change_queue_);
-    state_manager_->Startup();
 
+    EXPECT_CALL(device_, AddStateDefinitionsFromJson(_))
+        .WillRepeatedly(Invoke([this](const std::string& json) {
+          EXPECT_TRUE(
+              state_manager_->LoadStateDefinitionFromJson(json, nullptr));
+        }));
     EXPECT_CALL(device_, SetStateProperties(_, _))
         .WillRepeatedly(
             Invoke(state_manager_.get(), &StateManager::SetProperties));
@@ -58,6 +63,10 @@ class BaseApiHandlerTest : public ::testing::Test {
     dev_reg_.reset(new DeviceRegistrationInfo(command_manager_, state_manager_,
                                               std::move(config), nullptr,
                                               &http_client_, nullptr));
+
+    EXPECT_CALL(device_, GetSettings())
+        .WillRepeatedly(ReturnRef(dev_reg_->GetSettings()));
+
     handler_.reset(new BaseApiHandler{dev_reg_.get(), &device_});
   }
 
@@ -73,6 +82,17 @@ class BaseApiHandlerTest : public ::testing::Test {
     command_manager_->AddCommand(std::move(command_instance));
     EXPECT_EQ(Command::State::kDone,
               command_manager_->FindCommand(id)->GetState());
+  }
+
+  std::unique_ptr<base::DictionaryValue> GetBaseState() {
+    auto state = state_manager_->GetState();
+    std::set<std::string> result;
+    for (base::DictionaryValue::Iterator it{*state}; !it.IsAtEnd();
+         it.Advance()) {
+      if (it.key() != "base")
+        state->Remove(it.key(), nullptr);
+    }
+    return state;
   }
 
   provider::test::MockConfigStore config_store_;
@@ -106,11 +126,10 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'firmwareVersion': 'TEST_FIRMWARE',
       'localAnonymousAccessMaxRole': 'none',
       'localDiscoveryEnabled': false,
-      'localPairingEnabled': false,
-      'network': {}
+      'localPairingEnabled': false
     }
   })";
-  EXPECT_JSON_EQ(expected, *state_manager_->GetState());
+  EXPECT_JSON_EQ(expected, *GetBaseState());
 
   AddCommand(R"({
     'name' : 'base.updateBaseConfiguration',
@@ -128,11 +147,10 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'firmwareVersion': 'TEST_FIRMWARE',
       'localAnonymousAccessMaxRole': 'user',
       'localDiscoveryEnabled': true,
-      'localPairingEnabled': true,
-      'network': {}
+      'localPairingEnabled': true
     }
   })";
-  EXPECT_JSON_EQ(expected, *state_manager_->GetState());
+  EXPECT_JSON_EQ(expected, *GetBaseState());
 
   {
     Config::Transaction change{dev_reg_->GetMutableConfig()};
@@ -143,11 +161,10 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
       'firmwareVersion': 'TEST_FIRMWARE',
       'localAnonymousAccessMaxRole': 'viewer',
       'localDiscoveryEnabled': true,
-      'localPairingEnabled': true,
-      'network': {}
+      'localPairingEnabled': true
     }
   })";
-  EXPECT_JSON_EQ(expected, *state_manager_->GetState());
+  EXPECT_JSON_EQ(expected, *GetBaseState());
 }
 
 TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {

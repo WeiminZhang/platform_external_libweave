@@ -39,27 +39,4 @@ const char kStandardCommandDefs[] = R"({
   }
 })";
 
-const char kStandardStateDefs[] = R"({
-  "base": {
-    "firmwareVersion": "string",
-    "localDiscoveryEnabled": "boolean",
-    "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
-    "localPairingEnabled": "boolean",
-    "network": {
-      "properties": {
-        "name": "string"
-      }
-    }
-  }
-})";
-
-const char kStandardStateDefaults[] = R"({
-  "base": {
-    "firmwareVersion": "unknown",
-    "localDiscoveryEnabled": false,
-    "localAnonymousAccessMaxRole": "none",
-    "localPairingEnabled": false
-  }
-})";
-
 }  // namespace weave

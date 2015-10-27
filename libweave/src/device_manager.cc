@@ -37,7 +37,6 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
   command_manager_->Startup();
   state_change_queue_.reset(new StateChangeQueue(kMaxStateChangeQueueSize));
   state_manager_ = std::make_shared<StateManager>(state_change_queue_.get());
-  state_manager_->Startup();
 
   std::unique_ptr<Config> config{new Config{config_store}};
   config->Load();
