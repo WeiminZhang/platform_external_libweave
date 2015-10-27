@@ -9,46 +9,10 @@
 #include <weave/error.h>
 
 #include "src/commands/schema_constants.h"
+#include "src/commands/standard_definitions.h"
 #include "src/utils.h"
 
 namespace weave {
-
-namespace {
-
-const char kStandardCommandDefs[] = R"({
-  "base": {
-    "updateBaseConfiguration": {
-      "minimalRole": "manager",
-      "parameters": {
-        "localDiscoveryEnabled": "boolean",
-        "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
-        "localPairingEnabled": "boolean"
-      },
-      "results": {}
-    },
-    "reboot": {
-      "minimalRole": "user",
-      "parameters": {},
-      "results": {}
-    },
-    "identify": {
-      "minimalRole": "user",
-      "parameters": {},
-      "results": {}
-    },
-    "updateDeviceInfo": {
-      "minimalRole": "manager",
-      "parameters": {
-        "description": "string",
-        "name": "string",
-        "location": "string"
-      },
-      "results": {}
-    }
-  }
-})";
-
-}  // namespace
 
 CommandManager::CommandManager() {}
 
