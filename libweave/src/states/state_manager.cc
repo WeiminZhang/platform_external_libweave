@@ -7,6 +7,7 @@
 #include <base/logging.h>
 #include <base/values.h>
 
+#include "src/commands/standard_definitions.h"
 #include "src/json_error_codes.h"
 #include "src/states/error_codes.h"
 #include "src/states/state_change_queue_interface.h"
@@ -14,32 +15,6 @@
 #include "src/utils.h"
 
 namespace weave {
-
-namespace {
-
-const char kStandardStateDefs[] = R"({
-  "base": {
-    "firmwareVersion": "string",
-    "localDiscoveryEnabled": "boolean",
-    "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
-    "localPairingEnabled": "boolean",
-    "network": {
-      "properties": {
-        "name": "string"
-      }
-    }
-  }
-})";
-
-const char kStandardStateDefaults[] = R"({
-  "base": {
-    "firmwareVersion": "unknown",
-    "localDiscoveryEnabled": false,
-    "localAnonymousAccessMaxRole": "none",
-    "localPairingEnabled": false
-  }
-})";
-}
 
 StateManager::StateManager(StateChangeQueueInterface* state_change_queue)
     : state_change_queue_(state_change_queue) {
