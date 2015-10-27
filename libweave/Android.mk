@@ -186,7 +186,6 @@ LOCAL_STATIC_LIBRARIES := \
 	libweave-external \
 	libweave-common \
 	libweave-test \
-	libchromeos-test-helpers \
 	libgtest libgmock \
 	libchrome_test_helpers \
 
