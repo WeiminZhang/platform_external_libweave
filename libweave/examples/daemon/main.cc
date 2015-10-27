@@ -8,6 +8,8 @@
 #include <base/bind.h>
 
 #include "examples/daemon/ledflasher_handler.h"
+#include "examples/daemon/light_handler.h"
+#include "examples/daemon/lock_handler.h"
 #include "examples/daemon/sample_handler.h"
 
 #include "examples/provider/avahi_client.h"
@@ -33,7 +35,9 @@ void ShowUsage(const std::string& name) {
              << "\t-d,--disable_security        Disable privet security\n"
              << "\t--registration_ticket=TICKET Register device with the "
                 "given ticket\n"
-             << "\t--disable_privet             Disable local privet\n";
+             << "\t--disable_privet             Disable local privet\n"
+             << "\t--type=UIDEVICEKIND          Create a device with the "
+                "specified ui device kind\n";
 }
 
 void OnRegisterDeviceDone(weave::Device* device, weave::ErrorPtr error) {
@@ -50,6 +54,7 @@ int main(int argc, char** argv) {
   bool disable_security = false;
   bool disable_privet = false;
   std::string registration_ticket;
+  std::string ui_device_kind;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     if (arg == "-h" || arg == "--help") {
@@ -75,6 +80,13 @@ int main(int argc, char** argv) {
         return 1;
       }
       logging::SetMinLogLevel(-std::stoi(arg.substr(pos + 1)));
+    } else if (arg.find("--type") != std::string::npos) {
+      auto pos = arg.find("=");
+      if (pos == std::string::npos) {
+        ShowUsage(argv[0]);
+        return 1;
+      }
+      ui_device_kind = arg.substr(pos + 1);
     } else {
       ShowUsage(argv[0]);
       return 1;
@@ -110,6 +122,20 @@ int main(int argc, char** argv) {
   weave::examples::daemon::LedFlasherHandler ledFlasher;
   sample.Register(device.get());
   ledFlasher.Register(device.get());
+
+  // If the caller specified a particular ui device kind, register the
+  // correspoinding device handlers
+  // TODO: move this to before device registration, as this should also
+  // cause a particular model manifest to be used.
+  weave::examples::daemon::LightHandler lightHandler;
+  weave::examples::daemon::LockHandler lockHandler;
+  if (!ui_device_kind.empty()) {
+    if (ui_device_kind == "light") {
+      lightHandler.Register(device.get());
+    } else if (ui_device_kind == "lock") {
+      lockHandler.Register(device.get());
+    }
+  }
 
   task_runner.Run();
 
