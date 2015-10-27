@@ -15,7 +15,7 @@ namespace weave {
 
 namespace {
 
-const char kBaseCommandDefs[] = R"({
+const char kStandardCommandDefs[] = R"({
   "base": {
     "updateBaseConfiguration": {
       "minimalRole": "manager",
@@ -63,22 +63,22 @@ const CommandDictionary& CommandManager::GetCommandDictionary() const {
   return dictionary_;
 }
 
-bool CommandManager::LoadBaseCommands(const base::DictionaryValue& dict,
-                                      ErrorPtr* error) {
-  return base_dictionary_.LoadCommands(dict, nullptr, error);
+bool CommandManager::LoadStandardCommands(const base::DictionaryValue& dict,
+                                          ErrorPtr* error) {
+  return standard_dictionary_.LoadCommands(dict, nullptr, error);
 }
 
-bool CommandManager::LoadBaseCommands(const std::string& json,
-                                      ErrorPtr* error) {
+bool CommandManager::LoadStandardCommands(const std::string& json,
+                                          ErrorPtr* error) {
   std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
   if (!dict)
     return false;
-  return LoadBaseCommands(*dict, error);
+  return LoadStandardCommands(*dict, error);
 }
 
 bool CommandManager::LoadCommands(const base::DictionaryValue& dict,
                                   ErrorPtr* error) {
-  bool result = dictionary_.LoadCommands(dict, &base_dictionary_, error);
+  bool result = dictionary_.LoadCommands(dict, &standard_dictionary_, error);
   for (const auto& cb : on_command_changed_)
     cb.Run();
   return result;
@@ -96,7 +96,7 @@ void CommandManager::Startup() {
   LOG(INFO) << "Initializing CommandManager.";
 
   // Load global standard GCD command dictionary.
-  CHECK(LoadBaseCommands(kBaseCommandDefs, nullptr));
+  CHECK(LoadStandardCommands(kStandardCommandDefs, nullptr));
 }
 
 void CommandManager::AddCommand(

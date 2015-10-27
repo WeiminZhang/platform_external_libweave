@@ -364,7 +364,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
       }
     }
   })");
-  EXPECT_TRUE(command_manager_->LoadBaseCommands(*json_base, nullptr));
+  EXPECT_TRUE(command_manager_->LoadStandardCommands(*json_base, nullptr));
   auto json_cmds = CreateDictionaryValue(R"({
     'base': {
       'reboot': {

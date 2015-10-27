@@ -63,10 +63,10 @@ TEST(CommandManager, Empty) {
   EXPECT_TRUE(manager.GetCommandDictionary().IsEmpty());
 }
 
-TEST(CommandManager, LoadBaseCommandsJSON) {
+TEST(CommandManager, LoadStandardCommandsJSON) {
   CommandManager manager;
   auto json = CreateDictionaryValue(kTestBaseCommands);
-  EXPECT_TRUE(manager.LoadBaseCommands(*json, nullptr));
+  EXPECT_TRUE(manager.LoadStandardCommands(*json, nullptr));
 }
 
 TEST(CommandManager, LoadCommandsDict) {
@@ -90,7 +90,7 @@ TEST(CommandManager, LoadCommandsJson) {
       }
     }
   })");
-  manager.LoadBaseCommands(*json, nullptr);
+  manager.LoadStandardCommands(*json, nullptr);
 
   // Load device-supported commands.
   auto json_str = R"({

@@ -76,7 +76,7 @@ class StateManager final {
   // Loads the base device state fragment JSON. This state fragment
   // defines the standard state properties from the 'base' package as defined
   // by GCD specification.
-  bool LoadBaseStateDefinition(const std::string& json, ErrorPtr* error);
+  bool LoadStandardStateDefinition(const std::string& json, ErrorPtr* error);
 
   // Finds a package by its name. Returns nullptr if not found.
   StatePackage* FindPackage(const std::string& package_name);

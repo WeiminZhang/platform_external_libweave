@@ -17,7 +17,7 @@ namespace weave {
 
 namespace {
 
-const char kBaseStateDefs[] = R"({
+const char kStandardStateDefs[] = R"({
   "base": {
     "firmwareVersion": "string",
     "localDiscoveryEnabled": "boolean",
@@ -31,7 +31,7 @@ const char kBaseStateDefs[] = R"({
   }
 })";
 
-const char kBaseStateDefaults[] = R"({
+const char kStandardStateDefaults[] = R"({
   "base": {
     "firmwareVersion": "unknown",
     "localDiscoveryEnabled": false,
@@ -57,10 +57,10 @@ void StateManager::Startup() {
   LOG(INFO) << "Initializing StateManager.";
 
   // Load standard device state definition.
-  CHECK(LoadBaseStateDefinition(kBaseStateDefs, nullptr));
+  CHECK(LoadStandardStateDefinition(kStandardStateDefs, nullptr));
 
   // Load standard device state defaults.
-  CHECK(SetPropertiesFromJson(kBaseStateDefaults, nullptr));
+  CHECK(SetPropertiesFromJson(kStandardStateDefaults, nullptr));
 
   for (const auto& cb : on_changed_)
     cb.Run();
@@ -189,8 +189,8 @@ bool StateManager::LoadStateDefinitionFromJson(const std::string& json,
   return true;
 }
 
-bool StateManager::LoadBaseStateDefinition(const std::string& json,
-                                           ErrorPtr* error) {
+bool StateManager::LoadStandardStateDefinition(const std::string& json,
+                                               ErrorPtr* error) {
   std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
   if (!dict)
     return false;
