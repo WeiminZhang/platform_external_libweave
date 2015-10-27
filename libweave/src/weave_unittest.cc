@@ -36,6 +36,8 @@ using testing::WithArgs;
 
 namespace weave {
 
+namespace {
+
 using provider::HttpClient;
 using provider::Network;
 using provider::test::MockHttpClientResponse;
@@ -133,6 +135,16 @@ MATCHER_P(MatchTxt, txt, "") {
   return (arg_copy == txt_copy);
 }
 
+template <class Map>
+std::set<typename Map::key_type> GetKeys(const Map& map) {
+  std::set<typename Map::key_type> result;
+  for (const auto& pair : map)
+    result.insert(pair.first);
+  return result;
+}
+
+}  // namespace
+
 class WeaveTest : public ::testing::Test {
  protected:
   void SetUp() override {}
@@ -208,13 +220,13 @@ class WeaveTest : public ::testing::Test {
         .WillRepeatedly(Invoke(
             [this](const std::string& path_prefix,
                    const provider::HttpServer::RequestHandlerCallback& cb) {
-              http_server_request_cb_.push_back(cb);
+              http_handlers_[path_prefix] = cb;
             }));
     EXPECT_CALL(http_server_, AddHttpsRequestHandler(_, _))
         .WillRepeatedly(Invoke(
             [this](const std::string& path_prefix,
                    const provider::HttpServer::RequestHandlerCallback& cb) {
-              http_server_request_cb_.push_back(cb);
+              https_handlers_[path_prefix] = cb;
             }));
   }
 
@@ -232,6 +244,19 @@ class WeaveTest : public ::testing::Test {
                                     &http_client_, &network_, &dns_sd_,
                                     &http_server_, &wifi_, &bluetooth_);
 
+    EXPECT_EQ((std::set<std::string>{
+                  "/privet/info", "/privet/v3/pairing/cancel",
+                  "/privet/v3/pairing/confirm", "/privet/v3/pairing/start"}),
+              GetKeys(http_handlers_));
+    EXPECT_EQ((std::set<std::string>{
+                  "/privet/info", "/privet/v3/auth", "/privet/v3/commandDefs",
+                  "/privet/v3/commands/cancel", "/privet/v3/commands/execute",
+                  "/privet/v3/commands/list", "/privet/v3/commands/status",
+                  "/privet/v3/pairing/cancel", "/privet/v3/pairing/confirm",
+                  "/privet/v3/pairing/start", "/privet/v3/setup/start",
+                  "/privet/v3/setup/status", "/privet/v3/state"}),
+              GetKeys(https_handlers_));
+
     device_->AddCommandDefinitionsFromJson(kCommandDefs);
     device_->AddStateDefinitionsFromJson(kStateDefs);
     device_->SetStatePropertiesFromJson(kStateDefaults, nullptr);
@@ -247,8 +272,10 @@ class WeaveTest : public ::testing::Test {
     }
   }
 
-  std::vector<provider::HttpServer::RequestHandlerCallback>
-      http_server_request_cb_;
+  std::map<std::string, provider::HttpServer::RequestHandlerCallback>
+      http_handlers_;
+  std::map<std::string, provider::HttpServer::RequestHandlerCallback>
+      https_handlers_;
 
   StrictMock<provider::test::MockConfigStore> config_store_;
   StrictMock<provider::test::FakeTaskRunner> task_runner_;
