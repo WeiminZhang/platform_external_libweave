@@ -39,8 +39,24 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
 
   device->AddCommandDefinitionsFromJson(R"({
     "base": {
-      "updateBaseConfiguration": {},
-      "updateDeviceInfo": {}
+      "updateBaseConfiguration": {
+        "minimalRole": "manager",
+        "parameters": {
+          "localDiscoveryEnabled": "boolean",
+          "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
+          "localPairingEnabled": "boolean"
+        },
+        "results": {}
+      },
+      "updateDeviceInfo": {
+        "minimalRole": "manager",
+        "parameters": {
+          "description": "string",
+          "name": "string",
+          "location": "string"
+        },
+        "results": {}
+      }
     }
   })");
 

@@ -44,15 +44,6 @@ class CommandManager final {
   // Returns the command definitions for the device.
   const CommandDictionary& GetCommandDictionary() const;
 
-  // Loads standard GCD command definitions.
-  // |dict| is the full JSON schema of standard GCD commands. These commands
-  // are not necessarily supported by a particular device but rather
-  // all the standard commands defined by GCD standard for all known/supported
-  // device kinds.
-  // On success, returns true. Otherwise, |error| contains additional
-  // error information.
-  bool LoadStandardCommands(const base::DictionaryValue& dict, ErrorPtr* error);
-
   // Same as the overload above, but takes a path to a json file to read
   // the base command definitions from.
   bool LoadStandardCommands(const std::string& json, ErrorPtr* error);
@@ -65,10 +56,6 @@ class CommandManager final {
   // the base command definitions from.
   bool LoadCommands(const std::string& json,
                     ErrorPtr* error);
-
-  // Startup method to be called by buffet daemon at startup.
-  // Initializes standard GCD command dictionary.
-  void Startup();
 
   // Adds a new command to the command queue.
   void AddCommand(std::unique_ptr<CommandInstance> command_instance);
@@ -84,8 +71,7 @@ class CommandManager final {
                   ErrorPtr* error);
 
  private:
-  CommandDictionary standard_dictionary_;  // Standard command definitions.
-  CommandDictionary dictionary_;           // Registered definitions.
+  CommandDictionary dictionary_;  // Registered definitions.
   CommandQueue command_queue_;
   std::vector<base::Callback<void()>> on_command_changed_;
   uint32_t next_command_id_{0};

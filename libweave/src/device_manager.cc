@@ -34,7 +34,6 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::Wifi* wifi,
                              provider::Bluetooth* bluetooth) {
   command_manager_ = std::make_shared<CommandManager>();
-  command_manager_->Startup();
   state_change_queue_.reset(new StateChangeQueue(kMaxStateChangeQueueSize));
   state_manager_ = std::make_shared<StateManager>(state_change_queue_.get());
 

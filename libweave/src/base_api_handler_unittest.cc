@@ -35,7 +35,6 @@ class BaseApiHandlerTest : public ::testing::Test {
         .WillRepeatedly(Return(true));
 
     command_manager_ = std::make_shared<CommandManager>();
-    command_manager_->Startup();
 
     state_manager_ = std::make_shared<StateManager>(&mock_state_change_queue_);
 
@@ -105,6 +104,47 @@ class BaseApiHandlerTest : public ::testing::Test {
   StrictMock<test::MockDevice> device_;
   int command_id_{0};
 };
+
+TEST_F(BaseApiHandlerTest, Initialization) {
+  auto command_defs =
+      command_manager_->GetCommandDictionary().GetCommandsAsJson(
+          [](const CommandDefinition* def) { return true; }, true, nullptr);
+
+  auto expected = R"({
+    "base": {
+      "updateBaseConfiguration": {
+         "minimalRole": "manager",
+         "parameters": {
+            "localAnonymousAccessMaxRole": {
+               "enum": [ "none", "viewer", "user" ],
+               "type": "string"
+            },
+            "localDiscoveryEnabled": {
+               "type": "boolean"
+            },
+            "localPairingEnabled": {
+               "type": "boolean"
+            }
+         }
+      },
+      "updateDeviceInfo": {
+         "minimalRole": "manager",
+         "parameters": {
+            "description": {
+               "type": "string"
+            },
+            "location": {
+               "type": "string"
+            },
+            "name": {
+               "type": "string"
+            }
+         }
+      }
+    }
+  })";
+  EXPECT_JSON_EQ(expected, *command_defs);
+}
 
 TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
   const Settings& settings = dev_reg_->GetSettings();

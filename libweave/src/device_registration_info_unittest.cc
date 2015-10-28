@@ -350,21 +350,6 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
 }
 
 TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
-  auto json_base = CreateDictionaryValue(R"({
-    'base': {
-      'reboot': {
-        'parameters': {'delay': 'integer'},
-        'minimalRole': 'user',
-        'results': {}
-      },
-      'shutdown': {
-        'parameters': {},
-        'minimalRole': 'user',
-        'results': {}
-      }
-    }
-  })");
-  EXPECT_TRUE(command_manager_->LoadStandardCommands(*json_base, nullptr));
   auto json_cmds = CreateDictionaryValue(R"({
     'base': {
       'reboot': {

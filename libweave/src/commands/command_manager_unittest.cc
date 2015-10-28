@@ -63,12 +63,6 @@ TEST(CommandManager, Empty) {
   EXPECT_TRUE(manager.GetCommandDictionary().IsEmpty());
 }
 
-TEST(CommandManager, LoadStandardCommandsJSON) {
-  CommandManager manager;
-  auto json = CreateDictionaryValue(kTestBaseCommands);
-  EXPECT_TRUE(manager.LoadStandardCommands(*json, nullptr));
-}
-
 TEST(CommandManager, LoadCommandsDict) {
   CommandManager manager;
   auto json = CreateDictionaryValue(kTestVendorCommands);
@@ -77,20 +71,6 @@ TEST(CommandManager, LoadCommandsDict) {
 
 TEST(CommandManager, LoadCommandsJson) {
   CommandManager manager;
-  // Load some standard command definitions first.
-  auto json = CreateDictionaryValue(R"({
-    'base': {
-      'reboot': {
-        'parameters': {'delay': 'integer'},
-        'results': {}
-      },
-      'shutdown': {
-        'parameters': {},
-        'results': {}
-      }
-    }
-  })");
-  manager.LoadStandardCommands(*json, nullptr);
 
   // Load device-supported commands.
   auto json_str = R"({
@@ -115,7 +95,6 @@ TEST(CommandManager, LoadCommandsJson) {
 
 TEST(CommandManager, ShouldLoadStandardAndTestDefinitions) {
   CommandManager manager;
-  manager.Startup();
   ASSERT_TRUE(manager.LoadCommands(kTestVendorCommands, nullptr));
   ASSERT_TRUE(manager.LoadCommands(kTestTestCommands, nullptr));
   EXPECT_EQ(3, manager.GetCommandDictionary().GetSize());
