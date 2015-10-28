@@ -73,7 +73,7 @@ class WifiBootstrapManager : public WifiDelegate {
   void StartConnecting(const std::string& ssid, const std::string& passphrase);
   void EndConnecting();
 
-  void StartMonitoring();
+  void StartMonitoring(const base::TimeDelta& timeout);
   void EndMonitoring();
 
   // Update the current state, post tasks to notify listeners accordingly to

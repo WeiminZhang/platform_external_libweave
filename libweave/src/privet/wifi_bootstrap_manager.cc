@@ -20,6 +20,8 @@ namespace privet {
 
 namespace {
 
+const int kMonitoringTimeoutSeconds = 120;
+
 const EnumToStringMap<WifiBootstrapManager::State>::Map kWifiSetupStateMap[] = {
     {WifiBootstrapManager::State::kDisabled, "disabled"},
     {WifiBootstrapManager::State::kBootstrapping, "waiting"},
@@ -52,9 +54,10 @@ void WifiBootstrapManager::Init() {
       base::Bind(&WifiBootstrapManager::OnConnectivityChange,
                  lifetime_weak_factory_.GetWeakPtr()));
   if (config_->GetSettings().last_configured_ssid.empty()) {
-    StartBootstrapping();
+    // Give implementation some time to figure out state.
+    StartMonitoring(base::TimeDelta::FromSeconds(15));
   } else {
-    StartMonitoring();
+    StartMonitoring(base::TimeDelta::FromSeconds(kMonitoringTimeoutSeconds));
   }
 }
 
@@ -65,7 +68,7 @@ void WifiBootstrapManager::StartBootstrapping() {
     // testing when we have an ethernet connection.  If you need to always
     // start an AP to bootstrap WiFi credentials, then add your WiFi interface
     // to the device whitelist.
-    StartMonitoring();
+    StartMonitoring(base::TimeDelta::FromSeconds(kMonitoringTimeoutSeconds));
     return;
   }
 
@@ -106,7 +109,7 @@ void WifiBootstrapManager::StartConnecting(const std::string& ssid,
 
 void WifiBootstrapManager::EndConnecting() {}
 
-void WifiBootstrapManager::StartMonitoring() {
+void WifiBootstrapManager::StartMonitoring(const base::TimeDelta& timeout) {
   VLOG(1) << "Monitoring connectivity.";
   // We already have a callback in place with |network_| to update our
   // connectivity state.  See OnConnectivityChange().
@@ -116,7 +119,7 @@ void WifiBootstrapManager::StartMonitoring() {
     monitor_until_ = {};
   } else {
     if (monitor_until_.is_null()) {
-      monitor_until_ = base::Time::Now() + base::TimeDelta::FromMinutes(2);
+      monitor_until_ = base::Time::Now() + timeout;
       VLOG(2) << "Waiting for connection until: " << monitor_until_;
     }
 
@@ -207,7 +210,7 @@ void WifiBootstrapManager::OnConnectDone(const std::string& ssid,
   change.set_last_configured_ssid(ssid);
   change.Commit();
   setup_state_ = SetupState{SetupState::kSuccess};
-  StartMonitoring();
+  StartMonitoring(base::TimeDelta::FromSeconds(kMonitoringTimeoutSeconds));
 }
 
 void WifiBootstrapManager::OnConnectTimeout() {
@@ -220,7 +223,7 @@ void WifiBootstrapManager::OnConnectTimeout() {
 
 void WifiBootstrapManager::OnBootstrapTimeout() {
   VLOG(1) << "Bootstrapping has timed out.";
-  StartMonitoring();
+  StartMonitoring(base::TimeDelta::FromSeconds(kMonitoringTimeoutSeconds));
 }
 
 void WifiBootstrapManager::OnConnectivityChange() {
@@ -231,7 +234,7 @@ void WifiBootstrapManager::OnConnectivityChange() {
   if (state_ == State::kMonitoring ||  // Reset monitoring timeout.
       (state_ != State::kDisabled &&
        network_->GetConnectionState() == Network::State::kOnline)) {
-    StartMonitoring();
+    StartMonitoring(base::TimeDelta::FromSeconds(kMonitoringTimeoutSeconds));
   }
 }
 
