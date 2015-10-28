@@ -41,6 +41,8 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
 
 WifiImpl::WifiImpl(provider::TaskRunner* task_runner, bool force_bootstrapping)
     : force_bootstrapping_{force_bootstrapping}, task_runner_{task_runner} {
+  CHECK_EQ(0, getuid())
+      << "WiFi manager expects root access to control WiFi capabilities";
   StopAccessPoint();
 }
 WifiImpl::~WifiImpl() {
