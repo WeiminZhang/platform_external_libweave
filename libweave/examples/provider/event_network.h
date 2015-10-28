@@ -33,13 +33,21 @@ class EventNetworkImpl : public weave::provider::Network {
                      uint16_t port,
                      const OpenSslSocketCallback& callback) override;
 
+  void SetSimulateOffline(bool value) {
+    simulate_offline_ = value;
+    UpdateNetworkState();
+  }
+
  private:
   void UpdateNetworkState();
   void UpdateNetworkStateCallback(provider::Network::State state);
+  bool simulate_offline_{false};
   EventTaskRunner* task_runner_{nullptr};
   std::unique_ptr<evdns_base, Deleter> dns_base_;
   std::vector<ConnectionChangedCallback> callbacks_;
   provider::Network::State network_state_{provider::Network::State::kOffline};
+  std::unique_ptr<bufferevent, Deleter> connectivity_probe_;
+
   base::WeakPtrFactory<EventNetworkImpl> weak_ptr_factory_{this};
 };
 

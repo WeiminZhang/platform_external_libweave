@@ -20,12 +20,13 @@ class TaskRunner;
 
 namespace examples {
 
+class EventNetworkImpl;
+
 // Basic weave::Wifi implementation.
 // Production version of SSL socket needs secure server certificate check.
 class WifiImpl : public provider::Wifi {
  public:
-  explicit WifiImpl(provider::TaskRunner* task_runner,
-                    bool force_bootstrapping);
+  WifiImpl(provider::TaskRunner* task_runner, EventNetworkImpl* network);
   ~WifiImpl();
 
   // Wifi implementation.
@@ -43,9 +44,9 @@ class WifiImpl : public provider::Wifi {
                     int pid,
                     base::Time until,
                     const DoneCallback& callback);
-  bool force_bootstrapping_{false};
   bool hostapd_started_{false};
   provider::TaskRunner* task_runner_{nullptr};
+  EventNetworkImpl* network_{nullptr};
   base::WeakPtrFactory<WifiImpl> weak_ptr_factory_{this};
 };
 

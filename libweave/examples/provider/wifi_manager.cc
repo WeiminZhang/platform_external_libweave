@@ -14,6 +14,7 @@
 #include <base/bind.h>
 #include <weave/provider/task_runner.h>
 
+#include "examples/provider/event_network.h"
 #include "examples/provider/ssl_stream.h"
 
 namespace weave {
@@ -39,8 +40,8 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
 
 }  // namespace
 
-WifiImpl::WifiImpl(provider::TaskRunner* task_runner, bool force_bootstrapping)
-    : force_bootstrapping_{force_bootstrapping}, task_runner_{task_runner} {
+WifiImpl::WifiImpl(provider::TaskRunner* task_runner, EventNetworkImpl* network)
+    : task_runner_{task_runner}, network_{network} {
   CHECK_EQ(0, getuid())
       << "WiFi manager expects root access to control WiFi capabilities";
   StopAccessPoint();
@@ -100,7 +101,7 @@ void WifiImpl::TryToConnect(const std::string& ssid,
 void WifiImpl::Connect(const std::string& ssid,
                        const std::string& passphrase,
                        const DoneCallback& callback) {
-  force_bootstrapping_ = false;
+  network_->SetSimulateOffline(false);
   CHECK(!hostapd_started_);
   if (hostapd_started_) {
     ErrorPtr error;
