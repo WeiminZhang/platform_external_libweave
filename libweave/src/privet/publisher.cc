@@ -11,6 +11,7 @@
 
 #include "src/privet/cloud_delegate.h"
 #include "src/privet/device_delegate.h"
+#include "src/privet/device_ui_kind.h"
 #include "src/privet/wifi_bootstrap_manager.h"
 #include "src/privet/wifi_ssid_generator.h"
 #include "src/string_utils.h"
@@ -54,15 +55,10 @@ void Publisher::ExposeService() {
   const uint16_t port = device_->GetHttpEnpoint().first;
   DCHECK_NE(port, 0);
 
-  std::string services;
-  if (!cloud_->GetServices().empty())
-    services += "_";
-  services += Join(",_", cloud_->GetServices());
-
   std::vector<std::string> txt_record{
       {"txtvers=3"},
       {"ty=" + name},
-      {"services=" + services},
+      {"services=" + GetDeviceUiKind(model_id)},
       {"id=" + cloud_->GetDeviceId()},
       {"mmid=" + model_id},
       {"flags=" + WifiSsidGenerator{cloud_, wifi_}.GenerateFlags()},

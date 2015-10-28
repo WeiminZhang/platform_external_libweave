@@ -146,7 +146,6 @@ class MockCloudDelegate : public CloudDelegate {
                     const std::string&));
   MOCK_CONST_METHOD0(GetOemName, std::string());
   MOCK_CONST_METHOD0(GetModelName, std::string());
-  MOCK_CONST_METHOD0(GetServices, std::set<std::string>());
   MOCK_CONST_METHOD0(GetAnonymousMaxScope, AuthScope());
   MOCK_CONST_METHOD0(GetConnectionState, const ConnectionState&());
   MOCK_CONST_METHOD0(GetSetupState, const SetupState&());
@@ -177,8 +176,6 @@ class MockCloudDelegate : public CloudDelegate {
     EXPECT_CALL(*this, UpdateDeviceInfo(_, _, _)).WillRepeatedly(Return());
     EXPECT_CALL(*this, GetOemName()).WillRepeatedly(Return("Chromium"));
     EXPECT_CALL(*this, GetModelName()).WillRepeatedly(Return("Brillo"));
-    EXPECT_CALL(*this, GetServices())
-        .WillRepeatedly(Return(std::set<std::string>{}));
     EXPECT_CALL(*this, GetAnonymousMaxScope())
         .WillRepeatedly(Return(AuthScope::kUser));
     EXPECT_CALL(*this, GetConnectionState())

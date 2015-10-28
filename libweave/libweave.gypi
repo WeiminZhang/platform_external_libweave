@@ -35,6 +35,7 @@
       'src/privet/cloud_delegate.cc',
       'src/privet/constants.cc',
       'src/privet/device_delegate.cc',
+      'src/privet/device_ui_kind.cc',
       'src/privet/openssl_utils.cc',
       'src/privet/privet_handler.cc',
       'src/privet/privet_manager.cc',

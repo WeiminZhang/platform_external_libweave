@@ -99,15 +99,6 @@ class CloudDelegateImpl : public CloudDelegate {
     return device_->GetSettings().model_name;
   }
 
-  std::set<std::string> GetServices() const override {
-    std::set<std::string> result;
-    for (base::DictionaryValue::Iterator it{command_defs_}; !it.IsAtEnd();
-         it.Advance()) {
-      result.emplace(it.key());
-    }
-    return result;
-  }
-
   AuthScope GetAnonymousMaxScope() const override {
     return device_->GetSettings().local_anonymous_access_role;
   }

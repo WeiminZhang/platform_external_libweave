@@ -20,6 +20,7 @@
 #include "src/privet/cloud_delegate.h"
 #include "src/privet/constants.h"
 #include "src/privet/device_delegate.h"
+#include "src/privet/device_ui_kind.h"
 #include "src/privet/security_delegate.h"
 #include "src/privet/wifi_delegate.h"
 #include "src/string_utils.h"
@@ -216,40 +217,11 @@ void OnCommandRequestSucceeded(const PrivetHandler::RequestCallback& callback,
   return ReturnError(*error, callback);
 }
 
-std::string GetDeviceKind(const std::string& manifest_id) {
-  CHECK_EQ(5u, manifest_id.size());
-  std::string kind = manifest_id.substr(0, 2);
-  if (kind == "AC")
-    return "accessPoint";
-  if (kind == "AK")
-    return "aggregator";
-  if (kind == "AM")
-    return "camera";
-  if (kind == "AB")
-    return "developmentBoard";
-  if (kind == "AE")
-    return "printer";
-  if (kind == "AF")
-    return "scanner";
-  if (kind == "AD")
-    return "speaker";
-  if (kind == "AL")
-    return "storage";
-  if (kind == "AJ")
-    return "toy";
-  if (kind == "AA")
-    return "vendor";
-  if (kind == "AN")
-    return "video";
-  LOG(FATAL) << "Invalid model id: " << manifest_id;
-  return std::string();
-}
-
 std::unique_ptr<base::DictionaryValue> CreateManifestSection(
-    const std::string& model_id,
     const CloudDelegate& cloud) {
   std::unique_ptr<base::DictionaryValue> manifest(new base::DictionaryValue());
-  manifest->SetString(kInfoManifestUiDeviceKind, GetDeviceKind(model_id));
+  manifest->SetString(kInfoManifestUiDeviceKind,
+                      GetDeviceUiKind(cloud.GetModelId()));
   manifest->SetString(kInfoManifestOemName, cloud.GetOemName());
   manifest->SetString(kInfoManifestModelName, cloud.GetModelName());
   return manifest;
@@ -487,9 +459,11 @@ void PrivetHandler::HandleInfo(const base::DictionaryValue&,
     output.SetString(kLocationKey, location);
 
   output.SetString(kInfoModelIdKey, model_id);
-  output.Set(kInfoModelManifestKey,
-             CreateManifestSection(model_id, *cloud_).release());
-  output.Set(kInfoServicesKey, ToValue(cloud_->GetServices()).release());
+  output.Set(kInfoModelManifestKey, CreateManifestSection(*cloud_).release());
+  output.Set(
+      kInfoServicesKey,
+      ToValue(std::vector<std::string>{GetDeviceUiKind(cloud_->GetModelId())})
+          .release());
 
   output.Set(
       kInfoAuthenticationKey,

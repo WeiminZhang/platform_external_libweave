@@ -238,7 +238,7 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
     'version': '3.0',
     'id': 'TestId',
     'name': 'TestDevice',
-    'services': [],
+    'services': [ "developmentBoard" ],
     'modelManifestId': "ABMID",
     'basicModelManifest': {
       'uiDeviceKind': 'developmentBoard',
@@ -275,8 +275,6 @@ TEST_F(PrivetHandlerTest, Info) {
   EXPECT_CALL(cloud_, GetDescription())
       .WillRepeatedly(Return("TestDescription"));
   EXPECT_CALL(cloud_, GetLocation()).WillRepeatedly(Return("TestLocation"));
-  EXPECT_CALL(cloud_, GetServices())
-      .WillRepeatedly(Return(std::set<std::string>{"service1", "service2"}));
   EXPECT_CALL(device_, GetHttpEnpoint())
       .WillRepeatedly(Return(std::make_pair(80, 10080)));
   EXPECT_CALL(device_, GetHttpsEnpoint())
@@ -290,10 +288,7 @@ TEST_F(PrivetHandlerTest, Info) {
     'name': 'TestDevice',
     'description': 'TestDescription',
     'location': 'TestLocation',
-    'services': [
-      "service1",
-      "service2"
-    ],
+    'services': [ "developmentBoard" ],
     'modelManifestId': "ABMID",
     'basicModelManifest': {
       'uiDeviceKind': 'developmentBoard',

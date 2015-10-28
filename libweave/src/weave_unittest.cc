@@ -190,9 +190,9 @@ class WeaveTest : public ::testing::Test {
   }
 
   void InitDnsSdPublishing(bool registered, const std::string& flags) {
-    std::vector<std::string> txt{{"id=TEST_DEVICE_ID"}, {"flags=" + flags},
-                                 {"mmid=ABCDE"},        {"services=_base"},
-                                 {"txtvers=3"},         {"ty=TEST_NAME"}};
+    std::vector<std::string> txt{
+        {"id=TEST_DEVICE_ID"},         {"flags=" + flags}, {"mmid=ABCDE"},
+        {"services=developmentBoard"}, {"txtvers=3"},      {"ty=TEST_NAME"}};
     if (registered) {
       txt.push_back("gcd_id=CLOUD_ID");
 
