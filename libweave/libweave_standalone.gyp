@@ -8,9 +8,9 @@
   'target_defaults': {
     'libraries': [
       '-lcrypto',
-      '-lexpat',
       '-lgtest',
       '-lgmock',
+      '-lexpat',
       '-lpthread',
     ],
   },
@@ -19,7 +19,7 @@
       'target_name': 'libweave_common',
       'type': 'static_library',
       'include_dirs': [
-        '../libweave/external',
+        '<@(DEPTH)/external',
       ],
       'sources': [
         '<@(weave_sources)',
@@ -44,7 +44,7 @@
       'type': 'static_library',
       'standalone_static_library': 1,
       'include_dirs': [
-        '../libweave/external',
+        '<@(DEPTH)/external',
       ],
       'sources': [
         '<@(weave_test_sources)',
@@ -54,7 +54,7 @@
       'target_name': 'libweave_testrunner',
       'type': 'executable',
       'include_dirs': [
-        '../libweave/external',
+        '<@(DEPTH)/external',
       ],
       'dependencies': [
         'libweave_common',
@@ -69,7 +69,7 @@
       'target_name': 'libweave_exports_testrunner',
       'type': 'executable',
       'include_dirs': [
-        '../libweave/external',
+        '<@(DEPTH)/external',
       ],
       'dependencies': [
         'libweave',

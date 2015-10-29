@@ -10,8 +10,8 @@
         'main.cc',
       ],
       'dependencies': [
-        '../../libweave_standalone.gyp:libweave',
-        '../provider/provider.gyp:libweave_provider',
+        '<@(DEPTH)/libweave_standalone.gyp:libweave',
+        '<@(DEPTH)/examples/provider/provider.gyp:libweave_provider',
       ]
     }
   ]

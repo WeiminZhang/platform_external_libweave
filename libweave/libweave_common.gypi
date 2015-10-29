@@ -47,8 +47,6 @@
       '-Wpointer-arith',
       '-Wwrite-strings',
     ],
-    'libraries': [
-      '-L../../third_party/lib',
-    ],
+    'library_dirs': ['third_party/lib']
   },
 }

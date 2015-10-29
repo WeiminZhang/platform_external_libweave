@@ -32,7 +32,7 @@
         'ssl_stream.cc',
       ],
       'dependencies': [
-        '../../libweave_standalone.gyp:libweave',
+        '<@(DEPTH)/libweave_standalone.gyp:libweave',
       ],
       'direct_dependent_settings' : {
         'variables': {
