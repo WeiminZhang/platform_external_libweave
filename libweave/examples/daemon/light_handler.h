@@ -30,20 +30,18 @@ class LightHandler {
     })",
                                        nullptr);
 
-    // Once bug b/25304415 is fixed, these should be changed
-    // to use the standard commands.
     device->AddCommandDefinitionsFromJson(R"({
       "onOff": {
-         "_setConfig":{
+         "setConfig":{
            "parameters": {
-             "_state": ["on", "standby"]
+             "state": ["on", "standby"]
            }
          }
        },
        "brightness": {
-         "_setConfig":{
+         "setConfig":{
            "parameters": {
-             "_brightness": {
+             "brightness": {
                "type": "integer",
                "minimum": 0,
                "maximum": 100
@@ -53,11 +51,11 @@ class LightHandler {
       }
     })");
     device->AddCommandHandler(
-        "onOff._setConfig",
+        "onOff.setConfig",
         base::Bind(&LightHandler::OnOnOffSetConfig,
                    weak_ptr_factory_.GetWeakPtr()));
     device->AddCommandHandler(
-        "brightness._setConfig",
+        "brightness.setConfig",
          base::Bind(&LightHandler::OnBrightnessSetConfig,
                     weak_ptr_factory_.GetWeakPtr()));
   }
@@ -69,7 +67,7 @@ class LightHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
     int32_t brightness_value = 0;
-    if (cmd->GetParameters()->GetInteger("_brightness", &brightness_value)) {
+    if (cmd->GetParameters()->GetInteger("brightness", &brightness_value)) {
       // Display this command in terminal.
       LOG(INFO) << cmd->GetName() << " brightness: " << brightness_value;
 
@@ -92,7 +90,7 @@ class LightHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
     std::string requested_state;
-    if (cmd->GetParameters()->GetString("_state", &requested_state)) {
+    if (cmd->GetParameters()->GetString("state", &requested_state)) {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
       bool new_light_status = requested_state == "on";
