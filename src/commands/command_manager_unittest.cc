@@ -21,19 +21,6 @@ using test::CreateDictionaryValue;
 
 namespace {
 
-const char kTestBaseCommands[] = R"({
-  "base": {
-    "reboot": {
-      "parameters": {"delay": "integer"},
-      "results": {}
-    },
-    "shutdown": {
-      "parameters": {},
-      "results": {}
-    }
-  }
-})";
-
 const char kTestVendorCommands[] = R"({
   "robot": {
     "_jump": {
