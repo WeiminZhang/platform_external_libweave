@@ -8,13 +8,24 @@ Sources
 Sources are located in git repository at
 https://weave.googlesource.com/weave/libweave/
 
-Checkout code with:
 
-  git clone https://weave.googlesource.com/weave/libweave && \
-    (cd libweave && \
-     curl -Lo `git rev-parse --git-dir`/hooks/commit-msg \
-        https://gerrit-review.googlesource.com/tools/hooks/commit-msg ;\
-        chmod +x `git rev-parse --git-dir`/hooks/commit-msg)
+Install Repo
+-------
+1. Make sure you have a bin/ directory in your home directory
+and that it is included in your path:
+
+    mkdir ~/bin
+    PATH=~/bin:$PATH
+
+2. Download the Repo tool and ensure that it is executable:
+
+    curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+    chmod a+x ~/bin/repo
+
+Checkout code
+-------
+    repo init -u https://weave.googlesource.com/weave/manifest
+    repo sync
 
 Directory structure
 -------------------
@@ -106,15 +117,19 @@ Make sure to have correct user in local or global config e.g.:
   git config --local user.name "John Doe"
   git config --local user.email johndoe@example.com
 
+Start local branch
+
+  repo start <branch name> .
+
 Edit code and commit locally e.g.:
 
   git commit -a -v
 
 Upload CL:
 
-  git push origin HEAD:refs/for/master
+  repo upload .
 
-Go to the url from the output of "push" and add reviewers.
+Go to the url from the output of "repo upload" and add reviewers.
 
 Known Issues
 ------------
