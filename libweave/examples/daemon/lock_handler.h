@@ -35,27 +35,25 @@ class LockHandler {
     device_ = device;
 
     device->AddStateDefinitionsFromJson(R"({
-      "_lock": {"lockedState": ["locked", "unlocked", "partiallyLocked"]}
+      "lock": {"lockedState": ["locked", "unlocked", "partiallyLocked"]}
     })");
 
     device->SetStatePropertiesFromJson(R"({
-      "_lock":{"lockedState": "locked"}
+      "lock":{"lockedState": "locked"}
     })",
                                        nullptr);
 
-    // Once bug b/25304415 is fixed, and when the lock trait is published
-    // these should be changed  to use the standard commands
     device->AddCommandDefinitionsFromJson(R"({
-        "_lock": {
-          "_setConfig":{
+        "lock": {
+          "setConfig":{
             "parameters": {
-              "_lockedState": ["locked", "unlocked"]
+              "lockedState": ["locked", "unlocked"]
             }
           }
         }
     })");
     device->AddCommandHandler(
-        "_lock._setConfig",
+        "lock.setConfig",
         base::Bind(&LockHandler::OnLockSetConfig,
                    weak_ptr_factory_.GetWeakPtr()));
   }
@@ -67,7 +65,7 @@ class LockHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
     std::string requested_state;
-    if (cmd->GetParameters()->GetString("_lockedState", &requested_state)) {
+    if (cmd->GetParameters()->GetString("lockedState", &requested_state)) {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
       lockstate::LockState new_lock_status;
