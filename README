@@ -58,7 +58,7 @@ Build library, tests, run tests, build example:
 
 Execute example:
 
-  sudo out/Debug/weave
+  sudo out/Debug/weave_daemon
 
 
 Prerequisites
