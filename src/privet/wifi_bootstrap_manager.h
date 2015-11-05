@@ -74,6 +74,7 @@ class WifiBootstrapManager : public WifiDelegate {
   void EndConnecting();
 
   void StartMonitoring(const base::TimeDelta& timeout);
+  void ContinueMonitoring(const base::TimeDelta& timeout);
   void EndMonitoring();
 
   // Update the current state, post tasks to notify listeners accordingly to
