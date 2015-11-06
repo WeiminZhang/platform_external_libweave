@@ -34,6 +34,7 @@ Publisher::Publisher(const DeviceDelegate* device,
   CHECK(device_);
   CHECK(cloud_);
   CHECK(dns_sd_);
+  Update();
 }
 
 Publisher::~Publisher() {
@@ -73,7 +74,8 @@ void Publisher::ExposeService() {
   auto new_data = std::make_pair(port, txt_record);
   if (published_ == new_data)
     return;
-  VLOG(1) << "Updating DNS-SD";
+
+  VLOG(1) << "Updating service using DNS-SD, port: " << port;
   published_ = new_data;
   dns_sd_->PublishService(kPrivetServiceType, port, txt_record);
 }
