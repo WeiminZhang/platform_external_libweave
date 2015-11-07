@@ -8,7 +8,7 @@ ROOT_DIR=$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)
 
 cd $ROOT_DIR
 
-gyp -Ilibweave_common.gypi --toplevel-dir=. --depth=. -f ninja $DIR/daemon/examples.gyp
+gyp -Ilibweave_common.gypi --toplevel-dir=. --depth=. -f ninja $DIR/daemon/daemon.gyp
 
 if [ -z "$BUILD_CONFIG" ]; then
    export BUILD_CONFIG=Debug
@@ -16,7 +16,7 @@ fi
 
 export BUILD_TARGET=$*
 if [ -z "$BUILD_TARGET" ]; then
-   export BUILD_TARGET="weave_daemon_examples libweave_testrunner libweave_exports_testrunner"
+   export BUILD_TARGET="weave_daemon libweave_testrunner libweave_exports_testrunner"
 fi
 
 export CORES=`cat /proc/cpuinfo | grep processor | wc -l`

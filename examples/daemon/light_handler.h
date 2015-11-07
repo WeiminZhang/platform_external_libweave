@@ -2,19 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "examples/daemon/common/daemon.h"
-
 #include <weave/device.h>
 
 #include <base/bind.h>
 #include <base/memory/weak_ptr.h>
+
+namespace weave {
+namespace examples {
+namespace daemon {
 
 // LightHandler is a command handler example that shows
 // how to handle commands for a Weave light.
 class LightHandler {
  public:
   LightHandler() = default;
-  void Register(weave::Device* device) {
+  void Register(Device* device) {
     device_ = device;
 
     device->AddStateDefinitionsFromJson(R"({
@@ -48,16 +50,18 @@ class LightHandler {
         }
       }
     })");
-    device->AddCommandHandler("onOff.setConfig",
-                              base::Bind(&LightHandler::OnOnOffSetConfig,
-                                         weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler("brightness.setConfig",
-                              base::Bind(&LightHandler::OnBrightnessSetConfig,
-                                         weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandHandler(
+        "onOff.setConfig",
+        base::Bind(&LightHandler::OnOnOffSetConfig,
+                   weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandHandler(
+        "brightness.setConfig",
+         base::Bind(&LightHandler::OnBrightnessSetConfig,
+                    weak_ptr_factory_.GetWeakPtr()));
   }
 
  private:
-  void OnBrightnessSetConfig(const std::weak_ptr<weave::Command>& command) {
+  void OnBrightnessSetConfig(const std::weak_ptr<Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
       return;
@@ -74,13 +78,13 @@ class LightHandler {
       cmd->Complete({}, nullptr);
       return;
     }
-    weave::ErrorPtr error;
-    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
-                        "Invalid parameters");
+    ErrorPtr error;
+    Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+                 "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }
 
-  void OnOnOffSetConfig(const std::weak_ptr<weave::Command>& command) {
+  void OnOnOffSetConfig(const std::weak_ptr<Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
       return;
@@ -99,20 +103,20 @@ class LightHandler {
       cmd->Complete({}, nullptr);
       return;
     }
-    weave::ErrorPtr error;
-    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
-                        "Invalid parameters");
+    ErrorPtr error;
+    Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+                 "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }
 
-  void UpdateLightState() {
+  void UpdateLightState(void) {
     base::DictionaryValue state;
     state.SetString("onOff.state", light_status_ ? "on" : "standby");
     state.SetInteger("brightness.brightness", brightness_state_);
     device_->SetStateProperties(state, nullptr);
   }
 
-  weave::Device* device_{nullptr};
+  Device* device_{nullptr};
 
   // Simulate the state of the light.
   bool light_status_;
@@ -120,15 +124,6 @@ class LightHandler {
   base::WeakPtrFactory<LightHandler> weak_ptr_factory_{this};
 };
 
-int main(int argc, char** argv) {
-  Daemon::Options opts;
-  if (!opts.Parse(argc, argv)) {
-    Daemon::Options::ShowUsage(argv[0]);
-    return 1;
-  }
-  Daemon daemon{opts};
-  LightHandler handler;
-  handler.Register(daemon.GetDevice());
-  daemon.Run();
-  return 0;
-}
+}  // namespace daemon
+}  // namespace examples
+}  // namespace weave

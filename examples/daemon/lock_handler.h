@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "examples/daemon/common/daemon.h"
-
 #include <weave/device.h>
 #include <weave/enum_to_string.h>
 
@@ -11,26 +9,29 @@
 #include <base/memory/weak_ptr.h>
 
 namespace weave {
+
 namespace lockstate {
 enum class LockState { kUnlocked, kLocked, kPartiallyLocked };
 
 const weave::EnumToStringMap<LockState>::Map kLockMapMethod[] = {
-    {LockState::kLocked, "locked"},
-    {LockState::kUnlocked, "unlocked"},
-    {LockState::kPartiallyLocked, "partiallyLocked"}};
+  {LockState::kLocked, "locked"},
+  {LockState::kUnlocked, "unlocked"},
+  {LockState::kPartiallyLocked, "partiallyLocked"}};
 }  // namespace lockstate
 
 template <>
 EnumToStringMap<lockstate::LockState>::EnumToStringMap()
-    : EnumToStringMap(lockstate::kLockMapMethod) {}
-}  // namespace weave
+  : EnumToStringMap(lockstate::kLockMapMethod) {}
+
+namespace examples {
+namespace daemon {
 
 // LockHandler is a command handler example that shows
 // how to handle commands for a Weave lock.
 class LockHandler {
  public:
   LockHandler() = default;
-  void Register(weave::Device* device) {
+  void Register(Device* device) {
     device_ = device;
 
     device->AddStateDefinitionsFromJson(R"({
@@ -51,13 +52,14 @@ class LockHandler {
           }
         }
     })");
-    device->AddCommandHandler("lock.setConfig",
-                              base::Bind(&LockHandler::OnLockSetConfig,
-                                         weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandHandler(
+        "lock.setConfig",
+        base::Bind(&LockHandler::OnLockSetConfig,
+                   weak_ptr_factory_.GetWeakPtr()));
   }
 
  private:
-  void OnLockSetConfig(const std::weak_ptr<weave::Command>& command) {
+  void OnLockSetConfig(const std::weak_ptr<Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
       return;
@@ -66,13 +68,13 @@ class LockHandler {
     if (cmd->GetParameters()->GetString("lockedState", &requested_state)) {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
-      weave::lockstate::LockState new_lock_status;
+      lockstate::LockState new_lock_status;
 
       if (!weave::StringToEnum(requested_state, &new_lock_status)) {
         // Invalid lock state was specified.
-        weave::ErrorPtr error;
-        weave::Error::AddTo(&error, FROM_HERE, "example",
-                            "invalid_parameter_value", "Invalid parameters");
+        ErrorPtr error;
+        Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+                     "Invalid parameters");
         cmd->Abort(error.get(), nullptr);
         return;
       }
@@ -86,35 +88,26 @@ class LockHandler {
       cmd->Complete({}, nullptr);
       return;
     }
-    weave::ErrorPtr error;
-    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
-                        "Invalid parameters");
+    ErrorPtr error;
+    Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+                 "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }
 
-  void UpdateLockState() {
+  void UpdateLockState(void) {
     base::DictionaryValue state;
     std::string updated_state = weave::EnumToString(lock_state_);
     state.SetString("lock.lockedState", updated_state);
     device_->SetStateProperties(state, nullptr);
   }
 
-  weave::Device* device_{nullptr};
+  Device* device_{nullptr};
 
   // Simulate the state of the light.
-  weave::lockstate::LockState lock_state_{weave::lockstate::LockState::kLocked};
+  lockstate::LockState lock_state_{lockstate::LockState::kLocked};
   base::WeakPtrFactory<LockHandler> weak_ptr_factory_{this};
 };
 
-int main(int argc, char** argv) {
-  Daemon::Options opts;
-  if (!opts.Parse(argc, argv)) {
-    Daemon::Options::ShowUsage(argv[0]);
-    return 1;
-  }
-  Daemon daemon{opts};
-  LockHandler handler;
-  handler.Register(daemon.GetDevice());
-  daemon.Run();
-  return 0;
-}
+}  // namespace daemon
+}  // namespace examples
+}  // namespace weave

@@ -5,7 +5,6 @@
 #ifndef LIBWEAVE_SRC_COMMANDS_SCHEMA_UTILS_H_
 #define LIBWEAVE_SRC_COMMANDS_SCHEMA_UTILS_H_
 
-#include <cmath>
 #include <limits>
 #include <map>
 #include <memory>

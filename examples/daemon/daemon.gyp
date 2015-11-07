@@ -4,10 +4,10 @@
 {
   'targets': [
     {
-      'target_name': 'weave_daemon_lock',
+      'target_name': 'weave_daemon',
       'type': 'executable',
       'sources': [
-        'lock.cc',
+        'main.cc',
       ],
       'dependencies': [
         '<@(DEPTH)/libweave_standalone.gyp:libweave',
