@@ -20,10 +20,7 @@ namespace privet {
 
 namespace {
 
-const int kMonitoringWithSsidTimeoutSeconds = 15;
 const int kMonitoringTimeoutSeconds = 120;
-const int kBootstrapTimeoutSeconds = 600;
-const int kConnectingTimeoutSeconds = 180;
 
 const EnumToStringMap<WifiBootstrapManager::State>::Map kWifiSetupStateMap[] = {
     {WifiBootstrapManager::State::kDisabled, "disabled"},
@@ -58,8 +55,7 @@ void WifiBootstrapManager::Init() {
                  lifetime_weak_factory_.GetWeakPtr()));
   if (config_->GetSettings().last_configured_ssid.empty()) {
     // Give implementation some time to figure out state.
-    StartMonitoring(
-        base::TimeDelta::FromSeconds(kMonitoringWithSsidTimeoutSeconds));
+    StartMonitoring(base::TimeDelta::FromSeconds(15));
   } else {
     StartMonitoring(base::TimeDelta::FromSeconds(kMonitoringTimeoutSeconds));
   }
@@ -84,30 +80,28 @@ void WifiBootstrapManager::StartBootstrapping() {
     task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(&WifiBootstrapManager::OnBootstrapTimeout,
                               tasks_weak_factory_.GetWeakPtr()),
-        base::TimeDelta::FromSeconds(kBootstrapTimeoutSeconds));
+        base::TimeDelta::FromMinutes(10));
   }
   // TODO(vitalybuka): Add SSID probing.
   privet_ssid_ = GenerateSsid();
   CHECK(!privet_ssid_.empty());
-
-  VLOG(1) << "Starting AP with SSID: " << privet_ssid_;
   wifi_->StartAccessPoint(privet_ssid_);
 }
 
 void WifiBootstrapManager::EndBootstrapping() {
-  VLOG(1) << "Stopping AP";
   wifi_->StopAccessPoint();
   privet_ssid_.clear();
 }
 
 void WifiBootstrapManager::StartConnecting(const std::string& ssid,
                                            const std::string& passphrase) {
-  VLOG(1) << "Attempting connect to SSID:" << ssid;
+  VLOG(1) << "WiFi is attempting to connect. (ssid=" << ssid
+          << ", pass=" << passphrase << ").";
   UpdateState(State::kConnecting);
   task_runner_->PostDelayedTask(
       FROM_HERE, base::Bind(&WifiBootstrapManager::OnConnectTimeout,
                             tasks_weak_factory_.GetWeakPtr()),
-      base::TimeDelta::FromSeconds(kConnectingTimeoutSeconds));
+      base::TimeDelta::FromMinutes(3));
   wifi_->Connect(ssid, passphrase,
                  base::Bind(&WifiBootstrapManager::OnConnectDone,
                             tasks_weak_factory_.GetWeakPtr(), ssid));
@@ -116,11 +110,6 @@ void WifiBootstrapManager::StartConnecting(const std::string& ssid,
 void WifiBootstrapManager::EndConnecting() {}
 
 void WifiBootstrapManager::StartMonitoring(const base::TimeDelta& timeout) {
-  monitor_until_ = {};
-  ContinueMonitoring(timeout);
-}
-
-void WifiBootstrapManager::ContinueMonitoring(const base::TimeDelta& timeout) {
   VLOG(1) << "Monitoring connectivity.";
   // We already have a callback in place with |network_| to update our
   // connectivity state.  See OnConnectivityChange().
@@ -145,8 +134,8 @@ void WifiBootstrapManager::ContinueMonitoring(const base::TimeDelta& timeout) {
 void WifiBootstrapManager::EndMonitoring() {}
 
 void WifiBootstrapManager::UpdateState(State new_state) {
-  VLOG(3) << "Switching state from " << EnumToString(state_) << " to "
-          << EnumToString(new_state);
+  VLOG(3) << "Switching state from " << static_cast<int>(state_) << " to "
+          << static_cast<int>(new_state);
   // Abort irrelevant tasks.
   tasks_weak_factory_.InvalidateWeakPtrs();
 
@@ -238,26 +227,29 @@ void WifiBootstrapManager::OnBootstrapTimeout() {
 }
 
 void WifiBootstrapManager::OnConnectivityChange() {
+  VLOG(3) << "ConnectivityChanged: "
+          << EnumToString(network_->GetConnectionState());
   UpdateConnectionState();
 
-  if (state_ == State::kMonitoring ||
+  if (state_ == State::kMonitoring ||  // Reset monitoring timeout.
       (state_ != State::kDisabled &&
        network_->GetConnectionState() == Network::State::kOnline)) {
-    ContinueMonitoring(base::TimeDelta::FromSeconds(kMonitoringTimeoutSeconds));
+    StartMonitoring(base::TimeDelta::FromSeconds(kMonitoringTimeoutSeconds));
   }
 }
 
 void WifiBootstrapManager::OnMonitorTimeout() {
-  VLOG(1) << "Spent too long offline. Entering bootstrap mode.";
+  VLOG(1) << "Spent too long offline.  Entering bootstrap mode.";
   // TODO(wiley) Retrieve relevant errors from shill.
   StartBootstrapping();
 }
 
 void WifiBootstrapManager::UpdateConnectionState() {
   connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
+  if (config_->GetSettings().last_configured_ssid.empty())
+    return;
 
   Network::State service_state{network_->GetConnectionState()};
-  VLOG(3) << "New network state: " << EnumToString(service_state);
   switch (service_state) {
     case Network::State::kOffline:
       connection_state_ = ConnectionState{ConnectionState::kOffline};
