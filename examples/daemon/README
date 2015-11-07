@@ -84,16 +84,16 @@ Send Command to the Daemon
         Enter request body:
         {
           "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
-          "name": "_greeter._greet",
+          "name": "_sample._hello",
           "parameters": { "_name": "cloud user" }
         }
    "Send the request", you command will be "queued" as its "state"
 
   - verify the command execution with weave daemon
        in terminal running the daemon, observe something similar to
-         New command '_greeter._greet' arrived, ...
-         received command: _greeter._greet
-         _greeter._greet command: finished
+         New command '_sample._hello' arrived, ...
+         received command: _sample._hello
+         _sample._hello command: finished
   - verify the command history with oauthplayground
        Similar to "Acquire Registration Ticket" section in this document,
        except in "step 3", do:
@@ -104,9 +104,9 @@ Send Command to the Daemon
        "Send the request", you get all of the commands executed on your
        device, find something like
           "kind": "clouddevices#command",
-          "name": "_greeter._greet",
+          "name": "_sample._hello",
           "results": {
-            "_greeting": "Hello cloud user"
+            "_reply": "Hello cloud user"
           },
           ...
 
