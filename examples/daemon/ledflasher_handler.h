@@ -2,14 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "examples/daemon/common/daemon.h"
-
 #include <weave/device.h>
 
 #include <base/bind.h>
 #include <base/memory/weak_ptr.h>
 
 #include <bitset>
+
+namespace weave {
+namespace examples {
+namespace daemon {
 
 namespace {
 // Supported LED count on this device
@@ -21,7 +23,7 @@ const size_t kLedCount = 3;
 class LedFlasherHandler {
  public:
   LedFlasherHandler() {}
-  void Register(weave::Device* device) {
+  void Register(Device* device) {
     device_ = device;
 
     device->AddStateDefinitionsFromJson(R"({
@@ -58,7 +60,7 @@ class LedFlasherHandler {
   }
 
  private:
-  void OnFlasherSetCommand(const std::weak_ptr<weave::Command>& command) {
+  void OnFlasherSetCommand(const std::weak_ptr<Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
       return;
@@ -82,13 +84,13 @@ class LedFlasherHandler {
       cmd->Complete({}, nullptr);
       return;
     }
-    weave::ErrorPtr error;
-    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
-                        "Invalid parameters");
+    ErrorPtr error;
+    Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+                 "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }
 
-  void OnFlasherToggleCommand(const std::weak_ptr<weave::Command>& command) {
+  void OnFlasherToggleCommand(const std::weak_ptr<Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
       return;
@@ -103,13 +105,13 @@ class LedFlasherHandler {
       cmd->Complete({}, nullptr);
       return;
     }
-    weave::ErrorPtr error;
-    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
-                        "Invalid parameters");
+    ErrorPtr error;
+    Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+                 "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }
 
-  void UpdateLedState() {
+  void UpdateLedState(void) {
     base::ListValue list;
     for (uint32_t i = 0; i < led_status_.size(); i++)
       list.AppendBoolean(led_status_[i] ? true : false);
@@ -117,7 +119,7 @@ class LedFlasherHandler {
     device_->SetStateProperty("_ledflasher._leds", list, nullptr);
   }
 
-  weave::Device* device_{nullptr};
+  Device* device_{nullptr};
 
   // Simulate LED status on this device so client app could explore
   // Each bit represents one device, indexing from LSB
@@ -125,15 +127,6 @@ class LedFlasherHandler {
   base::WeakPtrFactory<LedFlasherHandler> weak_ptr_factory_{this};
 };
 
-int main(int argc, char** argv) {
-  Daemon::Options opts;
-  if (!opts.Parse(argc, argv)) {
-    Daemon::Options::ShowUsage(argv[0]);
-    return 1;
-  }
-  Daemon daemon{opts};
-  LedFlasherHandler handler;
-  handler.Register(daemon.GetDevice());
-  daemon.Run();
-  return 0;
-}
+}  // namespace daemon
+}  // namespace examples
+}  // namespace weave

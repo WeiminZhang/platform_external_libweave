@@ -21,14 +21,13 @@
 #include "src/bind_lambda.h"
 
 using testing::_;
-using testing::AtLeast;
 using testing::AtMost;
 using testing::HasSubstr;
-using testing::InSequence;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::MatchesRegex;
 using testing::Mock;
+using testing::AtLeast;
 using testing::Return;
 using testing::ReturnRefOfCopy;
 using testing::StartsWith;
@@ -267,13 +266,10 @@ class WeaveTest : public ::testing::Test {
 
   void NotifyNetworkChanged(provider::Network::State state,
                             base::TimeDelta delay) {
-    auto task = [this, state] {
-      EXPECT_CALL(network_, GetConnectionState()).WillRepeatedly(Return(state));
-      for (const auto& cb : network_callbacks_)
-        cb.Run();
-    };
-
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(task), delay);
+    EXPECT_CALL(network_, GetConnectionState()).WillRepeatedly(Return(state));
+    for (const auto& cb : network_callbacks_) {
+      task_runner_.PostDelayedTask(FROM_HERE, cb, delay);
+    }
   }
 
   std::map<std::string, provider::HttpServer::RequestHandlerCallback>
@@ -460,69 +456,6 @@ TEST_F(WeaveWiFiSetupTest, StartOfflineWithSsid) {
                   base::TimeDelta::FromMinutes(1));
         task_runner_.Break();
       }));
-
-  StartDevice();
-}
-
-TEST_F(WeaveWiFiSetupTest, OfflineLongTimeWithNoSsid) {
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(Network::State::kOffline));
-  NotifyNetworkChanged(provider::Network::State::kOnline,
-                       base::TimeDelta::FromHours(15));
-
-  {
-    InSequence s;
-    auto time_stamp = task_runner_.GetClock()->Now();
-
-    EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("TEST_NAME.*prv")))
-        .WillOnce(InvokeWithoutArgs([this, &time_stamp]() {
-          EXPECT_LE(task_runner_.GetClock()->Now() - time_stamp,
-                    base::TimeDelta::FromMinutes(1));
-          time_stamp = task_runner_.GetClock()->Now();
-        }));
-
-    EXPECT_CALL(wifi_, StopAccessPoint())
-        .WillOnce(InvokeWithoutArgs([this, &time_stamp]() {
-          EXPECT_GT(task_runner_.GetClock()->Now() - time_stamp,
-                    base::TimeDelta::FromMinutes(5));
-          time_stamp = task_runner_.GetClock()->Now();
-          task_runner_.Break();
-        }));
-  }
-
-  StartDevice();
-}
-
-TEST_F(WeaveWiFiSetupTest, OfflineLongTimeWithSsid) {
-  EXPECT_CALL(config_store_, LoadSettings())
-      .WillRepeatedly(Return(R"({"last_configured_ssid": "TEST_ssid"})"));
-  EXPECT_CALL(network_, GetConnectionState())
-      .WillRepeatedly(Return(Network::State::kOffline));
-  NotifyNetworkChanged(provider::Network::State::kOnline,
-                       base::TimeDelta::FromHours(15));
-
-  {
-    InSequence s;
-    auto time_stamp = task_runner_.GetClock()->Now();
-    for (size_t i = 0; i < 10; ++i) {
-      EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("TEST_NAME.*prv")))
-          .WillOnce(InvokeWithoutArgs([this, &time_stamp]() {
-            EXPECT_GT(task_runner_.GetClock()->Now() - time_stamp,
-                      base::TimeDelta::FromMinutes(1));
-            time_stamp = task_runner_.GetClock()->Now();
-          }));
-
-      EXPECT_CALL(wifi_, StopAccessPoint())
-          .WillOnce(InvokeWithoutArgs([this, &time_stamp]() {
-            EXPECT_GT(task_runner_.GetClock()->Now() - time_stamp,
-                      base::TimeDelta::FromMinutes(5));
-            time_stamp = task_runner_.GetClock()->Now();
-          }));
-    }
-
-    EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("TEST_NAME.*prv")))
-        .WillOnce(InvokeWithoutArgs([this]() { task_runner_.Break(); }));
-  }
 
   StartDevice();
 }

@@ -2,13 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "examples/daemon/common/daemon.h"
-
 #include <weave/device.h>
 #include <weave/provider/task_runner.h>
 
 #include <base/bind.h>
 #include <base/memory/weak_ptr.h>
+
+namespace weave {
+namespace examples {
+namespace daemon {
 
 // SampleHandler is a command handler example.
 // It implements the following commands:
@@ -17,9 +19,9 @@
 // - _countdown: handle long running command and report progress.
 class SampleHandler {
  public:
-  SampleHandler(weave::provider::TaskRunner* task_runner)
+  SampleHandler(provider::TaskRunner* task_runner)
       : task_runner_{task_runner} {}
-  void Register(weave::Device* device) {
+  void Register(Device* device) {
     device_ = device;
 
     device->AddCommandDefinitionsFromJson(R"({
@@ -67,7 +69,7 @@ class SampleHandler {
   }
 
  private:
-  void OnHelloCommand(const std::weak_ptr<weave::Command>& command) {
+  void OnHelloCommand(const std::weak_ptr<Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
       return;
@@ -75,9 +77,9 @@ class SampleHandler {
 
     std::string name;
     if (!cmd->GetParameters()->GetString("_name", &name)) {
-      weave::ErrorPtr error;
-      weave::Error::AddTo(&error, FROM_HERE, "example",
-                          "invalid_parameter_value", "Name is missing");
+      ErrorPtr error;
+      Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+                   "Name is missing");
       cmd->Abort(error.get(), nullptr);
       return;
     }
@@ -88,7 +90,7 @@ class SampleHandler {
     LOG(INFO) << cmd->GetName() << " command finished: " << result;
   }
 
-  void OnPingCommand(const std::weak_ptr<weave::Command>& command) {
+  void OnPingCommand(const std::weak_ptr<Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
       return;
@@ -105,7 +107,7 @@ class SampleHandler {
     LOG(INFO) << cmd->GetName() << " command finished: " << result;
   }
 
-  void OnCountdownCommand(const std::weak_ptr<weave::Command>& command) {
+  void OnCountdownCommand(const std::weak_ptr<Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
       return;
@@ -119,7 +121,7 @@ class SampleHandler {
     DoTick(cmd, seconds);
   }
 
-  void DoTick(const std::weak_ptr<weave::Command>& command, int seconds) {
+  void DoTick(const std::weak_ptr<Command>& command, int seconds) {
     auto cmd = command.lock();
     if (!cmd)
       return;
@@ -146,22 +148,13 @@ class SampleHandler {
     LOG(INFO) << cmd->GetName() << " command finished: " << result;
   }
 
-  weave::Device* device_{nullptr};
-  weave::provider::TaskRunner* task_runner_{nullptr};
+  Device* device_{nullptr};
+  provider::TaskRunner* task_runner_{nullptr};
 
   int ping_count_{0};
   base::WeakPtrFactory<SampleHandler> weak_ptr_factory_{this};
 };
 
-int main(int argc, char** argv) {
-  Daemon::Options opts;
-  if (!opts.Parse(argc, argv)) {
-    Daemon::Options::ShowUsage(argv[0]);
-    return 1;
-  }
-  Daemon daemon{opts};
-  SampleHandler handler{daemon.GetTaskRunner()};
-  handler.Register(daemon.GetDevice());
-  daemon.Run();
-  return 0;
-}
+}  // namespace daemon
+}  // namespace examples
+}  // namespace weave
