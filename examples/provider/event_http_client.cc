@@ -5,15 +5,14 @@
 #include "examples/provider/event_http_client.h"
 #include "examples/provider/event_task_runner.h"
 
-#include <weave/enum_to_string.h>
-
-#include <string>
 
 #include <base/bind.h>
-
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
 #include <event2/http.h>
+#include <weave/enum_to_string.h>
+
+#include "examples/provider/event_deleter.h"
 
 // EventHttpClient based on libevent2 http-client sample
 // TODO(proppy): https
@@ -38,13 +37,6 @@ namespace examples {
 
 namespace {
 
-class EventDeleter {
- public:
-  void operator()(evhttp_uri* http_uri) { evhttp_uri_free(http_uri); }
-  void operator()(evhttp_connection* conn) { evhttp_connection_free(conn); }
-  void operator()(evhttp_request* req) { evhttp_request_free(req); }
-};
-
 class EventHttpResponse : public weave::provider::HttpClient::Response {
  public:
   int GetStatusCode() const override { return status; }
@@ -58,8 +50,8 @@ class EventHttpResponse : public weave::provider::HttpClient::Response {
 
 struct EventRequestState {
   TaskRunner* task_runner_;
-  std::unique_ptr<evhttp_uri, EventDeleter> http_uri_;
-  std::unique_ptr<evhttp_connection, EventDeleter> evcon_;
+  EventPtr<evhttp_uri> http_uri_;
+  EventPtr<evhttp_connection> evcon_;
   HttpClient::SendRequestCallback callback_;
 };
 
@@ -101,8 +93,7 @@ void EventHttpClient::SendRequest(Method method,
                                   const SendRequestCallback& callback) {
   evhttp_cmd_type method_id;
   CHECK(weave::StringToEnum(weave::EnumToString(method), &method_id));
-  std::unique_ptr<evhttp_uri, EventDeleter> http_uri{
-      evhttp_uri_parse(url.c_str())};
+  EventPtr<evhttp_uri> http_uri{evhttp_uri_parse(url.c_str())};
   CHECK(http_uri);
   auto host = evhttp_uri_get_host(http_uri.get());
   CHECK(host);
@@ -121,11 +112,10 @@ void EventHttpClient::SendRequest(Method method,
   auto bev = bufferevent_socket_new(task_runner_->GetEventBase(), -1,
                                     BEV_OPT_CLOSE_ON_FREE);
   CHECK(bev);
-  std::unique_ptr<evhttp_connection, EventDeleter> conn{
-      evhttp_connection_base_bufferevent_new(task_runner_->GetEventBase(), NULL,
-                                             bev, host, port)};
+  EventPtr<evhttp_connection> conn{evhttp_connection_base_bufferevent_new(
+      task_runner_->GetEventBase(), NULL, bev, host, port)};
   CHECK(conn);
-  std::unique_ptr<evhttp_request, EventDeleter> req{evhttp_request_new(
+  EventPtr<evhttp_request> req{evhttp_request_new(
       &RequestDoneCallback,
       new EventRequestState{task_runner_, std::move(http_uri), std::move(conn),
                             callback})};
