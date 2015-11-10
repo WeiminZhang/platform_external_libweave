@@ -8,9 +8,10 @@
 #include <thread>
 
 #include <base/bind.h>
+#include <base/logging.h>
 #include <curl/curl.h>
-#include <weave/provider/task_runner.h>
 #include <weave/enum_to_string.h>
+#include <weave/provider/task_runner.h>
 
 namespace weave {
 namespace examples {
@@ -130,15 +131,16 @@ void CurlHttpClient::SendRequest(Method method,
 }
 
 void CurlHttpClient::CheckTasks() {
-  VLOG(3) << "CurlHttpClient::CheckTasks, size=" << pending_tasks_.size();
+  VLOG(4) << "CurlHttpClient::CheckTasks, size=" << pending_tasks_.size();
   auto ready_begin =
-      std::remove_if(pending_tasks_.begin(), pending_tasks_.end(),
+      std::partition(pending_tasks_.begin(), pending_tasks_.end(),
                      [](const decltype(pending_tasks_)::value_type& value) {
                        return value.first.wait_for(std::chrono::seconds(0)) !=
                               std::future_status::ready;
                      });
 
   for (auto it = ready_begin; it != pending_tasks_.end(); ++it) {
+    CHECK(it->first.valid());
     auto result = it->first.get();
     VLOG(2) << "CurlHttpClient::CheckTasks done";
     task_runner_->PostDelayedTask(
