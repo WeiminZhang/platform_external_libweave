@@ -88,13 +88,13 @@ class SpeakerHandler {
     bool isMuted_status = false;
     if (cmd->GetParameters()->GetBoolean("isMuted", &isMuted_status)) {
       // Display this command in terminal.
-      LOG(INFO) << cmd->GetName() << " is " 
+      LOG(INFO) << cmd->GetName() << " is "
                 << (isMuted_status ? "muted" : "not muted");
 
       if (isMuted_status_ != isMuted_status) {
         isMuted_status_ = isMuted_status;
 
-        LOG(INFO) << "Speaker is now: " 
+        LOG(INFO) << "Speaker is now: "
                   << (isMuted_status ? "muted" : "not muted");
         UpdateSpeakerState();
       }
