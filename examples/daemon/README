@@ -8,8 +8,8 @@ Building
         examples/prerequisites.sh
   - build daemon
         examples/build.sh
-  - binaries for daemon is at
-        out/Debug/weave_daemon
+  - binaries for daemon are in the directory
+        out/Debug/
 
 Prepare Host OS
 ---------------
@@ -50,7 +50,7 @@ Register device to cloud
         93019287-6b26-04a0-22ee-d55ad23a4226
   - go to terminal, register and start the daemon with
 
-        sudo out/Debug/weave_daemon --registration_ticket=93019287-6b26-04a0-22ee-d55ad23a4226
+        sudo out/Debug/weave_daemon_sample --registration_ticket=93019287-6b26-04a0-22ee-d55ad23a4226
 
         you should see something like:
           Publishing service
