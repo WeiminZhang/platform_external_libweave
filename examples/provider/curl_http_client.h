@@ -5,7 +5,9 @@
 #ifndef LIBWEAVE_EXAMPLES_PROVIDER_CURL_HTTP_CLIENT_H_
 #define LIBWEAVE_EXAMPLES_PROVIDER_CURL_HTTP_CLIENT_H_
 
+#include <future>
 #include <string>
+#include <utility>
 
 #include <base/memory/weak_ptr.h>
 #include <weave/provider/http_client.h>
@@ -31,6 +33,11 @@ class CurlHttpClient : public provider::HttpClient {
                    const SendRequestCallback& callback) override;
 
  private:
+  void CheckTasks();
+
+  std::vector<
+      std::pair<std::future<std::pair<std::unique_ptr<Response>, ErrorPtr>>,
+                SendRequestCallback>> pending_tasks_;
   provider::TaskRunner* task_runner_{nullptr};
 
   base::WeakPtrFactory<CurlHttpClient> weak_ptr_factory_{this};
