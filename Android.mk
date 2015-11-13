@@ -169,10 +169,11 @@ LOCAL_SRC_FILES := \
 
 include $(BUILD_SHARED_LIBRARY)
 
-# libweave_testrunner
+# libweave_test
 # ========================================================
 include $(CLEAR_VARS)
-LOCAL_MODULE := libweave_testrunner
+LOCAL_MODULE := libweave_test
+LOCAL_MODULE_TAGS := debug
 LOCAL_CPP_EXTENSION := $(libweaveCommonCppExtension)
 LOCAL_CFLAGS := $(libweaveCommonCFlags)
 LOCAL_CPPFLAGS := $(libweaveCommonCppFlags)
