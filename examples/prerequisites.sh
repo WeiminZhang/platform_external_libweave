@@ -6,10 +6,11 @@
 DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 ROOT_DIR=$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)
 
-sudo apt-get install ${APT_GET_OPTS} \
+sudo apt-get update && sudo apt-get install ${APT_GET_OPTS} \
   autoconf \
   automake \
   binutils \
+  g++ \
   gyp \
   hostapd \
   libavahi-client-dev \
@@ -17,6 +18,7 @@ sudo apt-get install ${APT_GET_OPTS} \
   libexpat1-dev \
   libnl-3-dev \
   libnl-route-3-dev \
+  libssl-dev \
   libtool \
   ninja-build \
   || exit 1
@@ -57,8 +59,10 @@ cd libevent || exit 1
 ./autogen.sh || exit 1
 ./configure --disable-shared || exit 1
 make || exit 1
-echo -e "\n\nTesting libevent...\nCan take several minutes.\n"
-make verify || exit 1
+if [ -z "$DISABLE_LIBEVENT_TEST" ]; then
+  echo -e "\n\nTesting libevent...\nCan take several minutes.\n"
+  make verify || exit 1
+fi
 cp -rf include/* $ROOT_DIR/third_party/include/ || exit 1
 cp -rf .libs/lib* $ROOT_DIR/third_party/lib/ || exit 1
 rm -rf $ROOT_DIR/third_party/libevent

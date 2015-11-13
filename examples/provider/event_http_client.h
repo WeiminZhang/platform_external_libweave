@@ -10,10 +10,10 @@
 #include <base/memory/weak_ptr.h>
 #include <weave/provider/http_client.h>
 
+#include "examples/provider/event_task_runner.h"
+
 namespace weave {
 namespace examples {
-
-class EventTaskRunner;
 
 // Basic implementation of weave::HttpClient using libevent.
 class EventHttpClient : public provider::HttpClient {

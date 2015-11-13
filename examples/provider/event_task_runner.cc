@@ -24,6 +24,24 @@ void EventTaskRunner::PostDelayedTask(
   queue_.emplace(std::make_pair(new_time, ++counter_), task);
 }
 
+void EventTaskRunner::AddIoCompletionTask(
+    int fd,
+    int16_t what,
+    const EventTaskRunner::IoCompletionCallback& task) {
+  int16_t flags = EV_PERSIST | EV_ET;
+  flags |= (what & kReadable) ? EV_READ : 0;
+  flags |= (what & kWriteable) ? EV_WRITE : 0;
+  flags |= (what & kClosed) ? EV_CLOSED : 0;
+  event* ioevent = event_new(base_.get(), fd, flags, FdEventHandler, this);
+  EventPtr<event> ioeventPtr{ioevent};
+  fd_task_map_.emplace(fd, std::make_pair(std::move(ioeventPtr), task));
+  event_add(ioevent, nullptr);
+}
+
+void EventTaskRunner::RemoveIoCompletionTask(int fd) {
+  fd_task_map_.erase(fd);
+}
+
 void EventTaskRunner::Run() {
   g_event_base = base_.get();
 
@@ -44,7 +62,9 @@ void EventTaskRunner::ReScheduleEvent(base::TimeDelta delay) {
   event_add(task_event_.get(), &tv);
 }
 
-void EventTaskRunner::EventHandler(int, int16_t, void* runner) {
+void EventTaskRunner::EventHandler(int /* fd */,
+                                   int16_t /* what */,
+                                   void* runner) {
   static_cast<EventTaskRunner*>(runner)->Process();
 }
 
@@ -63,6 +83,18 @@ void EventTaskRunner::Process() {
     base::TimeDelta delta = std::max(
         base::TimeDelta(), queue_.top().first.first - base::Time::Now());
     ReScheduleEvent(delta);
+  }
+}
+
+void EventTaskRunner::FdEventHandler(int fd, int16_t what, void* runner) {
+  static_cast<EventTaskRunner*>(runner)->ProcessFd(fd, what);
+}
+
+void EventTaskRunner::ProcessFd(int fd, int16_t what) {
+  auto it = fd_task_map_.find(fd);
+  if (it != fd_task_map_.end()) {
+    const IoCompletionCallback& callback = it->second.second;
+    callback.Run(fd, what, this);
   }
 }
 
