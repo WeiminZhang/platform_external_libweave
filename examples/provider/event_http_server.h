@@ -34,6 +34,7 @@ class HttpServerImpl : public provider::HttpServer {
                               const RequestHandlerCallback& callback) override;
   uint16_t GetHttpPort() const override;
   uint16_t GetHttpsPort() const override;
+  base::TimeDelta GetRequestTimeout() const override;
   std::vector<uint8_t> GetHttpsCertificateFingerprint() const override;
 
  private:

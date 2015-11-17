@@ -50,8 +50,9 @@ void Manager::Start(Network* network,
                     StateManager* state_manager) {
   disable_security_ = device->GetSettings().disable_security;
 
-  device_ = DeviceDelegate::CreateDefault(http_server->GetHttpPort(),
-                                          http_server->GetHttpsPort());
+  device_ = DeviceDelegate::CreateDefault(
+      task_runner_, http_server->GetHttpPort(), http_server->GetHttpsPort(),
+      http_server->GetRequestTimeout());
   cloud_ = CloudDelegate::CreateDefault(task_runner_, device, command_manager,
                                         state_manager);
   cloud_observer_.Add(cloud_.get());
