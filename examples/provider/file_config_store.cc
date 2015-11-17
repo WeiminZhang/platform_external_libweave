@@ -38,9 +38,16 @@ bool FileConfigStore::LoadDefaults(Settings* settings) {
   settings->model_id = "AAAAA";
   settings->pairing_modes = {PairingType::kEmbeddedCode};
   settings->embedded_code = "0000";
-  settings->client_id = "58855907228.apps.googleusercontent.com";
-  settings->client_secret = "eHSAREAHrIqPsHBxCE9zPPBi";
-  settings->api_key = "AIzaSyDSq46gG-AxUnC3zoqD9COIPrjolFsMfMA";
+
+  // Keys owners:
+  //   avakulenko@google.com
+  //   gene@chromium.org
+  //   vitalybuka@chromium.org
+  settings->client_id =
+      "338428340000-vkb4p6h40c7kja1k3l70kke8t615cjit.apps.googleusercontent."
+      "com";
+  settings->client_secret = "LS_iPYo_WIOE0m2VnLdduhnx";
+  settings->api_key = "AIzaSyACK3oZtmIylUKXiTMqkZqfuRiCgQmQSAQ";
 
   settings->disable_security = disable_security_;
   return true;

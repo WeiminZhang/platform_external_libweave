@@ -53,8 +53,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().client_secret);
   EXPECT_EQ("", GetSettings().api_key);
   EXPECT_EQ("https://accounts.google.com/o/oauth2/", GetSettings().oauth_url);
-  EXPECT_EQ("https://www.googleapis.com/clouddevices/v1/",
-            GetSettings().service_url);
+  EXPECT_EQ("https://www.googleapis.com/weave/v1/", GetSettings().service_url);
   EXPECT_EQ("", GetSettings().oem_name);
   EXPECT_EQ("", GetSettings().model_name);
   EXPECT_EQ("", GetSettings().model_id);

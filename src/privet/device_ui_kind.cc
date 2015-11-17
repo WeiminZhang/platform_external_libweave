@@ -20,6 +20,12 @@ std::string GetDeviceUiKind(const std::string& manifest_id) {
     return "camera";
   if (kind == "AB")
     return "developmentBoard";
+  if (kind == "AH")
+    return "acHeating";
+  if (kind == "AI")
+    return "light";
+  if (kind == "AO")
+    return "lock";
   if (kind == "AE")
     return "printer";
   if (kind == "AF")
