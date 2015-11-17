@@ -4,6 +4,7 @@
 
 #include "src/privet/privet_handler.h"
 
+#include <algorithm>
 #include <memory>
 #include <set>
 #include <string>
@@ -11,10 +12,10 @@
 
 #include <base/bind.h>
 #include <base/location.h>
-#include <base/strings/string_number_conversions.h>
 #include <base/strings/stringprintf.h>
 #include <base/values.h>
 #include <weave/enum_to_string.h>
+#include <weave/provider/task_runner.h>
 
 #include "src/http_constants.h"
 #include "src/privet/cloud_delegate.h"
@@ -103,6 +104,10 @@ const char kFingerprintKey[] = "fingerprint";
 const char kStateKey[] = "state";
 const char kCommandsKey[] = "commands";
 const char kCommandsIdKey[] = "id";
+
+const char kStateFingerprintKey[] = "stateFingerprint";
+const char kCommandsFingerprintKey[] = "commandsFingerprint";
+const char kWaitTimeoutKey[] = "waitTimeout";
 
 const char kInvalidParamValueFormat[] = "Invalid parameter: '%s'='%s'";
 
@@ -313,10 +318,12 @@ AuthScope GetAnonymousMaxScope(const CloudDelegate& cloud,
 }  // namespace
 
 std::vector<std::string> PrivetHandler::GetHttpPaths() const {
-  return {
-      "/privet/info", "/privet/v3/pairing/start", "/privet/v3/pairing/confirm",
-      "/privet/v3/pairing/cancel",
-  };
+  std::vector<std::string> result;
+  for (const auto& pair : handlers_) {
+    if (!pair.second.https_only)
+      result.push_back(pair.first);
+  }
+  return result;
 }
 
 std::vector<std::string> PrivetHandler::GetHttpsPaths() const {
@@ -343,33 +350,56 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
              AuthScope::kNone);
   AddHandler("/privet/v3/pairing/cancel", &PrivetHandler::HandlePairingCancel,
              AuthScope::kNone);
-  AddHandler("/privet/v3/auth", &PrivetHandler::HandleAuth, AuthScope::kNone);
-  AddHandler("/privet/v3/setup/start", &PrivetHandler::HandleSetupStart,
-             AuthScope::kOwner);
-  AddHandler("/privet/v3/setup/status", &PrivetHandler::HandleSetupStatus,
-             AuthScope::kOwner);
-  AddHandler("/privet/v3/state", &PrivetHandler::HandleState,
-             AuthScope::kViewer);
-  AddHandler("/privet/v3/commandDefs", &PrivetHandler::HandleCommandDefs,
-             AuthScope::kViewer);
-  AddHandler("/privet/v3/commands/execute",
-             &PrivetHandler::HandleCommandsExecute, AuthScope::kViewer);
-  AddHandler("/privet/v3/commands/status", &PrivetHandler::HandleCommandsStatus,
-             AuthScope::kViewer);
-  AddHandler("/privet/v3/commands/cancel", &PrivetHandler::HandleCommandsCancel,
-             AuthScope::kViewer);
-  AddHandler("/privet/v3/commands/list", &PrivetHandler::HandleCommandsList,
-             AuthScope::kViewer);
+
+  AddSecureHandler("/privet/v3/auth", &PrivetHandler::HandleAuth,
+                   AuthScope::kNone);
+  AddSecureHandler("/privet/v3/setup/start", &PrivetHandler::HandleSetupStart,
+                   AuthScope::kOwner);
+  AddSecureHandler("/privet/v3/setup/status", &PrivetHandler::HandleSetupStatus,
+                   AuthScope::kOwner);
+  AddSecureHandler("/privet/v3/state", &PrivetHandler::HandleState,
+                   AuthScope::kViewer);
+  AddSecureHandler("/privet/v3/commandDefs", &PrivetHandler::HandleCommandDefs,
+                   AuthScope::kViewer);
+  AddSecureHandler("/privet/v3/commands/execute",
+                   &PrivetHandler::HandleCommandsExecute, AuthScope::kViewer);
+  AddSecureHandler("/privet/v3/commands/status",
+                   &PrivetHandler::HandleCommandsStatus, AuthScope::kViewer);
+  AddSecureHandler("/privet/v3/commands/cancel",
+                   &PrivetHandler::HandleCommandsCancel, AuthScope::kViewer);
+  AddSecureHandler("/privet/v3/commands/list",
+                   &PrivetHandler::HandleCommandsList, AuthScope::kViewer);
+  AddSecureHandler("/privet/v3/checkForUpdates",
+                   &PrivetHandler::HandleCheckForUpdates, AuthScope::kViewer);
 }
 
-PrivetHandler::~PrivetHandler() {}
+PrivetHandler::~PrivetHandler() {
+  for (const auto& req : update_requests_)
+    ReplyToUpdateRequest(req.callback);
+}
 
 void PrivetHandler::OnCommandDefsChanged() {
   ++command_defs_fingerprint_;
+  auto pred = [this](const UpdateRequestParameters& params) {
+    return params.command_defs_fingerprint < 0;
+  };
+  auto last =
+      std::partition(update_requests_.begin(), update_requests_.end(), pred);
+  for (auto p = last; p != update_requests_.end(); ++p)
+    ReplyToUpdateRequest(p->callback);
+  update_requests_.erase(last, update_requests_.end());
 }
 
 void PrivetHandler::OnStateChanged() {
   ++state_fingerprint_;
+  auto pred = [this](const UpdateRequestParameters& params) {
+    return params.state_fingerprint < 0;
+  };
+  auto last =
+      std::partition(update_requests_.begin(), update_requests_.end(), pred);
+  for (auto p = last; p != update_requests_.end(); ++p)
+    ReplyToUpdateRequest(p->callback);
+  update_requests_.erase(last, update_requests_.end());
 }
 
 void PrivetHandler::HandleRequest(const std::string& api,
@@ -422,20 +452,34 @@ void PrivetHandler::HandleRequest(const std::string& api,
     }
   }
 
-  if (handler->second.first > user_info.scope()) {
+  if (handler->second.scope > user_info.scope()) {
     Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                        errors::kInvalidAuthorizationScope,
                        "Scope '%s' does not allow '%s'",
                        EnumToString(user_info.scope()).c_str(), api.c_str());
     return ReturnError(*error, callback);
   }
-  (this->*handler->second.second)(*input, user_info, callback);
+  (this->*handler->second.handler)(*input, user_info, callback);
 }
 
 void PrivetHandler::AddHandler(const std::string& path,
                                ApiHandler handler,
                                AuthScope scope) {
-  CHECK(handlers_.emplace(path, std::make_pair(scope, handler)).second);
+  HandlerParameters params;
+  params.handler = handler;
+  params.scope = scope;
+  params.https_only = false;
+  CHECK(handlers_.emplace(path, params).second);
+}
+
+void PrivetHandler::AddSecureHandler(const std::string& path,
+                                     ApiHandler handler,
+                                     AuthScope scope) {
+  HandlerParameters params;
+  params.handler = handler;
+  params.scope = scope;
+  params.https_only = true;
+  CHECK(handlers_.emplace(path, params).second);
 }
 
 void PrivetHandler::HandleInfo(const base::DictionaryValue&,
@@ -642,7 +686,7 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
     if (!wifi_ || wifi_->GetTypes().empty()) {
       ErrorPtr error;
       Error::AddTo(&error, FROM_HERE, errors::kDomain,
-                   errors::kSetupUnavailable, "WiFi setup unavailible");
+                   errors::kSetupUnavailable, "WiFi setup unavailable");
       return ReturnError(*error, callback);
     }
     wifi->GetString(kSetupStartSsidKey, &ssid);
@@ -720,7 +764,7 @@ void PrivetHandler::HandleState(const base::DictionaryValue& input,
   base::DictionaryValue output;
   base::DictionaryValue* defs = cloud_->GetState().DeepCopy();
   output.Set(kStateKey, defs);
-  output.SetString(kFingerprintKey, base::IntToString(state_fingerprint_));
+  output.SetString(kFingerprintKey, std::to_string(state_fingerprint_));
 
   callback.Run(http::kOk, output);
 }
@@ -731,8 +775,7 @@ void PrivetHandler::HandleCommandDefs(const base::DictionaryValue& input,
   base::DictionaryValue output;
   base::DictionaryValue* defs = cloud_->GetCommandDef().DeepCopy();
   output.Set(kCommandsKey, defs);
-  output.SetString(kFingerprintKey,
-                   base::IntToString(command_defs_fingerprint_));
+  output.SetString(kFingerprintKey, std::to_string(command_defs_fingerprint_));
 
   callback.Run(http::kOk, output);
 }
@@ -779,6 +822,83 @@ void PrivetHandler::HandleCommandsCancel(const base::DictionaryValue& input,
   }
   cloud_->CancelCommand(id, user_info,
                         base::Bind(&OnCommandRequestSucceeded, callback));
+}
+
+void PrivetHandler::HandleCheckForUpdates(const base::DictionaryValue& input,
+                                          const UserInfo& user_info,
+                                          const RequestCallback& callback) {
+  int timeout_seconds = -1;
+  input.GetInteger(kWaitTimeoutKey, &timeout_seconds);
+  base::TimeDelta timeout = device_->GetHttpRequestTimeout();
+  // Allow 10 seconds to cut the timeout short to make sure HTTP server doesn't
+  // kill the connection before we have a chance to respond. 10 seconds chosen
+  // at random here without any scientific basis for the value.
+  const base::TimeDelta safety_gap = base::TimeDelta::FromSeconds(10);
+  if (timeout != base::TimeDelta::Max()) {
+    if (timeout > safety_gap)
+      timeout -= safety_gap;
+    else
+      timeout = base::TimeDelta::FromSeconds(0);
+  }
+  if (timeout_seconds >= 0)
+    timeout = std::min(timeout, base::TimeDelta::FromSeconds(timeout_seconds));
+  if (timeout == base::TimeDelta{})
+    return ReplyToUpdateRequest(callback);
+
+  std::string state_fingerprint;
+  std::string commands_fingerprint;
+  input.GetString(kStateFingerprintKey, &state_fingerprint);
+  input.GetString(kCommandsFingerprintKey, &commands_fingerprint);
+  const bool ignore_state = state_fingerprint.empty();
+  const bool ignore_commands = commands_fingerprint.empty();
+  // If both fingerprints are missing, nothing to wait for, return immediately.
+  if (ignore_state && ignore_commands)
+    return ReplyToUpdateRequest(callback);
+  // If the current state fingerprint is different from the requested one,
+  // return new fingerprints.
+  if (!ignore_state && state_fingerprint != std::to_string(state_fingerprint_))
+    return ReplyToUpdateRequest(callback);
+  // If the current commands fingerprint is different from the requested one,
+  // return new fingerprints.
+  if (!ignore_commands &&
+      commands_fingerprint != std::to_string(command_defs_fingerprint_)) {
+    return ReplyToUpdateRequest(callback);
+  }
+
+  UpdateRequestParameters params;
+  params.request_id = ++last_update_request_id_;
+  params.callback = callback;
+  params.command_defs_fingerprint =
+      ignore_commands ? -1 : command_defs_fingerprint_;
+  params.state_fingerprint = ignore_state ? -1 : state_fingerprint_;
+  update_requests_.push_back(params);
+  if (timeout != base::TimeDelta::Max()) {
+    device_->PostDelayedTask(
+        FROM_HERE,
+        base::Bind(&PrivetHandler::OnUpdateRequestTimeout,
+                   weak_ptr_factory_.GetWeakPtr(), last_update_request_id_),
+        timeout);
+  }
+}
+
+void PrivetHandler::ReplyToUpdateRequest(
+    const RequestCallback& callback) const {
+  base::DictionaryValue output;
+  output.SetString(kStateFingerprintKey, std::to_string(state_fingerprint_));
+  output.SetString(kCommandsFingerprintKey,
+                   std::to_string(command_defs_fingerprint_));
+  callback.Run(http::kOk, output);
+}
+
+void PrivetHandler::OnUpdateRequestTimeout(int update_request_id) {
+  auto pred = [update_request_id](const UpdateRequestParameters& params) {
+    return params.request_id != update_request_id;
+  };
+  auto last =
+      std::partition(update_requests_.begin(), update_requests_.end(), pred);
+  for (auto p = last; p != update_requests_.end(); ++p)
+    ReplyToUpdateRequest(p->callback);
+  update_requests_.erase(last, update_requests_.end());
 }
 
 }  // namespace privet

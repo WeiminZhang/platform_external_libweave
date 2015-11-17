@@ -54,7 +54,7 @@ class PrivetHandler : public CloudDelegate::Observer {
   // Handles HTTP/HTTPS Privet request.
   // |api| is the path from the HTTP request, e.g /privet/info.
   // |auth_header| is the Authentication header from HTTP request.
-  // |input| is the the POST data from HTTP request. If nullptr, data format is
+  // |input| is the POST data from HTTP request. If nullptr, data format is
   // not valid JSON.
   // |callback| will be called exactly once during or after |HandleRequest|
   // call.
@@ -68,7 +68,13 @@ class PrivetHandler : public CloudDelegate::Observer {
                                              const UserInfo&,
                                              const RequestCallback&);
 
+  // Adds a handler for both HTTP and HTTPS interfaces.
   void AddHandler(const std::string& path, ApiHandler handler, AuthScope scope);
+
+  // Adds a handler for both HTTPS interface only.
+  void AddSecureHandler(const std::string& path,
+                        ApiHandler handler,
+                        AuthScope scope);
 
   void HandleInfo(const base::DictionaryValue&,
                   const UserInfo& user_info,
@@ -109,15 +115,34 @@ class PrivetHandler : public CloudDelegate::Observer {
   void HandleCommandsCancel(const base::DictionaryValue& input,
                             const UserInfo& user_info,
                             const RequestCallback& callback);
+  void HandleCheckForUpdates(const base::DictionaryValue& input,
+                             const UserInfo& user_info,
+                             const RequestCallback& callback);
 
   void ReplyWithSetupStatus(const RequestCallback& callback) const;
+  void ReplyToUpdateRequest(const RequestCallback& callback) const;
+  void OnUpdateRequestTimeout(int update_request_id);
 
   CloudDelegate* cloud_ = nullptr;
   DeviceDelegate* device_ = nullptr;
   SecurityDelegate* security_ = nullptr;
   WifiDelegate* wifi_ = nullptr;
 
-  std::map<std::string, std::pair<AuthScope, ApiHandler>> handlers_;
+  struct HandlerParameters {
+    ApiHandler handler;
+    AuthScope scope;
+    bool https_only = true;
+  };
+  std::map<std::string, HandlerParameters> handlers_;
+
+  struct UpdateRequestParameters {
+    RequestCallback callback;
+    int request_id = 0;
+    int state_fingerprint = -1;
+    int command_defs_fingerprint = -1;
+  };
+  std::vector<UpdateRequestParameters> update_requests_;
+  int last_update_request_id_{0};
 
   uint64_t last_user_id_{0};
   int state_fingerprint_{0};

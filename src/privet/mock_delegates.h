@@ -45,8 +45,10 @@ class MockDeviceDelegate : public DeviceDelegate {
   MOCK_CONST_METHOD0(GetHttpEnpoint, IntPair());
   MOCK_CONST_METHOD0(GetHttpsEnpoint, IntPair());
   MOCK_CONST_METHOD0(GetUptime, base::TimeDelta());
-  MOCK_METHOD1(SetHttpPort, void(uint16_t));
-  MOCK_METHOD1(SetHttpsPort, void(uint16_t));
+  MOCK_CONST_METHOD0(GetHttpRequestTimeout, base::TimeDelta());
+  MOCK_METHOD3(PostDelayedTask, void(const tracked_objects::Location&,
+                                     const base::Closure&,
+                                     base::TimeDelta));
 
   MockDeviceDelegate() {
     EXPECT_CALL(*this, GetHttpEnpoint())

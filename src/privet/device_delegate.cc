@@ -5,6 +5,7 @@
 #include "src/privet/device_delegate.h"
 
 #include <base/guid.h>
+#include <weave/provider/task_runner.h>
 
 #include "src/privet/constants.h"
 
@@ -15,8 +16,12 @@ namespace {
 
 class DeviceDelegateImpl : public DeviceDelegate {
  public:
-  DeviceDelegateImpl(uint16_t http_port, uint16_t https_port)
-      : http_port_{http_port}, https_port_{https_port} {}
+  DeviceDelegateImpl(provider::TaskRunner* task_runner,
+                     uint16_t http_port,
+                     uint16_t https_port,
+                     base::TimeDelta http_request_timeout)
+      : task_runner_{task_runner}, http_request_timeout_{http_request_timeout},
+        http_port_{http_port}, https_port_{https_port} {}
   ~DeviceDelegateImpl() override = default;
 
   std::pair<uint16_t, uint16_t> GetHttpEnpoint() const override {
@@ -29,11 +34,19 @@ class DeviceDelegateImpl : public DeviceDelegate {
     return base::Time::Now() - start_time_;
   }
 
-  void SetHttpPort(uint16_t port) override { http_port_ = port; }
+  base::TimeDelta GetHttpRequestTimeout() const override {
+    return http_request_timeout_;
+  }
 
-  void SetHttpsPort(uint16_t port) override { https_port_ = port; }
+  void PostDelayedTask(const tracked_objects::Location& from_here,
+                       const base::Closure& task,
+                       base::TimeDelta delay) override {
+    task_runner_->PostDelayedTask(from_here, task, delay);
+  }
 
  private:
+  provider::TaskRunner* task_runner_;
+  base::TimeDelta http_request_timeout_;
   uint16_t http_port_{0};
   uint16_t https_port_{0};
   base::Time start_time_{base::Time::Now()};
@@ -47,10 +60,13 @@ DeviceDelegate::~DeviceDelegate() {}
 
 // static
 std::unique_ptr<DeviceDelegate> DeviceDelegate::CreateDefault(
+    provider::TaskRunner* task_runner,
     uint16_t http_port,
-    uint16_t https_port) {
+    uint16_t https_port,
+    base::TimeDelta http_request_timeout) {
   return std::unique_ptr<DeviceDelegate>(
-      new DeviceDelegateImpl(http_port, https_port));
+      new DeviceDelegateImpl(task_runner, http_port, https_port,
+                             http_request_timeout));
 }
 
 }  // namespace privet

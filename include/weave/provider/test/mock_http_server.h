@@ -25,6 +25,7 @@ class MockHttpServer : public HttpServer {
   MOCK_CONST_METHOD0(GetHttpPort, uint16_t());
   MOCK_CONST_METHOD0(GetHttpsPort, uint16_t());
   MOCK_CONST_METHOD0(GetHttpsCertificateFingerprint, std::vector<uint8_t>());
+  MOCK_CONST_METHOD0(GetRequestTimeout, base::TimeDelta());
 };
 
 }  // namespace test
