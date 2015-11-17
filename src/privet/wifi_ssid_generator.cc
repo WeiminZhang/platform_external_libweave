@@ -52,6 +52,10 @@ WifiSsidGenerator::WifiSsidGenerator(const CloudDelegate* cloud,
 }
 
 std::string WifiSsidGenerator::GenerateFlags() const {
+  return GenerateFlagsInternal(false);
+}
+
+std::string WifiSsidGenerator::GenerateFlagsInternal(bool for_ssid) const {
   std::bitset<6> flags1;
   // Device needs WiFi configuration.
   flags1[0] = wifi_ && IsSetupNeeded(wifi_->GetConnectionState());
@@ -59,8 +63,9 @@ std::string WifiSsidGenerator::GenerateFlags() const {
   flags1[1] = IsSetupNeeded(gcd_->GetConnectionState());
 
   std::bitset<6> flags2;
+
   // Device is discoverable over WiFi.
-  flags2[0] = true;
+  flags2[0] = for_ssid || (wifi_ && !wifi_->GetHostedSsid().empty());
 
   std::string result{2, base64chars[0]};
   result[0] = base64chars[flags1.to_ulong()];
@@ -77,7 +82,7 @@ std::string WifiSsidGenerator::GenerateSsid() const {
 
   std::string result =
       base::StringPrintf(kSsidFormat, name.c_str(), idx.c_str(),
-                         model_id.c_str(), GenerateFlags().c_str());
+                         model_id.c_str(), GenerateFlagsInternal(true).c_str());
   CHECK_EQ(result[result.size() - 11], '.');
   return result;
 }
