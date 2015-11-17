@@ -44,6 +44,9 @@ const char kSecret[] = "secret";
 
 }  // namespace config_keys
 
+const char kWeaveUrl[] = "https://www.googleapis.com/weave/v1/";
+const char kDeprecatedUrl[] = "https://www.googleapis.com/clouddevices/v1/";
+
 namespace {
 
 const int kCurrentConfigVersion = 1;
@@ -60,7 +63,7 @@ void MigrateFromV0(base::DictionaryValue* dict) {
 Config::Settings CreateDefaultSettings() {
   Config::Settings result;
   result.oauth_url = "https://accounts.google.com/o/oauth2/";
-  result.service_url = "https://www.googleapis.com/clouddevices/v1/";
+  result.service_url = kWeaveUrl;
   result.local_anonymous_access_role = AuthScope::kViewer;
   result.pairing_modes.emplace(PairingType::kPinCode);
   result.device_id = base::GenerateGUID();
@@ -162,8 +165,11 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kOAuthURL, &tmp))
     set_oauth_url(tmp);
 
-  if (dict->GetString(config_keys::kServiceURL, &tmp))
+  if (dict->GetString(config_keys::kServiceURL, &tmp)) {
+    if (tmp == kDeprecatedUrl)
+      tmp = kWeaveUrl;
     set_service_url(tmp);
+  }
 
   if (dict->GetString(config_keys::kName, &tmp))
     set_name(tmp);
