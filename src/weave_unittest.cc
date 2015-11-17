@@ -344,19 +344,17 @@ TEST_F(WeaveBasicTest, Register) {
   auto draft = CreateDictionaryValue(kDeviceResource);
   auto response = CreateDictionaryValue(kRegistrationResponse);
   response->Set("deviceDraft", draft->DeepCopy());
-  ExpectRequest(
-      HttpClient::Method::kPatch,
-      "https://www.googleapis.com/clouddevices/v1/registrationTickets/"
-      "TICKET_ID?key=TEST_API_KEY",
-      ValueToString(*response));
+  ExpectRequest(HttpClient::Method::kPatch,
+                "https://www.googleapis.com/weave/v1/registrationTickets/"
+                "TICKET_ID?key=TEST_API_KEY",
+                ValueToString(*response));
 
   response = CreateDictionaryValue(kRegistrationFinalResponse);
   response->Set("deviceDraft", draft->DeepCopy());
-  ExpectRequest(
-      HttpClient::Method::kPost,
-      "https://www.googleapis.com/clouddevices/v1/registrationTickets/"
-      "TICKET_ID/finalize?key=TEST_API_KEY",
-      ValueToString(*response));
+  ExpectRequest(HttpClient::Method::kPost,
+                "https://www.googleapis.com/weave/v1/registrationTickets/"
+                "TICKET_ID/finalize?key=TEST_API_KEY",
+                ValueToString(*response));
 
   ExpectRequest(HttpClient::Method::kPost,
                 "https://accounts.google.com/o/oauth2/token",
