@@ -22,7 +22,26 @@ class WifiSsidGeneratorTest : public testing::Test {
   WifiSsidGenerator ssid_generator_{&gcd_, &wifi_};
 };
 
-TEST_F(WifiSsidGeneratorTest, GenerateFlags) {
+TEST_F(WifiSsidGeneratorTest, GenerateFlagsNoHostedAp) {
+  EXPECT_EQ(ssid_generator_.GenerateFlags().size(), 2);
+
+  wifi_.connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
+  gcd_.connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
+  EXPECT_EQ("DA", ssid_generator_.GenerateFlags());
+
+  wifi_.connection_state_ = ConnectionState{ConnectionState::kOnline};
+  EXPECT_EQ("CA", ssid_generator_.GenerateFlags());
+
+  gcd_.connection_state_ = ConnectionState{ConnectionState::kOffline};
+  EXPECT_EQ("AA", ssid_generator_.GenerateFlags());
+
+  wifi_.connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
+  EXPECT_EQ("BA", ssid_generator_.GenerateFlags());
+}
+
+TEST_F(WifiSsidGeneratorTest, GenerateFlagsWithHostedAp) {
+  EXPECT_CALL(wifi_, GetHostedSsid())
+      .WillRepeatedly(Return(ssid_generator_.GenerateSsid()));
   EXPECT_EQ(ssid_generator_.GenerateFlags().size(), 2);
 
   wifi_.connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
