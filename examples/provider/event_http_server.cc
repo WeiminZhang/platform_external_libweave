@@ -183,6 +183,10 @@ uint16_t HttpServerImpl::GetHttpsPort() const {
   return 7781;
 }
 
+base::TimeDelta HttpServerImpl::GetRequestTimeout() const {
+  return base::TimeDelta::Max();
+}
+
 std::vector<uint8_t> HttpServerImpl::GetHttpsCertificateFingerprint() const {
   return cert_fingerprint_;
 }

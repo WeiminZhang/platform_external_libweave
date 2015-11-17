@@ -215,6 +215,8 @@ class WeaveTest : public ::testing::Test {
   void InitHttpServer() {
     EXPECT_CALL(http_server_, GetHttpPort()).WillRepeatedly(Return(11));
     EXPECT_CALL(http_server_, GetHttpsPort()).WillRepeatedly(Return(12));
+    EXPECT_CALL(http_server_, GetRequestTimeout())
+        .WillRepeatedly(Return(base::TimeDelta::Max()));
     EXPECT_CALL(http_server_, GetHttpsCertificateFingerprint())
         .WillRepeatedly(Return(std::vector<uint8_t>{1, 2, 3}));
     EXPECT_CALL(http_server_, AddHttpRequestHandler(_, _))
@@ -250,7 +252,8 @@ class WeaveTest : public ::testing::Test {
                   "/privet/v3/pairing/confirm", "/privet/v3/pairing/start"}),
               GetKeys(http_handlers_));
     EXPECT_EQ((std::set<std::string>{
-                  "/privet/info", "/privet/v3/auth", "/privet/v3/commandDefs",
+                  "/privet/info", "/privet/v3/auth",
+                  "/privet/v3/checkForUpdates", "/privet/v3/commandDefs",
                   "/privet/v3/commands/cancel", "/privet/v3/commands/execute",
                   "/privet/v3/commands/list", "/privet/v3/commands/status",
                   "/privet/v3/pairing/cancel", "/privet/v3/pairing/confirm",

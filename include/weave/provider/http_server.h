@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <base/callback.h>
+#include <base/time/time.h>
 #include <weave/stream.h>
 
 namespace weave {
@@ -134,6 +135,10 @@ class HttpServer {
   virtual uint16_t GetHttpPort() const = 0;
   virtual uint16_t GetHttpsPort() const = 0;
   virtual std::vector<uint8_t> GetHttpsCertificateFingerprint() const = 0;
+
+  // Specifies request timeout, after which the web server automatically aborts
+  // requests. Should return base::TimeDelta::Max() if there is no timeout.
+  virtual base::TimeDelta GetRequestTimeout() const = 0;
 
  protected:
   virtual ~HttpServer() = default;
