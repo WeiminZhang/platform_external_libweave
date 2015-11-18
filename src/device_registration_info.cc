@@ -606,7 +606,6 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
        {"client_id", GetSettings().client_id},
        {"client_secret", GetSettings().client_secret},
        {"redirect_uri", "oob"},
-       {"scope", "https://www.googleapis.com/auth/clouddevices"},
        {"grant_type", "authorization_code"}});
   sender2.Send(base::Bind(&DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent,
                           weak_factory_.GetWeakPtr(), cloud_id, robot_account,

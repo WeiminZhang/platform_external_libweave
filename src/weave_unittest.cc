@@ -56,7 +56,7 @@ const char kCommandDefs[] = R"({
 })";
 
 const char kDeviceResource[] = R"({
-  "kind": "clouddevices#device",
+  "kind": "weave#device",
   "id": "CLOUD_ID",
   "channel": {
     "supportedType": "pull"
@@ -96,7 +96,7 @@ const char kDeviceResource[] = R"({
 })";
 
 const char kRegistrationResponse[] = R"({
-  "kind": "clouddevices#registrationTicket",
+  "kind": "weave#registrationTicket",
   "id": "TICKET_ID",
   "deviceId": "CLOUD_ID",
   "oauthClientId": "CLIENT_ID",
@@ -106,7 +106,7 @@ const char kRegistrationResponse[] = R"({
 })";
 
 const char kRegistrationFinalResponse[] = R"({
-  "kind": "clouddevices#registrationTicket",
+  "kind": "weave#registrationTicket",
   "id": "TICKET_ID",
   "deviceId": "CLOUD_ID",
   "oauthClientId": "CLIENT_ID",
