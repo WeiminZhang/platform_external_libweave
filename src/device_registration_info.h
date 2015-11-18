@@ -85,20 +85,20 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   // Returns the GCD service request URL. If |subpath| is specified, it is
   // appended to the base URL which is normally
-  //    https://www.googleapis.com/clouddevices/v1/".
+  //    https://www.googleapis.com/weave/v1/".
   // If |params| are specified, each key-value pair is formatted using
   // WebParamsEncode() and appended to URL as a query
   // string.
   // So, calling:
   //    GetServiceURL("ticket", {{"key","apiKey"}})
   // will return something like:
-  //    https://www.googleapis.com/clouddevices/v1/ticket?key=apiKey
+  //    https://www.googleapis.com/weave/v1/ticket?key=apiKey
   std::string GetServiceURL(const std::string& subpath = {},
                             const WebParamList& params = {}) const;
 
   // Returns a service URL to access the registered device on GCD server.
   // The base URL used to construct the full URL looks like this:
-  //    https://www.googleapis.com/clouddevices/v1/devices/<cloud_id>/
+  //    https://www.googleapis.com/weave/v1/devices/<cloud_id>/
   std::string GetDeviceURL(const std::string& subpath = {},
                            const WebParamList& params = {}) const;
 
