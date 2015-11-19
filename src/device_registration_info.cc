@@ -201,9 +201,9 @@ std::unique_ptr<base::DictionaryValue> ParseJsonResponse(
       SplitAtFirst(response.GetContentType(), ";", true).first;
 
   if (content_type != http::kJson && content_type != http::kPlain) {
-    Error::AddTo(error, FROM_HERE, errors::json::kDomain,
-                 "non_json_content_type",
-                 "Unexpected response content type: " + content_type);
+    Error::AddTo(
+        error, FROM_HERE, errors::json::kDomain, "non_json_content_type",
+        "Unexpected content type: \'" + response.GetContentType() + "\'");
     return std::unique_ptr<base::DictionaryValue>();
   }
 

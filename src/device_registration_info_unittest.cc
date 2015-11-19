@@ -222,10 +222,9 @@ TEST_F(DeviceRegistrationInfoTest, GetOAuthURL) {
   url += "client_id=";
   url += test_data::kClientId;
   EXPECT_EQ(url, dev_reg_->GetOAuthURL(
-                     "auth",
-                     {{"redirect_uri", "urn:ietf:wg:oauth:2.0:oob"},
-                      {"response_type", "code"},
-                      {"client_id", test_data::kClientId}}));
+                     "auth", {{"redirect_uri", "urn:ietf:wg:oauth:2.0:oob"},
+                              {"response_type", "code"},
+                              {"client_id", test_data::kClientId}}));
 }
 
 TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
