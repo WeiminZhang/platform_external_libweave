@@ -24,6 +24,7 @@ using testing::DoAll;
 using testing::Invoke;
 using testing::Return;
 using testing::SetArgPointee;
+using testing::SaveArg;
 using testing::WithArgs;
 
 namespace weave {
@@ -152,6 +153,9 @@ class PrivetHandlerTest : public testing::Test {
                             base::Bind(&PrivetHandlerTest::HandlerNoFound));
   }
 
+  const base::DictionaryValue& GetResponse() const { return output_; }
+  int GetResponseCount() const { return response_count_; }
+
   void SetNoWifiAndGcd() {
     handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, nullptr));
     EXPECT_CALL(cloud_, GetCloudId()).WillRepeatedly(Return(""));
@@ -173,6 +177,8 @@ class PrivetHandlerTest : public testing::Test {
 
  private:
   void HandlerCallback(int status, const base::DictionaryValue& output) {
+    output_.Clear();
+    ++response_count_;
     output_.MergeDictionary(&output);
     if (!output_.HasKey("error")) {
       EXPECT_EQ(200, status);
@@ -188,6 +194,7 @@ class PrivetHandlerTest : public testing::Test {
 
   std::unique_ptr<PrivetHandler> handler_;
   base::DictionaryValue output_;
+  int response_count_{0};
   ConnectionState gcd_disabled_state_{ConnectionState::kDisabled};
 };
 
@@ -724,6 +731,239 @@ TEST_F(PrivetHandlerSetupTest, CommandsList) {
   EXPECT_PRED2(IsEqualJson, kExpected,
                HandleRequest("/privet/v3/commands/list", "{}"));
 }
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_NoInput) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  cloud_.NotifyOnCommandDefsChanged();
+  cloud_.NotifyOnStateChanged();
+  const char kInput[] = "{}";
+  const char kExpected[] = R"({
+   'commandsFingerprint': '1',
+   'stateFingerprint': '1'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected,
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(1, GetResponseCount());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_AlreadyChanged) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  cloud_.NotifyOnCommandDefsChanged();
+  cloud_.NotifyOnStateChanged();
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0'
+  })";
+  const char kExpected[] = R"({
+   'commandsFingerprint': '1',
+   'stateFingerprint': '1'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected,
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(1, GetResponseCount());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollCommands) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, "{}",
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnCommandDefsChanged();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '1',
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected, GetResponse());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollState) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, "{}",
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnStateChanged();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '1'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected, GetResponse());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreCommands) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  const char kInput[] = R"({
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, "{}",
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnCommandDefsChanged();
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnStateChanged();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '1',
+   'stateFingerprint': '1'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected, GetResponse());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreState) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, "{}",
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnStateChanged();
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnCommandDefsChanged();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '1',
+   'stateFingerprint': '1'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected, GetResponse());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_InstantTimeout) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0',
+   'waitTimeout': 0
+  })";
+  const char kExpected[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected,
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_UserTimeout) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0',
+   'waitTimeout': 3
+  })";
+  base::Closure callback;
+  EXPECT_CALL(device_, PostDelayedTask(_, _, base::TimeDelta::FromSeconds(3)))
+      .WillOnce(SaveArg<1>(&callback));
+  EXPECT_PRED2(IsEqualJson, "{}",
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  callback.Run();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected, GetResponse());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerTimeout) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::FromMinutes(1)));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0'
+  })";
+  base::Closure callback;
+  EXPECT_CALL(device_, PostDelayedTask(_, _, base::TimeDelta::FromSeconds(50)))
+      .WillOnce(SaveArg<1>(&callback));
+  EXPECT_PRED2(IsEqualJson, "{}",
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  callback.Run();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected, GetResponse());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_VeryShortServerTimeout) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::FromSeconds(5)));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, kInput,
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(1, GetResponseCount());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerAndUserTimeout) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::FromMinutes(1)));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0',
+   'waitTimeout': 10
+  })";
+  base::Closure callback;
+  EXPECT_CALL(device_, PostDelayedTask(_, _, base::TimeDelta::FromSeconds(10)))
+      .WillOnce(SaveArg<1>(&callback));
+  EXPECT_PRED2(IsEqualJson, "{}",
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  callback.Run();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected, GetResponse());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ChangeBeforeTimeout) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0',
+   'waitTimeout': 10
+  })";
+  base::Closure callback;
+  EXPECT_CALL(device_, PostDelayedTask(_, _, base::TimeDelta::FromSeconds(10)))
+      .WillOnce(SaveArg<1>(&callback));
+  EXPECT_PRED2(IsEqualJson, "{}",
+               HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnCommandDefsChanged();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '1',
+   'stateFingerprint': '0'
+  })";
+  EXPECT_PRED2(IsEqualJson, kExpected, GetResponse());
+  callback.Run();
+  EXPECT_EQ(1, GetResponseCount());
+}
+
 
 }  // namespace privet
 }  // namespace weave
