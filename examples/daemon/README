@@ -28,7 +28,7 @@ Goto https://developers.google.com/oauthplayground/
   - "Step 2", "Exchange authorization code for tokens"
   - "Step 3", obtain a registration ticket for your new weave device
          HTTP Method:  POST
-         Request URI:  https://www.googleapis.com/clouddevices/v1/registrationTickets
+         Request URI:  https://www.googleapis.com/weave/v1/registrationTickets
          Enter request body:
             {
               "userEmail": "me"
@@ -36,7 +36,7 @@ Goto https://developers.google.com/oauthplayground/
          then "Send the request", a ticket id will be returned in
             {
               "userEmail": "user@google.com",
-              "kind": "clouddevices#registrationTicket",
+              "kind": "weave#registrationTicket",
               "expirationTimeMs": "1443204934855",
               "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
               "creationTimeMs": "1443204694855",
@@ -80,7 +80,7 @@ Send Command to the Daemon
   - go to the oauthplayground used for registration ticket command
      in "Step 3", send base.identify with
         HTTP Method: POST
-        Request URI: https://www.googleapis.com/clouddevices/v1/commands
+        Request URI: https://www.googleapis.com/weave/v1/commands
         Enter request body:
         {
           "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
@@ -99,11 +99,11 @@ Send Command to the Daemon
        except in "step 3", do:
 
        HTTP Method:  GET    [not POST anymore]
-       Request URI:  https://www.googleapis.com/clouddevices/v1/commands?deviceId=0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
+       Request URI:  https://www.googleapis.com/weave/v1/commands?deviceId=0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
 
        "Send the request", you get all of the commands executed on your
        device, find something like
-          "kind": "clouddevices#command",
+          "kind": "weave#command",
           "name": "_sample._hello",
           "results": {
             "_reply": "Hello cloud user"

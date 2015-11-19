@@ -217,15 +217,13 @@ TEST_F(DeviceRegistrationInfoTest, GetServiceURL) {
 TEST_F(DeviceRegistrationInfoTest, GetOAuthURL) {
   EXPECT_EQ(test_data::kOAuthURL, dev_reg_->GetOAuthURL());
   std::string url = test_data::kOAuthURL;
-  url += "auth?scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fclouddevices&";
-  url += "redirect_uri=urn%3Aietf%3Awg%3Aoauth%3A2.0%3Aoob&";
+  url += "auth?redirect_uri=urn%3Aietf%3Awg%3Aoauth%3A2.0%3Aoob&";
   url += "response_type=code&";
   url += "client_id=";
   url += test_data::kClientId;
   EXPECT_EQ(url, dev_reg_->GetOAuthURL(
                      "auth",
-                     {{"scope", "https://www.googleapis.com/auth/clouddevices"},
-                      {"redirect_uri", "urn:ietf:wg:oauth:2.0:oob"},
+                     {{"redirect_uri", "urn:ietf:wg:oauth:2.0:oob"},
                       {"response_type", "code"},
                       {"client_id", test_data::kClientId}}));
 }
@@ -332,7 +330,7 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
             json.SetString("channel.supportedType", "xmpp");
             json.SetString("deviceKind", "vendor");
             json.SetString("id", test_data::kDeviceId);
-            json.SetString("kind", "clouddevices#device");
+            json.SetString("kind", "weave#device");
             callback.Run(ReplyWithJson(200, json), nullptr);
           })));
 
@@ -427,13 +425,13 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
 
         base::DictionaryValue json_resp;
         json_resp.SetString("id", test_data::kClaimTicketId);
-        json_resp.SetString("kind", "clouddevices#registrationTicket");
+        json_resp.SetString("kind", "weave#registrationTicket");
         json_resp.SetString("oauthClientId", test_data::kClientId);
         base::DictionaryValue* device_draft = nullptr;
         EXPECT_TRUE(json->GetDictionary("deviceDraft", &device_draft));
         device_draft = device_draft->DeepCopy();
         device_draft->SetString("id", test_data::kDeviceId);
-        device_draft->SetString("kind", "clouddevices#device");
+        device_draft->SetString("kind", "weave#device");
         json_resp.Set("deviceDraft", device_draft);
 
         callback.Run(ReplyWithJson(200, json_resp), nullptr);
@@ -447,11 +445,11 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
           Invoke([](const HttpClient::SendRequestCallback& callback) {
             base::DictionaryValue json;
             json.SetString("id", test_data::kClaimTicketId);
-            json.SetString("kind", "clouddevices#registrationTicket");
+            json.SetString("kind", "weave#registrationTicket");
             json.SetString("oauthClientId", test_data::kClientId);
             json.SetString("userEmail", "user@email.com");
             json.SetString("deviceDraft.id", test_data::kDeviceId);
-            json.SetString("deviceDraft.kind", "clouddevices#device");
+            json.SetString("deviceDraft.kind", "weave#device");
             json.SetString("deviceDraft.channel.supportedType", "xmpp");
             json.SetString("robotAccountEmail", test_data::kRobotAccountEmail);
             json.SetString("robotAccountAuthorizationCode",
@@ -471,10 +469,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
         EXPECT_EQ(test_data::kClientId, GetFormField(data, "client_id"));
         EXPECT_EQ(test_data::kClientSecret,
                   GetFormField(data, "client_secret"));
-
         EXPECT_EQ("oob", GetFormField(data, "redirect_uri"));
-        EXPECT_EQ("https://www.googleapis.com/auth/clouddevices",
-                  GetFormField(data, "scope"));
 
         base::DictionaryValue json;
         json.SetString("access_token", test_data::kAccessToken);
