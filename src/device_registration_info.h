@@ -110,12 +110,6 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Starts GCD device if credentials available.
   void Start();
 
-  // Checks whether we have credentials generated during registration.
-  bool HaveRegistrationCredentials() const;
-  // Calls HaveRegistrationCredentials() and logs an error if no credentials
-  // are available.
-  bool VerifyRegistrationCredentials(ErrorPtr* error) const;
-
   // Updates a command (override from CloudCommandUpdateInterface).
   void UpdateCommand(const std::string& command_id,
                      const base::DictionaryValue& command_patch,
@@ -133,6 +127,12 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   base::WeakPtr<DeviceRegistrationInfo> AsWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
+
+  // Checks whether we have credentials generated during registration.
+  bool HaveRegistrationCredentials() const;
+  // Calls HaveRegistrationCredentials() and logs an error if no credentials
+  // are available.
+  bool VerifyRegistrationCredentials(ErrorPtr* error) const;
 
   // Cause DeviceRegistrationInfo to attempt to connect to cloud server on
   // its own later.
@@ -266,7 +266,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void OnDeviceDeleted(const std::string& cloud_id) override;
 
   // Wipes out the device registration information and stops server connections.
-  void MarkDeviceUnregistered();
+  void RemoveCredentials();
 
   void RegisterDeviceError(const DoneCallback& callback, ErrorPtr error);
   void RegisterDeviceOnTicketSent(

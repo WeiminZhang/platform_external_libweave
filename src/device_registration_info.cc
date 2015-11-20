@@ -262,6 +262,11 @@ DeviceRegistrationInfo::DeviceRegistrationInfo(
   cloud_backoff_entry_.reset(new BackoffEntry{cloud_backoff_policy_.get()});
   oauth2_backoff_entry_.reset(new BackoffEntry{cloud_backoff_policy_.get()});
 
+  bool revoked =
+      !GetSettings().cloud_id.empty() && !HaveRegistrationCredentials();
+  gcd_state_ =
+      revoked ? GcdState::kInvalidCredentials : GcdState::kUnconfigured;
+
   command_manager_->AddCommandDefChanged(
       base::Bind(&DeviceRegistrationInfo::OnCommandDefsChanged,
                  weak_factory_.GetWeakPtr()));
@@ -511,9 +516,8 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
 void DeviceRegistrationInfo::GetDeviceInfo(
     const CloudRequestDoneCallback& callback) {
   ErrorPtr error;
-  if (!VerifyRegistrationCredentials(&error)) {
+  if (!VerifyRegistrationCredentials(&error))
     return callback.Run({}, std::move(error));
-  }
   DoCloudRequest(HttpClient::Method::kGet, GetDeviceURL(), nullptr, callback);
 }
 
@@ -675,9 +679,8 @@ void DeviceRegistrationInfo::SendCloudRequest(
   // TODO(antonm): Add support for device removal.
 
   ErrorPtr error;
-  if (!VerifyRegistrationCredentials(&error)) {
+  if (!VerifyRegistrationCredentials(&error))
     return data->callback.Run({}, std::move(error));
-  }
 
   if (cloud_backoff_entry_->ShouldRejectRequest()) {
     VLOG(1) << "Cloud request delayed for "
@@ -762,13 +765,13 @@ void DeviceRegistrationInfo::OnAccessTokenRefreshed(
 
 void DeviceRegistrationInfo::CheckAccessTokenError(ErrorPtr error) {
   if (error && error->HasError(kErrorDomainOAuth2, "invalid_grant"))
-    MarkDeviceUnregistered();
+    RemoveCredentials();
 }
 
 void DeviceRegistrationInfo::ConnectToCloud(ErrorPtr error) {
   if (error) {
     if (error->HasError(kErrorDomainOAuth2, "invalid_grant"))
-      MarkDeviceUnregistered();
+      RemoveCredentials();
     return;
   }
 
@@ -1270,10 +1273,10 @@ void DeviceRegistrationInfo::OnDeviceDeleted(const std::string& cloud_id) {
                  << cloud_id << "'";
     return;
   }
-  MarkDeviceUnregistered();
+  RemoveCredentials();
 }
 
-void DeviceRegistrationInfo::MarkDeviceUnregistered() {
+void DeviceRegistrationInfo::RemoveCredentials() {
   if (!HaveRegistrationCredentials())
     return;
 
@@ -1281,7 +1284,7 @@ void DeviceRegistrationInfo::MarkDeviceUnregistered() {
 
   LOG(INFO) << "Device is unregistered from the cloud. Deleting credentials";
   Config::Transaction change{config_.get()};
-  change.set_cloud_id("");
+  // Keep cloud_id to switch to detect kInvalidCredentials after restart.
   change.set_robot_account("");
   change.set_refresh_token("");
   change.Commit();
