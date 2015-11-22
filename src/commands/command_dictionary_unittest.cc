@@ -36,7 +36,7 @@ TEST(CommandDictionary, LoadCommands) {
   })");
   CommandDictionary dict;
   EXPECT_TRUE(dict.LoadCommands(*json, nullptr));
-  EXPECT_EQ(1, dict.GetSize());
+  EXPECT_EQ(1u, dict.GetSize());
   EXPECT_NE(nullptr, dict.FindCommand("robot.jump"));
   json = CreateDictionaryValue(R"({
     'base': {
@@ -48,7 +48,7 @@ TEST(CommandDictionary, LoadCommands) {
     }
   })");
   EXPECT_TRUE(dict.LoadCommands(*json, nullptr));
-  EXPECT_EQ(3, dict.GetSize());
+  EXPECT_EQ(3u, dict.GetSize());
   EXPECT_NE(nullptr, dict.FindCommand("robot.jump"));
   EXPECT_NE(nullptr, dict.FindCommand("base.reboot"));
   EXPECT_NE(nullptr, dict.FindCommand("base.shutdown"));

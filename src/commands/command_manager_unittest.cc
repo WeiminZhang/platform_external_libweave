@@ -75,7 +75,7 @@ TEST(CommandManager, LoadCommandsJson) {
     }
   })";
   EXPECT_TRUE(manager.LoadCommands(json_str, nullptr));
-  EXPECT_EQ(2, manager.GetCommandDictionary().GetSize());
+  EXPECT_EQ(2u, manager.GetCommandDictionary().GetSize());
   EXPECT_NE(nullptr, manager.GetCommandDictionary().FindCommand("base.reboot"));
   EXPECT_NE(nullptr, manager.GetCommandDictionary().FindCommand("robot._jump"));
 }
@@ -84,7 +84,7 @@ TEST(CommandManager, ShouldLoadStandardAndTestDefinitions) {
   CommandManager manager;
   ASSERT_TRUE(manager.LoadCommands(kTestVendorCommands, nullptr));
   ASSERT_TRUE(manager.LoadCommands(kTestTestCommands, nullptr));
-  EXPECT_EQ(3, manager.GetCommandDictionary().GetSize());
+  EXPECT_EQ(3u, manager.GetCommandDictionary().GetSize());
   EXPECT_NE(nullptr, manager.GetCommandDictionary().FindCommand("robot._jump"));
   EXPECT_NE(nullptr,
             manager.GetCommandDictionary().FindCommand("robot._speak"));

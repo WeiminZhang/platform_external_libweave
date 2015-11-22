@@ -218,8 +218,9 @@ StatePackage* StateManager::FindOrCreatePackage(
   StatePackage* package = FindPackage(package_name);
   if (package == nullptr) {
     std::unique_ptr<StatePackage> new_package{new StatePackage(package_name)};
-    package = packages_.emplace(package_name, std::move(new_package))
-                  .first->second.get();
+    package =
+        packages_.insert(std::make_pair(package_name, std::move(new_package)))
+            .first->second.get();
   }
   return package;
 }

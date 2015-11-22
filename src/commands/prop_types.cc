@@ -110,7 +110,8 @@ std::unique_ptr<PropType> PropType::Clone() const {
   auto cloned = PropType::Create(GetType());
   cloned->based_on_schema_ = based_on_schema_;
   for (const auto& pair : constraints_) {
-    cloned->constraints_.emplace(pair.first, pair.second->Clone());
+    cloned->constraints_.insert(
+        std::make_pair(pair.first, pair.second->Clone()));
   }
   cloned->default_.is_inherited = default_.is_inherited;
   if (default_.value)
@@ -143,7 +144,8 @@ bool PropType::FromJson(const base::DictionaryValue* value,
     return false;
   if (base_schema) {
     for (const auto& pair : base_schema->GetConstraints()) {
-      constraints_.emplace(pair.first, pair.second->CloneAsInherited());
+      constraints_.insert(
+          std::make_pair(pair.first, pair.second->CloneAsInherited()));
     }
   }
   if (!ConstraintsFromJson(value, &processed_keys, error))

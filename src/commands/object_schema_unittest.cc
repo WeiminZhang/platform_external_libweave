@@ -1664,7 +1664,7 @@ TEST(CommandSchema, ObjectSchema_UseRequired) {
   value = prop.CreatePropValue(*CreateDictionaryValue(val_json).get(), nullptr);
   ASSERT_NE(nullptr, value);
   obj = value->GetObject()->GetValue();
-  EXPECT_EQ(3, obj.size());
+  EXPECT_EQ(3u, obj.size());
 
   EXPECT_EQ(100, obj["param1"]->GetInt()->GetValue());
   EXPECT_EQ(obj.end(), obj.find("param2"));

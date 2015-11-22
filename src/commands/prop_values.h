@@ -130,7 +130,7 @@ class PropValue {
 template <typename T>
 class TypedValueBase : public PropValue {
  public:
-  using PropValue::PropValue;
+  TypedValueBase(const PropType& type) : PropValue(type) {}
 
   // Overrides from PropValue base class.
   ValueType GetType() const override { return GetValueType<T>(); }
@@ -164,11 +164,9 @@ class TypedValueBase : public PropValue {
 template <typename Derived, typename T>
 class TypedValueWithClone : public TypedValueBase<T> {
  public:
-  using Base = TypedValueWithClone<Derived, T>;
-
-  // Expose the custom constructor of the base class.
-  using TypedValueBase<T>::TypedValueBase;
-  using PropValue::GetPropType;
+  TypedValueWithClone(const PropType& type) : TypedValueBase<T>(type) {}
+  TypedValueWithClone(const PropType& type, const T& value)
+      : TypedValueBase<T>(type, value) {}
 
   std::unique_ptr<PropValue> Clone() const override {
     return std::unique_ptr<PropValue>{
@@ -183,7 +181,7 @@ class TypedValueWithClone : public TypedValueBase<T> {
       return nullptr;
 
     // Only place where invalid value can exist.
-    std::unique_ptr<Derived> result{new Derived{type, tmp_value}};
+    std::unique_ptr<Derived> result(new Derived(type, tmp_value));
     if (!result->GetPropType()->ValidateConstraints(*result, error))
       return nullptr;
 
@@ -194,8 +192,11 @@ class TypedValueWithClone : public TypedValueBase<T> {
 // Value of type Integer.
 class IntValue final : public TypedValueWithClone<IntValue, int> {
  public:
-  using Base::Base;
-  friend class TypedValueWithClone<IntValue, int>;
+  explicit IntValue(const PropType& type)
+      : TypedValueWithClone<IntValue, int>(type) {}
+  IntValue(const PropType& type, int value)
+      : TypedValueWithClone<IntValue, int>(type, value) {}
+
   IntValue* GetInt() override { return this; }
   IntValue const* GetInt() const override { return this; }
 };
@@ -203,8 +204,11 @@ class IntValue final : public TypedValueWithClone<IntValue, int> {
 // Value of type Number.
 class DoubleValue final : public TypedValueWithClone<DoubleValue, double> {
  public:
-  using Base::Base;
-  friend class TypedValueWithClone<DoubleValue, double>;
+  explicit DoubleValue(const PropType& type)
+      : TypedValueWithClone<DoubleValue, double>(type) {}
+  DoubleValue(const PropType& type, double value)
+      : TypedValueWithClone<DoubleValue, double>(type, value) {}
+
   DoubleValue* GetDouble() override { return this; }
   DoubleValue const* GetDouble() const override { return this; }
 };
@@ -212,8 +216,11 @@ class DoubleValue final : public TypedValueWithClone<DoubleValue, double> {
 // Value of type String.
 class StringValue final : public TypedValueWithClone<StringValue, std::string> {
  public:
-  using Base::Base;
-  friend class TypedValueWithClone<StringValue, std::string>;
+  explicit StringValue(const PropType& type)
+      : TypedValueWithClone<StringValue, std::string>(type) {}
+  StringValue(const PropType& type, std::string value)
+      : TypedValueWithClone<StringValue, std::string>(type, value) {}
+
   StringValue* GetString() override { return this; }
   StringValue const* GetString() const override { return this; }
 };
@@ -221,8 +228,11 @@ class StringValue final : public TypedValueWithClone<StringValue, std::string> {
 // Value of type Boolean.
 class BooleanValue final : public TypedValueWithClone<BooleanValue, bool> {
  public:
-  using Base::Base;
-  friend class TypedValueWithClone<BooleanValue, bool>;
+  explicit BooleanValue(const PropType& type)
+      : TypedValueWithClone<BooleanValue, bool>(type) {}
+  BooleanValue(const PropType& type, bool value)
+      : TypedValueWithClone<BooleanValue, bool>(type, value) {}
+
   BooleanValue* GetBoolean() override { return this; }
   BooleanValue const* GetBoolean() const override { return this; }
 };
@@ -230,8 +240,11 @@ class BooleanValue final : public TypedValueWithClone<BooleanValue, bool> {
 // Value of type Object.
 class ObjectValue final : public TypedValueWithClone<ObjectValue, ValueMap> {
  public:
-  using Base::Base;
-  friend class TypedValueWithClone<ObjectValue, ValueMap>;
+  explicit ObjectValue(const PropType& type)
+      : TypedValueWithClone<ObjectValue, ValueMap>(type) {}
+  ObjectValue(const PropType& type, ValueMap value)
+      : TypedValueWithClone<ObjectValue, ValueMap>(type, value) {}
+
   ObjectValue* GetObject() override { return this; }
   ObjectValue const* GetObject() const override { return this; }
 };
@@ -239,8 +252,11 @@ class ObjectValue final : public TypedValueWithClone<ObjectValue, ValueMap> {
 // Value of type Array.
 class ArrayValue final : public TypedValueWithClone<ArrayValue, ValueVector> {
  public:
-  using Base::Base;
-  friend class TypedValueWithClone<ArrayValue, ValueVector>;
+  explicit ArrayValue(const PropType& type)
+      : TypedValueWithClone<ArrayValue, ValueVector>(type) {}
+  ArrayValue(const PropType& type, ValueVector value)
+      : TypedValueWithClone<ArrayValue, ValueVector>(type, value) {}
+
   ArrayValue* GetArray() override { return this; }
   ArrayValue const* GetArray() const override { return this; }
 };

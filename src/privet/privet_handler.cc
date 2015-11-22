@@ -469,7 +469,7 @@ void PrivetHandler::AddHandler(const std::string& path,
   params.handler = handler;
   params.scope = scope;
   params.https_only = false;
-  CHECK(handlers_.emplace(path, params).second);
+  CHECK(handlers_.insert(std::make_pair(path, params)).second);
 }
 
 void PrivetHandler::AddSecureHandler(const std::string& path,
@@ -479,7 +479,7 @@ void PrivetHandler::AddSecureHandler(const std::string& path,
   params.handler = handler;
   params.scope = scope;
   params.https_only = true;
-  CHECK(handlers_.emplace(path, params).second);
+  CHECK(handlers_.insert(std::make_pair(path, params)).second);
 }
 
 void PrivetHandler::HandleInfo(const base::DictionaryValue&,

@@ -100,8 +100,8 @@ TEST(StatePackage, Empty) {
 TEST(StatePackage, AddSchemaFromJson_OnEmpty) {
   StatePackage package("test");
   ASSERT_TRUE(package.AddSchemaFromJson(GetTestSchema().get(), nullptr));
-  EXPECT_EQ(4, GetTypes(package).size());
-  EXPECT_EQ(0, GetValues(package).size());
+  EXPECT_EQ(4u, GetTypes(package).size());
+  EXPECT_EQ(0u, GetValues(package).size());
 
   auto expected = R"({
     'color': {
@@ -138,7 +138,7 @@ TEST(StatePackage, AddValuesFromJson_OnEmpty) {
   StatePackage package("test");
   ASSERT_TRUE(package.AddSchemaFromJson(GetTestSchema().get(), nullptr));
   ASSERT_TRUE(package.AddValuesFromJson(GetTestValues().get(), nullptr));
-  EXPECT_EQ(4, GetValues(package).size());
+  EXPECT_EQ(4u, GetValues(package).size());
   auto expected = R"({
     'color': 'white',
     'direction': {
@@ -157,8 +157,8 @@ TEST_F(StatePackageTest, AddSchemaFromJson_AddMore) {
       'type': 'string'
     }})");
   ASSERT_TRUE(package_->AddSchemaFromJson(dict.get(), nullptr));
-  EXPECT_EQ(5, GetTypes(*package_).size());
-  EXPECT_EQ(4, GetValues(*package_).size());
+  EXPECT_EQ(5u, GetTypes(*package_).size());
+  EXPECT_EQ(4u, GetValues(*package_).size());
   auto expected = R"({
     'brightness': {
       'enum': ['low', 'medium', 'high'],
@@ -211,7 +211,7 @@ TEST_F(StatePackageTest, AddValuesFromJson_AddMore) {
   ASSERT_TRUE(package_->AddSchemaFromJson(dict.get(), nullptr));
   dict = CreateDictionaryValue("{'brightness':'medium'}");
   ASSERT_TRUE(package_->AddValuesFromJson(dict.get(), nullptr));
-  EXPECT_EQ(5, GetValues(*package_).size());
+  EXPECT_EQ(5u, GetValues(*package_).size());
   auto expected = R"({
     'brightness': 'medium',
     'color': 'white',

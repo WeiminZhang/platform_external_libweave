@@ -109,7 +109,7 @@ class SecurityManagerTest : public testing::Test {
 };
 
 TEST_F(SecurityManagerTest, RandomSecret) {
-  EXPECT_GE(security_.GetSecret().size(), 32);
+  EXPECT_GE(security_.GetSecret().size(), 32u);
   EXPECT_TRUE(IsBase64(security_.GetSecret()));
 }
 

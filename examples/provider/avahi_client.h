@@ -34,7 +34,7 @@ class AvahiClient : public provider::DnsServiceDiscovery {
   std::unique_ptr<AvahiThreadedPoll, decltype(&avahi_threaded_poll_free)>
       thread_pool_{nullptr, &avahi_threaded_poll_free};
 
-  std::unique_ptr<::AvahiClient, decltype(&avahi_client_free)> client_{
+  std::unique_ptr< ::AvahiClient, decltype(&avahi_client_free)> client_{
       nullptr, &avahi_client_free};
 
   std::unique_ptr<AvahiEntryGroup, decltype(&avahi_entry_group_free)> group_{

@@ -38,7 +38,8 @@ void CommandQueue::AddCommandHandler(
       }
     }
 
-    CHECK(command_callbacks_.emplace(command_name, callback).second)
+    CHECK(command_callbacks_.insert(std::make_pair(command_name, callback))
+              .second)
         << command_name << " already has handler";
 
   } else {

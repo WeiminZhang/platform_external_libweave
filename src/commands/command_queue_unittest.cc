@@ -84,14 +84,14 @@ class FakeDispatcher {
 
 TEST_F(CommandQueueTest, Empty) {
   EXPECT_TRUE(queue_.IsEmpty());
-  EXPECT_EQ(0, queue_.GetCount());
+  EXPECT_EQ(0u, queue_.GetCount());
 }
 
 TEST_F(CommandQueueTest, Add) {
   queue_.Add(CreateDummyCommandInstance("base.reboot", "id1"));
   queue_.Add(CreateDummyCommandInstance("base.reboot", "id2"));
   queue_.Add(CreateDummyCommandInstance("base.reboot", "id3"));
-  EXPECT_EQ(3, queue_.GetCount());
+  EXPECT_EQ(3u, queue_.GetCount());
   EXPECT_FALSE(queue_.IsEmpty());
 }
 
@@ -102,31 +102,31 @@ TEST_F(CommandQueueTest, Remove) {
   queue_.Add(CreateDummyCommandInstance("base.reboot", id2));
   EXPECT_FALSE(queue_.IsEmpty());
   EXPECT_FALSE(Remove("dummy"));
-  EXPECT_EQ(2, queue_.GetCount());
+  EXPECT_EQ(2u, queue_.GetCount());
   EXPECT_TRUE(Remove(id1));
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
   EXPECT_FALSE(Remove(id1));
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
   EXPECT_TRUE(Remove(id2));
-  EXPECT_EQ(0, queue_.GetCount());
+  EXPECT_EQ(0u, queue_.GetCount());
   EXPECT_FALSE(Remove(id2));
-  EXPECT_EQ(0, queue_.GetCount());
+  EXPECT_EQ(0u, queue_.GetCount());
   EXPECT_TRUE(queue_.IsEmpty());
 }
 
 TEST_F(CommandQueueTest, DelayedRemove) {
   const std::string id1 = "id1";
   queue_.Add(CreateDummyCommandInstance("base.reboot", id1));
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
 
   queue_.DelayedRemove(id1);
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
 
   Cleanup(base::TimeDelta::FromMinutes(1));
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
 
   Cleanup(base::TimeDelta::FromMinutes(15));
-  EXPECT_EQ(0, queue_.GetCount());
+  EXPECT_EQ(0u, queue_.GetCount());
 }
 
 TEST_F(CommandQueueTest, Dispatch) {

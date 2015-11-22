@@ -17,21 +17,21 @@ TEST(StringUtils, Split) {
   std::vector<std::string> parts;
 
   parts = Split("", ",", false, false);
-  EXPECT_EQ(0, parts.size());
+  EXPECT_EQ(0u, parts.size());
 
   parts = Split("abc", ",", false, false);
-  EXPECT_EQ(1, parts.size());
+  EXPECT_EQ(1u, parts.size());
   EXPECT_EQ("abc", parts[0]);
 
   parts = Split(",a,bc , d,  ,e, ", ",", true, true);
-  EXPECT_EQ(4, parts.size());
+  EXPECT_EQ(4u, parts.size());
   EXPECT_EQ("a", parts[0]);
   EXPECT_EQ("bc", parts[1]);
   EXPECT_EQ("d", parts[2]);
   EXPECT_EQ("e", parts[3]);
 
   parts = Split(",a,bc , d,  ,e, ", ",", false, true);
-  EXPECT_EQ(6, parts.size());
+  EXPECT_EQ(6u, parts.size());
   EXPECT_EQ("a", parts[0]);
   EXPECT_EQ("bc ", parts[1]);
   EXPECT_EQ(" d", parts[2]);
@@ -40,7 +40,7 @@ TEST(StringUtils, Split) {
   EXPECT_EQ(" ", parts[5]);
 
   parts = Split(",a,bc , d,  ,e, ", ",", true, false);
-  EXPECT_EQ(7, parts.size());
+  EXPECT_EQ(7u, parts.size());
   EXPECT_EQ("", parts[0]);
   EXPECT_EQ("a", parts[1]);
   EXPECT_EQ("bc", parts[2]);
@@ -50,7 +50,7 @@ TEST(StringUtils, Split) {
   EXPECT_EQ("", parts[6]);
 
   parts = Split(",a,bc , d,  ,e, ", ",", false, false);
-  EXPECT_EQ(7, parts.size());
+  EXPECT_EQ(7u, parts.size());
   EXPECT_EQ("", parts[0]);
   EXPECT_EQ("a", parts[1]);
   EXPECT_EQ("bc ", parts[2]);
@@ -60,12 +60,12 @@ TEST(StringUtils, Split) {
   EXPECT_EQ(" ", parts[6]);
 
   parts = Split("abc:=xyz", ":=", false, false);
-  EXPECT_EQ(2, parts.size());
+  EXPECT_EQ(2u, parts.size());
   EXPECT_EQ("abc", parts[0]);
   EXPECT_EQ("xyz", parts[1]);
 
   parts = Split("abc", "", false, false);
-  EXPECT_EQ(3, parts.size());
+  EXPECT_EQ(3u, parts.size());
   EXPECT_EQ("a", parts[0]);
   EXPECT_EQ("b", parts[1]);
   EXPECT_EQ("c", parts[2]);

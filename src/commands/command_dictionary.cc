@@ -62,7 +62,8 @@ bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
         return false;
       }
 
-      new_defs.emplace(full_command_name, std::move(command_def));
+      new_defs.insert(
+          std::make_pair(full_command_name, std::move(command_def)));
       command_iter.Advance();
     }
     package_iter.Advance();
@@ -81,7 +82,7 @@ bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
 
   // Insert new definitions into the global map.
   for (auto& pair : new_defs)
-    definitions_.emplace(pair.first, std::move(pair.second));
+    definitions_.insert(std::make_pair(pair.first, std::move(pair.second)));
   return true;
 }
 

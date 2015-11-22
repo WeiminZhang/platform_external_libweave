@@ -283,7 +283,8 @@ ObjectSchema::~ObjectSchema() {}
 std::unique_ptr<ObjectSchema> ObjectSchema::Clone() const {
   std::unique_ptr<ObjectSchema> cloned{new ObjectSchema};
   for (const auto& pair : properties_) {
-    cloned->properties_.emplace(pair.first, pair.second->Clone());
+    cloned->properties_.insert(
+        std::make_pair(pair.first, pair.second->Clone()));
   }
   cloned->extra_properties_allowed_ = extra_properties_allowed_;
   return cloned;
@@ -335,7 +336,7 @@ bool ObjectSchema::FromJson(const base::DictionaryValue* value,
         object_schema ? object_schema->GetProp(iter.key()) : nullptr;
     auto prop_type = PropFromJson(iter.value(), base_schema, error);
     if (prop_type) {
-      properties.emplace(iter.key(), std::move(prop_type));
+      properties.insert(std::make_pair(iter.key(), std::move(prop_type)));
     } else {
       Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                          errors::commands::kInvalidPropDef,

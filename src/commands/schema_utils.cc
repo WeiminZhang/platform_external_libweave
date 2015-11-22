@@ -155,10 +155,10 @@ bool TypedValueFromJson(const base::Value* value_in,
                            pair.first.c_str());
         return false;
       }
-      value_out->emplace_hint(value_out->end(), pair.first, std::move(value));
+      value_out->insert(std::make_pair(pair.first, std::move(value)));
       keys_processed.insert(pair.first);
     } else if (def_value) {
-      value_out->emplace_hint(value_out->end(), pair.first, def_value->Clone());
+      value_out->insert(std::make_pair(pair.first, def_value->Clone()));
       keys_processed.insert(pair.first);
     } else if (pair.second->IsRequired()) {
       return ErrorMissingProperty(error, FROM_HERE, pair.first.c_str());

@@ -65,7 +65,7 @@ Config::Settings CreateDefaultSettings() {
   result.oauth_url = "https://accounts.google.com/o/oauth2/";
   result.service_url = kWeaveUrl;
   result.local_anonymous_access_role = AuthScope::kViewer;
-  result.pairing_modes.emplace(PairingType::kPinCode);
+  result.pairing_modes.insert(PairingType::kPinCode);
   result.device_id = base::GenerateGUID();
   return result;
 }

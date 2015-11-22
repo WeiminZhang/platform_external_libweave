@@ -213,7 +213,7 @@ class CloudDelegateImpl : public CloudDelegate {
  private:
   void OnCommandAdded(Command* command) {
     // Set to 0 for any new unknown command.
-    command_owners_.emplace(command->GetID(), 0);
+    command_owners_.insert(std::make_pair(command->GetID(), 0));
   }
 
   void OnCommandRemoved(Command* command) {
