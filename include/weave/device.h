@@ -24,7 +24,7 @@ namespace weave {
 
 // States of Gcd connection.
 enum class GcdState {
-  kUnconfigured,        // We have no credentials.
+  kUnconfigured,        // Device was not registered.
   kConnecting,          // We have credentials but not yet connected.
   kConnected,           // We're registered and connected to the cloud.
   kInvalidCredentials,  // Our registration has been revoked.
