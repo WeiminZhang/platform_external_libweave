@@ -7,8 +7,6 @@
 #include <gtest/gtest.h>
 
 #include "src/commands/command_dictionary.h"
-#include "src/commands/prop_types.h"
-#include "src/commands/schema_utils.h"
 #include "src/commands/unittest_utils.h"
 
 namespace weave {
@@ -70,14 +68,12 @@ class CommandInstanceTest : public ::testing::Test {
 }  // anonymous namespace
 
 TEST_F(CommandInstanceTest, Test) {
-  StringPropType str_prop;
-  IntPropType int_prop;
-  ValueMap params;
-  params["phrase"] =
-      str_prop.CreateValue(base::StringValue{"iPityDaFool"}, nullptr);
-  params["volume"] = int_prop.CreateValue(base::FundamentalValue{5}, nullptr);
+  auto params = CreateDictionaryValue(R"({
+    'phrase': 'iPityDaFool',
+    'volume': 5
+  })");
   CommandInstance instance{"robot.speak", Command::Origin::kCloud,
-                           dict_.FindCommand("robot.speak"), params};
+                           dict_.FindCommand("robot.speak"), *params};
 
   EXPECT_TRUE(
       instance.Complete(*CreateDictionaryValue("{'foo': 239}"), nullptr));
@@ -171,25 +167,6 @@ TEST_F(CommandInstanceTest, FromJson_ParamsNotObject) {
   EXPECT_EQ(nullptr, instance.get());
   auto inner = error->GetInnerError();
   EXPECT_EQ("json_object_expected", inner->GetCode());
-  EXPECT_EQ("command_failed", error->GetCode());
-}
-
-TEST_F(CommandInstanceTest, FromJson_ParamError) {
-  auto json = CreateDictionaryValue(R"({
-    'name': 'robot.speak',
-    'parameters': {
-      'phrase': 'iPityDaFool',
-      'volume': 20
-    }
-  })");
-  ErrorPtr error;
-  auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
-                                            dict_, nullptr, &error);
-  EXPECT_EQ(nullptr, instance.get());
-  auto first = error->GetFirstError();
-  EXPECT_EQ("out_of_range", first->GetCode());
-  auto inner = error->GetInnerError();
-  EXPECT_EQ("invalid_parameter_value", inner->GetCode());
   EXPECT_EQ("command_failed", error->GetCode());
 }
 
