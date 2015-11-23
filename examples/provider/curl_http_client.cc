@@ -34,6 +34,27 @@ size_t WriteFunction(void* contents, size_t size, size_t nmemb, void* userp) {
   return size * nmemb;
 }
 
+size_t HeaderFunction(void* contents, size_t size, size_t nmemb, void* userp) {
+  std::string header(static_cast<const char*>(contents), size * nmemb);
+  auto pos = header.find(':');
+  if (pos != std::string::npos) {
+    std::pair<std::string, std::string> header_pair;
+
+    static const char kSpaces[] = " \t\r\n";
+    header_pair.first = header.substr(0, pos);
+    pos = header.find_first_not_of(kSpaces, pos + 1);
+    if (pos != std::string::npos) {
+      auto last_non_space = header.find_last_not_of(kSpaces);
+      if (last_non_space >= pos)
+        header_pair.second = header.substr(pos, last_non_space - pos + 1);
+    }
+
+    static_cast<provider::HttpClient::Headers*>(userp)
+        ->emplace_back(std::move(header_pair));
+  }
+  return size * nmemb;
+}
+
 std::pair<std::unique_ptr<CurlHttpClient::Response>, ErrorPtr>
 SendRequestBlocking(CurlHttpClient::Method method,
                     const std::string& url,
@@ -76,9 +97,10 @@ SendRequestBlocking(CurlHttpClient::Method method,
   CHECK_EQ(CURLE_OK,
            curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &response->data));
   CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_HEADERFUNCTION,
-                                      &WriteFunction));
-  CHECK_EQ(CURLE_OK, curl_easy_setopt(curl.get(), CURLOPT_HEADERDATA,
-                                      &response->content_type));
+                                      &HeaderFunction));
+  provider::HttpClient::Headers response_headers;
+  CHECK_EQ(CURLE_OK,
+           curl_easy_setopt(curl.get(), CURLOPT_HEADERDATA, &response_headers));
 
   CURLcode res = curl_easy_perform(curl.get());
   if (chunk)
@@ -91,20 +113,16 @@ SendRequestBlocking(CurlHttpClient::Method method,
     return {nullptr, std::move(error)};
   }
 
-  const std::string kContentType = "\r\nContent-Type:";
-  auto pos = response->content_type.find(kContentType);
-  if (pos == std::string::npos) {
+  for (const auto& header : response_headers) {
+    if (header.first == "Content-Type")
+      response->content_type = header.second;
+  }
+
+  if (response->content_type.empty()) {
     Error::AddTo(&error, FROM_HERE, "curl", "no_content_header",
                  "Content-Type header is missing");
     return {nullptr, std::move(error)};
   }
-  pos += kContentType.size();
-  auto pos_end = response->content_type.find("\r\n", pos);
-  if (pos_end == std::string::npos) {
-    pos_end = response->content_type.size();
-  }
-
-  response->content_type = response->content_type.substr(pos, pos_end);
 
   CHECK_EQ(CURLE_OK, curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE,
                                        &response->status));
