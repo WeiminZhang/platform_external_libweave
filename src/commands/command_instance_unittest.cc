@@ -59,7 +59,7 @@ class CommandInstanceTest : public ::testing::Test {
         }
       }
     })");
-    CHECK(dict_.LoadCommands(*json, nullptr, nullptr))
+    CHECK(dict_.LoadCommands(*json, nullptr))
         << "Failed to parse test command dictionary";
   }
   CommandDictionary dict_;

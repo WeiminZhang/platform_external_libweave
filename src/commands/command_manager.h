@@ -60,11 +60,6 @@ class CommandManager final {
   // Adds a new command to the command queue.
   void AddCommand(std::unique_ptr<CommandInstance> command_instance);
 
-  // Changes the visibility of commands.
-  bool SetCommandVisibility(const std::vector<std::string>& command_names,
-                            CommandDefinition::Visibility visibility,
-                            ErrorPtr* error);
-
   bool AddCommand(const base::DictionaryValue& command,
                   UserRole role,
                   std::string* id,

@@ -480,9 +480,8 @@ void DeviceRegistrationInfo::AddGcdStateChangedCallback(
 std::unique_ptr<base::DictionaryValue>
 DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
   // Limit only to commands that are visible to the cloud.
-  auto commands = command_manager_->GetCommandDictionary().GetCommandsAsJson(
-      [](const CommandDefinition* def) { return def->GetVisibility().cloud; },
-      true, error);
+  auto commands =
+      command_manager_->GetCommandDictionary().GetCommandsAsJson(error);
   if (!commands)
     return nullptr;
 
