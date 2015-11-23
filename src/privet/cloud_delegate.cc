@@ -223,7 +223,8 @@ class CloudDelegateImpl : public CloudDelegate {
   void OnConfigChanged(const Settings&) { NotifyOnDeviceInfoChanged(); }
 
   void OnRegistrationChanged(GcdState status) {
-    if (status == GcdState::kUnconfigured) {
+    if (status == GcdState::kUnconfigured ||
+        status == GcdState::kInvalidCredentials) {
       connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
     } else if (status == GcdState::kConnecting) {
       // TODO(vitalybuka): Find conditions for kOffline.

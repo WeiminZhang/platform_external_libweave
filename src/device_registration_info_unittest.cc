@@ -186,6 +186,10 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
 
   GcdState GetGcdState() const { return dev_reg_->GetGcdState(); }
 
+  bool HaveRegistrationCredentials() const {
+    return dev_reg_->HaveRegistrationCredentials();
+  }
+
   provider::test::FakeTaskRunner task_runner_;
   provider::test::MockConfigStore config_store_;
   StrictMock<MockHttpClient> http_client_;
@@ -222,14 +226,13 @@ TEST_F(DeviceRegistrationInfoTest, GetOAuthURL) {
   url += "client_id=";
   url += test_data::kClientId;
   EXPECT_EQ(url, dev_reg_->GetOAuthURL(
-                     "auth",
-                     {{"redirect_uri", "urn:ietf:wg:oauth:2.0:oob"},
-                      {"response_type", "code"},
-                      {"client_id", test_data::kClientId}}));
+                     "auth", {{"redirect_uri", "urn:ietf:wg:oauth:2.0:oob"},
+                              {"response_type", "code"},
+                              {"client_id", test_data::kClientId}}));
 }
 
 TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
-  EXPECT_FALSE(dev_reg_->HaveRegistrationCredentials());
+  EXPECT_FALSE(HaveRegistrationCredentials());
   ReloadSettings();
 
   EXPECT_CALL(
@@ -254,7 +257,7 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
       })));
 
   EXPECT_TRUE(RefreshAccessToken(nullptr));
-  EXPECT_TRUE(dev_reg_->HaveRegistrationCredentials());
+  EXPECT_TRUE(HaveRegistrationCredentials());
 }
 
 TEST_F(DeviceRegistrationInfoTest, CheckAuthenticationFailure) {
@@ -313,6 +316,7 @@ TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
   EXPECT_FALSE(RefreshAccessToken(&error));
   EXPECT_TRUE(error->HasError(kErrorDomainOAuth2, "invalid_grant"));
   EXPECT_EQ(GcdState::kInvalidCredentials, GetGcdState());
+  EXPECT_EQ(test_data::kDeviceId, dev_reg_->GetSettings().cloud_id);
 }
 
 TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
