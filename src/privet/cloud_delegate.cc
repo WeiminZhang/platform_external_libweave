@@ -134,7 +134,9 @@ class CloudDelegateImpl : public CloudDelegate {
   }
 
   std::string GetCloudId() const override {
-    return device_->GetSettings().cloud_id;
+    return connection_state_.status() > ConnectionState::kUnconfigured
+               ? device_->GetSettings().cloud_id
+               : "";
   }
 
   const base::DictionaryValue& GetState() const override { return state_; }
