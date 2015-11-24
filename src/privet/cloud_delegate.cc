@@ -251,9 +251,8 @@ class CloudDelegateImpl : public CloudDelegate {
 
   void OnCommandDefChanged() {
     command_defs_.Clear();
-    auto commands = command_manager_->GetCommandDictionary().GetCommandsAsJson(
-        [](const CommandDefinition* def) { return def->GetVisibility().local; },
-        true, nullptr);
+    auto commands =
+      command_manager_->GetCommandDictionary().GetCommandsAsJson(nullptr);
     CHECK(commands);
     command_defs_.MergeDictionary(commands.get());
     NotifyOnCommandDefsChanged();

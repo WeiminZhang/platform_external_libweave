@@ -355,16 +355,14 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
   auto json_cmds = CreateDictionaryValue(R"({
     'base': {
       'reboot': {
-        'parameters': {'delay': {'minimum': 10}},
-        'minimalRole': 'user',
-        'results': {}
+        'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
+        'minimalRole': 'user'
       }
     },
     'robot': {
       '_jump': {
-        'parameters': {'_height': 'integer'},
-        'minimalRole': 'user',
-        'results': {}
+        'parameters': {'_height': {'type': 'integer'}},
+        'minimalRole': 'user'
       }
     }
   })");

@@ -35,8 +35,11 @@ class LockHandler {
 
     device->AddStateDefinitionsFromJson(R"({
       "lock": {
-        "lockedState": ["locked", "unlocked", "partiallyLocked"],
-        "isLockingSupported": "boolean"}
+        "lockedState": {
+          "type": "string",
+          "enum": ["locked", "unlocked", "partiallyLocked"],
+        }
+        "isLockingSupported": {"type": "boolean"}}
     })");
 
     device->SetStatePropertiesFromJson(R"({
@@ -51,7 +54,7 @@ class LockHandler {
         "lock": {
           "setConfig":{
             "parameters": {
-              "lockedState": ["locked", "unlocked"]
+              "lockedState": {"type": "string", "enum":["locked", "unlocked"]}
             }
           }
         }
