@@ -31,7 +31,7 @@ namespace weave {
 class BaseApiHandlerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    EXPECT_CALL(mock_state_change_queue_, NotifyPropertiesUpdated(_, _))
+    EXPECT_CALL(mock_state_change_queue_, MockNotifyPropertiesUpdated(_, _))
         .WillRepeatedly(Return(true));
 
     command_manager_ = std::make_shared<CommandManager>();
@@ -107,39 +107,38 @@ class BaseApiHandlerTest : public ::testing::Test {
 
 TEST_F(BaseApiHandlerTest, Initialization) {
   auto command_defs =
-      command_manager_->GetCommandDictionary().GetCommandsAsJson(
-          [](const CommandDefinition* def) { return true; }, true, nullptr);
+      command_manager_->GetCommandDictionary().GetCommandsAsJson(nullptr);
 
   auto expected = R"({
     "base": {
       "updateBaseConfiguration": {
-         "minimalRole": "manager",
-         "parameters": {
-            "localAnonymousAccessMaxRole": {
-               "enum": [ "none", "viewer", "user" ],
-               "type": "string"
-            },
-            "localDiscoveryEnabled": {
-               "type": "boolean"
-            },
-            "localPairingEnabled": {
-               "type": "boolean"
-            }
-         }
+        "minimalRole": "manager",
+        "parameters": {
+          "localAnonymousAccessMaxRole": {
+            "enum": [ "none", "viewer", "user" ],
+            "type": "string"
+          },
+          "localDiscoveryEnabled": {
+            "type": "boolean"
+          },
+          "localPairingEnabled": {
+            "type": "boolean"
+          }
+        }
       },
       "updateDeviceInfo": {
-         "minimalRole": "manager",
-         "parameters": {
-            "description": {
-               "type": "string"
-            },
-            "location": {
-               "type": "string"
-            },
-            "name": {
-               "type": "string"
-            }
-         }
+        "minimalRole": "manager",
+        "parameters": {
+          "description": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
       }
     }
   })";

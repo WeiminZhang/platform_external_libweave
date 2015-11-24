@@ -18,31 +18,31 @@ class LightHandler {
     device_ = device;
 
     device->AddStateDefinitionsFromJson(R"({
-      "onOff": {"state": ["on", "standby"]},
-      "brightness": {"brightness": "integer"},
+      "onOff": {"state": {"type": "string", "enum": ["on", "standby"]}},
+      "brightness": {"brightness": {"type": "integer"}},
       "colorXY": {
         "colorSetting": {
           "properties": {
-            "colorX": {"minimum": 0.0, "maximum": 1.0},
-            "colorY": {"minimum": 0.0, "maximum": 1.0}
+            "colorX": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+            "colorY": {"type": "number", "minimum": 0.0, "maximum": 1.0}
           }
         },
         "colorCapRed": {
           "properties": {
-            "colorX": {"minimum": 0.0, "maximum": 1.0},
-            "colorY": {"minimum": 0.0, "maximum": 1.0}
+            "colorX": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+            "colorY": {"type": "number", "minimum": 0.0, "maximum": 1.0}
           }
         },
         "colorCapGreen": {
           "properties": {
-            "colorX": {"minimum": 0.0, "maximum": 1.0},
-            "colorY": {"minimum": 0.0, "maximum": 1.0}
+            "colorX": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+            "colorY": {"type": "number", "minimum": 0.0, "maximum": 1.0}
           }
         },
         "colorCapBlue": {
           "properties": {
-            "colorX": {"minimum": 0.0, "maximum": 1.0},
-            "colorY": {"minimum": 0.0, "maximum": 1.0}
+            "colorX": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+            "colorY": {"type": "number", "minimum": 0.0, "maximum": 1.0}
           }
         }
       }
@@ -64,7 +64,7 @@ class LightHandler {
       "onOff": {
          "setConfig":{
            "parameters": {
-             "state": ["on", "standby"]
+             "state": {"type": "string", "enum": ["on", "standby"]}
            }
          }
        },
