@@ -109,7 +109,7 @@ class HttpServer {
  public:
   class Request {
    public:
-    virtual ~Request() = default;
+    virtual ~Request() {}
 
     virtual std::string GetPath() const = 0;
     virtual std::string GetFirstHeader(const std::string& name) const = 0;
@@ -141,7 +141,7 @@ class HttpServer {
   virtual base::TimeDelta GetRequestTimeout() const = 0;
 
  protected:
-  virtual ~HttpServer() = default;
+  virtual ~HttpServer() {}
 };
 
 }  // namespace provider

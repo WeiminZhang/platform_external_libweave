@@ -45,7 +45,7 @@ class CloudDelegate {
 
   class Observer {
    public:
-    virtual ~Observer() = default;
+    virtual ~Observer() {}
 
     virtual void OnDeviceInfoChanged() {}
     virtual void OnCommandDefsChanged() {}

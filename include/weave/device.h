@@ -32,7 +32,7 @@ enum class GcdState {
 
 class Device {
  public:
-  virtual ~Device() = default;
+  virtual ~Device() {}
 
   // Returns reference the current settings.
   virtual const Settings& GetSettings() const = 0;

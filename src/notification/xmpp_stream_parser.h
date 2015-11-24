@@ -49,7 +49,7 @@ class XmppStreamParser final {
     virtual void OnStanza(std::unique_ptr<XmlNode> stanza) = 0;
 
    protected:
-    virtual ~Delegate() = default;
+    virtual ~Delegate() {}
   };
 
   explicit XmppStreamParser(Delegate* delegate);

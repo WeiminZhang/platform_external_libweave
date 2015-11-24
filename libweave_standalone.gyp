@@ -12,6 +12,7 @@
       '-lgmock',
       '-lgtest',
       '-lpthread',
+      '-lrt',
     ],
   },
   'targets': [

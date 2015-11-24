@@ -17,7 +17,7 @@ class NotificationDelegate;
 
 class NotificationChannel {
  public:
-  virtual ~NotificationChannel() = default;
+  virtual ~NotificationChannel() {}
 
   virtual std::string GetName() const = 0;
   virtual bool IsConnected() const = 0;

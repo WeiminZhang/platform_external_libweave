@@ -79,7 +79,7 @@ class Command {
   virtual bool Cancel(ErrorPtr* error) = 0;
 
  protected:
-  virtual ~Command() = default;
+  virtual ~Command() {}
 };
 
 }  // namespace weave

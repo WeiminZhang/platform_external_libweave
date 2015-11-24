@@ -37,7 +37,7 @@ class CommandInstance final : public Command {
     virtual void OnStateChanged() = 0;
 
    protected:
-    virtual ~Observer() = default;
+    virtual ~Observer() {}
   };
 
   // Construct a command instance given the full command |name| which must

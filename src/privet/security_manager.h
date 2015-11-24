@@ -41,7 +41,7 @@ class SecurityManager : public SecurityDelegate {
 
   class KeyExchanger {
    public:
-    virtual ~KeyExchanger() = default;
+    virtual ~KeyExchanger() {}
 
     virtual const std::string& GetMessage() = 0;
     virtual bool ProcessMessage(const std::string& message,
