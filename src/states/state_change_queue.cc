@@ -13,15 +13,12 @@ StateChangeQueue::StateChangeQueue(size_t max_queue_size)
   CHECK_GT(max_queue_size_, 0U) << "Max queue size must not be zero";
 }
 
-bool StateChangeQueue::NotifyPropertiesUpdated(
-    base::Time timestamp,
-    std::unique_ptr<base::DictionaryValue> changed_properties) {
+bool StateChangeQueue::NotifyPropertiesUpdated(base::Time timestamp,
+                                               ValueMap changed_properties) {
   auto& stored_changes = state_changes_[timestamp];
   // Merge the old property set.
-  if (stored_changes)
-    stored_changes->MergeDictionary(changed_properties.get());
-  else
-    stored_changes = std::move(changed_properties);
+  changed_properties.insert(stored_changes.begin(), stored_changes.end());
+  stored_changes = std::move(changed_properties);
 
   while (state_changes_.size() > max_queue_size_) {
     // Queue is full.
@@ -33,8 +30,8 @@ bool StateChangeQueue::NotifyPropertiesUpdated(
     auto element_old = state_changes_.begin();
     auto element_new = std::next(element_old);
     // This will skip elements that exist in both [old] and [new].
-    element_old->second->MergeDictionary(element_new->second.get());
-    std::swap(element_old->second, element_new->second);
+    element_new->second.insert(element_old->second.begin(),
+                               element_old->second.end());
     state_changes_.erase(element_old);
   }
   ++last_change_id_;
@@ -44,8 +41,8 @@ bool StateChangeQueue::NotifyPropertiesUpdated(
 std::vector<StateChange> StateChangeQueue::GetAndClearRecordedStateChanges() {
   std::vector<StateChange> changes;
   changes.reserve(state_changes_.size());
-  for (auto& pair : state_changes_) {
-    changes.push_back(StateChange{pair.first, std::move(pair.second)});
+  for (const auto& pair : state_changes_) {
+    changes.emplace_back(pair.first, std::move(pair.second));
   }
   state_changes_.clear();
   return changes;

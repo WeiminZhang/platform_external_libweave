@@ -25,7 +25,7 @@ class LedFlasherHandler {
     device_ = device;
 
     device->AddStateDefinitionsFromJson(R"({
-      "_ledflasher": {"_leds": {"type": "array", "items": {"type": "boolean"}}}
+      "_ledflasher": {"_leds": {"items": "boolean"}}
     })");
 
     device->SetStatePropertiesFromJson(R"({
@@ -37,13 +37,13 @@ class LedFlasherHandler {
       "_ledflasher": {
          "_set":{
            "parameters": {
-             "_led": {"type": "integer", "minimum": 1, "maximum": 3},
-             "_on": {"type": "boolean"}
+             "_led": {"minimum": 1, "maximum": 3},
+             "_on": "boolean"
            }
          },
          "_toggle":{
            "parameters": {
-             "_led": {"type": "integer", "minimum": 1, "maximum": 3}
+             "_led": {"minimum": 1, "maximum": 3}
            }
         }
       }

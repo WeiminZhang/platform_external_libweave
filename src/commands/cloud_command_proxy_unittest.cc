@@ -94,7 +94,7 @@ class CloudCommandProxyTest : public ::testing::Test {
       }
     })");
     CHECK(json.get());
-    CHECK(command_dictionary_.LoadCommands(*json, nullptr))
+    CHECK(command_dictionary_.LoadCommands(*json, nullptr, nullptr))
         << "Failed to parse test command dictionary";
 
     CreateCommandInstance();

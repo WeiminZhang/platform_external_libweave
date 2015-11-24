@@ -28,7 +28,7 @@ const CommandDictionary& CommandManager::GetCommandDictionary() const {
 
 bool CommandManager::LoadCommands(const base::DictionaryValue& dict,
                                   ErrorPtr* error) {
-  bool result = dictionary_.LoadCommands(dict, error);
+  bool result = dictionary_.LoadCommands(dict, nullptr, error);
   for (const auto& cb : on_command_changed_)
     cb.Run();
   return result;
@@ -81,6 +81,37 @@ bool CommandManager::AddCommand(const base::DictionaryValue& command,
 
 CommandInstance* CommandManager::FindCommand(const std::string& id) {
   return command_queue_.Find(id);
+}
+
+bool CommandManager::SetCommandVisibility(
+    const std::vector<std::string>& command_names,
+    CommandDefinition::Visibility visibility,
+    ErrorPtr* error) {
+  if (command_names.empty())
+    return true;
+
+  std::vector<CommandDefinition*> definitions;
+  definitions.reserve(command_names.size());
+
+  // Find/validate command definitions first.
+  for (const std::string& name : command_names) {
+    CommandDefinition* def = dictionary_.FindCommand(name);
+    if (!def) {
+      Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                         errors::commands::kInvalidCommandName,
+                         "Command '%s' is unknown", name.c_str());
+      return false;
+    }
+    definitions.push_back(def);
+  }
+
+  // Now that we know that all the command names were valid,
+  // update the respective commands' visibility.
+  for (CommandDefinition* def : definitions)
+    def->SetVisibility(visibility);
+  for (const auto& cb : on_command_changed_)
+    cb.Run();
+  return true;
 }
 
 void CommandManager::AddCommandAddedCallback(
