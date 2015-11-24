@@ -91,7 +91,7 @@ void EventHttpClient::SendRequest(Method method,
                                   const Headers& headers,
                                   const std::string& data,
                                   const SendRequestCallback& callback) {
-  evhttp_cmd_type method_id;
+  evhttp_cmd_type method_id = EVHTTP_REQ_GET;
   CHECK(weave::StringToEnum(weave::EnumToString(method), &method_id));
   EventPtr<evhttp_uri> http_uri{evhttp_uri_parse(url.c_str())};
   CHECK(http_uri);
