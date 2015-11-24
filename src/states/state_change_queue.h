@@ -21,8 +21,9 @@ class StateChangeQueue : public StateChangeQueueInterface {
 
   // Overrides from StateChangeQueueInterface.
   bool IsEmpty() const override { return state_changes_.empty(); }
-  bool NotifyPropertiesUpdated(base::Time timestamp,
-                               ValueMap changed_properties) override;
+  bool NotifyPropertiesUpdated(
+      base::Time timestamp,
+      std::unique_ptr<base::DictionaryValue> changed_properties) override;
   std::vector<StateChange> GetAndClearRecordedStateChanges() override;
   UpdateID GetLastStateChangeId() const override { return last_change_id_; }
   Token AddOnStateUpdatedCallback(
@@ -35,7 +36,7 @@ class StateChangeQueue : public StateChangeQueueInterface {
   const size_t max_queue_size_;
 
   // Accumulated list of device state change notifications.
-  std::map<base::Time, ValueMap> state_changes_;
+  std::map<base::Time, std::unique_ptr<base::DictionaryValue>> state_changes_;
 
   // An ID of last state change update. Each NotifyPropertiesUpdated()
   // invocation increments this value by 1.

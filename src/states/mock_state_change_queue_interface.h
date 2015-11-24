@@ -16,9 +16,11 @@ namespace weave {
 class MockStateChangeQueueInterface : public StateChangeQueueInterface {
  public:
   MOCK_CONST_METHOD0(IsEmpty, bool());
-  MOCK_METHOD2(NotifyPropertiesUpdated,
-               bool(base::Time timestamp, ValueMap changed_properties));
-  MOCK_METHOD0(GetAndClearRecordedStateChanges, std::vector<StateChange>());
+  MOCK_METHOD2(MockNotifyPropertiesUpdated,
+               bool(base::Time timestamp,
+                    const base::DictionaryValue& changed_properties));
+  MOCK_METHOD0(MockGetAndClearRecordedStateChanges,
+               std::vector<StateChange>&());
   MOCK_CONST_METHOD0(GetLastStateChangeId, UpdateID());
   MOCK_METHOD1(MockAddOnStateUpdatedCallback,
                base::CallbackList<void(UpdateID)>::Subscription*(
@@ -26,6 +28,15 @@ class MockStateChangeQueueInterface : public StateChangeQueueInterface {
   MOCK_METHOD1(NotifyStateUpdatedOnServer, void(UpdateID));
 
  private:
+  bool NotifyPropertiesUpdated(
+      base::Time timestamp,
+      std::unique_ptr<base::DictionaryValue> changed_properties) override {
+    return MockNotifyPropertiesUpdated(timestamp, *changed_properties);
+  }
+  std::vector<StateChange> GetAndClearRecordedStateChanges() override {
+    return std::move(MockGetAndClearRecordedStateChanges());
+  }
+
   Token AddOnStateUpdatedCallback(
       const base::Callback<void(UpdateID)>& callback) override {
     return Token{MockAddOnStateUpdatedCallback(callback)};

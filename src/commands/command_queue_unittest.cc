@@ -20,11 +20,15 @@ namespace weave {
 
 class CommandQueueTest : public testing::Test {
  public:
+  CommandQueueTest() {
+    command_definition_ = CommandDefinition::FromJson({}, nullptr);
+  }
+
   std::unique_ptr<CommandInstance> CreateDummyCommandInstance(
       const std::string& name,
       const std::string& id) {
     std::unique_ptr<CommandInstance> cmd{new CommandInstance{
-        name, Command::Origin::kLocal, &command_definition_, {}}};
+        name, Command::Origin::kLocal, command_definition_.get(), {}}};
     cmd->SetID(id);
     return cmd;
   }
@@ -39,8 +43,7 @@ class CommandQueueTest : public testing::Test {
   CommandQueue queue_;
 
  private:
-  CommandDefinition command_definition_{
-      ObjectSchema::Create(), ObjectSchema::Create(), ObjectSchema::Create()};
+  std::unique_ptr<CommandDefinition> command_definition_;
 };
 
 // Keeps track of commands being added to and removed from the queue_.
