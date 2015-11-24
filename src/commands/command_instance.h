@@ -44,12 +44,12 @@ class CommandInstance final : public Command {
   };
 
   // Construct a command instance given the full command |name| which must
-  // be in format "<package_name>.<command_name>" and a list of parameters and
-  // their values specified in |parameters|.
+  // be in format "<package_name>.<command_name>", a command |category| and
+  // a list of parameters and their values specified in |parameters|.
   CommandInstance(const std::string& name,
                   Command::Origin origin,
                   const CommandDefinition* command_definition,
-                  const base::DictionaryValue& parameters);
+                  const ValueMap& parameters);
   ~CommandInstance() override;
 
   // Command overrides.
@@ -124,11 +124,11 @@ class CommandInstance final : public Command {
   // Command definition.
   const CommandDefinition* command_definition_{nullptr};
   // Command parameters and their values.
-  base::DictionaryValue parameters_;
+  ValueMap parameters_;
   // Current command execution progress.
-  base::DictionaryValue progress_;
+  ValueMap progress_;
   // Command results.
-  base::DictionaryValue results_;
+  ValueMap results_;
   // Current command state.
   Command::State state_ = Command::State::kQueued;
   // Error encountered during execution of the command.

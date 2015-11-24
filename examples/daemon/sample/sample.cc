@@ -27,9 +27,9 @@ class SampleHandler {
         "_hello": {
           "minimalRole": "user",
           "parameters": {
-            "_name": {"type": "string"}
+            "_name": "string"
           },
-          "results": { "_reply": {"type": "string"} }
+          "results": { "_reply": "string" }
         },
         "_ping": {
           "minimalRole": "user",
@@ -38,16 +38,16 @@ class SampleHandler {
         "_countdown": {
           "minimalRole": "user",
           "parameters": {
-            "_seconds": {"type": "integer", "minimum": 1, "maximum": 25}
+            "_seconds": {"minimum": 1, "maximum": 25}
           },
-          "progress": { "_seconds_left": {"type": "integer"}},
+          "progress": { "_seconds_left": "integer"},
           "results": {}
         }
       }
     })");
 
     device->AddStateDefinitionsFromJson(R"({
-      "_sample": {"_ping_count": {"type": "integer"}}
+      "_sample": {"_ping_count":"integer"}
     })");
 
     device->SetStatePropertiesFromJson(R"({

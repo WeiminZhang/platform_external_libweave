@@ -22,18 +22,17 @@ namespace weave {
 
 using testing::_;
 using testing::Return;
-using testing::ReturnRef;
 using test::CreateDictionaryValue;
 
 namespace {
 
 const char kBaseDefinition[] = R"({
   "base": {
-    "manufacturer":{"type":"string"},
-    "serialNumber":{"type":"string"}
+    "manufacturer":"string",
+    "serialNumber":"string"
   },
   "device": {
-    "state_property":{"type":"string"}
+    "state_property":"string"
   }
 })";
 
@@ -52,10 +51,6 @@ std::unique_ptr<base::DictionaryValue> GetTestValues() {
   return CreateDictionaryValue(kBaseDefaults);
 }
 
-MATCHER_P(IsState, str, "") {
-  return arg.Equals(CreateDictionaryValue(str).get());
-}
-
 }  // anonymous namespace
 
 class StateManagerTest : public ::testing::Test {
@@ -63,9 +58,9 @@ class StateManagerTest : public ::testing::Test {
   void SetUp() override {
     // Initial expectations.
     EXPECT_CALL(mock_state_change_queue_, IsEmpty()).Times(0);
-    EXPECT_CALL(mock_state_change_queue_, MockNotifyPropertiesUpdated(_, _))
+    EXPECT_CALL(mock_state_change_queue_, NotifyPropertiesUpdated(_, _))
         .WillRepeatedly(Return(true));
-    EXPECT_CALL(mock_state_change_queue_, MockGetAndClearRecordedStateChanges())
+    EXPECT_CALL(mock_state_change_queue_, GetAndClearRecordedStateChanges())
         .Times(0);
     mgr_.reset(new StateManager(&mock_state_change_queue_));
 
@@ -107,7 +102,9 @@ TEST_F(StateManagerTest, Initialized) {
       'manufacturer': 'Test Factory',
       'serialNumber': 'Test Model'
     },
-    'device': {}
+    'device': {
+      'state_property': ''
+    }
   })";
   EXPECT_JSON_EQ(expected, *mgr_->GetState());
 }
@@ -125,8 +122,12 @@ TEST_F(StateManagerTest, LoadStateDefinition) {
       'manufacturer': 'Test Factory',
       'serialNumber': 'Test Model'
     },
-    'power': {},
-    'device': {}
+    'power': {
+      'battery_level': 0
+    },
+    'device': {
+      'state_property': ''
+    }
   })";
   EXPECT_JSON_EQ(expected, *mgr_->GetState());
 }
@@ -136,15 +137,12 @@ TEST_F(StateManagerTest, Startup) {
 
   auto state_definition = R"({
     "base": {
-      "firmwareVersion": {"type":"string"},
-      "localDiscoveryEnabled": {"type":"boolean"},
-      "localAnonymousAccessMaxRole": {
-        "type": "string",
-        "enum": ["none", "viewer", "user"]
-      },
-      "localPairingEnabled": {"type":"boolean"}
+      "firmwareVersion": "string",
+      "localDiscoveryEnabled": "boolean",
+      "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
+      "localPairingEnabled": "boolean"
     },
-    "power": {"battery_level":{"type":"integer"}}
+    "power": {"battery_level":"integer"}
   })";
   ASSERT_TRUE(manager.LoadStateDefinitionFromJson(state_definition, nullptr));
 
@@ -174,9 +172,11 @@ TEST_F(StateManagerTest, Startup) {
 }
 
 TEST_F(StateManagerTest, SetPropertyValue) {
-  const std::string state = "{'device': {'state_property': 'Test Value'}}";
+  ValueMap expected_prop_set{
+      {"device.state_property", test::make_string_prop_value("Test Value")},
+  };
   EXPECT_CALL(mock_state_change_queue_,
-              MockNotifyPropertiesUpdated(timestamp_, IsState(state)))
+              NotifyPropertiesUpdated(timestamp_, expected_prop_set))
       .WillOnce(Return(true));
   ASSERT_TRUE(SetPropertyValue("device.state_property",
                                base::StringValue{"Test Value"}, nullptr));
@@ -216,36 +216,39 @@ TEST_F(StateManagerTest, SetPropertyValue_Error_UnknownPackage) {
 }
 
 TEST_F(StateManagerTest, SetPropertyValue_Error_UnknownProperty) {
-  ASSERT_TRUE(
-      SetPropertyValue("base.level", base::FundamentalValue{0}, nullptr));
+  ErrorPtr error;
+  ASSERT_FALSE(
+      SetPropertyValue("base.level", base::FundamentalValue{0}, &error));
+  EXPECT_EQ(errors::state::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::state::kPropertyNotDefined, error->GetCode());
 }
 
 TEST_F(StateManagerTest, GetAndClearRecordedStateChanges) {
-  EXPECT_CALL(mock_state_change_queue_,
-              MockNotifyPropertiesUpdated(timestamp_, _))
+  EXPECT_CALL(mock_state_change_queue_, NotifyPropertiesUpdated(timestamp_, _))
       .WillOnce(Return(true));
   ASSERT_TRUE(SetPropertyValue("device.state_property",
                                base::StringValue{"Test Value"}, nullptr));
-  std::vector<StateChange> expected_state;
-  const std::string expected_val = 
-      "{'device': {'state_property': 'Test Value'}}";
-  expected_state.emplace_back(
-      timestamp_,
-      CreateDictionaryValue(expected_val));
-  EXPECT_CALL(mock_state_change_queue_, MockGetAndClearRecordedStateChanges())
-      .WillOnce(ReturnRef(expected_state));
+  std::vector<StateChange> expected_val;
+  expected_val.emplace_back(
+      timestamp_, ValueMap{{"device.state_property",
+                            test::make_string_prop_value("Test Value")}});
+  EXPECT_CALL(mock_state_change_queue_, GetAndClearRecordedStateChanges())
+      .WillOnce(Return(expected_val));
   EXPECT_CALL(mock_state_change_queue_, GetLastStateChangeId())
       .WillOnce(Return(0));
   auto changes = mgr_->GetAndClearRecordedStateChanges();
   ASSERT_EQ(1, changes.second.size());
-  EXPECT_EQ(timestamp_, changes.second.back().timestamp);
-  EXPECT_JSON_EQ(expected_val, *changes.second.back().changed_properties);
+  EXPECT_EQ(expected_val.back().timestamp, changes.second.back().timestamp);
+  EXPECT_EQ(expected_val.back().changed_properties,
+            changes.second.back().changed_properties);
 }
 
 TEST_F(StateManagerTest, SetProperties) {
-  const std::string state = "{'base': {'manufacturer': 'No Name'}}";
+  ValueMap expected_prop_set{
+      {"base.manufacturer", test::make_string_prop_value("No Name")},
+  };
   EXPECT_CALL(mock_state_change_queue_,
-              MockNotifyPropertiesUpdated(_, IsState(state)))
+              NotifyPropertiesUpdated(_, expected_prop_set))
       .WillOnce(Return(true));
 
   EXPECT_CALL(*this, OnStateChanged()).Times(1);
@@ -257,14 +260,16 @@ TEST_F(StateManagerTest, SetProperties) {
       'manufacturer': 'No Name',
       'serialNumber': 'Test Model'
     },
-    'device': {}
+    'device': {
+      'state_property': ''
+    }
   })";
   EXPECT_JSON_EQ(expected, *mgr_->GetState());
 }
 
 TEST_F(StateManagerTest, GetProperty) {
   EXPECT_JSON_EQ("'Test Model'", *mgr_->GetProperty("base.serialNumber"));
-  EXPECT_EQ(nullptr, mgr_->GetProperty("device.state_property"));
+  EXPECT_JSON_EQ("''", *mgr_->GetProperty("device.state_property"));
   EXPECT_EQ(nullptr, mgr_->GetProperty("device.unknown"));
   EXPECT_EQ(nullptr, mgr_->GetProperty("unknown.state_property"));
 }

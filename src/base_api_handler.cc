@@ -42,31 +42,20 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
       "updateBaseConfiguration": {
         "minimalRole": "manager",
         "parameters": {
-          "localAnonymousAccessMaxRole": {
-            "enum": [ "none", "viewer", "user" ],
-            "type": "string"
-          },
-          "localDiscoveryEnabled": {
-            "type": "boolean"
-          },
-          "localPairingEnabled": {
-            "type": "boolean"
-          }
-        }
+          "localDiscoveryEnabled": "boolean",
+          "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
+          "localPairingEnabled": "boolean"
+        },
+        "results": {}
       },
       "updateDeviceInfo": {
         "minimalRole": "manager",
         "parameters": {
-          "description": {
-            "type": "string"
-          },
-          "location": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        }
+          "description": "string",
+          "name": "string",
+          "location": "string"
+        },
+        "results": {}
       }
     }
   })");
