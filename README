@@ -130,7 +130,3 @@ Upload CL:
   repo upload .
 
 Go to the url from the output of "repo upload" and add reviewers.
-
-Known Issues
-------------
-* No big-endian support. Pairing fails on big-endian hardware.
