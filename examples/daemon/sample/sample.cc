@@ -73,8 +73,9 @@ class SampleHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
 
+    auto params = cmd->GetParameters();
     std::string name;
-    if (!cmd->GetParameters()->GetString("_name", &name)) {
+    if (!params->GetString("_name", &name)) {
       weave::ErrorPtr error;
       weave::Error::AddTo(&error, FROM_HERE, "example",
                           "invalid_parameter_value", "Name is missing");
@@ -111,8 +112,9 @@ class SampleHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
 
+    auto params = cmd->GetParameters();
     int seconds;
-    if (!cmd->GetParameters()->GetInteger("_seconds", &seconds))
+    if (!params->GetInteger("_seconds", &seconds))
       seconds = 10;
 
     LOG(INFO) << "starting countdown";
@@ -125,8 +127,9 @@ class SampleHandler {
       return;
 
     if (seconds > 0) {
+      auto params = cmd->GetParameters();
       std::string todo;
-      cmd->GetParameters()->GetString("_todo", &todo);
+      params->GetString("_todo", &todo);
       LOG(INFO) << "countdown tick: " << seconds << " seconds left";
 
       base::DictionaryValue progress;

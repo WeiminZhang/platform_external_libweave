@@ -62,21 +62,23 @@ class LightHandler {
 
     device->AddCommandDefinitionsFromJson(R"({
       "onOff": {
-         "setConfig":{
-           "parameters": {
-             "state": {"type": "string", "enum": ["on", "standby"]}
-           }
-         }
-       },
-       "brightness": {
-         "setConfig":{
-           "parameters": {
-             "brightness": {
-               "type": "integer",
-               "minimum": 0,
-               "maximum": 100
-             }
-           }
+        "setConfig":{
+          "minimalRole": "user",
+          "parameters": {
+            "state": {"type": "string", "enum": ["on", "standby"]}
+          }
+        }
+      },
+      "brightness": {
+        "setConfig":{
+          "minimalRole": "user",
+          "parameters": {
+            "brightness": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
         }
       },
       "_colorXY": {
@@ -88,13 +90,13 @@ class LightHandler {
               "properties": {
                 "_colorX": {
                   "type": "number",
-                  "minimum": 0,
-                  "maximum": 1
+                  "minimum": 0.0,
+                  "maximum": 1.0
                 },
                 "_colorY": {
                   "type": "number",
-                  "minimum": 0,
-                  "maximum": 1
+                  "minimum": 0.0,
+                  "maximum": 1.0
                 }
               }
             }
@@ -119,8 +121,9 @@ class LightHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
+    auto params = cmd->GetParameters();
     int32_t brightness_value = 0;
-    if (cmd->GetParameters()->GetInteger("brightness", &brightness_value)) {
+    if (params->GetInteger("brightness", &brightness_value)) {
       // Display this command in terminal.
       LOG(INFO) << cmd->GetName() << " brightness: " << brightness_value;
 
@@ -142,8 +145,9 @@ class LightHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
+    auto params = cmd->GetParameters();
     std::string requested_state;
-    if (cmd->GetParameters()->GetString("state", &requested_state)) {
+    if (params->GetString("state", &requested_state)) {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
       bool new_light_status = requested_state == "on";

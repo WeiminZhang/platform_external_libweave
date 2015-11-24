@@ -51,13 +51,14 @@ class LockHandler {
                                        nullptr);
 
     device->AddCommandDefinitionsFromJson(R"({
-        "lock": {
-          "setConfig":{
-            "parameters": {
-              "lockedState": {"type": "string", "enum":["locked", "unlocked"]}
-            }
+      "lock": {
+        "setConfig":{
+          "minimalRole": "user",
+          "parameters": {
+            "lockedState": {"type": "string", "enum":["locked", "unlocked"]}
           }
         }
+      }
     })");
     device->AddCommandHandler("lock.setConfig",
                               base::Bind(&LockHandler::OnLockSetConfig,
@@ -70,8 +71,9 @@ class LockHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
+    auto params = cmd->GetParameters();
     std::string requested_state;
-    if (cmd->GetParameters()->GetString("lockedState", &requested_state)) {
+    if (params->GetString("lockedState", &requested_state)) {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
       weave::lockstate::LockState new_lock_status;

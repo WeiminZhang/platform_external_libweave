@@ -36,22 +36,24 @@ class SpeakerHandler {
 
     device->AddCommandDefinitionsFromJson(R"({
       "onOff": {
-         "setConfig":{
-           "parameters": {
-             "state": {"type": "string", "enum": ["on", "standby"]}
-           }
-         }
-       },
-       "volume": {
-         "setConfig":{
-           "parameters": {
-             "volume": {
-               "type": "integer",
-               "minimum": 0,
-               "maximum": 100
-             },
-             "isMuted": {"type": "boolean"}
-           }
+        "setConfig":{
+          "minimalRole": "user",
+          "parameters": {
+            "state": {"type": "string", "enum": ["on", "standby"]}
+          }
+        }
+      },
+      "volume": {
+        "setConfig":{
+          "minimalRole": "user",
+          "parameters": {
+            "volume": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "isMuted": {"type": "boolean"}
+          }
         }
       }
     })");
@@ -70,9 +72,10 @@ class SpeakerHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
 
+    auto params = cmd->GetParameters();
     // Handle volume parameter
     int32_t volume_value = 0;
-    if (cmd->GetParameters()->GetInteger("volume", &volume_value)) {
+    if (params->GetInteger("volume", &volume_value)) {
       // Display this command in terminal.
       LOG(INFO) << cmd->GetName() << " volume: " << volume_value;
 
@@ -86,7 +89,7 @@ class SpeakerHandler {
 
     // Handle isMuted parameter
     bool isMuted_status = false;
-    if (cmd->GetParameters()->GetBoolean("isMuted", &isMuted_status)) {
+    if (params->GetBoolean("isMuted", &isMuted_status)) {
       // Display this command in terminal.
       LOG(INFO) << cmd->GetName() << " is "
                 << (isMuted_status ? "muted" : "not muted");
@@ -108,8 +111,9 @@ class SpeakerHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
+    auto params = cmd->GetParameters();
     std::string requested_state;
-    if (cmd->GetParameters()->GetString("state", &requested_state)) {
+    if (params->GetString("state", &requested_state)) {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
       bool new_speaker_status = requested_state == "on";
