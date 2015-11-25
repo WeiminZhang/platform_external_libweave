@@ -5,9 +5,9 @@
 #include "src/states/state_change_queue.h"
 
 #include <gtest/gtest.h>
+#include <weave/test/unittest_utils.h>
 
 #include "src/bind_lambda.h"
-#include "src/commands/unittest_utils.h"
 
 namespace weave {
 

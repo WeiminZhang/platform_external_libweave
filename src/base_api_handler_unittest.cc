@@ -10,9 +10,9 @@
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/provider/test/mock_http_client.h>
 #include <weave/test/mock_device.h>
+#include <weave/test/unittest_utils.h>
 
 #include "src/commands/command_manager.h"
-#include "src/commands/unittest_utils.h"
 #include "src/config.h"
 #include "src/device_registration_info.h"
 #include "src/states/mock_state_change_queue_interface.h"

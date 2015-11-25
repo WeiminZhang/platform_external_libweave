@@ -11,10 +11,10 @@
 #include <weave/provider/test/fake_task_runner.h>
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/provider/test/mock_http_client.h>
+#include <weave/test/unittest_utils.h>
 
 #include "src/bind_lambda.h"
 #include "src/commands/command_manager.h"
-#include "src/commands/unittest_utils.h"
 #include "src/http_constants.h"
 #include "src/states/mock_state_change_queue_interface.h"
 #include "src/states/state_manager.h"

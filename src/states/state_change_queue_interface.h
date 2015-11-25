@@ -10,7 +10,9 @@
 #include <base/callback_list.h>
 #include <base/time/time.h>
 
-#include "src/commands/schema_utils.h"
+namespace base {
+class DictionaryValue;
+}  // namespace base
 
 namespace weave {
 

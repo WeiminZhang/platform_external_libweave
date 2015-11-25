@@ -9,9 +9,9 @@
 
 #include <base/values.h>
 #include <gtest/gtest.h>
+#include <weave/test/unittest_utils.h>
 
 #include "src/commands/schema_constants.h"
-#include "src/commands/unittest_utils.h"
 #include "src/states/error_codes.h"
 
 namespace weave {

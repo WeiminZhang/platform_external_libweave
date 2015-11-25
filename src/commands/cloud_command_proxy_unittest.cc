@@ -10,10 +10,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>
+#include <weave/test/unittest_utils.h>
 
 #include "src/commands/command_dictionary.h"
 #include "src/commands/command_instance.h"
-#include "src/commands/unittest_utils.h"
 #include "src/states/mock_state_change_queue_interface.h"
 
 using testing::_;

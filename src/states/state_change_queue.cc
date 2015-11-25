@@ -5,6 +5,7 @@
 #include "src/states/state_change_queue.h"
 
 #include <base/logging.h>
+#include <base/values.h>
 
 namespace weave {
 

@@ -5,8 +5,7 @@
 #include "src/commands/command_definition.h"
 
 #include <gtest/gtest.h>
-
-#include "src/commands/unittest_utils.h"
+#include <weave/test/unittest_utils.h>
 
 namespace weave {
 

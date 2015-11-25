@@ -6,8 +6,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
-#include "src/commands/unittest_utils.h"
+#include <weave/test/unittest_utils.h>
 
 using testing::SaveArg;
 using testing::Invoke;

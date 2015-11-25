@@ -13,7 +13,6 @@
 #include <gtest/gtest.h>
 
 #include "src/commands/command_definition.h"
-#include "src/commands/object_schema.h"
 #include "src/string_utils.h"
 
 namespace weave {

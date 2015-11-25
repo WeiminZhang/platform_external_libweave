@@ -9,8 +9,6 @@
 #include <weave/provider/task_runner.h>
 
 #include "src/commands/command_instance.h"
-#include "src/commands/prop_constraints.h"
-#include "src/commands/prop_types.h"
 #include "src/commands/schema_constants.h"
 #include "src/utils.h"
 

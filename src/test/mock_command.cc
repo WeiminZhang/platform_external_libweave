@@ -8,8 +8,7 @@
 #include <string>
 
 #include <base/values.h>
-
-#include "src/commands/unittest_utils.h"
+#include <weave/test/unittest_utils.h>
 
 namespace weave {
 namespace test {
