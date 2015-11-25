@@ -96,7 +96,7 @@ class Device {
 
   // Returns value of the single property.
   // |name| is full property name, including package name. e.g. "base.network".
-  virtual std::unique_ptr<base::Value> GetStateProperty(
+  virtual const base::Value* GetStateProperty(
       const std::string& name) const = 0;
 
   // Sets value of the single property.
@@ -106,7 +106,7 @@ class Device {
                                 ErrorPtr* error) = 0;
 
   // Returns aggregated state properties across all registered packages.
-  virtual std::unique_ptr<base::DictionaryValue> GetState() const = 0;
+  virtual const base::DictionaryValue& GetState() const = 0;
 
   // Returns current state of GCD connection.
   virtual GcdState GetGcdState() const = 0;

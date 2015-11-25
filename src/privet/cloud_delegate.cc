@@ -243,9 +243,8 @@ class CloudDelegateImpl : public CloudDelegate {
 
   void OnStateChanged() {
     state_.Clear();
-    auto state = state_manager_->GetState();
-    CHECK(state);
-    state_.MergeDictionary(state.get());
+    const auto& state = state_manager_->GetState();
+    state_.MergeDictionary(&state);
     NotifyOnStateChanged();
   }
 

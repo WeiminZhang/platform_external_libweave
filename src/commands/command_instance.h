@@ -54,9 +54,9 @@ class CommandInstance final : public Command {
   const std::string& GetName() const override;
   Command::State GetState() const override;
   Command::Origin GetOrigin() const override;
-  std::unique_ptr<base::DictionaryValue> GetParameters() const override;
-  std::unique_ptr<base::DictionaryValue> GetProgress() const override;
-  std::unique_ptr<base::DictionaryValue> GetResults() const override;
+  const base::DictionaryValue& GetParameters() const override;
+  const base::DictionaryValue& GetProgress() const override;
+  const base::DictionaryValue& GetResults() const override;
   const Error* GetError() const override;
   bool SetProgress(const base::DictionaryValue& progress,
                    ErrorPtr* error) override;

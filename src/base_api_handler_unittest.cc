@@ -84,7 +84,8 @@ class BaseApiHandlerTest : public ::testing::Test {
   }
 
   std::unique_ptr<base::DictionaryValue> GetBaseState() {
-    auto state = state_manager_->GetState();
+    std::unique_ptr<base::DictionaryValue> state{
+        state_manager_->GetState().DeepCopy()};
     std::set<std::string> result;
     for (base::DictionaryValue::Iterator it{*state}; !it.IsAtEnd();
          it.Advance()) {

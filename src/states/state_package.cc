@@ -39,11 +39,11 @@ bool StatePackage::AddValuesFromJson(const base::DictionaryValue* json,
   return true;
 }
 
-std::unique_ptr<base::DictionaryValue> StatePackage::GetValuesAsJson() const {
-  return std::unique_ptr<base::DictionaryValue>(values_.DeepCopy());
+const base::DictionaryValue& StatePackage::GetValuesAsJson() const {
+  return values_;
 }
 
-std::unique_ptr<base::Value> StatePackage::GetPropertyValue(
+const base::Value* StatePackage::GetPropertyValue(
     const std::string& property_name,
     ErrorPtr* error) const {
   const base::Value* value = nullptr;
@@ -55,7 +55,7 @@ std::unique_ptr<base::Value> StatePackage::GetPropertyValue(
     return nullptr;
   }
 
-  return std::unique_ptr<base::Value>(value->DeepCopy());
+  return value;
 }
 
 bool StatePackage::SetPropertyValue(const std::string& property_name,

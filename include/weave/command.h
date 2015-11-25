@@ -40,13 +40,13 @@ class Command {
   virtual Command::Origin GetOrigin() const = 0;
 
   // Returns the command parameters.
-  virtual std::unique_ptr<base::DictionaryValue> GetParameters() const = 0;
+  virtual const base::DictionaryValue& GetParameters() const = 0;
 
   // Returns the command progress.
-  virtual std::unique_ptr<base::DictionaryValue> GetProgress() const = 0;
+  virtual const base::DictionaryValue& GetProgress() const = 0;
 
   // Returns the command results.
-  virtual std::unique_ptr<base::DictionaryValue> GetResults() const = 0;
+  virtual const base::DictionaryValue& GetResults() const = 0;
 
   // Returns the command error.
   virtual const Error* GetError() const = 0;

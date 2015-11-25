@@ -94,16 +94,16 @@ Command::Origin CommandInstance::GetOrigin() const {
   return origin_;
 }
 
-std::unique_ptr<base::DictionaryValue> CommandInstance::GetParameters() const {
-  return std::unique_ptr<base::DictionaryValue>(parameters_.DeepCopy());
+const base::DictionaryValue& CommandInstance::GetParameters() const {
+  return parameters_;
 }
 
-std::unique_ptr<base::DictionaryValue> CommandInstance::GetProgress() const {
-  return std::unique_ptr<base::DictionaryValue>(progress_.DeepCopy());
+const base::DictionaryValue& CommandInstance::GetProgress() const {
+  return progress_;
 }
 
-std::unique_ptr<base::DictionaryValue> CommandInstance::GetResults() const {
-  return std::unique_ptr<base::DictionaryValue>(results_.DeepCopy());
+const base::DictionaryValue& CommandInstance::GetResults() const {
+  return results_;
 }
 
 const Error* CommandInstance::GetError() const {

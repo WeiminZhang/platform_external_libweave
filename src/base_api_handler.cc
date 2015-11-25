@@ -99,10 +99,10 @@ void BaseApiHandler::UpdateBaseConfiguration(
   bool discovery_enabled{settings.local_discovery_enabled};
   bool pairing_enabled{settings.local_pairing_enabled};
 
-  auto parameters = command->GetParameters();
-  parameters->GetString("localAnonymousAccessMaxRole", &anonymous_access_role);
-  parameters->GetBoolean("localDiscoveryEnabled", &discovery_enabled);
-  parameters->GetBoolean("localPairingEnabled", &pairing_enabled);
+  const auto& parameters = command->GetParameters();
+  parameters.GetString("localAnonymousAccessMaxRole", &anonymous_access_role);
+  parameters.GetBoolean("localDiscoveryEnabled", &discovery_enabled);
+  parameters.GetBoolean("localPairingEnabled", &pairing_enabled);
 
   AuthScope auth_scope{AuthScope::kNone};
   if (!StringToEnum(anonymous_access_role, &auth_scope)) {
@@ -144,10 +144,10 @@ void BaseApiHandler::UpdateDeviceInfo(const std::weak_ptr<Command>& cmd) {
   std::string description{settings.description};
   std::string location{settings.location};
 
-  auto parameters = command->GetParameters();
-  parameters->GetString("name", &name);
-  parameters->GetString("description", &description);
-  parameters->GetString("location", &location);
+  const auto& parameters = command->GetParameters();
+  parameters.GetString("name", &name);
+  parameters.GetString("description", &description);
+  parameters.GetString("location", &location);
 
   device_info_->UpdateDeviceInfo(name, description, location);
   command->Complete({}, nullptr);

@@ -485,8 +485,7 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
   if (!commands)
     return nullptr;
 
-  std::unique_ptr<base::DictionaryValue> state = state_manager_->GetState();
-  CHECK(state);
+  const base::DictionaryValue& state = state_manager_->GetState();
 
   std::unique_ptr<base::DictionaryValue> resource{new base::DictionaryValue};
   if (!GetSettings().cloud_id.empty())
@@ -507,7 +506,7 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
   }
   resource->Set("channel", channel.release());
   resource->Set("commandDefs", commands.release());
-  resource->Set("state", state.release());
+  resource->Set("state", state.DeepCopy());
 
   return resource;
 }

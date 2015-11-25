@@ -39,11 +39,11 @@ class StateManager final {
   bool LoadStateDefinitionFromJson(const std::string& json, ErrorPtr* error);
   bool SetProperties(const base::DictionaryValue& dict, ErrorPtr* error);
   bool SetPropertiesFromJson(const std::string& json, ErrorPtr* error);
-  std::unique_ptr<base::Value> GetProperty(const std::string& name) const;
+  const base::Value* GetProperty(const std::string& name) const;
   bool SetProperty(const std::string& name,
                    const base::Value& value,
                    ErrorPtr* error);
-  std::unique_ptr<base::DictionaryValue> GetState() const;
+  const base::DictionaryValue& GetState() const;
 
   // Returns the recorded state changes since last time this method has been
   // called.
@@ -79,6 +79,9 @@ class StateManager final {
   std::map<std::string, std::unique_ptr<StatePackage>> packages_;
 
   std::vector<base::Closure> on_changed_;
+
+  mutable base::DictionaryValue cached_dict_;
+  mutable bool cached_dict_valid_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(StateManager);
 };

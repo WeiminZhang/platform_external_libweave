@@ -109,7 +109,7 @@ TEST_F(StateManagerTest, Initialized) {
     },
     'device': {}
   })";
-  EXPECT_JSON_EQ(expected, *mgr_->GetState());
+  EXPECT_JSON_EQ(expected, mgr_->GetState());
 }
 
 TEST_F(StateManagerTest, LoadStateDefinition) {
@@ -128,7 +128,7 @@ TEST_F(StateManagerTest, LoadStateDefinition) {
     'power': {},
     'device': {}
   })";
-  EXPECT_JSON_EQ(expected, *mgr_->GetState());
+  EXPECT_JSON_EQ(expected, mgr_->GetState());
 }
 
 TEST_F(StateManagerTest, Startup) {
@@ -170,7 +170,7 @@ TEST_F(StateManagerTest, Startup) {
       'battery_level': 44
     }
   })";
-  EXPECT_JSON_EQ(expected, *manager.GetState());
+  EXPECT_JSON_EQ(expected, manager.GetState());
 }
 
 TEST_F(StateManagerTest, SetPropertyValue) {
@@ -189,7 +189,7 @@ TEST_F(StateManagerTest, SetPropertyValue) {
       'state_property': 'Test Value'
     }
   })";
-  EXPECT_JSON_EQ(expected, *mgr_->GetState());
+  EXPECT_JSON_EQ(expected, mgr_->GetState());
 }
 
 TEST_F(StateManagerTest, SetPropertyValue_Error_NoName) {
@@ -227,7 +227,7 @@ TEST_F(StateManagerTest, GetAndClearRecordedStateChanges) {
   ASSERT_TRUE(SetPropertyValue("device.state_property",
                                base::StringValue{"Test Value"}, nullptr));
   std::vector<StateChange> expected_state;
-  const std::string expected_val = 
+  const std::string expected_val =
       "{'device': {'state_property': 'Test Value'}}";
   expected_state.emplace_back(
       timestamp_,
@@ -259,7 +259,7 @@ TEST_F(StateManagerTest, SetProperties) {
     },
     'device': {}
   })";
-  EXPECT_JSON_EQ(expected, *mgr_->GetState());
+  EXPECT_JSON_EQ(expected, mgr_->GetState());
 }
 
 TEST_F(StateManagerTest, GetProperty) {

@@ -43,7 +43,7 @@ void CloudCommandProxy::OnErrorChanged() {
 void CloudCommandProxy::OnResultsChanged() {
   std::unique_ptr<base::DictionaryValue> patch{new base::DictionaryValue};
   patch->Set(commands::attributes::kCommand_Results,
-             command_instance_->GetResults().release());
+             command_instance_->GetResults().CreateDeepCopy());
   QueueCommandUpdate(std::move(patch));
 }
 
@@ -57,7 +57,7 @@ void CloudCommandProxy::OnStateChanged() {
 void CloudCommandProxy::OnProgressChanged() {
   std::unique_ptr<base::DictionaryValue> patch{new base::DictionaryValue};
   patch->Set(commands::attributes::kCommand_Progress,
-             command_instance_->GetProgress().release());
+             command_instance_->GetProgress().CreateDeepCopy());
   QueueCommandUpdate(std::move(patch));
 }
 

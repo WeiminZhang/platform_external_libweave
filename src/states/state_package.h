@@ -43,13 +43,12 @@ class StatePackage final {
   //      "message": "Printer low on cyan ink"
   //    }
   //  }
-  std::unique_ptr<base::DictionaryValue> GetValuesAsJson() const;
+  const base::DictionaryValue& GetValuesAsJson() const;
 
   // Gets the value for a specific state property. |property_name| must not
   // include the package name as part of the property name.
-  std::unique_ptr<base::Value> GetPropertyValue(
-      const std::string& property_name,
-      ErrorPtr* error) const;
+  const base::Value* GetPropertyValue(const std::string& property_name,
+                                      ErrorPtr* error) const;
   // Sets the value for a specific state property. |property_name| must not
   // include the package name as part of the property name.
   bool SetPropertyValue(const std::string& property_name,

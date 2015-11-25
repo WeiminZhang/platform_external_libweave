@@ -131,7 +131,7 @@ TEST(StatePackage, AddSchemaFromJson_OnEmpty) {
   })";
   EXPECT_JSON_EQ(expected, GetTypes(package));
 
-  EXPECT_JSON_EQ("{}", *package.GetValuesAsJson());
+  EXPECT_JSON_EQ("{}", package.GetValuesAsJson());
 }
 
 TEST(StatePackage, AddValuesFromJson_OnEmpty) {
@@ -148,7 +148,7 @@ TEST(StatePackage, AddValuesFromJson_OnEmpty) {
     'iso': 200,
     'light': true
   })";
-  EXPECT_JSON_EQ(expected, *package.GetValuesAsJson());
+  EXPECT_JSON_EQ(expected, package.GetValuesAsJson());
 }
 
 TEST_F(StatePackageTest, AddSchemaFromJson_AddMore) {
@@ -200,7 +200,7 @@ TEST_F(StatePackageTest, AddSchemaFromJson_AddMore) {
     'iso': 200,
     'light': true
   })";
-  EXPECT_JSON_EQ(expected, *package_->GetValuesAsJson());
+  EXPECT_JSON_EQ(expected, package_->GetValuesAsJson());
 }
 
 TEST_F(StatePackageTest, AddValuesFromJson_AddMore) {
@@ -222,7 +222,7 @@ TEST_F(StatePackageTest, AddValuesFromJson_AddMore) {
     'iso': 200,
     'light': true
   })";
-  EXPECT_JSON_EQ(expected, *package_->GetValuesAsJson());
+  EXPECT_JSON_EQ(expected, package_->GetValuesAsJson());
 }
 
 TEST_F(StatePackageTest, AddSchemaFromJson_Error_Redefined) {
@@ -283,7 +283,7 @@ TEST_F(StatePackageTest, SetPropertyValue_Object) {
     'iso': 200,
     'light': true
   })";
-  EXPECT_JSON_EQ(expected, *package_->GetValuesAsJson());
+  EXPECT_JSON_EQ(expected, package_->GetValuesAsJson());
 }
 
 }  // namespace weave

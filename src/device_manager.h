@@ -52,12 +52,11 @@ class DeviceManager final : public Device {
                                   ErrorPtr* error) override;
   bool SetStateProperties(const base::DictionaryValue& dict,
                           ErrorPtr* error) override;
-  std::unique_ptr<base::Value> GetStateProperty(
-      const std::string& name) const override;
+  const base::Value* GetStateProperty(const std::string& name) const override;
   bool SetStateProperty(const std::string& name,
                         const base::Value& value,
                         ErrorPtr* error) override;
-  std::unique_ptr<base::DictionaryValue> GetState() const override;
+  const base::DictionaryValue& GetState() const override;
   void Register(const std::string& ticket_id,
                 const DoneCallback& callback) override;
   GcdState GetGcdState() const override;

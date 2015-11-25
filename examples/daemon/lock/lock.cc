@@ -72,9 +72,9 @@ class LockHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
-    auto params = cmd->GetParameters();
+    const auto& params = cmd->GetParameters();
     std::string requested_state;
-    if (params->GetString("lockedState", &requested_state)) {
+    if (params.GetString("lockedState", &requested_state)) {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
       weave::lockstate::LockState new_lock_status;

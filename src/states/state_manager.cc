@@ -27,14 +27,17 @@ void StateManager::AddChangedCallback(const base::Closure& callback) {
   callback.Run();  // Force to read current state.
 }
 
-std::unique_ptr<base::DictionaryValue> StateManager::GetState() const {
-  std::unique_ptr<base::DictionaryValue> dict{new base::DictionaryValue};
-  for (const auto& pair : packages_) {
-    auto pkg_value = pair.second->GetValuesAsJson();
-    CHECK(pkg_value);
-    dict->SetWithoutPathExpansion(pair.first, pkg_value.release());
+const base::DictionaryValue& StateManager::GetState() const {
+  if (!cached_dict_valid_) {
+    cached_dict_.Clear();
+    for (const auto& pair : packages_) {
+      cached_dict_.SetWithoutPathExpansion(
+          pair.first, pair.second->GetValuesAsJson().DeepCopy());
+    }
+    cached_dict_valid_ = true;
   }
-  return dict;
+
+  return cached_dict_;
 }
 
 bool StateManager::SetProperty(const std::string& name,
@@ -46,8 +49,7 @@ bool StateManager::SetProperty(const std::string& name,
   return result;
 }
 
-std::unique_ptr<base::Value> StateManager::GetProperty(
-    const std::string& name) const {
+const base::Value* StateManager::GetProperty(const std::string& name) const {
   auto parts = SplitAtFirst(name, ".", true);
   const std::string& package_name = parts.first;
   const std::string& property_name = parts.second;
@@ -92,6 +94,8 @@ bool StateManager::SetPropertyValue(const std::string& full_property_name,
   }
   if (!package->SetPropertyValue(property_name, value, error))
     return false;
+
+  cached_dict_valid_ = false;
 
   std::unique_ptr<base::DictionaryValue> prop_set{new base::DictionaryValue};
   prop_set->Set(full_property_name, value.DeepCopy());

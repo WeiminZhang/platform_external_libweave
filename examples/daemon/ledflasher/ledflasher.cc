@@ -66,10 +66,10 @@ class LedFlasherHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
     int32_t led_index = 0;
-    auto params = cmd->GetParameters();
+    const auto& params = cmd->GetParameters();
     bool cmd_value = false;
-    if (params->GetInteger("_led", &led_index) &&
-        params->GetBoolean("_on", &cmd_value)) {
+    if (params.GetInteger("_led", &led_index) &&
+        params.GetBoolean("_on", &cmd_value)) {
       // Display this command in terminal
       LOG(INFO) << cmd->GetName() << " _led: " << led_index
                 << ", _on: " << (cmd_value ? "true" : "false");
@@ -96,9 +96,9 @@ class LedFlasherHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
-    auto params = cmd->GetParameters();
+    const auto& params = cmd->GetParameters();
     int32_t led_index = 0;
-    if (params->GetInteger("_led", &led_index)) {
+    if (params.GetInteger("_led", &led_index)) {
       LOG(INFO) << cmd->GetName() << " _led: " << led_index;
       led_index--;
       led_status_[led_index] = ~led_status_[led_index];

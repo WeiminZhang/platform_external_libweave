@@ -82,8 +82,8 @@ TEST_F(CommandInstanceTest, Test) {
   EXPECT_EQ("robot.speak", instance.GetName());
   EXPECT_EQ(Command::Origin::kCloud, instance.GetOrigin());
   EXPECT_JSON_EQ("{'phrase': 'iPityDaFool', 'volume': 5}",
-                 *instance.GetParameters());
-  EXPECT_JSON_EQ("{'foo': 239}", *instance.GetResults());
+                 instance.GetParameters());
+  EXPECT_JSON_EQ("{'foo': 239}", instance.GetResults());
 
   CommandInstance instance2{"base.reboot",
                             Command::Origin::kLocal,
@@ -118,7 +118,7 @@ TEST_F(CommandInstanceTest, FromJson) {
   EXPECT_EQ("abcd", instance->GetID());
   EXPECT_EQ("robot.jump", instance->GetName());
   EXPECT_JSON_EQ("{'height': 53, '_jumpType': '_withKick'}",
-                 *instance->GetParameters());
+                 instance->GetParameters());
 }
 
 TEST_F(CommandInstanceTest, FromJson_ParamsOmitted) {
@@ -126,7 +126,7 @@ TEST_F(CommandInstanceTest, FromJson_ParamsOmitted) {
   auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
                                             dict_, nullptr, nullptr);
   EXPECT_EQ("base.reboot", instance->GetName());
-  EXPECT_JSON_EQ("{}", *instance->GetParameters());
+  EXPECT_JSON_EQ("{}", instance->GetParameters());
 }
 
 TEST_F(CommandInstanceTest, FromJson_NotObject) {
