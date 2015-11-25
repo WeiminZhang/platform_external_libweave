@@ -98,7 +98,8 @@ class LightHandler {
                   "minimum": 0.0,
                   "maximum": 1.0
                 }
-              }
+              },
+              "additionalProperties": false
             }
           }
         }

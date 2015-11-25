@@ -28,20 +28,16 @@ class SampleHandler {
           "minimalRole": "user",
           "parameters": {
             "_name": {"type": "string"}
-          },
-          "results": { "_reply": {"type": "string"} }
+          }
         },
         "_ping": {
-          "minimalRole": "user",
-          "results": {}
+          "minimalRole": "user"
         },
         "_countdown": {
           "minimalRole": "user",
           "parameters": {
             "_seconds": {"type": "integer", "minimum": 1, "maximum": 25}
-          },
-          "progress": { "_seconds_left": {"type": "integer"}},
-          "results": {}
+          }
         }
       }
     })");

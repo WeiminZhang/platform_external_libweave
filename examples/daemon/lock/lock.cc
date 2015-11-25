@@ -37,9 +37,10 @@ class LockHandler {
       "lock": {
         "lockedState": {
           "type": "string",
-          "enum": ["locked", "unlocked", "partiallyLocked"],
-        }
-        "isLockingSupported": {"type": "boolean"}}
+          "enum": ["locked", "unlocked", "partiallyLocked"]
+        },
+        "isLockingSupported": {"type": "boolean"}
+      }
     })");
 
     device->SetStatePropertiesFromJson(R"({
