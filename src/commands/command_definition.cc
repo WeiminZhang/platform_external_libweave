@@ -28,61 +28,31 @@ template <>
 LIBWEAVE_EXPORT EnumToStringMap<UserRole>::EnumToStringMap()
     : EnumToStringMap(kMap) {}
 
-bool CommandDefinition::Visibility::FromString(const std::string& str,
-                                               ErrorPtr* error) {
-  // This special case is useful for places where we want to make a command
-  // to ALL clients, even if new clients are added in the future.
-  if (str == commands::attributes::kCommand_Visibility_All) {
-    local = true;
-    cloud = true;
-    return true;
-  }
+CommandDefinition::CommandDefinition(const base::DictionaryValue& definition,
+                                     UserRole minimal_role)
+    : minimal_role_{minimal_role} {
+  definition_.MergeDictionary(&definition);
+}
 
-  // Clear any bits first.
-  local = false;
-  cloud = false;
-  if (str == commands::attributes::kCommand_Visibility_None)
-    return true;
-
-  for (const std::string& value : Split(str, ",", true, true)) {
-    if (value == commands::attributes::kCommand_Visibility_Local) {
-      local = true;
-    } else if (value == commands::attributes::kCommand_Visibility_Cloud) {
-      cloud = true;
-    } else {
+std::unique_ptr<CommandDefinition> CommandDefinition::FromJson(
+    const base::DictionaryValue& dict, ErrorPtr* error) {
+  std::unique_ptr<CommandDefinition> definition;
+  // Validate the 'minimalRole' value if present. That's the only thing we
+  // care about so far.
+  std::string value;
+  UserRole minimal_role;
+  if (dict.GetString(commands::attributes::kCommand_Role, &value)) {
+    if (!StringToEnum(value, &minimal_role)) {
       Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                         errors::commands::kInvalidPropValue,
-                         "Invalid command visibility value '%s'",
-                         value.c_str());
-      return false;
+                          errors::commands::kInvalidPropValue,
+                          "Invalid role: '%s'", value.c_str());
+      return definition;
     }
+  } else {
+    minimal_role = UserRole::kUser;
   }
-  return true;
-}
-
-std::string CommandDefinition::Visibility::ToString() const {
-  if (local && cloud)
-    return commands::attributes::kCommand_Visibility_All;
-  if (!local && !cloud)
-    return commands::attributes::kCommand_Visibility_None;
-  if (local)
-    return commands::attributes::kCommand_Visibility_Local;
-  return commands::attributes::kCommand_Visibility_Cloud;
-}
-
-CommandDefinition::CommandDefinition(
-    std::unique_ptr<const ObjectSchema> parameters,
-    std::unique_ptr<const ObjectSchema> progress,
-    std::unique_ptr<const ObjectSchema> results)
-    : parameters_{std::move(parameters)},
-      progress_{std::move(progress)},
-      results_{std::move(results)} {
-  // Set to be available to all clients by default.
-  visibility_ = Visibility::GetAll();
-}
-
-void CommandDefinition::SetVisibility(const Visibility& visibility) {
-  visibility_ = visibility;
+  definition.reset(new CommandDefinition{dict, minimal_role});
+  return definition;
 }
 
 }  // namespace weave
