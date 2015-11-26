@@ -480,8 +480,9 @@ void DeviceRegistrationInfo::AddGcdStateChangedCallback(
 std::unique_ptr<base::DictionaryValue>
 DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
   // Limit only to commands that are visible to the cloud.
-  auto commands =
-      command_manager_->GetCommandDictionary().GetCommandsAsJson(error);
+  auto commands = command_manager_->GetCommandDictionary().GetCommandsAsJson(
+      [](const CommandDefinition* def) { return def->GetVisibility().cloud; },
+      true, error);
   if (!commands)
     return nullptr;
 
@@ -1120,11 +1121,23 @@ void DeviceRegistrationInfo::PublishStateUpdates() {
     return;
 
   std::unique_ptr<base::ListValue> patches{new base::ListValue};
-  for (auto& state_change : state_changes) {
+  for (const auto& state_change : state_changes) {
     std::unique_ptr<base::DictionaryValue> patch{new base::DictionaryValue};
     patch->SetString("timeMs",
                      std::to_string(state_change.timestamp.ToJavaTime()));
-    patch->Set("patch", state_change.changed_properties.release());
+
+    std::unique_ptr<base::DictionaryValue> changes{new base::DictionaryValue};
+    for (const auto& pair : state_change.changed_properties) {
+      auto value = pair.second->ToJson();
+      CHECK(value);
+      // The key in |pair.first| is the full property name in format
+      // "package.property_name", so must use DictionaryValue::Set() instead of
+      // DictionaryValue::SetWithoutPathExpansion to recreate the JSON
+      // property tree properly.
+      changes->Set(pair.first, value.release());
+    }
+    patch->Set("patch", changes.release());
+
     patches->Append(patch.release());
   }
 

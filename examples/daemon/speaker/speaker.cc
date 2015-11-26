@@ -18,10 +18,10 @@ class SpeakerHandler {
     device_ = device;
 
     device->AddStateDefinitionsFromJson(R"({
-      "onOff": {"state": {"type": "string", "enum": ["on", "standby"]}},
+      "onOff": {"state": ["on", "standby"]},
       "volume": {
-        "volume": {"type": "integer"},
-        "isMuted": {"type": "boolean"}
+        "volume": "integer",
+        "isMuted": "boolean"
       }
     })");
 
@@ -38,7 +38,7 @@ class SpeakerHandler {
       "onOff": {
          "setConfig":{
            "parameters": {
-             "state": {"type": "string", "enum": ["on", "standby"]}
+             "state": ["on", "standby"]
            }
          }
        },
@@ -50,7 +50,7 @@ class SpeakerHandler {
                "minimum": 0,
                "maximum": 100
              },
-             "isMuted": {"type": "boolean"}
+             "isMuted": "boolean"
            }
         }
       }

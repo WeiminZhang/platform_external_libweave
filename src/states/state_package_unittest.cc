@@ -21,11 +21,11 @@ using test::CreateDictionaryValue;
 class StatePackageTestHelper {
  public:
   // Returns the state property definitions (types/constraints/etc).
-  static const base::DictionaryValue& GetTypes(const StatePackage& package) {
+  static const ObjectSchema& GetTypes(const StatePackage& package) {
     return package.types_;
   }
   // Returns the all state property values in this package.
-  static const base::DictionaryValue& GetValues(const StatePackage& package) {
+  static const ValueMap& GetValues(const StatePackage& package) {
     return package.values_;
   }
 };
@@ -33,30 +33,15 @@ class StatePackageTestHelper {
 namespace {
 std::unique_ptr<base::DictionaryValue> GetTestSchema() {
   return CreateDictionaryValue(R"({
-    'color': {
-      'type': 'string'
+    'light': 'boolean',
+    'color': 'string',
+    'direction':{
+      'properties':{
+        'azimuth': {'type': 'number', 'isRequired': true},
+        'altitude': {'maximum': 90.0}
+      }
     },
-    'direction': {
-      'additionalProperties': false,
-      'properties': {
-        'altitude': {
-          'maximum': 90.0,
-          'type': 'number'
-        },
-        'azimuth': {
-          'type': 'number'
-        }
-      },
-      'type': 'object',
-      'required': [ 'azimuth' ]
-    },
-    'iso': {
-      'enum': [50, 100, 200, 400],
-      'type': 'integer'
-    },
-    'light': {
-      'type': 'boolean'
-    }
+    'iso': [50, 100, 200, 400]
   })");
 }
 
@@ -69,11 +54,11 @@ std::unique_ptr<base::DictionaryValue> GetTestValues() {
   })");
 }
 
-inline const base::DictionaryValue& GetTypes(const StatePackage& package) {
+inline const ObjectSchema& GetTypes(const StatePackage& package) {
   return StatePackageTestHelper::GetTypes(package);
 }
 // Returns the all state property values in this package.
-inline const base::DictionaryValue& GetValues(const StatePackage& package) {
+inline const ValueMap& GetValues(const StatePackage& package) {
   return StatePackageTestHelper::GetValues(package);
 }
 
@@ -93,15 +78,15 @@ class StatePackageTest : public ::testing::Test {
 TEST(StatePackage, Empty) {
   StatePackage package("test");
   EXPECT_EQ("test", package.GetName());
-  EXPECT_TRUE(GetTypes(package).empty());
+  EXPECT_TRUE(GetTypes(package).GetProps().empty());
   EXPECT_TRUE(GetValues(package).empty());
 }
 
 TEST(StatePackage, AddSchemaFromJson_OnEmpty) {
   StatePackage package("test");
   ASSERT_TRUE(package.AddSchemaFromJson(GetTestSchema().get(), nullptr));
-  EXPECT_EQ(4, GetTypes(package).size());
-  EXPECT_EQ(0, GetValues(package).size());
+  EXPECT_EQ(4, GetTypes(package).GetProps().size());
+  EXPECT_EQ(4, GetValues(package).size());
 
   auto expected = R"({
     'color': {
@@ -129,9 +114,15 @@ TEST(StatePackage, AddSchemaFromJson_OnEmpty) {
       'type': 'boolean'
     }
   })";
-  EXPECT_JSON_EQ(expected, GetTypes(package));
+  EXPECT_JSON_EQ(expected, *GetTypes(package).ToJson(true, false));
 
-  EXPECT_JSON_EQ("{}", *package.GetValuesAsJson());
+  expected = R"({
+    'color': '',
+    'direction': {},
+    'iso': 0,
+    'light': false
+  })";
+  EXPECT_JSON_EQ(expected, *package.GetValuesAsJson());
 }
 
 TEST(StatePackage, AddValuesFromJson_OnEmpty) {
@@ -152,13 +143,10 @@ TEST(StatePackage, AddValuesFromJson_OnEmpty) {
 }
 
 TEST_F(StatePackageTest, AddSchemaFromJson_AddMore) {
-  auto dict = CreateDictionaryValue(R"({'brightness':{
-      'enum': ['low', 'medium', 'high'],
-      'type': 'string'
-    }})");
+  auto dict = CreateDictionaryValue("{'brightness':['low', 'medium', 'high']}");
   ASSERT_TRUE(package_->AddSchemaFromJson(dict.get(), nullptr));
-  EXPECT_EQ(5, GetTypes(*package_).size());
-  EXPECT_EQ(4, GetValues(*package_).size());
+  EXPECT_EQ(5, GetTypes(*package_).GetProps().size());
+  EXPECT_EQ(5, GetValues(*package_).size());
   auto expected = R"({
     'brightness': {
       'enum': ['low', 'medium', 'high'],
@@ -189,9 +177,10 @@ TEST_F(StatePackageTest, AddSchemaFromJson_AddMore) {
       'type': 'boolean'
     }
   })";
-  EXPECT_JSON_EQ(expected, GetTypes(*package_));
+  EXPECT_JSON_EQ(expected, *GetTypes(*package_).ToJson(true, false));
 
   expected = R"({
+    'brightness': '',
     'color': 'white',
     'direction': {
       'altitude': 89.9,
@@ -204,10 +193,7 @@ TEST_F(StatePackageTest, AddSchemaFromJson_AddMore) {
 }
 
 TEST_F(StatePackageTest, AddValuesFromJson_AddMore) {
-  auto dict = CreateDictionaryValue(R"({'brightness':{
-      'enum': ['low', 'medium', 'high'],
-      'type': 'string'
-    }})");
+  auto dict = CreateDictionaryValue("{'brightness':['low', 'medium', 'high']}");
   ASSERT_TRUE(package_->AddSchemaFromJson(dict.get(), nullptr));
   dict = CreateDictionaryValue("{'brightness':'medium'}");
   ASSERT_TRUE(package_->AddValuesFromJson(dict.get(), nullptr));
@@ -226,8 +212,7 @@ TEST_F(StatePackageTest, AddValuesFromJson_AddMore) {
 }
 
 TEST_F(StatePackageTest, AddSchemaFromJson_Error_Redefined) {
-  auto dict = CreateDictionaryValue(R"({'color':
-    {'type':'string', 'enum':['white', 'blue', 'red']}})");
+  auto dict = CreateDictionaryValue("{'color':['white', 'blue', 'red']}");
   ErrorPtr error;
   EXPECT_FALSE(package_->AddSchemaFromJson(dict.get(), &error));
   EXPECT_EQ(errors::state::kDomain, error->GetDomain());
@@ -236,7 +221,10 @@ TEST_F(StatePackageTest, AddSchemaFromJson_Error_Redefined) {
 
 TEST_F(StatePackageTest, AddValuesFromJson_Error_Undefined) {
   auto dict = CreateDictionaryValue("{'brightness':'medium'}");
-  EXPECT_TRUE(package_->AddValuesFromJson(dict.get(), nullptr));
+  ErrorPtr error;
+  EXPECT_FALSE(package_->AddValuesFromJson(dict.get(), &error));
+  EXPECT_EQ(errors::state::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::state::kPropertyNotDefined, error->GetCode());
 }
 
 TEST_F(StatePackageTest, GetPropertyValue) {
@@ -284,6 +272,87 @@ TEST_F(StatePackageTest, SetPropertyValue_Object) {
     'light': true
   })";
   EXPECT_JSON_EQ(expected, *package_->GetValuesAsJson());
+}
+
+TEST_F(StatePackageTest, SetPropertyValue_Error_TypeMismatch) {
+  ErrorPtr error;
+  ASSERT_FALSE(
+      package_->SetPropertyValue("color", base::FundamentalValue{12}, &error));
+  EXPECT_EQ(errors::commands::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::commands::kTypeMismatch, error->GetCode());
+  error.reset();
+
+  ASSERT_FALSE(
+      package_->SetPropertyValue("iso", base::FundamentalValue{false}, &error));
+  EXPECT_EQ(errors::commands::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::commands::kTypeMismatch, error->GetCode());
+}
+
+TEST_F(StatePackageTest, SetPropertyValue_Error_OutOfRange) {
+  ErrorPtr error;
+  ASSERT_FALSE(
+      package_->SetPropertyValue("iso", base::FundamentalValue{150}, &error));
+  EXPECT_EQ(errors::commands::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::commands::kOutOfRange, error->GetCode());
+}
+
+TEST_F(StatePackageTest, SetPropertyValue_Error_Object_TypeMismatch) {
+  ErrorPtr error;
+  ASSERT_FALSE(package_->SetPropertyValue(
+      "direction",
+      *CreateDictionaryValue("{'altitude': 45.0, 'azimuth': '15'}"), &error));
+  EXPECT_EQ(errors::commands::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::commands::kInvalidPropValue, error->GetCode());
+  const Error* inner = error->GetInnerError();
+  EXPECT_EQ(errors::commands::kDomain, inner->GetDomain());
+  EXPECT_EQ(errors::commands::kTypeMismatch, inner->GetCode());
+}
+
+TEST_F(StatePackageTest, SetPropertyValue_Error_Object_OutOfRange) {
+  ErrorPtr error;
+  ASSERT_FALSE(package_->SetPropertyValue(
+      "direction",
+      *CreateDictionaryValue("{'altitude': 100.0, 'azimuth': 290.0}"), &error));
+  EXPECT_EQ(errors::commands::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::commands::kInvalidPropValue, error->GetCode());
+  const Error* inner = error->GetInnerError();
+  EXPECT_EQ(errors::commands::kDomain, inner->GetDomain());
+  EXPECT_EQ(errors::commands::kOutOfRange, inner->GetCode());
+}
+
+TEST_F(StatePackageTest, SetPropertyValue_Error_Object_UnknownProperty) {
+  ErrorPtr error;
+  ASSERT_FALSE(package_->SetPropertyValue(
+      "direction", *CreateDictionaryValue(
+                       "{'altitude': 10.0, 'azimuth': 20.0, 'spin': 30.0}"),
+      &error));
+  EXPECT_EQ(errors::commands::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::commands::kUnknownProperty, error->GetCode());
+}
+
+TEST_F(StatePackageTest, SetPropertyValue_Object_OptionalProperty) {
+  EXPECT_JSON_EQ("{'altitude': 89.9, 'azimuth': 57.2957795}",
+                 *package_->GetProperty("direction")->ToJson());
+  ASSERT_TRUE(package_->SetPropertyValue(
+      "direction", *CreateDictionaryValue("{'azimuth': 10.0}"), nullptr));
+  EXPECT_JSON_EQ("{'azimuth': 10.0}",
+                 *package_->GetProperty("direction")->ToJson());
+}
+
+TEST_F(StatePackageTest, SetPropertyValue_Error_Object_MissingProperty) {
+  ErrorPtr error;
+  ASSERT_FALSE(package_->SetPropertyValue(
+      "direction", *CreateDictionaryValue("{'altitude': 10.0}"), &error));
+  EXPECT_EQ(errors::commands::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::commands::kPropertyMissing, error->GetCode());
+}
+
+TEST_F(StatePackageTest, SetPropertyValue_Error_Unknown) {
+  ErrorPtr error;
+  ASSERT_FALSE(package_->SetPropertyValue("volume", base::FundamentalValue{100},
+                                          &error));
+  EXPECT_EQ(errors::state::kDomain, error->GetDomain());
+  EXPECT_EQ(errors::state::kPropertyNotDefined, error->GetCode());
 }
 
 }  // namespace weave

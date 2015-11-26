@@ -9,8 +9,8 @@
 #include <string>
 
 #include <base/macros.h>
-#include <base/values.h>
-#include <weave/error.h>
+
+#include "src/commands/object_schema.h"
 
 namespace weave {
 
@@ -25,19 +25,55 @@ enum class UserRole {
 // describing the command parameter types and constraints.
 class CommandDefinition final {
  public:
-  // Factory method to construct a command definition from a JSON dictionary.
-  static std::unique_ptr<CommandDefinition> FromJson(
-      const base::DictionaryValue& dict, ErrorPtr* error);
-  const base::DictionaryValue& ToJson() const { return definition_; }
+  struct Visibility {
+    Visibility() = default;
+    Visibility(bool is_local, bool is_cloud)
+        : local{is_local}, cloud{is_cloud} {}
+
+    // Converts a comma-separated string of visibility identifiers into the
+    // Visibility bitset (|str| is a string like "local,cloud").
+    // Special string value "all" is treated as a list of every possible
+    // visibility values and "none" to have all the bits cleared.
+    bool FromString(const std::string& str, ErrorPtr* error);
+
+    // Converts the visibility bitset to a string.
+    std::string ToString() const;
+
+    static Visibility GetAll() { return Visibility{true, true}; }
+    static Visibility GetLocal() { return Visibility{true, false}; }
+    static Visibility GetCloud() { return Visibility{false, true}; }
+    static Visibility GetNone() { return Visibility{false, false}; }
+
+    bool local{false};  // Command is available to local clients.
+    bool cloud{false};  // Command is available to cloud clients.
+  };
+
+  CommandDefinition(std::unique_ptr<const ObjectSchema> parameters,
+                    std::unique_ptr<const ObjectSchema> progress,
+                    std::unique_ptr<const ObjectSchema> results);
+
+  // Gets the object schema for command parameters.
+  const ObjectSchema* GetParameters() const { return parameters_.get(); }
+  // Gets the object schema for command progress.
+  const ObjectSchema* GetProgress() const { return progress_.get(); }
+  // Gets the object schema for command results.
+  const ObjectSchema* GetResults() const { return results_.get(); }
+  // Returns the command visibility.
+  const Visibility& GetVisibility() const { return visibility_; }
+  // Changes the command visibility.
+  void SetVisibility(const Visibility& visibility);
   // Returns the role required to execute command.
   UserRole GetMinimalRole() const { return minimal_role_; }
+  // Changes the role required to execute command.
+  void SetMinimalRole(UserRole minimal_role) { minimal_role_ = minimal_role; }
 
  private:
-  CommandDefinition(const base::DictionaryValue& definition,
-                    UserRole minimal_role);
-
-  base::DictionaryValue definition_;
-  UserRole minimal_role_;
+  std::unique_ptr<const ObjectSchema> parameters_;  // Command parameters def.
+  std::unique_ptr<const ObjectSchema> progress_;    // Command progress def.
+  std::unique_ptr<const ObjectSchema> results_;     // Command results def.
+  Visibility visibility_;  // Available to all by default.
+  // Minimal role required to execute command.
+  UserRole minimal_role_{UserRole::kUser};
 
   DISALLOW_COPY_AND_ASSIGN(CommandDefinition);
 };
