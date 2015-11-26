@@ -31,6 +31,7 @@
     ],
     'cflags!': ['-fPIE'],
     'cflags': [
+      '-fno-exceptions',
       '-fPIC',
       '-fvisibility=hidden',
       '-std=c++11',

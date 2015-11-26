@@ -72,7 +72,7 @@ const char kDeviceResource[] = R"({
     "base": {
       "reboot": {
         "minimalRole": "user",
-        "parameters": {"delay": "integer"},
+        "parameters": {"delay": {"type": "integer"}},
         "results": {}
       },
       "shutdown": {

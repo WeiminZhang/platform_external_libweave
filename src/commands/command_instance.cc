@@ -12,9 +12,7 @@
 #include "src/commands/command_definition.h"
 #include "src/commands/command_dictionary.h"
 #include "src/commands/command_queue.h"
-#include "src/commands/prop_types.h"
 #include "src/commands/schema_constants.h"
-#include "src/commands/schema_utils.h"
 #include "src/json_error_codes.h"
 #include "src/utils.h"
 
@@ -68,12 +66,12 @@ LIBWEAVE_EXPORT EnumToStringMap<Command::Origin>::EnumToStringMap()
 CommandInstance::CommandInstance(const std::string& name,
                                  Command::Origin origin,
                                  const CommandDefinition* command_definition,
-                                 const ValueMap& parameters)
+                                 const base::DictionaryValue& parameters)
     : name_{name},
       origin_{origin},
-      command_definition_{command_definition},
-      parameters_{parameters} {
+      command_definition_{command_definition} {
   CHECK(command_definition_);
+  parameters_.MergeDictionary(&parameters);
 }
 
 CommandInstance::~CommandInstance() {
@@ -97,15 +95,15 @@ Command::Origin CommandInstance::GetOrigin() const {
 }
 
 std::unique_ptr<base::DictionaryValue> CommandInstance::GetParameters() const {
-  return TypedValueToJson(parameters_);
+  return std::unique_ptr<base::DictionaryValue>(parameters_.DeepCopy());
 }
 
 std::unique_ptr<base::DictionaryValue> CommandInstance::GetProgress() const {
-  return TypedValueToJson(progress_);
+  return std::unique_ptr<base::DictionaryValue>(progress_.DeepCopy());
 }
 
 std::unique_ptr<base::DictionaryValue> CommandInstance::GetResults() const {
-  return TypedValueToJson(results_);
+  return std::unique_ptr<base::DictionaryValue>(results_.DeepCopy());
 }
 
 const Error* CommandInstance::GetError() const {
@@ -114,21 +112,13 @@ const Error* CommandInstance::GetError() const {
 
 bool CommandInstance::SetProgress(const base::DictionaryValue& progress,
                                   ErrorPtr* error) {
-  if (!command_definition_)
-    return ReportDestroyedError(error);
-  ObjectPropType obj_prop_type;
-  obj_prop_type.SetObjectSchema(command_definition_->GetProgress()->Clone());
-
-  ValueMap obj;
-  if (!TypedValueFromJson(&progress, &obj_prop_type, &obj, error))
-    return false;
-
   // Change status even if progress unchanged, e.g. 0% -> 0%.
   if (!SetStatus(State::kInProgress, error))
     return false;
 
-  if (obj != progress_) {
-    progress_ = obj;
+  if (!progress_.Equals(&progress)) {
+    progress_.Clear();
+    progress_.MergeDictionary(&progress);
     FOR_EACH_OBSERVER(Observer, observers_, OnProgressChanged());
   }
 
@@ -137,17 +127,9 @@ bool CommandInstance::SetProgress(const base::DictionaryValue& progress,
 
 bool CommandInstance::Complete(const base::DictionaryValue& results,
                                ErrorPtr* error) {
-  if (!command_definition_)
-    return ReportDestroyedError(error);
-  ObjectPropType obj_prop_type;
-  obj_prop_type.SetObjectSchema(command_definition_->GetResults()->Clone());
-
-  ValueMap obj;
-  if (!TypedValueFromJson(&results, &obj_prop_type, &obj, error))
-    return false;
-
-  if (obj != results_) {
-    results_ = obj;
+  if (!results_.Equals(&results)) {
+    results_.Clear();
+    results_.MergeDictionary(&results);
     FOR_EACH_OBSERVER(Observer, observers_, OnResultsChanged());
   }
   // Change status even if result is unchanged.
@@ -171,36 +153,29 @@ namespace {
 // On success, returns |true| and the validated parameters and values through
 // |parameters|. Otherwise returns |false| and additional error information in
 // |error|.
-bool GetCommandParameters(const base::DictionaryValue* json,
-                          const CommandDefinition* command_def,
-                          ValueMap* parameters,
-                          ErrorPtr* error) {
+std::unique_ptr<base::DictionaryValue> GetCommandParameters(
+    const base::DictionaryValue* json,
+    const CommandDefinition* command_def,
+    ErrorPtr* error) {
   // Get the command parameters from 'parameters' property.
-  base::DictionaryValue no_params;  // Placeholder when no params are specified.
-  const base::DictionaryValue* params = nullptr;
+  std::unique_ptr<base::DictionaryValue> params;
   const base::Value* params_value = nullptr;
   if (json->Get(commands::attributes::kCommand_Parameters, &params_value)) {
     // Make sure the "parameters" property is actually an object.
-    if (!params_value->GetAsDictionary(&params)) {
+    const base::DictionaryValue* params_dict = nullptr;
+    if (!params_value->GetAsDictionary(&params_dict)) {
       Error::AddToPrintf(error, FROM_HERE, errors::json::kDomain,
                          errors::json::kObjectExpected,
                          "Property '%s' must be a JSON object",
                          commands::attributes::kCommand_Parameters);
-      return false;
+      return params;
     }
+    params.reset(params_dict->DeepCopy());
   } else {
     // "parameters" are not specified. Assume empty param list.
-    params = &no_params;
+    params.reset(new base::DictionaryValue);
   }
-
-  // Now read in the parameters and validate their values against the command
-  // definition schema.
-  ObjectPropType obj_prop_type;
-  obj_prop_type.SetObjectSchema(command_def->GetParameters()->Clone());
-  if (!TypedValueFromJson(params, &obj_prop_type, parameters, error)) {
-    return false;
-  }
-  return true;
+  return params;
 }
 
 }  // anonymous namespace
@@ -246,8 +221,8 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
     return instance;
   }
 
-  ValueMap parameters;
-  if (!GetCommandParameters(json, command_def, &parameters, error)) {
+  auto parameters = GetCommandParameters(json, command_def, error);
+  if (!parameters) {
     Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                        errors::commands::kCommandFailed,
                        "Failed to validate command '%s'", command_name.c_str());
@@ -255,7 +230,7 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
   }
 
   instance.reset(
-      new CommandInstance{command_name, origin, command_def, parameters});
+      new CommandInstance{command_name, origin, command_def, *parameters});
 
   if (!command_id->empty())
     instance->SetID(*command_id);
@@ -268,12 +243,9 @@ std::unique_ptr<base::DictionaryValue> CommandInstance::ToJson() const {
 
   json->SetString(commands::attributes::kCommand_Id, id_);
   json->SetString(commands::attributes::kCommand_Name, name_);
-  json->Set(commands::attributes::kCommand_Parameters,
-            TypedValueToJson(parameters_).release());
-  json->Set(commands::attributes::kCommand_Progress,
-            TypedValueToJson(progress_).release());
-  json->Set(commands::attributes::kCommand_Results,
-            TypedValueToJson(results_).release());
+  json->Set(commands::attributes::kCommand_Parameters, parameters_.DeepCopy());
+  json->Set(commands::attributes::kCommand_Progress, progress_.DeepCopy());
+  json->Set(commands::attributes::kCommand_Results, results_.DeepCopy());
   json->SetString(commands::attributes::kCommand_State, EnumToString(state_));
   if (error_) {
     json->Set(commands::attributes::kCommand_Error,

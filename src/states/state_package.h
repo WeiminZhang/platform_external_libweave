@@ -10,14 +10,8 @@
 #include <string>
 
 #include <base/macros.h>
+#include <base/values.h>
 #include <weave/error.h>
-
-#include "src/commands/object_schema.h"
-#include "src/commands/prop_values.h"
-
-namespace base {
-class DictionaryValue;
-}  // namespace base
 
 namespace weave {
 
@@ -62,20 +56,13 @@ class StatePackage final {
                         const base::Value& value,
                         ErrorPtr* error);
 
-  std::shared_ptr<const PropValue> GetProperty(
-      const std::string& property_name) const {
-    auto it = values_.find(property_name);
-    return it != values_.end() ? it->second
-                               : std::shared_ptr<const PropValue>{};
-  }
-
   // Returns the name of the this package.
   const std::string& GetName() const { return name_; }
 
  private:
   std::string name_;
-  ObjectSchema types_;
-  ValueMap values_;
+  base::DictionaryValue types_;
+  base::DictionaryValue values_;
 
   friend class StatePackageTestHelper;
   DISALLOW_COPY_AND_ASSIGN(StatePackage);

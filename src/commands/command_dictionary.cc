@@ -14,7 +14,6 @@
 namespace weave {
 
 bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
-                                     const CommandDictionary* base_commands,
                                      ErrorPtr* error) {
   CommandMap new_defs;
 
@@ -54,89 +53,16 @@ bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
       // Construct the compound command name as "pkg_name.cmd_name".
       std::string full_command_name = Join(".", package_name, command_name);
 
-      const ObjectSchema* base_parameters_def = nullptr;
-      const ObjectSchema* base_progress_def = nullptr;
-      const ObjectSchema* base_results_def = nullptr;
-      // By default make it available to all clients.
-      auto visibility = CommandDefinition::Visibility::GetAll();
-      UserRole minimal_role{UserRole::kUser};
-      if (base_commands) {
-        auto cmd = base_commands->FindCommand(full_command_name);
-        if (cmd) {
-          base_parameters_def = cmd->GetParameters();
-          base_progress_def = cmd->GetProgress();
-          base_results_def = cmd->GetResults();
-          visibility = cmd->GetVisibility();
-          minimal_role = cmd->GetMinimalRole();
-        }
-
-        // If the base command dictionary was provided but the command was not
-        // found in it, this must be a custom (vendor) command. GCD spec states
-        // that all custom command names must begin with "_". Let's enforce
-        // this rule here.
-        if (!cmd) {
-          if (command_name.front() != '_') {
-            Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                               errors::commands::kInvalidCommandName,
-                               "The name of custom command '%s' in package '%s'"
-                               " must start with '_'",
-                               command_name.c_str(), package_name.c_str());
-            return false;
-          }
-        }
+      auto command_def = CommandDefinition::FromJson(*command_def_json, error);
+      if (!command_def) {
+        Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                           errors::commands::kInvalidMinimalRole,
+                           "Error parsing command '%s'",
+                           full_command_name.c_str());
+        return false;
       }
 
-      auto parameters_schema = BuildObjectSchema(
-          command_def_json, commands::attributes::kCommand_Parameters,
-          base_parameters_def, full_command_name, error);
-      if (!parameters_schema)
-        return false;
-
-      auto progress_schema = BuildObjectSchema(
-          command_def_json, commands::attributes::kCommand_Progress,
-          base_progress_def, full_command_name, error);
-      if (!progress_schema)
-        return false;
-
-      auto results_schema = BuildObjectSchema(
-          command_def_json, commands::attributes::kCommand_Results,
-          base_results_def, full_command_name, error);
-      if (!results_schema)
-        return false;
-
-      std::string value;
-      if (command_def_json->GetString(commands::attributes::kCommand_Visibility,
-                                      &value)) {
-        if (!visibility.FromString(value, error)) {
-          Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                             errors::commands::kInvalidCommandVisibility,
-                             "Error parsing command '%s'",
-                             full_command_name.c_str());
-          return false;
-        }
-      }
-
-      if (command_def_json->GetString(commands::attributes::kCommand_Role,
-                                      &value)) {
-        if (!StringToEnum(value, &minimal_role)) {
-          Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                             errors::commands::kInvalidPropValue,
-                             "Invalid role: '%s'", value.c_str());
-          Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                             errors::commands::kInvalidMinimalRole,
-                             "Error parsing command '%s'",
-                             full_command_name.c_str());
-          return false;
-        }
-      }
-
-      std::unique_ptr<CommandDefinition> command_def{new CommandDefinition{
-          std::move(parameters_schema), std::move(progress_schema),
-          std::move(results_schema)}};
-      command_def->SetVisibility(visibility);
-      command_def->SetMinimalRole(minimal_role);
       new_defs.emplace(full_command_name, std::move(command_def));
-
       command_iter.Advance();
     }
     package_iter.Advance();
@@ -159,49 +85,10 @@ bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
   return true;
 }
 
-std::unique_ptr<ObjectSchema> CommandDictionary::BuildObjectSchema(
-    const base::DictionaryValue* command_def_json,
-    const char* property_name,
-    const ObjectSchema* base_def,
-    const std::string& command_name,
-    ErrorPtr* error) {
-  auto object_schema = ObjectSchema::Create();
-
-  const base::DictionaryValue* schema_def = nullptr;
-  if (!command_def_json->GetDictionaryWithoutPathExpansion(property_name,
-                                                           &schema_def)) {
-    if (base_def)
-      return base_def->Clone();
-    return object_schema;
-  }
-
-  if (!object_schema->FromJson(schema_def, base_def, error)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                       errors::commands::kInvalidObjectSchema,
-                       "Invalid definition for command '%s'",
-                       command_name.c_str());
-    return {};
-  }
-
-  return object_schema;
-}
-
 std::unique_ptr<base::DictionaryValue> CommandDictionary::GetCommandsAsJson(
-    const std::function<bool(const CommandDefinition*)>& filter,
-    bool full_schema,
     ErrorPtr* error) const {
   std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
   for (const auto& pair : definitions_) {
-    // Check if the command definition has the desired visibility.
-    // If not, then skip it.
-    if (!filter(pair.second.get()))
-      continue;
-
-    std::unique_ptr<base::DictionaryValue> parameters =
-        pair.second->GetParameters()->ToJson(full_schema, true);
-    CHECK(parameters);
-    // Progress and results are not part of public commandDefs.
-
     auto parts = SplitAtFirst(pair.first, ".", true);
     const std::string& package_name = parts.first;
     const std::string& command_name = parts.second;
@@ -213,12 +100,8 @@ std::unique_ptr<base::DictionaryValue> CommandDictionary::GetCommandsAsJson(
       package = new base::DictionaryValue;
       dict->SetWithoutPathExpansion(package_name, package);
     }
-    base::DictionaryValue* command_def = new base::DictionaryValue;
-    command_def->Set(commands::attributes::kCommand_Parameters,
-                     parameters.release());
-    command_def->SetString(commands::attributes::kCommand_Role,
-                           EnumToString(pair.second->GetMinimalRole()));
-    package->SetWithoutPathExpansion(command_name, command_def);
+    package->SetWithoutPathExpansion(command_name,
+                                     pair.second->ToJson().DeepCopy());
   }
   return dict;
 }
