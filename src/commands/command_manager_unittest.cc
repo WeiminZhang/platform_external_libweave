@@ -24,10 +24,12 @@ namespace {
 const char kTestVendorCommands[] = R"({
   "robot": {
     "_jump": {
+      "minimalRole": "user",
       "parameters": {"height": "integer"},
       "results": {}
     },
     "_speak": {
+      "minimalRole": "user",
       "parameters": {"phrase": "string"},
       "results": {}
     }
@@ -37,6 +39,7 @@ const char kTestVendorCommands[] = R"({
 const char kTestTestCommands[] = R"({
   "test": {
     "_yo": {
+      "minimalRole": "user",
       "parameters": {"name": "string"},
       "results": {}
     }
@@ -63,12 +66,14 @@ TEST(CommandManager, LoadCommandsJson) {
   auto json_str = R"({
     "base": {
       "reboot": {
+        "minimalRole": "user",
         "parameters": {"delay": "integer"},
         "results": {}
       }
     },
     "robot": {
       "_jump": {
+        "minimalRole": "user",
         "parameters": {"height": "integer"},
         "results": {}
       }

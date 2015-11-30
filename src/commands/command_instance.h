@@ -21,7 +21,6 @@ class Value;
 
 namespace weave {
 
-class CommandDefinition;
 class CommandDictionary;
 class CommandObserver;
 class CommandQueue;
@@ -45,7 +44,6 @@ class CommandInstance final : public Command {
   // their values specified in |parameters|.
   CommandInstance(const std::string& name,
                   Command::Origin origin,
-                  const CommandDefinition* command_definition,
                   const base::DictionaryValue& parameters);
   ~CommandInstance() override;
 
@@ -65,11 +63,6 @@ class CommandInstance final : public Command {
   bool SetError(const Error* command_error, ErrorPtr* error) override;
   bool Abort(const Error* command_error, ErrorPtr* error) override;
   bool Cancel(ErrorPtr* error) override;
-
-  // Returns command definition.
-  const CommandDefinition* GetCommandDefinition() const {
-    return command_definition_;
-  }
 
   // Parses a command instance JSON definition and constructs a CommandInstance
   // object, checking the JSON |value| against the command definition schema
@@ -100,7 +93,6 @@ class CommandInstance final : public Command {
   void DetachFromQueue() {
     observers_.Clear();
     queue_ = nullptr;
-    command_definition_ = nullptr;
   }
 
  private:
@@ -118,8 +110,6 @@ class CommandInstance final : public Command {
   std::string name_;
   // The origin of the command, either "local" or "cloud".
   Command::Origin origin_ = Command::Origin::kLocal;
-  // Command definition.
-  const CommandDefinition* command_definition_{nullptr};
   // Command parameters and their values.
   base::DictionaryValue parameters_;
   // Current command execution progress.

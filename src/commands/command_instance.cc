@@ -9,7 +9,6 @@
 #include <weave/error.h>
 #include <weave/export.h>
 
-#include "src/commands/command_definition.h"
 #include "src/commands/command_dictionary.h"
 #include "src/commands/command_queue.h"
 #include "src/commands/schema_constants.h"
@@ -65,12 +64,8 @@ LIBWEAVE_EXPORT EnumToStringMap<Command::Origin>::EnumToStringMap()
 
 CommandInstance::CommandInstance(const std::string& name,
                                  Command::Origin origin,
-                                 const CommandDefinition* command_definition,
                                  const base::DictionaryValue& parameters)
-    : name_{name},
-      origin_{origin},
-      command_definition_{command_definition} {
-  CHECK(command_definition_);
+    : name_{name}, origin_{origin} {
   parameters_.MergeDictionary(&parameters);
 }
 
@@ -148,14 +143,12 @@ bool CommandInstance::SetError(const Error* command_error, ErrorPtr* error) {
 namespace {
 
 // Helper method to retrieve command parameters from the command definition
-// object passed in as |json| and corresponding command definition schema
-// specified in |command_def|.
+// object passed in as |json|.
 // On success, returns |true| and the validated parameters and values through
 // |parameters|. Otherwise returns |false| and additional error information in
 // |error|.
 std::unique_ptr<base::DictionaryValue> GetCommandParameters(
     const base::DictionaryValue* json,
-    const CommandDefinition* command_def,
     ErrorPtr* error) {
   // Get the command parameters from 'parameters' property.
   std::unique_ptr<base::DictionaryValue> params;
@@ -221,7 +214,7 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
     return instance;
   }
 
-  auto parameters = GetCommandParameters(json, command_def, error);
+  auto parameters = GetCommandParameters(json, error);
   if (!parameters) {
     Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                        errors::commands::kCommandFailed,
@@ -229,8 +222,7 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
     return instance;
   }
 
-  instance.reset(
-      new CommandInstance{command_name, origin, command_def, *parameters});
+  instance.reset(new CommandInstance{command_name, origin, *parameters});
 
   if (!command_id->empty())
     instance->SetID(*command_id);

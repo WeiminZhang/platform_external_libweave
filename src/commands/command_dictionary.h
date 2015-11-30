@@ -12,22 +12,23 @@
 #include <vector>
 
 #include <base/macros.h>
+#include <base/values.h>
 #include <weave/error.h>
-
-#include "src/commands/command_definition.h"
-
-namespace base {
-class Value;
-class DictionaryValue;
-}  // namespace base
 
 namespace weave {
 
-// CommandDictionary is a wrapper around a map of command name and the
-// corresponding command definition schema. The command name (the key in
-// the map) is a compound name in a form of "package_name.command_name",
-// where "package_name" is a name of command package such as "base", "printers",
-// and others. So the full command name could be "base.reboot", for example.
+enum class UserRole {
+  kViewer,
+  kUser,
+  kManager,
+  kOwner,
+};
+
+// CommandDictionary is a wrapper around a container of command definition
+// schema. The command name is a compound name in a form of
+// "trait_name.command_name", where "trait_name" is a name of command trait such
+// as "base", "onOff", and others. So the full command name could be
+// "base.reboot", for example.
 class CommandDictionary final {
  public:
   CommandDictionary() = default;
@@ -41,24 +42,24 @@ class CommandDictionary final {
                     ErrorPtr* error);
   // Converts all the command definitions to a JSON object for CDD/Device
   // draft.
-  // Returns empty unique_ptr in case of an error and fills in the additional
-  // error details in |error|.
-  std::unique_ptr<base::DictionaryValue> GetCommandsAsJson(
-      ErrorPtr* error) const;
+  const base::DictionaryValue& GetCommandsAsJson() const;
   // Returns the number of command definitions in the dictionary.
-  size_t GetSize() const { return definitions_.size(); }
+  size_t GetSize() const;
   // Checks if the dictionary has no command definitions.
   bool IsEmpty() const { return definitions_.empty(); }
   // Remove all the command definitions from the dictionary.
   void Clear();
   // Finds a definition for the given command.
-  const CommandDefinition* FindCommand(const std::string& command_name) const;
-  CommandDefinition* FindCommand(const std::string& command_name);
+  const base::DictionaryValue* FindCommand(
+      const std::string& command_name) const;
+  // Determines the minimal role for the given command. Returns false if the
+  // command with given name is not found.
+  bool GetMinimalRole(const std::string& command_name,
+                      UserRole* minimal_role,
+                      ErrorPtr* error) const;
 
  private:
-  using CommandMap = std::map<std::string, std::unique_ptr<CommandDefinition>>;
-
-  CommandMap definitions_;  // List of all available command definitions.
+  base::DictionaryValue definitions_;  // List of all available command defs.
   DISALLOW_COPY_AND_ASSIGN(CommandDictionary);
 };
 

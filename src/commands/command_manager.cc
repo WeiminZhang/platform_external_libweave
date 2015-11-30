@@ -63,8 +63,11 @@ bool CommandManager::AddCommand(const base::DictionaryValue& command,
   if (!command_instance)
     return false;
 
-  UserRole minimal_role =
-      command_instance->GetCommandDefinition()->GetMinimalRole();
+  UserRole minimal_role;
+  if (!GetCommandDictionary().GetMinimalRole(command_instance->GetName(),
+                                             &minimal_role, error)) {
+    return false;
+  }
   if (role < minimal_role) {
     Error::AddToPrintf(
         error, FROM_HERE, errors::commands::kDomain, "access_denied",

@@ -4,42 +4,55 @@
 
 #include "src/commands/command_dictionary.h"
 
+#include <algorithm>
+
 #include <base/values.h>
 #include <weave/enum_to_string.h>
 
-#include "src/commands/command_definition.h"
 #include "src/commands/schema_constants.h"
 #include "src/string_utils.h"
 
 namespace weave {
 
+namespace {
+const EnumToStringMap<UserRole>::Map kMap[] = {
+    {UserRole::kViewer, commands::attributes::kCommand_Role_Viewer},
+    {UserRole::kUser, commands::attributes::kCommand_Role_User},
+    {UserRole::kOwner, commands::attributes::kCommand_Role_Owner},
+    {UserRole::kManager, commands::attributes::kCommand_Role_Manager},
+};
+}  // anonymous namespace
+
+template <>
+LIBWEAVE_EXPORT EnumToStringMap<UserRole>::EnumToStringMap()
+    : EnumToStringMap(kMap) {}
+
 bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
                                      ErrorPtr* error) {
-  CommandMap new_defs;
-
   // |json| contains a list of nested objects with the following structure:
   // {"<pkg_name>": {"<cmd_name>": {"parameters": {object_schema}}, ...}, ...}
-  // Iterate over packages
-  base::DictionaryValue::Iterator package_iter(json);
-  while (!package_iter.IsAtEnd()) {
-    std::string package_name = package_iter.key();
-    const base::DictionaryValue* package_value = nullptr;
-    if (!package_iter.value().GetAsDictionary(&package_value)) {
+  // Iterate over traits
+  base::DictionaryValue::Iterator trait_iter(json);
+  for (base::DictionaryValue::Iterator trait_iter(json);
+       !trait_iter.IsAtEnd(); trait_iter.Advance()) {
+    std::string trait_name = trait_iter.key();
+    const base::DictionaryValue* trait_def = nullptr;
+    if (!trait_iter.value().GetAsDictionary(&trait_def)) {
       Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                          errors::commands::kTypeMismatch,
-                         "Expecting an object for package '%s'",
-                         package_name.c_str());
+                         "Expecting an object for trait '%s'",
+                         trait_name.c_str());
       return false;
     }
-    // Iterate over command definitions within the current package.
-    base::DictionaryValue::Iterator command_iter(*package_value);
-    while (!command_iter.IsAtEnd()) {
+    // Iterate over command definitions within the current trait.
+    for (base::DictionaryValue::Iterator command_iter(*trait_def);
+         !command_iter.IsAtEnd(); command_iter.Advance()) {
       std::string command_name = command_iter.key();
       if (command_name.empty()) {
         Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                            errors::commands::kInvalidCommandName,
-                           "Unnamed command encountered in package '%s'",
-                           package_name.c_str());
+                           "Unnamed command encountered in trait '%s'",
+                           trait_name.c_str());
         return false;
       }
       const base::DictionaryValue* command_def_json = nullptr;
@@ -50,77 +63,89 @@ bool CommandDictionary::LoadCommands(const base::DictionaryValue& json,
                            command_name.c_str());
         return false;
       }
-      // Construct the compound command name as "pkg_name.cmd_name".
-      std::string full_command_name = Join(".", package_name, command_name);
 
-      auto command_def = CommandDefinition::FromJson(*command_def_json, error);
-      if (!command_def) {
+      // Construct the compound command name as "trait_name.cmd_name".
+      std::string full_command_name = Join(".", trait_name, command_name);
+
+      // Validate the 'minimalRole' value if present. That's the only thing we
+      // care about so far.
+      std::string value;
+      if (!command_def_json->GetString(commands::attributes::kCommand_Role,
+                                       &value)) {
         Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                            errors::commands::kInvalidMinimalRole,
-                           "Error parsing command '%s'",
+                           "Missing '%s' attribute for command '%s'",
+                           commands::attributes::kCommand_Role,
                            full_command_name.c_str());
         return false;
       }
-
-      new_defs.insert(
-          std::make_pair(full_command_name, std::move(command_def)));
-      command_iter.Advance();
+      UserRole minimal_role;
+      if (!StringToEnum(value, &minimal_role)) {
+        Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                           errors::commands::kInvalidMinimalRole,
+                           "Invalid role '%s' for command '%s'", value.c_str(),
+                           full_command_name.c_str());
+        return false;
+      }
+      // Check if we already have this command defined.
+      CHECK(!definitions_.Get(full_command_name, nullptr))
+          << "Definition for command '" << full_command_name
+          << "' overrides an earlier definition";
+      definitions_.Set(full_command_name, command_def_json->DeepCopy());
     }
-    package_iter.Advance();
   }
-
-  // Verify that newly loaded command definitions do not override existing
-  // definitions in another category. This is unlikely, but we don't want to let
-  // one vendor daemon to define the same commands already handled by another
-  // daemon on the same device.
-  for (const auto& pair : new_defs) {
-    auto iter = definitions_.find(pair.first);
-    CHECK(iter == definitions_.end()) << "Definition for command '"
-                                      << pair.first
-                                      << "' overrides an earlier definition";
-  }
-
-  // Insert new definitions into the global map.
-  for (auto& pair : new_defs)
-    definitions_.insert(std::make_pair(pair.first, std::move(pair.second)));
   return true;
 }
 
-std::unique_ptr<base::DictionaryValue> CommandDictionary::GetCommandsAsJson(
-    ErrorPtr* error) const {
-  std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
-  for (const auto& pair : definitions_) {
-    auto parts = SplitAtFirst(pair.first, ".", true);
-    const std::string& package_name = parts.first;
-    const std::string& command_name = parts.second;
+const base::DictionaryValue& CommandDictionary::GetCommandsAsJson() const {
+  return definitions_;
+}
 
-    base::DictionaryValue* package = nullptr;
-    if (!dict->GetDictionaryWithoutPathExpansion(package_name, &package)) {
-      // If this is the first time we encounter this package, create a JSON
-      // object for it.
-      package = new base::DictionaryValue;
-      dict->SetWithoutPathExpansion(package_name, package);
-    }
-    package->SetWithoutPathExpansion(command_name,
-                                     pair.second->ToJson().DeepCopy());
+size_t CommandDictionary::GetSize() const {
+  size_t size = 0;
+  base::DictionaryValue::Iterator trait_iter(definitions_);
+  while (!trait_iter.IsAtEnd()) {
+    std::string trait_name = trait_iter.key();
+    const base::DictionaryValue* trait_def = nullptr;
+    CHECK(trait_iter.value().GetAsDictionary(&trait_def));
+    size += trait_def->size();
+    trait_iter.Advance();
   }
-  return dict;
+  return size;
 }
 
-const CommandDefinition* CommandDictionary::FindCommand(
+const base::DictionaryValue* CommandDictionary::FindCommand(
     const std::string& command_name) const {
-  auto pair = definitions_.find(command_name);
-  return (pair != definitions_.end()) ? pair->second.get() : nullptr;
-}
-
-CommandDefinition* CommandDictionary::FindCommand(
-    const std::string& command_name) {
-  auto pair = definitions_.find(command_name);
-  return (pair != definitions_.end()) ? pair->second.get() : nullptr;
+  const base::DictionaryValue* definition = nullptr;
+  // Make sure the |command_name| came in form of trait_name.command_name.
+  // For this, we just verify it has a single period in its name.
+  if (std::count(command_name.begin(), command_name.end(), '.') != 1)
+    return definition;
+  definitions_.GetDictionary(command_name, &definition);
+  return definition;
 }
 
 void CommandDictionary::Clear() {
-  definitions_.clear();
+  definitions_.Clear();
+}
+
+bool CommandDictionary::GetMinimalRole(const std::string& command_name,
+                                       UserRole* minimal_role,
+                                       ErrorPtr* error) const {
+  const base::DictionaryValue* command_def = FindCommand(command_name);
+  if (!command_def) {
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                        errors::commands::kInvalidCommandName,
+                        "Command definition for '%s' not found",
+                        command_name.c_str());
+    return false;
+  }
+  std::string value;
+  // The JSON definition has been pre-validated already in LoadCommands, so
+  // just using CHECKs here.
+  CHECK(command_def->GetString(commands::attributes::kCommand_Role, &value));
+  CHECK(StringToEnum(value, minimal_role));
+  return true;
 }
 
 }  // namespace weave

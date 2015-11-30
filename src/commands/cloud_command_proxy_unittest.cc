@@ -80,6 +80,7 @@ class CloudCommandProxyTest : public ::testing::Test {
     auto json = CreateDictionaryValue(R"({
       'calc': {
         'add': {
+          'minimalRole': 'user',
           'parameters': {
             'value1': 'integer',
             'value2': 'integer'

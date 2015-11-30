@@ -22,6 +22,7 @@ TEST(CommandDictionary, LoadCommands) {
   auto json = CreateDictionaryValue(R"({
     'robot': {
       'jump': {
+        'minimalRole': 'manager',
         'parameters': {
           'height': 'integer',
           '_jumpType': ['_withAirFlip', '_withSpin', '_withKick']
@@ -40,9 +41,11 @@ TEST(CommandDictionary, LoadCommands) {
   json = CreateDictionaryValue(R"({
     'base': {
       'reboot': {
+        'minimalRole': 'owner',
         'parameters': {'delay': 'integer'}
       },
       'shutdown': {
+        'minimalRole': 'user'
       }
     }
   })");
@@ -75,80 +78,65 @@ TEST(CommandDictionary, LoadCommands_Failures) {
   EXPECT_FALSE(dict.LoadCommands(*json, &error));
   EXPECT_EQ("invalid_command_name", error->GetCode());
   error.reset();
+
+  // No 'minimalRole'.
+  json = CreateDictionaryValue(R"({
+    'base': {
+      'reboot': {
+        'parameters': {'delay': 'integer'}
+      }
+    }
+  })");
+  EXPECT_FALSE(dict.LoadCommands(*json, &error));
+  EXPECT_EQ("invalid_minimal_role", error->GetCode());
+  error.reset();
+
+  // Invalid 'minimalRole'.
+  json = CreateDictionaryValue(R"({
+    'base': {
+      'reboot': {
+        'minimalRole': 'foo',
+        'parameters': {'delay': 'integer'}
+      }
+    }
+  })");
+  EXPECT_FALSE(dict.LoadCommands(*json, &error));
+  EXPECT_EQ("invalid_minimal_role", error->GetCode());
+  error.reset();
 }
 
 TEST(CommandDictionaryDeathTest, LoadCommands_Redefine) {
   // Redefine commands.
   CommandDictionary dict;
   ErrorPtr error;
-  auto json = CreateDictionaryValue("{'robot':{'jump':{}}}");
+  auto json =
+      CreateDictionaryValue("{'robot':{'jump':{'minimalRole': 'viewer'}}}");
   dict.LoadCommands(*json, nullptr);
   ASSERT_DEATH(dict.LoadCommands(*json, &error),
                ".*Definition for command 'robot.jump' overrides an "
                "earlier definition");
 }
 
-TEST(CommandDictionary, GetCommandsAsJson) {
-  auto json = CreateDictionaryValue(R"({
-    'base': {
-      'reboot': {
-        'parameters': {'delay': {'minimum': 10}},
-        'results': {}
-      }
-    },
-    'robot': {
-      '_jump': {
-        'parameters': {'_height': 'integer'},
-        'minimalRole': 'user'
-      }
-    }
-  })");
-  CommandDictionary dict;
-  dict.LoadCommands(*json, nullptr);
-
-  json = dict.GetCommandsAsJson(nullptr);
-  ASSERT_NE(nullptr, json.get());
-  auto expected = R"({
-    'base': {
-      'reboot': {
-        'parameters': {'delay': {'minimum': 10}},
-        'results': {}
-      }
-    },
-    'robot': {
-      '_jump': {
-        'parameters': {'_height': 'integer'},
-        'minimalRole': 'user'
-      }
-    }
-  })";
-  EXPECT_JSON_EQ(expected, *json);
-}
-
-TEST(CommandDictionary, LoadWithPermissions) {
+TEST(CommandDictionary, GetMinimalRole) {
   CommandDictionary base_dict;
   auto json = CreateDictionaryValue(R"({
     'base': {
       'command1': {
-        'parameters': {},
-        'results': {}
-      },
-      'command2': {
         'minimalRole': 'viewer',
         'parameters': {},
         'results': {}
       },
-      'command3': {
+      'command2': {
         'minimalRole': 'user',
         'parameters': {},
         'results': {}
       },
-      'command4': {
+      'command3': {
         'minimalRole': 'manager',
         'parameters': {},
         'results': {}
       },
-      'command5': {
+      'command4': {
         'minimalRole': 'owner',
         'parameters': {},
         'results': {}
@@ -156,26 +144,16 @@ TEST(CommandDictionary, LoadWithPermissions) {
     }
   })");
   EXPECT_TRUE(base_dict.LoadCommands(*json, nullptr));
-
-  auto cmd = base_dict.FindCommand("base.command1");
-  ASSERT_NE(nullptr, cmd);
-  EXPECT_EQ(UserRole::kUser, cmd->GetMinimalRole());
-
-  cmd = base_dict.FindCommand("base.command2");
-  ASSERT_NE(nullptr, cmd);
-  EXPECT_EQ(UserRole::kViewer, cmd->GetMinimalRole());
-
-  cmd = base_dict.FindCommand("base.command3");
-  ASSERT_NE(nullptr, cmd);
-  EXPECT_EQ(UserRole::kUser, cmd->GetMinimalRole());
-
-  cmd = base_dict.FindCommand("base.command4");
-  ASSERT_NE(nullptr, cmd);
-  EXPECT_EQ(UserRole::kManager, cmd->GetMinimalRole());
-
-  cmd = base_dict.FindCommand("base.command5");
-  ASSERT_NE(nullptr, cmd);
-  EXPECT_EQ(UserRole::kOwner, cmd->GetMinimalRole());
+  UserRole role;
+  EXPECT_TRUE(base_dict.GetMinimalRole("base.command1", &role, nullptr));
+  EXPECT_EQ(UserRole::kViewer, role);
+  EXPECT_TRUE(base_dict.GetMinimalRole("base.command2", &role, nullptr));
+  EXPECT_EQ(UserRole::kUser, role);
+  EXPECT_TRUE(base_dict.GetMinimalRole("base.command3", &role, nullptr));
+  EXPECT_EQ(UserRole::kManager, role);
+  EXPECT_TRUE(base_dict.GetMinimalRole("base.command4", &role, nullptr));
+  EXPECT_EQ(UserRole::kOwner, role);
+  EXPECT_FALSE(base_dict.GetMinimalRole("base.command5", &role, nullptr));
 }
 
 }  // namespace weave

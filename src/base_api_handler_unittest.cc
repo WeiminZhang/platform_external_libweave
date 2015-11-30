@@ -107,8 +107,8 @@ class BaseApiHandlerTest : public ::testing::Test {
 };
 
 TEST_F(BaseApiHandlerTest, Initialization) {
-  auto command_defs =
-      command_manager_->GetCommandDictionary().GetCommandsAsJson(nullptr);
+  const auto& command_defs =
+      command_manager_->GetCommandDictionary().GetCommandsAsJson();
 
   auto expected = R"({
     "base": {
@@ -143,7 +143,7 @@ TEST_F(BaseApiHandlerTest, Initialization) {
       }
     }
   })";
-  EXPECT_JSON_EQ(expected, *command_defs);
+  EXPECT_JSON_EQ(expected, command_defs);
 }
 
 TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {

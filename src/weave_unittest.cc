@@ -47,8 +47,11 @@ using test::ValueToString;
 
 const char kCommandDefs[] = R"({
   "base": {
-    "reboot": {},
+    "reboot": {
+      "minimalRole": "user"
+    },
     "_shutdown": {
+      "minimalRole": "user",
       "parameters": {},
       "results": {}
     }

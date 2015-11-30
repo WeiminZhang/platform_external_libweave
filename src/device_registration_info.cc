@@ -21,7 +21,6 @@
 
 #include "src/bind_lambda.h"
 #include "src/commands/cloud_command_proxy.h"
-#include "src/commands/command_definition.h"
 #include "src/commands/command_manager.h"
 #include "src/commands/schema_constants.h"
 #include "src/data_encoding.h"
@@ -480,10 +479,8 @@ void DeviceRegistrationInfo::AddGcdStateChangedCallback(
 std::unique_ptr<base::DictionaryValue>
 DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
   // Limit only to commands that are visible to the cloud.
-  auto commands =
-      command_manager_->GetCommandDictionary().GetCommandsAsJson(error);
-  if (!commands)
-    return nullptr;
+  const base::DictionaryValue& commands =
+      command_manager_->GetCommandDictionary().GetCommandsAsJson();
 
   const base::DictionaryValue& state = state_manager_->GetState();
 
@@ -505,7 +502,7 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
     channel->SetString("supportedType", "pull");
   }
   resource->Set("channel", channel.release());
-  resource->Set("commandDefs", commands.release());
+  resource->Set("commandDefs", commands.DeepCopy());
   resource->Set("state", state.DeepCopy());
 
   return resource;

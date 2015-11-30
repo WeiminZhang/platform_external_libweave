@@ -22,12 +22,14 @@ class CommandInstanceTest : public ::testing::Test {
     auto json = CreateDictionaryValue(R"({
       'base': {
         'reboot': {
+          'minimalRole': 'user',
           'parameters': {},
           'results': {}
         }
       },
       'robot': {
         'jump': {
+          'minimalRole': 'user',
           'parameters': {
             'height': {
               'type': 'integer',
@@ -43,6 +45,7 @@ class CommandInstanceTest : public ::testing::Test {
           'results': {'testResult': 'integer'}
         },
         'speak': {
+          'minimalRole': 'user',
           'parameters': {
             'phrase': {
               'type': 'string',
@@ -72,8 +75,7 @@ TEST_F(CommandInstanceTest, Test) {
     'phrase': 'iPityDaFool',
     'volume': 5
   })");
-  CommandInstance instance{"robot.speak", Command::Origin::kCloud,
-                           dict_.FindCommand("robot.speak"), *params};
+  CommandInstance instance{"robot.speak", Command::Origin::kCloud, *params};
 
   EXPECT_TRUE(
       instance.Complete(*CreateDictionaryValue("{'foo': 239}"), nullptr));
@@ -85,18 +87,12 @@ TEST_F(CommandInstanceTest, Test) {
                  instance.GetParameters());
   EXPECT_JSON_EQ("{'foo': 239}", instance.GetResults());
 
-  CommandInstance instance2{"base.reboot",
-                            Command::Origin::kLocal,
-                            dict_.FindCommand("base.reboot"),
-                            {}};
+  CommandInstance instance2{"base.reboot", Command::Origin::kLocal, {}};
   EXPECT_EQ(Command::Origin::kLocal, instance2.GetOrigin());
 }
 
 TEST_F(CommandInstanceTest, SetID) {
-  CommandInstance instance{"base.reboot",
-                           Command::Origin::kLocal,
-                           dict_.FindCommand("base.reboot"),
-                           {}};
+  CommandInstance instance{"base.reboot", Command::Origin::kLocal, {}};
   instance.SetID("command_id");
   EXPECT_EQ("command_id", instance.GetID());
 }
