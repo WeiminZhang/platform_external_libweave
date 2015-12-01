@@ -58,6 +58,8 @@ class StatePackage final {
   // Returns the name of the this package.
   const std::string& GetName() const { return name_; }
 
+  const base::DictionaryValue& types() const { return types_; }
+
  private:
   std::string name_;
   base::DictionaryValue types_;

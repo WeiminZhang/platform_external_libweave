@@ -14,6 +14,7 @@
 #include <base/json/json_reader.h>
 #include <base/json/json_writer.h>
 #include <base/strings/string_number_conversions.h>
+#include <base/strings/stringprintf.h>
 #include <base/values.h>
 #include <weave/provider/http_client.h>
 #include <weave/provider/network.h>
@@ -505,6 +506,31 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
   resource->Set("commandDefs", commands.DeepCopy());
   resource->Set("state", state.DeepCopy());
 
+  // TODO(avakulenko): Temporary code to generate a single top-level component
+  // using the new component-trait model. This is to unblock clients to start
+  // implementation on their side.
+  base::DictionaryValue traits;
+  base::DictionaryValue component;
+  std::set<std::string> all_traits;
+  for (const auto& pair : state_manager_->packages()) {
+    all_traits.insert(pair.first);
+    std::string key = base::StringPrintf("%s.state", pair.first.c_str());
+    traits.Set(key, pair.second->types().DeepCopy());
+    key = base::StringPrintf("state.%s", pair.first.c_str());
+    component.Set(key, pair.second->GetValuesAsJson().DeepCopy());
+  }
+  for (base::DictionaryValue::Iterator it(commands); !it.IsAtEnd();
+       it.Advance()) {
+    all_traits.insert(it.key());
+    std::string key = base::StringPrintf("%s.commands", it.key().c_str());
+    traits.Set(key, it.value().DeepCopy());
+  }
+  resource->Set("traits", traits.DeepCopy());
+  base::ListValue* trait_list = new base::ListValue();
+  for (const std::string& trait : all_traits)
+    trait_list->AppendString(trait);
+  component.Set("traits", trait_list);
+  resource->Set("components.device", component.DeepCopy());
   return resource;
 }
 

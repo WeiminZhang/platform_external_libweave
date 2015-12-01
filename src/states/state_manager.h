@@ -58,6 +58,10 @@ class StateManager final {
     return state_change_queue_;
   }
 
+  const std::map<std::string, std::unique_ptr<StatePackage>>& packages() const {
+    return packages_;
+  }
+
  private:
   friend class BaseApiHandlerTest;
   friend class StateManagerTest;
