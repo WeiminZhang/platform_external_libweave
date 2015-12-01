@@ -27,6 +27,7 @@
       'include',
       'third_party/chromium',
       'third_party/include',
+      'third_party/libuweave',
       'third_party/modp_b64/modp_b64',
     ],
     'cflags!': ['-fPIE'],
@@ -34,7 +35,6 @@
       '-fno-exceptions',
       '-fPIC',
       '-fvisibility=hidden',
-      '-std=c++11',
       '-Wall',
       '-Werror',
       '-Wextra',
@@ -47,6 +47,12 @@
       '-Wpacked',
       '-Wpointer-arith',
       '-Wwrite-strings',
+    ],
+    'cflags_cc': [
+      '-std=c++11',
+    ],
+    'cflags_c': [
+      '-std=c99',
     ],
     'libraries': [
       # 'library_dirs' does not work as expected with make files

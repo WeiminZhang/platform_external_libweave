@@ -45,6 +45,12 @@
       'third_party/chromium/crypto/p224.cc',
       'third_party/chromium/crypto/p224_spake.cc',
       'third_party/chromium/crypto/sha2.cc',
+      'third_party/libuweave/src/crypto_hmac.c',
+      'third_party/libuweave/src/crypto_utils.c',
+      'third_party/libuweave/src/macaroon.c',
+      'third_party/libuweave/src/macaroon_caveat.c',
+      'third_party/libuweave/src/macaroon_context.c',
+      'third_party/libuweave/src/macaroon_encoding.c',
       'third_party/modp_b64/modp_b64.cc',
     ],
     'weave_test_sources': [
