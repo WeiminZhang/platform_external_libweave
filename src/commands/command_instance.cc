@@ -35,13 +35,6 @@ const EnumToStringMap<Command::Origin>::Map kMapOrigin[] = {
     {Command::Origin::kCloud, "cloud"},
 };
 
-bool ReportDestroyedError(ErrorPtr* error) {
-  Error::AddTo(error, FROM_HERE, errors::commands::kDomain,
-               errors::commands::kCommandDestroyed,
-               "Command has been destroyed");
-  return false;
-}
-
 bool ReportInvalidStateTransition(ErrorPtr* error,
                                   Command::State from,
                                   Command::State to) {
