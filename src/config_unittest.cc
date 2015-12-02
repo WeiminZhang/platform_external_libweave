@@ -12,6 +12,8 @@
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/test/unittest_utils.h>
 
+#include "src/data_encoding.h"
+
 using testing::_;
 using testing::Invoke;
 using testing::Return;
@@ -74,7 +76,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().refresh_token);
   EXPECT_EQ("", GetSettings().robot_account);
   EXPECT_EQ("", GetSettings().last_configured_ssid);
-  EXPECT_EQ("", GetSettings().secret);
+  EXPECT_EQ(std::vector<uint8_t>(), GetSettings().secret);
 }
 
 TEST_F(ConfigTest, LoadStateV0) {
@@ -121,7 +123,7 @@ TEST_F(ConfigTest, LoadState) {
     "oauth_url": "state_oauth_url",
     "refresh_token": "state_refresh_token",
     "robot_account": "state_robot_account",
-    "secret": "state_secret",
+    "secret": "c3RhdGVfc2VjcmV0",
     "service_url": "state_service_url"
   })";
   EXPECT_CALL(config_store_, LoadSettings()).WillOnce(Return(state));
@@ -156,7 +158,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ("state_refresh_token", GetSettings().refresh_token);
   EXPECT_EQ("state_robot_account", GetSettings().robot_account);
   EXPECT_EQ("state_last_configured_ssid", GetSettings().last_configured_ssid);
-  EXPECT_EQ("state_secret", GetSettings().secret);
+  EXPECT_EQ("c3RhdGVfc2VjcmV0", Base64Encode(GetSettings().secret));
 }
 
 TEST_F(ConfigTest, Setters) {
@@ -222,8 +224,9 @@ TEST_F(ConfigTest, Setters) {
   change.set_last_configured_ssid("set_last_configured_ssid");
   EXPECT_EQ("set_last_configured_ssid", GetSettings().last_configured_ssid);
 
-  change.set_secret("set_secret");
-  EXPECT_EQ("set_secret", GetSettings().secret);
+  const std::vector<uint8_t> secret{1, 2, 3, 4, 5};
+  change.set_secret(secret);
+  EXPECT_EQ(secret, GetSettings().secret);
 
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
 
@@ -246,7 +249,7 @@ TEST_F(ConfigTest, Setters) {
           'oauth_url': 'set_oauth_url',
           'refresh_token': 'set_token',
           'robot_account': 'set_account',
-          'secret': 'set_secret',
+          'secret': 'AQIDBAU=',
           'service_url': 'set_service_url'
         })";
         EXPECT_JSON_EQ(expected, *test::CreateValue(json));

@@ -86,6 +86,7 @@ class Manager : public CloudDelegate::Observer {
   provider::TaskRunner* task_runner_{nullptr};
   std::unique_ptr<CloudDelegate> cloud_;
   std::unique_ptr<DeviceDelegate> device_;
+  std::unique_ptr<AuthManager> auth_;
   std::unique_ptr<SecurityManager> security_;
   std::unique_ptr<WifiBootstrapManager> wifi_bootstrap_manager_;
   std::unique_ptr<Publisher> publisher_;

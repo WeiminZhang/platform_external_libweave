@@ -20,6 +20,7 @@
 #include "src/bind_lambda.h"
 #include "src/device_registration_info.h"
 #include "src/http_constants.h"
+#include "src/privet/auth_manager.h"
 #include "src/privet/cloud_delegate.h"
 #include "src/privet/constants.h"
 #include "src/privet/device_delegate.h"
@@ -56,11 +57,12 @@ void Manager::Start(Network* network,
   cloud_ = CloudDelegate::CreateDefault(task_runner_, device, command_manager,
                                         state_manager);
   cloud_observer_.Add(cloud_.get());
+
+  auth_.reset(new AuthManager(device->GetSettings().secret,
+                              http_server->GetHttpsCertificateFingerprint()));
   security_.reset(new SecurityManager(
-      device->GetSettings().secret, device->GetSettings().pairing_modes,
+      auth_.get(), device->GetSettings().pairing_modes,
       device->GetSettings().embedded_code, disable_security_, task_runner_));
-  security_->SetCertificateFingerprint(
-      http_server->GetHttpsCertificateFingerprint());
   if (device->GetSettings().secret.empty()) {
     // TODO(vitalybuka): Post all Config::Transaction to avoid following.
     task_runner_->PostDelayedTask(
@@ -174,7 +176,7 @@ void Manager::OnConnectivityChanged() {
 
 void Manager::SaveDeviceSecret(Config* config) {
   Config::Transaction transaction(config);
-  transaction.set_secret(security_->GetSecret());
+  transaction.set_secret(auth_->GetSecret());
 }
 
 }  // namespace privet

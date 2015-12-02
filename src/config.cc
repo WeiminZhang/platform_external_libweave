@@ -15,6 +15,7 @@
 #include <base/values.h>
 #include <weave/enum_to_string.h>
 
+#include "src/data_encoding.h"
 #include "src/privet/privet_types.h"
 #include "src/string_utils.h"
 
@@ -207,8 +208,9 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kLastConfiguredSsid, &tmp))
     set_last_configured_ssid(tmp);
 
-  if (dict->GetString(config_keys::kSecret, &tmp))
-    set_secret(tmp);
+  std::vector<uint8_t> secret;
+  if (dict->GetString(config_keys::kSecret, &tmp) && Base64Decode(tmp, &secret))
+    set_secret(secret);
 }
 
 void Config::Save() {
@@ -229,7 +231,7 @@ void Config::Save() {
   dict.SetString(config_keys::kRobotAccount, settings_.robot_account);
   dict.SetString(config_keys::kLastConfiguredSsid,
                  settings_.last_configured_ssid);
-  dict.SetString(config_keys::kSecret, settings_.secret);
+  dict.SetString(config_keys::kSecret, Base64Encode(settings_.secret));
   dict.SetString(config_keys::kName, settings_.name);
   dict.SetString(config_keys::kDescription, settings_.description);
   dict.SetString(config_keys::kLocation, settings_.location);

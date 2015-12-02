@@ -28,7 +28,7 @@ class Config final {
     std::string refresh_token;
     std::string robot_account;
     std::string last_configured_ssid;
-    std::string secret;
+    std::vector<uint8_t> secret;
   };
 
   using OnChangedCallback = base::Callback<void(const weave::Settings&)>;
@@ -89,7 +89,9 @@ class Config final {
     void set_last_configured_ssid(const std::string& ssid) {
       settings_->last_configured_ssid = ssid;
     }
-    void set_secret(const std::string& secret) { settings_->secret = secret; }
+    void set_secret(const std::vector<uint8_t>& secret) {
+      settings_->secret = secret;
+    }
 
     void Commit();
 
