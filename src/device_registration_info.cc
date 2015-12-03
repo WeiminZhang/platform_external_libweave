@@ -1103,8 +1103,7 @@ void DeviceRegistrationInfo::PublishCommand(
   std::string command_id;
   ErrorPtr error;
   auto command_instance = CommandInstance::FromJson(
-      &command, Command::Origin::kCloud,
-      command_manager_->GetCommandDictionary(), &command_id, &error);
+      &command, Command::Origin::kCloud, &command_id, &error);
   if (!command_instance) {
     LOG(WARNING) << "Failed to parse a command instance: " << command;
     if (!command_id.empty())

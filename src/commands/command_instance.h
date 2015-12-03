@@ -50,6 +50,7 @@ class CommandInstance final : public Command {
   // Command overrides.
   const std::string& GetID() const override;
   const std::string& GetName() const override;
+  const std::string& GetComponent() const override;
   Command::State GetState() const override;
   Command::Origin GetOrigin() const override;
   const base::DictionaryValue& GetParameters() const override;
@@ -65,9 +66,8 @@ class CommandInstance final : public Command {
   bool Cancel(ErrorPtr* error) override;
 
   // Parses a command instance JSON definition and constructs a CommandInstance
-  // object, checking the JSON |value| against the command definition schema
-  // found in command |dictionary|. On error, returns null unique_ptr and
-  // fills in error details in |error|.
+  // object.
+  // On error, returns null unique_ptr and fills in error details in |error|.
   // |command_id| is the ID of the command returned, as parsed from the |value|.
   // The command ID extracted (if present in the JSON object) even if other
   // parsing/validation error occurs and command instance is not constructed.
@@ -75,7 +75,6 @@ class CommandInstance final : public Command {
   static std::unique_ptr<CommandInstance> FromJson(
       const base::Value* value,
       Command::Origin origin,
-      const CommandDictionary& dictionary,
       std::string* command_id,
       ErrorPtr* error);
 
@@ -84,6 +83,7 @@ class CommandInstance final : public Command {
   // Sets the command ID (normally done by CommandQueue when the command
   // instance is added to it).
   void SetID(const std::string& id) { id_ = id; }
+  void SetComponent(const std::string& component) { component_ = component; }
 
   void AddObserver(Observer* observer);
   void RemoveObserver(Observer* observer);
@@ -106,8 +106,10 @@ class CommandInstance final : public Command {
 
   // Unique command ID within a command queue.
   std::string id_;
-  // Full command name as "<package_name>.<command_name>".
+  // Full command name as "<trait_name>.<command_name>".
   std::string name_;
+  // Full path to the component this command is intended for.
+  std::string component_;
   // The origin of the command, either "local" or "cloud".
   Command::Origin origin_ = Command::Origin::kLocal;
   // Command parameters and their values.

@@ -76,28 +76,6 @@ class CloudCommandProxyTest : public ::testing::Test {
     EXPECT_CALL(state_change_queue_, GetLastStateChangeId())
         .WillRepeatedly(testing::ReturnPointee(&current_state_update_id_));
 
-    // Set up the command schema.
-    auto json = CreateDictionaryValue(R"({
-      'calc': {
-        'add': {
-          'minimalRole': 'user',
-          'parameters': {
-            'value1': 'integer',
-            'value2': 'integer'
-          },
-          'progress': {
-            'status' : 'string'
-          },
-          'results': {
-            'sum' : 'integer'
-          }
-        }
-      }
-    })");
-    CHECK(json.get());
-    CHECK(command_dictionary_.LoadCommands(*json, nullptr))
-        << "Failed to parse test command dictionary";
-
     CreateCommandInstance();
   }
 
@@ -112,9 +90,8 @@ class CloudCommandProxyTest : public ::testing::Test {
     })");
     CHECK(command_json.get());
 
-    command_instance_ =
-        CommandInstance::FromJson(command_json.get(), Command::Origin::kCloud,
-                                  command_dictionary_, nullptr, nullptr);
+    command_instance_ = CommandInstance::FromJson(
+        command_json.get(), Command::Origin::kCloud, nullptr, nullptr);
     CHECK(command_instance_.get());
 
     // Backoff - start at 1s and double with each backoff attempt and no jitter.
@@ -139,7 +116,6 @@ class CloudCommandProxyTest : public ::testing::Test {
   testing::StrictMock<MockStateChangeQueueInterface> state_change_queue_;
   testing::StrictMock<provider::test::FakeTaskRunner> task_runner_;
   std::queue<base::Closure> task_queue_;
-  CommandDictionary command_dictionary_;
   std::unique_ptr<CommandInstance> command_instance_;
 };
 

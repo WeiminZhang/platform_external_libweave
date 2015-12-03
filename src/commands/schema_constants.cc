@@ -26,6 +26,7 @@ namespace attributes {
 
 const char kCommand_Id[] = "id";
 const char kCommand_Name[] = "name";
+const char kCommand_Component[] = "component";
 const char kCommand_Parameters[] = "parameters";
 const char kCommand_Progress[] = "progress";
 const char kCommand_Results[] = "results";

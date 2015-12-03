@@ -74,6 +74,10 @@ const std::string& CommandInstance::GetName() const {
   return name_;
 }
 
+const std::string& CommandInstance::GetComponent() const {
+  return component_;
+}
+
 Command::State CommandInstance::GetState() const {
   return state_;
 }
@@ -169,7 +173,6 @@ std::unique_ptr<base::DictionaryValue> GetCommandParameters(
 std::unique_ptr<CommandInstance> CommandInstance::FromJson(
     const base::Value* value,
     Command::Origin origin,
-    const CommandDictionary& dictionary,
     std::string* command_id,
     ErrorPtr* error) {
   std::unique_ptr<CommandInstance> instance;
@@ -198,14 +201,6 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
                  errors::commands::kPropertyMissing, "Command name is missing");
     return instance;
   }
-  // Make sure we know how to handle the command with this name.
-  auto command_def = dictionary.FindCommand(command_name);
-  if (!command_def) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                       errors::commands::kInvalidCommandName,
-                       "Unknown command received: %s", command_name.c_str());
-    return instance;
-  }
 
   auto parameters = GetCommandParameters(json, error);
   if (!parameters) {
@@ -219,6 +214,11 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
 
   if (!command_id->empty())
     instance->SetID(*command_id);
+
+  // Get the component name this command is for.
+  std::string component;
+  if (json->GetString(commands::attributes::kCommand_Component, &component))
+    instance->SetComponent(component);
 
   return instance;
 }

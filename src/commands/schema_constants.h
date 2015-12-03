@@ -29,6 +29,7 @@ namespace attributes {
 // Command description JSON schema attributes.
 extern const char kCommand_Id[];
 extern const char kCommand_Name[];
+extern const char kCommand_Component[];
 extern const char kCommand_Parameters[];
 extern const char kCommand_Progress[];
 extern const char kCommand_Results[];

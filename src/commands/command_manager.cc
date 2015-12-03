@@ -57,9 +57,8 @@ bool CommandManager::AddCommand(const base::DictionaryValue& command,
                                 UserRole role,
                                 std::string* id,
                                 ErrorPtr* error) {
-  auto command_instance =
-      CommandInstance::FromJson(&command, Command::Origin::kLocal,
-                                GetCommandDictionary(), nullptr, error);
+  auto command_instance = CommandInstance::FromJson(
+      &command, Command::Origin::kLocal, nullptr, error);
   if (!command_instance)
     return false;
 
@@ -76,6 +75,7 @@ bool CommandManager::AddCommand(const base::DictionaryValue& command,
     return false;
   }
 
+  command_instance->SetComponent("device");
   *id = std::to_string(++next_command_id_);
   command_instance->SetID(*id);
   AddCommand(std::move(command_instance));
@@ -101,7 +101,7 @@ void CommandManager::AddCommandHandler(
     const Device::CommandHandlerCallback& callback) {
   CHECK(command_name.empty() || dictionary_.FindCommand(command_name))
       << "Command undefined: " << command_name;
-  command_queue_.AddCommandHandler(command_name, callback);
+  command_queue_.AddCommandHandler("device", command_name, callback);
 }
 
 }  // namespace weave

@@ -14,63 +14,7 @@ namespace weave {
 using test::CreateDictionaryValue;
 using test::CreateValue;
 
-namespace {
-
-class CommandInstanceTest : public ::testing::Test {
- protected:
-  void SetUp() override {
-    auto json = CreateDictionaryValue(R"({
-      'base': {
-        'reboot': {
-          'minimalRole': 'user',
-          'parameters': {},
-          'results': {}
-        }
-      },
-      'robot': {
-        'jump': {
-          'minimalRole': 'user',
-          'parameters': {
-            'height': {
-              'type': 'integer',
-              'minimum': 0,
-              'maximum': 100
-            },
-            '_jumpType': {
-              'type': 'string',
-              'enum': ['_withAirFlip', '_withSpin', '_withKick']
-            }
-          },
-          'progress': {'progress': 'integer'},
-          'results': {'testResult': 'integer'}
-        },
-        'speak': {
-          'minimalRole': 'user',
-          'parameters': {
-            'phrase': {
-              'type': 'string',
-              'enum': ['beamMeUpScotty', 'iDontDigOnSwine',
-                       'iPityDaFool', 'dangerWillRobinson']
-            },
-            'volume': {
-              'type': 'integer',
-              'minimum': 0,
-              'maximum': 10
-            }
-          },
-          'results': {'foo': 'integer'}
-        }
-      }
-    })");
-    CHECK(dict_.LoadCommands(*json, nullptr))
-        << "Failed to parse test command dictionary";
-  }
-  CommandDictionary dict_;
-};
-
-}  // anonymous namespace
-
-TEST_F(CommandInstanceTest, Test) {
+TEST(CommandInstanceTest, Test) {
   auto params = CreateDictionaryValue(R"({
     'phrase': 'iPityDaFool',
     'volume': 5
@@ -91,15 +35,16 @@ TEST_F(CommandInstanceTest, Test) {
   EXPECT_EQ(Command::Origin::kLocal, instance2.GetOrigin());
 }
 
-TEST_F(CommandInstanceTest, SetID) {
+TEST(CommandInstanceTest, SetID) {
   CommandInstance instance{"base.reboot", Command::Origin::kLocal, {}};
   instance.SetID("command_id");
   EXPECT_EQ("command_id", instance.GetID());
 }
 
-TEST_F(CommandInstanceTest, FromJson) {
+TEST(CommandInstanceTest, FromJson) {
   auto json = CreateDictionaryValue(R"({
     'name': 'robot.jump',
+    'component': 'comp1.comp2',
     'id': 'abcd',
     'parameters': {
       'height': 53,
@@ -109,64 +54,56 @@ TEST_F(CommandInstanceTest, FromJson) {
   })");
   std::string id;
   auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
-                                            dict_, &id, nullptr);
+                                            &id, nullptr);
   EXPECT_EQ("abcd", id);
   EXPECT_EQ("abcd", instance->GetID());
   EXPECT_EQ("robot.jump", instance->GetName());
+  EXPECT_EQ("comp1.comp2", instance->GetComponent());
   EXPECT_JSON_EQ("{'height': 53, '_jumpType': '_withKick'}",
                  instance->GetParameters());
 }
 
-TEST_F(CommandInstanceTest, FromJson_ParamsOmitted) {
+TEST(CommandInstanceTest, FromJson_ParamsOmitted) {
   auto json = CreateDictionaryValue("{'name': 'base.reboot'}");
   auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
-                                            dict_, nullptr, nullptr);
+                                            nullptr, nullptr);
   EXPECT_EQ("base.reboot", instance->GetName());
   EXPECT_JSON_EQ("{}", instance->GetParameters());
 }
 
-TEST_F(CommandInstanceTest, FromJson_NotObject) {
+TEST(CommandInstanceTest, FromJson_NotObject) {
   auto json = CreateValue("'string'");
   ErrorPtr error;
   auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
-                                            dict_, nullptr, &error);
+                                            nullptr, &error);
   EXPECT_EQ(nullptr, instance.get());
   EXPECT_EQ("json_object_expected", error->GetCode());
 }
 
-TEST_F(CommandInstanceTest, FromJson_NameMissing) {
+TEST(CommandInstanceTest, FromJson_NameMissing) {
   auto json = CreateDictionaryValue("{'param': 'value'}");
   ErrorPtr error;
   auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
-                                            dict_, nullptr, &error);
+                                            nullptr, &error);
   EXPECT_EQ(nullptr, instance.get());
   EXPECT_EQ("parameter_missing", error->GetCode());
 }
 
-TEST_F(CommandInstanceTest, FromJson_UnknownCommand) {
-  auto json = CreateDictionaryValue("{'name': 'robot.scream'}");
-  ErrorPtr error;
-  auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
-                                            dict_, nullptr, &error);
-  EXPECT_EQ(nullptr, instance.get());
-  EXPECT_EQ("invalid_command_name", error->GetCode());
-}
-
-TEST_F(CommandInstanceTest, FromJson_ParamsNotObject) {
+TEST(CommandInstanceTest, FromJson_ParamsNotObject) {
   auto json = CreateDictionaryValue(R"({
     'name': 'robot.speak',
     'parameters': 'hello'
   })");
   ErrorPtr error;
   auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
-                                            dict_, nullptr, &error);
+                                            nullptr, &error);
   EXPECT_EQ(nullptr, instance.get());
   auto inner = error->GetInnerError();
   EXPECT_EQ("json_object_expected", inner->GetCode());
   EXPECT_EQ("command_failed", error->GetCode());
 }
 
-TEST_F(CommandInstanceTest, ToJson) {
+TEST(CommandInstanceTest, ToJson) {
   auto json = CreateDictionaryValue(R"({
     'name': 'robot.jump',
     'parameters': {
@@ -176,7 +113,7 @@ TEST_F(CommandInstanceTest, ToJson) {
     'results': {}
   })");
   auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
-                                            dict_, nullptr, nullptr);
+                                            nullptr, nullptr);
   EXPECT_TRUE(instance->SetProgress(*CreateDictionaryValue("{'progress': 15}"),
                                     nullptr));
   EXPECT_TRUE(instance->SetProgress(*CreateDictionaryValue("{'progress': 15}"),
@@ -198,13 +135,13 @@ TEST_F(CommandInstanceTest, ToJson) {
                *json, *converted);
 }
 
-TEST_F(CommandInstanceTest, ToJsonError) {
+TEST(CommandInstanceTest, ToJsonError) {
   auto json = CreateDictionaryValue(R"({
     'name': 'base.reboot',
     'parameters': {}
   })");
   auto instance = CommandInstance::FromJson(json.get(), Command::Origin::kCloud,
-                                            dict_, nullptr, nullptr);
+                                            nullptr, nullptr);
   instance->SetID("testId");
 
   ErrorPtr error;

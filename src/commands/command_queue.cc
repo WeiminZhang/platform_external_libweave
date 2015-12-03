@@ -11,6 +11,11 @@ namespace weave {
 
 namespace {
 const int kRemoveCommandDelayMin = 5;
+
+std::string GetCommandHandlerKey(const std::string& component_path,
+                                 const std::string& command_name) {
+  return component_path + ":" + command_name;
+}
 }
 
 void CommandQueue::AddCommandAddedCallback(const CommandCallback& callback) {
@@ -25,6 +30,7 @@ void CommandQueue::AddCommandRemovedCallback(const CommandCallback& callback) {
 }
 
 void CommandQueue::AddCommandHandler(
+    const std::string& component_path,
     const std::string& command_name,
     const Device::CommandHandlerCallback& callback) {
   if (!command_name.empty()) {
@@ -33,20 +39,24 @@ void CommandQueue::AddCommandHandler(
 
     for (const auto& command : map_) {
       if (command.second->GetState() == Command::State::kQueued &&
-          command.second->GetName() == command_name) {
+          command.second->GetName() == command_name &&
+          command.second->GetComponent() == component_path) {
         callback.Run(command.second);
       }
     }
 
-    CHECK(command_callbacks_.insert(std::make_pair(command_name, callback))
-              .second)
+    std::string key = GetCommandHandlerKey(component_path, command_name);
+    CHECK(command_callbacks_.insert(std::make_pair(key, callback)).second)
         << command_name << " already has handler";
 
   } else {
+    CHECK(component_path.empty())
+        << "Default handler must not be component-specific";
     for (const auto& command : map_) {
+      std::string key = GetCommandHandlerKey(command.second->GetComponent(),
+                                             command.second->GetName());
       if (command.second->GetState() == Command::State::kQueued &&
-          command_callbacks_.find(command.second->GetName()) ==
-              command_callbacks_.end()) {
+          command_callbacks_.find(key) == command_callbacks_.end()) {
         callback.Run(command.second);
       }
     }
@@ -66,7 +76,9 @@ void CommandQueue::Add(std::unique_ptr<CommandInstance> instance) {
   for (const auto& cb : on_command_added_)
     cb.Run(pair.first->second.get());
 
-  auto it_handler = command_callbacks_.find(pair.first->second->GetName());
+  std::string key = GetCommandHandlerKey(pair.first->second->GetComponent(),
+                                         pair.first->second->GetName());
+  auto it_handler = command_callbacks_.find(key);
 
   if (it_handler != command_callbacks_.end())
     it_handler->second.Run(pair.first->second);

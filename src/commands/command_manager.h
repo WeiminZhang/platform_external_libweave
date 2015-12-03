@@ -44,10 +44,6 @@ class CommandManager final {
   // Returns the command definitions for the device.
   const CommandDictionary& GetCommandDictionary() const;
 
-  // Same as the overload above, but takes a path to a json file to read
-  // the base command definitions from.
-  bool LoadStandardCommands(const std::string& json, ErrorPtr* error);
-
   // Loads device command schema.
   bool LoadCommands(const base::DictionaryValue& dict,
                     ErrorPtr* error);
