@@ -17,6 +17,10 @@ TEST(StringUtils, Split) {
   std::vector<std::string> parts;
 
   parts = Split("", ",", false, false);
+  EXPECT_EQ(1u, parts.size());
+  EXPECT_EQ("", parts[0]);
+
+  parts = Split("", ",", false, true);
   EXPECT_EQ(0u, parts.size());
 
   parts = Split("abc", ",", false, false);
