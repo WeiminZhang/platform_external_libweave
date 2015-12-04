@@ -31,7 +31,7 @@ namespace weave {
 class BaseApiHandlerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    EXPECT_CALL(mock_state_change_queue_, MockNotifyPropertiesUpdated(_, _))
+    EXPECT_CALL(mock_state_change_queue_, NotifyPropertiesUpdated(_, _))
         .WillRepeatedly(Return(true));
 
     command_manager_ = std::make_shared<CommandManager>();

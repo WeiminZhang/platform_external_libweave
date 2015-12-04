@@ -31,7 +31,7 @@ TEST_F(StateChangeQueueTest, Empty) {
 TEST_F(StateChangeQueueTest, UpdateOne) {
   auto timestamp = base::Time::Now();
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      timestamp, CreateDictionaryValue("{'prop': {'name': 23}}")));
+      timestamp, *CreateDictionaryValue("{'prop': {'name': 23}}")));
   EXPECT_FALSE(queue_->IsEmpty());
   EXPECT_EQ(1u, queue_->GetLastStateChangeId());
   auto changes = queue_->GetAndClearRecordedStateChanges();
@@ -50,9 +50,9 @@ TEST_F(StateChangeQueueTest, UpdateMany) {
   const std::string state2 =
       "{'prop': {'name1': 17, 'name2': 1.0, 'name3': false}}";
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      timestamp1, CreateDictionaryValue(state1)));
+      timestamp1, *CreateDictionaryValue(state1)));
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      timestamp2, CreateDictionaryValue(state2)));
+      timestamp2, *CreateDictionaryValue(state2)));
 
   EXPECT_EQ(2u, queue_->GetLastStateChangeId());
   EXPECT_FALSE(queue_->IsEmpty());
@@ -71,16 +71,17 @@ TEST_F(StateChangeQueueTest, GroupByTimestamp) {
   base::TimeDelta time_delta = base::TimeDelta::FromMinutes(1);
 
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      timestamp, CreateDictionaryValue("{'prop': {'name1': 1}}")));
+      timestamp, *CreateDictionaryValue("{'prop': {'name1': 1}}")));
 
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      timestamp, CreateDictionaryValue("{'prop': {'name2': 2}}")));
+      timestamp, *CreateDictionaryValue("{'prop': {'name2': 2}}")));
 
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      timestamp, CreateDictionaryValue("{'prop': {'name1': 3}}")));
+      timestamp, *CreateDictionaryValue("{'prop': {'name1': 3}}")));
 
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      timestamp + time_delta, CreateDictionaryValue("{'prop': {'name1': 4}}")));
+      timestamp + time_delta,
+      *CreateDictionaryValue("{'prop': {'name1': 4}}")));
 
   auto changes = queue_->GetAndClearRecordedStateChanges();
   EXPECT_EQ(4u, queue_->GetLastStateChangeId());
@@ -101,15 +102,16 @@ TEST_F(StateChangeQueueTest, MaxQueueSize) {
   base::TimeDelta time_delta2 = base::TimeDelta::FromMinutes(3);
 
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      start_time, CreateDictionaryValue("{'prop': {'name1': 1, 'name2': 2}}")));
+      start_time,
+      *CreateDictionaryValue("{'prop': {'name1': 1, 'name2': 2}}")));
 
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
       start_time + time_delta1,
-      CreateDictionaryValue("{'prop': {'name1': 3, 'name3': 4}}")));
+      *CreateDictionaryValue("{'prop': {'name1': 3, 'name3': 4}}")));
 
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
       start_time + time_delta2,
-      CreateDictionaryValue("{'prop': {'name10': 10, 'name11': 11}}")));
+      *CreateDictionaryValue("{'prop': {'name10': 10, 'name11': 11}}")));
 
   EXPECT_EQ(3u, queue_->GetLastStateChangeId());
   auto changes = queue_->GetAndClearRecordedStateChanges();
@@ -140,7 +142,7 @@ TEST_F(StateChangeQueueTest, DelayedStateChangeNotification) {
   // When queue is not empty, registering a new callback will not trigger it.
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
       base::Time::Now(),
-      CreateDictionaryValue("{'prop': {'name1': 1, 'name3': 2}}")));
+      *CreateDictionaryValue("{'prop': {'name1': 1, 'name3': 2}}")));
 
   auto callback = [](StateChangeQueueInterface::UpdateID id) {
     FAIL() << "This should not be called";

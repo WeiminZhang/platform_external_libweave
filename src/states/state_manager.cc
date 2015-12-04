@@ -97,9 +97,9 @@ bool StateManager::SetPropertyValue(const std::string& full_property_name,
 
   cached_dict_valid_ = false;
 
-  std::unique_ptr<base::DictionaryValue> prop_set{new base::DictionaryValue};
-  prop_set->Set(full_property_name, value.DeepCopy());
-  state_change_queue_->NotifyPropertiesUpdated(timestamp, std::move(prop_set));
+  base::DictionaryValue prop_set;
+  prop_set.Set(full_property_name, value.DeepCopy());
+  state_change_queue_->NotifyPropertiesUpdated(timestamp, prop_set);
   return true;
 }
 

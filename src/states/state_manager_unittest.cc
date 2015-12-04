@@ -63,7 +63,7 @@ class StateManagerTest : public ::testing::Test {
   void SetUp() override {
     // Initial expectations.
     EXPECT_CALL(mock_state_change_queue_, IsEmpty()).Times(0);
-    EXPECT_CALL(mock_state_change_queue_, MockNotifyPropertiesUpdated(_, _))
+    EXPECT_CALL(mock_state_change_queue_, NotifyPropertiesUpdated(_, _))
         .WillRepeatedly(Return(true));
     EXPECT_CALL(mock_state_change_queue_, MockGetAndClearRecordedStateChanges())
         .Times(0);
@@ -176,7 +176,7 @@ TEST_F(StateManagerTest, Startup) {
 TEST_F(StateManagerTest, SetPropertyValue) {
   const std::string state = "{'device': {'state_property': 'Test Value'}}";
   EXPECT_CALL(mock_state_change_queue_,
-              MockNotifyPropertiesUpdated(timestamp_, IsState(state)))
+              NotifyPropertiesUpdated(timestamp_, IsState(state)))
       .WillOnce(Return(true));
   ASSERT_TRUE(SetPropertyValue("device.state_property",
                                base::StringValue{"Test Value"}, nullptr));
@@ -222,7 +222,7 @@ TEST_F(StateManagerTest, SetPropertyValue_Error_UnknownProperty) {
 
 TEST_F(StateManagerTest, GetAndClearRecordedStateChanges) {
   EXPECT_CALL(mock_state_change_queue_,
-              MockNotifyPropertiesUpdated(timestamp_, _))
+              NotifyPropertiesUpdated(timestamp_, _))
       .WillOnce(Return(true));
   ASSERT_TRUE(SetPropertyValue("device.state_property",
                                base::StringValue{"Test Value"}, nullptr));
@@ -245,7 +245,7 @@ TEST_F(StateManagerTest, GetAndClearRecordedStateChanges) {
 TEST_F(StateManagerTest, SetProperties) {
   const std::string state = "{'base': {'manufacturer': 'No Name'}}";
   EXPECT_CALL(mock_state_change_queue_,
-              MockNotifyPropertiesUpdated(_, IsState(state)))
+              NotifyPropertiesUpdated(_, IsState(state)))
       .WillOnce(Return(true));
 
   EXPECT_CALL(*this, OnStateChanged()).Times(1);

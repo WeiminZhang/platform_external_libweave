@@ -16,13 +16,13 @@ StateChangeQueue::StateChangeQueue(size_t max_queue_size)
 
 bool StateChangeQueue::NotifyPropertiesUpdated(
     base::Time timestamp,
-    std::unique_ptr<base::DictionaryValue> changed_properties) {
+    const base::DictionaryValue& changed_properties) {
   auto& stored_changes = state_changes_[timestamp];
   // Merge the old property set.
   if (stored_changes)
-    stored_changes->MergeDictionary(changed_properties.get());
+    stored_changes->MergeDictionary(&changed_properties);
   else
-    stored_changes = std::move(changed_properties);
+    stored_changes.reset(changed_properties.DeepCopy());
 
   while (state_changes_.size() > max_queue_size_) {
     // Queue is full.

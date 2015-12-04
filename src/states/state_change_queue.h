@@ -23,7 +23,7 @@ class StateChangeQueue : public StateChangeQueueInterface {
   bool IsEmpty() const override { return state_changes_.empty(); }
   bool NotifyPropertiesUpdated(
       base::Time timestamp,
-      std::unique_ptr<base::DictionaryValue> changed_properties) override;
+      const base::DictionaryValue& changed_properties) override;
   std::vector<StateChange> GetAndClearRecordedStateChanges() override;
   UpdateID GetLastStateChangeId() const override { return last_change_id_; }
   Token AddOnStateUpdatedCallback(

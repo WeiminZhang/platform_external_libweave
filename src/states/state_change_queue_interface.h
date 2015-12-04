@@ -42,7 +42,7 @@ class StateChangeQueueInterface {
   // Called by StateManager when device state properties are updated.
   virtual bool NotifyPropertiesUpdated(
       base::Time timestamp,
-      std::unique_ptr<base::DictionaryValue> changed_properties) = 0;
+      const base::DictionaryValue& changed_properties) = 0;
 
   // Returns the recorded state changes since last time this method was called.
   virtual std::vector<StateChange> GetAndClearRecordedStateChanges() = 0;
