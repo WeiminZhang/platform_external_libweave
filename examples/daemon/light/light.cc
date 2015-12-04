@@ -81,19 +81,23 @@ class LightHandler {
           }
         }
       },
-      "_colorXY": {
-        "_setConfig": {
+      "colorXY": {
+        "setConfig": {
           "minimalRole": "user",
           "parameters": {
-            "_colorSetting": {
+            "colorSetting": {
               "type": "object",
+              "required": [
+                "colorX",
+                "colorY"
+              ],
               "properties": {
-                "_colorX": {
+                "colorX": {
                   "type": "number",
                   "minimum": 0.0,
                   "maximum": 1.0
                 },
-                "_colorY": {
+                "colorY": {
                   "type": "number",
                   "minimum": 0.0,
                   "maximum": 1.0
@@ -111,7 +115,7 @@ class LightHandler {
     device->AddCommandHandler("brightness.setConfig",
                               base::Bind(&LightHandler::OnBrightnessSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler("_colorXY._setConfig",
+    device->AddCommandHandler("colorXY.setConfig",
                               base::Bind(&LightHandler::OnColorXYSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
   }
@@ -174,16 +178,16 @@ class LightHandler {
     LOG(INFO) << "received command: " << cmd->GetName();
     const auto& params = cmd->GetParameters();
     const base::DictionaryValue* colorXY = nullptr;
-    if (params.GetDictionary("_colorSetting", &colorXY)) {
+    if (params.GetDictionary("colorSetting", &colorXY)) {
       bool updateState = false;
       double X = 0.0;
       double Y = 0.0;
-      if (colorXY->GetDouble("_colorX", &X)) {
+      if (colorXY->GetDouble("colorX", &X)) {
         color_X_ = X;
         updateState = true;
       }
 
-      if (colorXY->GetDouble("_colorY", &Y)) {
+      if (colorXY->GetDouble("colorY", &Y)) {
         color_Y_ = Y;
         updateState = true;
       }
