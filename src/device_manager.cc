@@ -10,6 +10,7 @@
 
 #include "src/base_api_handler.h"
 #include "src/commands/command_manager.h"
+#include "src/component_manager.h"
 #include "src/config.h"
 #include "src/device_registration_info.h"
 #include "src/privet/privet_manager.h"
@@ -33,6 +34,7 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::HttpServer* http_server,
                              provider::Wifi* wifi,
                              provider::Bluetooth* bluetooth) {
+  component_manager_.reset(new ComponentManager);
   command_manager_ = std::make_shared<CommandManager>();
   state_change_queue_.reset(new StateChangeQueue(kMaxStateChangeQueueSize));
   state_manager_ = std::make_shared<StateManager>(state_change_queue_.get());
@@ -87,6 +89,65 @@ GcdState DeviceManager::GetGcdState() const {
 void DeviceManager::AddGcdStateChangedCallback(
     const GcdStateChangedCallback& callback) {
   device_info_->AddGcdStateChangedCallback(callback);
+}
+
+void DeviceManager::AddTraitDefinitionsFromJson(const std::string& json) {
+  CHECK(component_manager_->LoadTraits(json, nullptr));
+}
+
+void DeviceManager::AddTraitDefinitions(const base::DictionaryValue& dict) {
+  CHECK(component_manager_->LoadTraits(dict, nullptr));
+}
+
+const base::DictionaryValue& DeviceManager::GetTraits() const {
+  return component_manager_->GetTraits();
+}
+
+bool DeviceManager::AddComponent(const std::string& name,
+                                 const std::vector<std::string>& traits,
+                                 ErrorPtr* error) {
+  return component_manager_->AddComponent("", name, traits, error);
+}
+
+void DeviceManager::AddComponentTreeChangedCallback(
+    const base::Closure& callback) {
+  component_manager_->AddComponentTreeChangedCallback(callback);
+}
+
+const base::DictionaryValue& DeviceManager::GetComponents() const {
+  return component_manager_->GetComponents();
+}
+
+bool DeviceManager::SetStatePropertiesFromJson(const std::string& component,
+                                               const std::string& json,
+                                               ErrorPtr* error) {
+  return component_manager_->SetStatePropertiesFromJson(component, json, error);
+}
+
+bool DeviceManager::SetStateProperties(const std::string& component,
+                                       const base::DictionaryValue& dict,
+                                       ErrorPtr* error) {
+  return component_manager_->SetStateProperties(component, dict, error);
+}
+
+const base::Value* DeviceManager::GetStateProperty(
+    const std::string& component,
+    const std::string& name,
+    ErrorPtr* error) const {
+  return component_manager_->GetStateProperty(component, name, error);
+}
+
+bool DeviceManager::SetStateProperty(const std::string& component,
+                                     const std::string& name,
+                                     const base::Value& value,
+                                     ErrorPtr* error) {
+  return component_manager_->SetStateProperty(component, name, value, error);
+}
+
+void DeviceManager::AddCommandHandler(const std::string& component,
+                                      const std::string& command_name,
+                                      const CommandHandlerCallback& callback) {
+  component_manager_->AddCommandHandler(component, command_name, callback);
 }
 
 void DeviceManager::AddCommandDefinitionsFromJson(const std::string& json) {

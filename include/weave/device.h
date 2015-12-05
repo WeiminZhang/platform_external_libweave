@@ -8,6 +8,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
 #include <weave/command.h>
 #include <weave/export.h>
@@ -45,9 +46,73 @@ class Device {
   virtual void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) = 0;
 
+  // Adds new trait definitions to device.
+  virtual void AddTraitDefinitionsFromJson(const std::string& json) = 0;
+  virtual void AddTraitDefinitions(const base::DictionaryValue& dict) = 0;
+
+  // Returns the full JSON dictionary containing trait definitions.
+  virtual const base::DictionaryValue& GetTraits() const = 0;
+
+  // Adds a new component instance to device. Traits used by this component
+  // must be already defined.
+  virtual bool AddComponent(const std::string& name,
+                            const std::vector<std::string>& traits,
+                            ErrorPtr* error) = 0;
+
+  // Sets callback which is called when new components are added.
+  virtual void AddComponentTreeChangedCallback(
+      const base::Closure& callback) = 0;
+
+  // Returns the full JSON dictionary containing component instances.
+  virtual const base::DictionaryValue& GetComponents() const = 0;
+
+  // Sets value of multiple properties of the state.
+  // It's recommended to call this to initialize component state defined.
+  // Example:
+  //   device->SetStatePropertiesFromJson("myComponent",
+  //                                      "{'base':{'firmwareVersion':'123'}}")
+  // Method completely replaces properties included |json| or |dict|.
+  // Properties of the state not included |json| or |dict| will stay unchanged.
+  virtual bool SetStatePropertiesFromJson(
+      const std::string& component,
+      const std::string& json,
+      ErrorPtr* error) = 0;
+  virtual bool SetStateProperties(
+      const std::string& component,
+      const base::DictionaryValue& dict,
+      ErrorPtr* error) = 0;
+
+  // Returns value of the single property.
+  // |name| is full property name, including trait name. e.g. "base.network".
+  virtual const base::Value* GetStateProperty(
+      const std::string& component,
+      const std::string& name,
+      ErrorPtr* error) const = 0;
+
+  // Sets value of the single property.
+  // |name| is full property name, including trait name. e.g. "base.network".
+  virtual bool SetStateProperty(
+      const std::string& component,
+      const std::string& name,
+      const base::Value& value,
+      ErrorPtr* error) = 0;
+
   // Callback type for AddCommandHandler.
   using CommandHandlerCallback =
       base::Callback<void(const std::weak_ptr<Command>& command)>;
+
+  // Sets handler for new commands added to the queue.
+  // |component| is the name of the component for which commands should be
+  // handled.
+  // |command_name| is the full command name of the command to handle. e.g.
+  // "base.reboot". Each command can have no more than one handler.
+  // Empty |component| and |command_name| sets default handler for all unhanded
+  // commands.
+  // No new command handlers can be set after default handler was set.
+  virtual void AddCommandHandler(
+      const std::string& component,
+      const std::string& command_name,
+      const CommandHandlerCallback& callback) = 0;
 
   // Adds a new command to the command queue.
   virtual bool AddCommand(const base::DictionaryValue& command,
