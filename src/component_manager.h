@@ -178,6 +178,17 @@ class ComponentManager {
   virtual std::string FindComponentWithTrait(
       const std::string& trait) const = 0;
 
+  // Support for legacy APIs. Setting command and state definitions.
+  // This translates into modifying a trait definition.
+  virtual bool AddLegacyCommandDefinitions(const base::DictionaryValue& dict,
+                                           ErrorPtr* error) = 0;
+  virtual bool AddLegacyStateDefinitions(const base::DictionaryValue& dict,
+                                         ErrorPtr* error) = 0;
+  // Returns device state for legacy APIs.
+  virtual const base::DictionaryValue& GetLegacyState() const = 0;
+  // Returns command definitions for legacy APIs.
+  virtual const base::DictionaryValue& GetLegacyCommandDefinitions() const = 0;
+
   DISALLOW_COPY_AND_ASSIGN(ComponentManager);
 };
 

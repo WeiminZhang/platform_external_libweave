@@ -448,6 +448,142 @@ std::string ComponentManagerImpl::FindComponentWithTrait(
   return std::string{};
 }
 
+bool ComponentManagerImpl::AddLegacyCommandDefinitions(
+    const base::DictionaryValue& dict,
+    ErrorPtr* error) {
+  bool result = true;
+  bool modified = false;
+  for (base::DictionaryValue::Iterator it(dict); !it.IsAtEnd(); it.Advance()) {
+    const base::DictionaryValue* command_dict = nullptr;
+    if (!it.value().GetAsDictionary(&command_dict)) {
+      Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                         errors::commands::kTypeMismatch,
+                         "Package '%s' must be an object", it.key().c_str());
+      result = false;
+      continue;
+    }
+    AddTraitToLegacyComponent(it.key());
+    for (base::DictionaryValue::Iterator it_def(*command_dict);
+         !it_def.IsAtEnd(); it_def.Advance()) {
+      std::string key = base::StringPrintf("%s.commands.%s", it.key().c_str(),
+                                           it_def.key().c_str());
+      if (traits_.GetDictionary(key, nullptr)) {
+        Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                           errors::commands::kInvalidPropValue,
+                           "Redefining command '%s.%s'",
+                           it.key().c_str(), it_def.key().c_str());
+        result = false;
+        continue;
+      }
+      traits_.Set(key, it_def.value().DeepCopy());
+      modified = true;
+    }
+  }
+
+  if (modified) {
+    for (const auto& cb : on_trait_changed_)
+      cb.Run();
+  }
+  return result;
+}
+
+bool ComponentManagerImpl::AddLegacyStateDefinitions(
+    const base::DictionaryValue& dict,
+    ErrorPtr* error) {
+  bool result = true;
+  bool modified = false;
+  for (base::DictionaryValue::Iterator it(dict); !it.IsAtEnd(); it.Advance()) {
+    const base::DictionaryValue* state_dict = nullptr;
+    if (!it.value().GetAsDictionary(&state_dict)) {
+      Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                         errors::commands::kTypeMismatch,
+                         "Package '%s' must be an object", it.key().c_str());
+      result = false;
+      continue;
+    }
+    AddTraitToLegacyComponent(it.key());
+    for (base::DictionaryValue::Iterator it_def(*state_dict); !it_def.IsAtEnd();
+         it_def.Advance()) {
+      std::string key = base::StringPrintf("%s.state.%s", it.key().c_str(),
+                                           it_def.key().c_str());
+      if (traits_.GetDictionary(key, nullptr)) {
+        Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                           errors::commands::kInvalidPropValue,
+                           "Redefining state property '%s.%s'",
+                           it.key().c_str(), it_def.key().c_str());
+        result = false;
+        continue;
+      }
+      traits_.Set(key, it_def.value().DeepCopy());
+      modified = true;
+    }
+  }
+
+  if (modified) {
+    for (const auto& cb : on_trait_changed_)
+      cb.Run();
+  }
+  return result;
+}
+
+const base::DictionaryValue& ComponentManagerImpl::GetLegacyState() const {
+  legacy_state_.Clear();
+  // Build state from components.
+  for (base::DictionaryValue::Iterator it(components_); !it.IsAtEnd();
+       it.Advance()) {
+    const base::DictionaryValue* component_dict = nullptr;
+    const base::DictionaryValue* component_state = nullptr;
+    if (it.value().GetAsDictionary(&component_dict) &&
+        component_dict->GetDictionary("state", &component_state)) {
+      legacy_state_.MergeDictionary(component_state);
+    }
+  }
+  return legacy_state_;
+}
+
+const base::DictionaryValue&
+ComponentManagerImpl::GetLegacyCommandDefinitions() const {
+  legacy_command_defs_.Clear();
+  // Build commandDefs from traits.
+  for (base::DictionaryValue::Iterator it(traits_); !it.IsAtEnd();
+       it.Advance()) {
+    const base::DictionaryValue* trait_dict = nullptr;
+    const base::DictionaryValue* trait_commands = nullptr;
+    if (it.value().GetAsDictionary(&trait_dict) &&
+        trait_dict->GetDictionary("commands", &trait_commands)) {
+      base::DictionaryValue dict;
+      dict.Set(it.key(), trait_commands->DeepCopy());
+      legacy_command_defs_.MergeDictionary(&dict);
+    }
+  }
+  return legacy_command_defs_;
+}
+
+void ComponentManagerImpl::AddTraitToLegacyComponent(const std::string& trait) {
+  // First check if we already have a component supporting this trait.
+  if (!FindComponentWithTrait(trait).empty())
+    return;
+
+  // If not, add this trait to the first component available.
+  base::DictionaryValue* component = nullptr;
+  base::DictionaryValue::Iterator it(components_);
+  if (it.IsAtEnd()) {
+    // No components at all. Create a new one with dummy name.
+    // This normally wouldn't happen since libweave creates its own component
+    // at startup.
+    component = new base::DictionaryValue;
+    components_.Set("__weave__", component);
+  } else {
+    CHECK(components_.GetDictionary(it.key(), &component));
+  }
+  base::ListValue* traits = nullptr;
+  if (!component->GetList("traits", &traits)) {
+    traits = new base::ListValue;
+    component->Set("traits", traits);
+  }
+  traits->AppendString(trait);
+}
+
 base::DictionaryValue* ComponentManagerImpl::FindComponentGraftNode(
     const std::string& path, ErrorPtr* error) {
   base::DictionaryValue* root = nullptr;

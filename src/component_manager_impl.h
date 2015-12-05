@@ -147,6 +147,17 @@ class ComponentManagerImpl final : public ComponentManager {
   // tree. No sub-components are searched.
   std::string FindComponentWithTrait(const std::string& trait) const override;
 
+  // Support for legacy APIs. Setting command and state definitions.
+  // This translates into modifying a trait definition.
+  bool AddLegacyCommandDefinitions(const base::DictionaryValue& dict,
+                                   ErrorPtr* error) override;
+  bool AddLegacyStateDefinitions(const base::DictionaryValue& dict,
+                                 ErrorPtr* error) override;
+  // Returns device state for legacy APIs.
+  const base::DictionaryValue& GetLegacyState() const override;
+  // Returns command definitions for legacy APIs.
+  const base::DictionaryValue& GetLegacyCommandDefinitions() const override;
+
  private:
   // A helper method to find a JSON element of component at |path| to add new
   // sub-components to.
@@ -154,6 +165,12 @@ class ComponentManagerImpl final : public ComponentManager {
                                                 ErrorPtr* error);
   base::DictionaryValue* FindMutableComponent(const std::string& path,
                                               ErrorPtr* error);
+
+  // Legacy API support: Helper function to support state/command definitions.
+  // Adds the given trait to at least one component.
+  // Searches for available components and if none of them already supports this
+  // trait, it adds it to the first available component.
+  void AddTraitToLegacyComponent(const std::string& trait);
 
   // Helper method to find a sub-component given a root node and a relative path
   // from the root to the target component.
@@ -177,6 +194,10 @@ class ComponentManagerImpl final : public ComponentManager {
   UpdateID last_state_change_id_{0};
   // Callback list for state change queue event sinks.
   base::CallbackList<void(UpdateID)> on_server_state_updated_;
+
+  // Legacy API support.
+  mutable base::DictionaryValue legacy_state_;  // Device state.
+  mutable base::DictionaryValue legacy_command_defs_;  // Command definitions.
 
   DISALLOW_COPY_AND_ASSIGN(ComponentManagerImpl);
 };
