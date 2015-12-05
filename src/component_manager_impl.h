@@ -49,14 +49,10 @@ class ComponentManagerImpl final : public ComponentManager {
   // Sets callback which is called when new components are added.
   void AddComponentTreeChangedCallback(const base::Closure& callback) override;
 
-  // Adds a new command instance to the command queue. The command specified in
-  // |command_instance| must be fully initialized and have its name, component,
-  // id populated.
-  void AddCommand(std::unique_ptr<CommandInstance> command_instance) override;
-
   // Parses the command definition from a json dictionary and adds it to the
   // command queue. The new command ID is returned through optional |id| param.
   bool AddCommand(const base::DictionaryValue& command,
+                  Command::Origin command_origin,
                   UserRole role,
                   std::string* id,
                   ErrorPtr* error) override;

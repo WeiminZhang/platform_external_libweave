@@ -147,17 +147,20 @@ void ComponentManagerImpl::AddTraitDefChangedCallback(
   callback.Run();
 }
 
-void ComponentManagerImpl::AddCommand(
-    std::unique_ptr<CommandInstance> command_instance) {
-  command_queue_.Add(std::move(command_instance));
-}
-
 bool ComponentManagerImpl::AddCommand(const base::DictionaryValue& command,
+                                      Command::Origin command_origin,
                                       UserRole role,
                                       std::string* id,
                                       ErrorPtr* error) {
-  auto command_instance = CommandInstance::FromJson(
-      &command, Command::Origin::kLocal, nullptr, error);
+  std::string command_id;
+  auto command_instance = CommandInstance::FromJson(&command, command_origin,
+                                                    &command_id, error);
+  // If we fail to validate the command definition, but there was a command ID
+  // specified there, return it to the caller when requested. This will be
+  // used to abort cloud commands.
+  if (id)
+    *id = command_id;
+
   if (!command_instance)
     return false;
 
@@ -218,11 +221,14 @@ bool ComponentManagerImpl::AddCommand(const base::DictionaryValue& command,
     return false;
   }
 
-  std::string command_id = std::to_string(++next_command_id_);
-  command_instance->SetID(command_id);
+  if (command_id.empty()) {
+    command_id = std::to_string(++next_command_id_);
+    command_instance->SetID(command_id);
+  }
+
   if (id)
     *id = command_id;
-  AddCommand(std::move(command_instance));
+  command_queue_.Add(std::move(command_instance));
   return true;
 }
 
