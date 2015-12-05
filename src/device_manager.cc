@@ -10,7 +10,7 @@
 
 #include "src/base_api_handler.h"
 #include "src/commands/command_manager.h"
-#include "src/component_manager.h"
+#include "src/component_manager_impl.h"
 #include "src/config.h"
 #include "src/device_registration_info.h"
 #include "src/privet/privet_manager.h"
@@ -34,7 +34,7 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::HttpServer* http_server,
                              provider::Wifi* wifi,
                              provider::Bluetooth* bluetooth) {
-  component_manager_.reset(new ComponentManager);
+  component_manager_.reset(new ComponentManagerImpl);
   command_manager_ = std::make_shared<CommandManager>();
   state_change_queue_.reset(new StateChangeQueue(kMaxStateChangeQueueSize));
   state_manager_ = std::make_shared<StateManager>(state_change_queue_.get());

@@ -12,7 +12,7 @@
       'src/commands/command_manager.cc',
       'src/commands/command_queue.cc',
       'src/commands/schema_constants.cc',
-      'src/component_manager.cc',
+      'src/component_manager_impl.cc',
       'src/config.cc',
       'src/data_encoding.cc',
       'src/device_manager.cc',

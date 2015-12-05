@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/component_manager.h"
+#include "src/component_manager_impl.h"
 
 #include <map>
 
@@ -11,6 +11,7 @@
 
 #include "src/bind_lambda.h"
 #include "src/commands/schema_constants.h"
+#include "src/mock_component_manager.h"
 
 namespace weave {
 
@@ -98,13 +99,13 @@ class SimpleTestClock : public base::Clock {
 }  // anonymous namespace
 
 TEST(ComponentManager, Empty) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   EXPECT_TRUE(manager.GetTraits().empty());
   EXPECT_TRUE(manager.GetComponents().empty());
 }
 
 TEST(ComponentManager, LoadTraits) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({
     "trait1": {
       "commands": {
@@ -130,7 +131,7 @@ TEST(ComponentManager, LoadTraits) {
 }
 
 TEST(ComponentManager, LoadTraitsDuplicateIdentical) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits1[] = R"({
     "trait1": {
       "commands": {
@@ -198,7 +199,7 @@ TEST(ComponentManager, LoadTraitsDuplicateIdentical) {
 }
 
 TEST(ComponentManager, LoadTraitsDuplicateOverride) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits1[] = R"({
     "trait1": {
       "commands": {
@@ -242,7 +243,7 @@ TEST(ComponentManager, LoadTraitsDuplicateOverride) {
 }
 
 TEST(ComponentManager, AddTraitDefChangedCallback) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   int count = 0;
   int count2 = 0;
   manager.AddTraitDefChangedCallback(base::Bind([&count]() { count++; }));
@@ -299,7 +300,7 @@ TEST(ComponentManager, AddTraitDefChangedCallback) {
 }
 
 TEST(ComponentManager, LoadTraitsNotAnObject) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits1[] = R"({"trait1": 0})";
   auto json = CreateDictionaryValue(kTraits1);
   ErrorPtr error;
@@ -308,7 +309,7 @@ TEST(ComponentManager, LoadTraitsNotAnObject) {
 }
 
 TEST(ComponentManager, FindTraitDefinition) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({
     "trait1": {
       "commands": {
@@ -358,7 +359,7 @@ TEST(ComponentManager, FindTraitDefinition) {
 }
 
 TEST(ComponentManager, FindCommandDefinition) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({
     "trait1": {
       "commands": {
@@ -411,7 +412,7 @@ TEST(ComponentManager, FindCommandDefinition) {
 }
 
 TEST(ComponentManager, GetMinimalRole) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({
     "trait1": {
       "commands": {
@@ -446,7 +447,7 @@ TEST(ComponentManager, GetMinimalRole) {
 }
 
 TEST(ComponentManager, AddComponent) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({"trait1": {}, "trait2": {}, "trait3": {}})";
   auto json = CreateDictionaryValue(kTraits);
   ASSERT_TRUE(manager.LoadTraits(*json, nullptr));
@@ -467,7 +468,7 @@ TEST(ComponentManager, AddComponent) {
 }
 
 TEST(ComponentManager, AddSubComponent) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   EXPECT_TRUE(manager.AddComponent("", "comp1", {}, nullptr));
   EXPECT_TRUE(manager.AddComponent("comp1", "comp2", {}, nullptr));
   EXPECT_TRUE(manager.AddComponent("comp1", "comp3", {}, nullptr));
@@ -494,7 +495,7 @@ TEST(ComponentManager, AddSubComponent) {
 }
 
 TEST(ComponentManager, AddComponentArrayItem) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({"foo": {}, "bar": {}})";
   auto json = CreateDictionaryValue(kTraits);
   ASSERT_TRUE(manager.LoadTraits(*json, nullptr));
@@ -536,7 +537,7 @@ TEST(ComponentManager, AddComponentArrayItem) {
 }
 
 TEST(ComponentManager, AddComponentExist) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   EXPECT_TRUE(manager.AddComponent("", "comp1", {}, nullptr));
   EXPECT_FALSE(manager.AddComponent("", "comp1", {}, nullptr));
   EXPECT_TRUE(manager.AddComponent("comp1", "comp2", {}, nullptr));
@@ -544,12 +545,12 @@ TEST(ComponentManager, AddComponentExist) {
 }
 
 TEST(ComponentManager, AddComponentDoesNotExist) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   EXPECT_FALSE(manager.AddComponent("comp1", "comp2", {}, nullptr));
 }
 
 TEST(ComponentManager, AddComponentTreeChangedCallback) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   int count = 0;
   int count2 = 0;
   manager.AddComponentTreeChangedCallback(base::Bind([&count]() { count++; }));
@@ -572,7 +573,7 @@ TEST(ComponentManager, AddComponentTreeChangedCallback) {
 }
 
 TEST(ComponentManager, FindComponent) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   CreateTestComponentTree(&manager);
 
   const base::DictionaryValue* comp = manager.FindComponent("comp1", nullptr);
@@ -621,7 +622,7 @@ TEST(ComponentManager, FindComponent) {
 }
 
 TEST(ComponentManager, AddCommand) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({
     "trait1": {
       "commands": {
@@ -693,7 +694,7 @@ TEST(ComponentManager, AddCommand) {
 }
 
 TEST(ComponentManager, AddCommandHandler) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({
     "trait1": {
       "commands": {
@@ -753,7 +754,7 @@ TEST(ComponentManager, AddCommandHandler) {
 }
 
 TEST(ComponentManager, SetStateProperties) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   CreateTestComponentTree(&manager);
 
   const char kState1[] = R"({"t1": {"p1": 0, "p2": "foo"}})";
@@ -855,7 +856,7 @@ TEST(ComponentManager, SetStateProperties) {
 }
 
 TEST(ComponentManager, SetStatePropertiesFromJson) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   CreateTestComponentTree(&manager);
 
   ASSERT_TRUE(manager.SetStatePropertiesFromJson(
@@ -895,7 +896,7 @@ TEST(ComponentManager, SetStatePropertiesFromJson) {
 }
 
 TEST(ComponentManager, SetGetStateProperty) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({
     "trait1": {
       "state": {
@@ -961,7 +962,7 @@ TEST(ComponentManager, SetGetStateProperty) {
 
 TEST(ComponentManager, AddStateChangedCallback) {
   SimpleTestClock clock;
-  ComponentManager manager{&clock};
+  ComponentManagerImpl manager{&clock};
   const char kTraits[] = R"({
     "trait1": {
       "state": {
@@ -1002,7 +1003,7 @@ TEST(ComponentManager, AddStateChangedCallback) {
 
 TEST(ComponentManager, ComponentStateUpdates) {
   SimpleTestClock clock;
-  ComponentManager manager{&clock};
+  ComponentManagerImpl manager{&clock};
   const char kTraits[] = R"({
     "trait1": {
       "state": {
@@ -1096,7 +1097,7 @@ TEST(ComponentManager, ComponentStateUpdates) {
 }
 
 TEST(ComponentManager, FindComponentWithTrait) {
-  ComponentManager manager;
+  ComponentManagerImpl manager;
   const char kTraits[] = R"({
     "trait1": {},
     "trait2": {},
@@ -1111,6 +1112,11 @@ TEST(ComponentManager, FindComponentWithTrait) {
   EXPECT_EQ("comp1", manager.FindComponentWithTrait("trait2"));
   EXPECT_EQ("comp2", manager.FindComponentWithTrait("trait3"));
   EXPECT_EQ("", manager.FindComponentWithTrait("trait4"));
+}
+
+TEST(ComponentManager, TestMockComponentManager) {
+  // Check that all the virtual methods are mocked out.
+  MockComponentManager mock;
 }
 
 }  // namespace weave

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/component_manager.h"
+#include "src/component_manager_impl.h"
 
 #include <base/strings/stringprintf.h>
 #include <base/strings/string_number_conversions.h>
@@ -20,14 +20,17 @@ namespace {
 const size_t kMaxStateChangeQueueSize = 100;
 }  // namespace
 
-ComponentManager::ComponentManager() {}
-ComponentManager::ComponentManager(base::Clock* clock) : clock_{clock} {}
-ComponentManager::~ComponentManager() {}
+ComponentManagerImpl::ComponentManagerImpl() {}
 
-bool ComponentManager::AddComponent(const std::string& path,
-                                    const std::string& name,
-                                    const std::vector<std::string>& traits,
-                                    ErrorPtr* error) {
+ComponentManagerImpl::ComponentManagerImpl(base::Clock* clock) : clock_{clock} {
+}
+
+ComponentManagerImpl::~ComponentManagerImpl() {}
+
+bool ComponentManagerImpl::AddComponent(const std::string& path,
+                                        const std::string& name,
+                                        const std::vector<std::string>& traits,
+                                        ErrorPtr* error) {
   base::DictionaryValue* root = &components_;
   if (!path.empty()) {
     root = FindComponentGraftNode(path, error);
@@ -61,7 +64,7 @@ bool ComponentManager::AddComponent(const std::string& path,
   return true;
 }
 
-bool ComponentManager::AddComponentArrayItem(
+bool ComponentManagerImpl::AddComponentArrayItem(
     const std::string& path,
     const std::string& name,
     const std::vector<std::string>& traits,
@@ -87,14 +90,14 @@ bool ComponentManager::AddComponentArrayItem(
   return true;
 }
 
-void ComponentManager::AddComponentTreeChangedCallback(
+void ComponentManagerImpl::AddComponentTreeChangedCallback(
     const base::Closure& callback) {
   on_componet_tree_changed_.push_back(callback);
   callback.Run();
 }
 
-bool ComponentManager::LoadTraits(const base::DictionaryValue& dict,
-                                  ErrorPtr* error) {
+bool ComponentManagerImpl::LoadTraits(const base::DictionaryValue& dict,
+                                      ErrorPtr* error) {
   bool modified = false;
   bool result = true;
   // Check if any of the new traits are already defined. If so, make sure the
@@ -130,28 +133,29 @@ bool ComponentManager::LoadTraits(const base::DictionaryValue& dict,
   return result;
 }
 
-bool ComponentManager::LoadTraits(const std::string& json, ErrorPtr* error) {
+bool ComponentManagerImpl::LoadTraits(const std::string& json,
+                                      ErrorPtr* error) {
   std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
   if (!dict)
     return false;
   return LoadTraits(*dict, error);
 }
 
-void ComponentManager::AddTraitDefChangedCallback(
+void ComponentManagerImpl::AddTraitDefChangedCallback(
     const base::Closure& callback) {
   on_trait_changed_.push_back(callback);
   callback.Run();
 }
 
-void ComponentManager::AddCommand(
+void ComponentManagerImpl::AddCommand(
     std::unique_ptr<CommandInstance> command_instance) {
   command_queue_.Add(std::move(command_instance));
 }
 
-bool ComponentManager::AddCommand(const base::DictionaryValue& command,
-                                  UserRole role,
-                                  std::string* id,
-                                  ErrorPtr* error) {
+bool ComponentManagerImpl::AddCommand(const base::DictionaryValue& command,
+                                      UserRole role,
+                                      std::string* id,
+                                      ErrorPtr* error) {
   auto command_instance = CommandInstance::FromJson(
       &command, Command::Origin::kLocal, nullptr, error);
   if (!command_instance)
@@ -222,21 +226,21 @@ bool ComponentManager::AddCommand(const base::DictionaryValue& command,
   return true;
 }
 
-CommandInstance* ComponentManager::FindCommand(const std::string& id) {
+CommandInstance* ComponentManagerImpl::FindCommand(const std::string& id) {
   return command_queue_.Find(id);
 }
 
-void ComponentManager::AddCommandAddedCallback(
+void ComponentManagerImpl::AddCommandAddedCallback(
     const CommandQueue::CommandCallback& callback) {
   command_queue_.AddCommandAddedCallback(callback);
 }
 
-void ComponentManager::AddCommandRemovedCallback(
+void ComponentManagerImpl::AddCommandRemovedCallback(
     const CommandQueue::CommandCallback& callback) {
   command_queue_.AddCommandRemovedCallback(callback);
 }
 
-void ComponentManager::AddCommandHandler(
+void ComponentManagerImpl::AddCommandHandler(
     const std::string& component_path,
     const std::string& command_name,
     const Device::CommandHandlerCallback& callback) {
@@ -245,19 +249,19 @@ void ComponentManager::AddCommandHandler(
   command_queue_.AddCommandHandler(component_path, command_name, callback);
 }
 
-const base::DictionaryValue* ComponentManager::FindComponent(
+const base::DictionaryValue* ComponentManagerImpl::FindComponent(
     const std::string& path, ErrorPtr* error) const {
   return FindComponentAt(&components_, path, error);
 }
 
-const base::DictionaryValue* ComponentManager::FindTraitDefinition(
+const base::DictionaryValue* ComponentManagerImpl::FindTraitDefinition(
     const std::string& name) const {
   const base::DictionaryValue* trait = nullptr;
   traits_.GetDictionaryWithoutPathExpansion(name, &trait);
   return trait;
 }
 
-const base::DictionaryValue* ComponentManager::FindCommandDefinition(
+const base::DictionaryValue* ComponentManagerImpl::FindCommandDefinition(
     const std::string& command_name) const {
   const base::DictionaryValue* definition = nullptr;
   std::vector<std::string> components = Split(command_name, ".", true, false);
@@ -270,9 +274,9 @@ const base::DictionaryValue* ComponentManager::FindCommandDefinition(
   return definition;
 }
 
-bool ComponentManager::GetMinimalRole(const std::string& command_name,
-                                      UserRole* minimal_role,
-                                      ErrorPtr* error) const {
+bool ComponentManagerImpl::GetMinimalRole(const std::string& command_name,
+                                          UserRole* minimal_role,
+                                          ErrorPtr* error) const {
   const base::DictionaryValue* command = FindCommandDefinition(command_name);
   if (!command) {
     Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
@@ -289,14 +293,15 @@ bool ComponentManager::GetMinimalRole(const std::string& command_name,
   return true;
 }
 
-void ComponentManager::AddStateChangedCallback(const base::Closure& callback) {
+void ComponentManagerImpl::AddStateChangedCallback(
+    const base::Closure& callback) {
   on_state_changed_.push_back(callback);
   callback.Run();  // Force to read current state.
 }
 
-bool ComponentManager::SetStateProperties(const std::string& component_path,
-                                          const base::DictionaryValue& dict,
-                                          ErrorPtr* error) {
+bool ComponentManagerImpl::SetStateProperties(const std::string& component_path,
+                                              const base::DictionaryValue& dict,
+                                              ErrorPtr* error) {
   base::DictionaryValue* component =
       FindMutableComponent(component_path, error);
   if (!component)
@@ -319,7 +324,7 @@ bool ComponentManager::SetStateProperties(const std::string& component_path,
   return true;
 }
 
-bool ComponentManager::SetStatePropertiesFromJson(
+bool ComponentManagerImpl::SetStatePropertiesFromJson(
     const std::string& component_path,
     const std::string& json,
     ErrorPtr* error) {
@@ -327,7 +332,7 @@ bool ComponentManager::SetStatePropertiesFromJson(
   return dict && SetStateProperties(component_path, *dict, error);
 }
 
-const base::Value* ComponentManager::GetStateProperty(
+const base::Value* ComponentManagerImpl::GetStateProperty(
     const std::string& component_path,
     const std::string& name,
     ErrorPtr* error) const {
@@ -359,10 +364,10 @@ const base::Value* ComponentManager::GetStateProperty(
   return value;
 }
 
-bool ComponentManager::SetStateProperty(const std::string& component_path,
-                                        const std::string& name,
-                                        const base::Value& value,
-                                        ErrorPtr* error) {
+bool ComponentManagerImpl::SetStateProperty(const std::string& component_path,
+                                            const std::string& name,
+                                            const base::Value& value,
+                                            ErrorPtr* error) {
   base::DictionaryValue dict;
   auto pair = SplitAtFirst(name, ".", true);
   if (pair.first.empty()) {
@@ -383,7 +388,7 @@ bool ComponentManager::SetStateProperty(const std::string& component_path,
 }
 
 ComponentManager::StateSnapshot
-ComponentManager::GetAndClearRecordedStateChanges() {
+ComponentManagerImpl::GetAndClearRecordedStateChanges() {
   StateSnapshot snapshot;
   snapshot.update_id = GetLastStateChangeId();
   for (auto& pair : state_change_queues_) {
@@ -407,18 +412,18 @@ ComponentManager::GetAndClearRecordedStateChanges() {
   return snapshot;
 }
 
-void ComponentManager::NotifyStateUpdatedOnServer(UpdateID id) {
+void ComponentManagerImpl::NotifyStateUpdatedOnServer(UpdateID id) {
   on_server_state_updated_.Notify(id);
 }
 
-ComponentManager::Token ComponentManager::AddServerStateUpdatedCallback(
+ComponentManager::Token ComponentManagerImpl::AddServerStateUpdatedCallback(
     const base::Callback<void(UpdateID)>& callback) {
   if (state_change_queues_.empty())
     callback.Run(GetLastStateChangeId());
   return Token{on_server_state_updated_.Add(callback).release()};
 }
 
-std::string ComponentManager::FindComponentWithTrait(
+std::string ComponentManagerImpl::FindComponentWithTrait(
     const std::string& trait) const {
   for (base::DictionaryValue::Iterator it(components_); !it.IsAtEnd();
        it.Advance()) {
@@ -437,7 +442,7 @@ std::string ComponentManager::FindComponentWithTrait(
   return std::string{};
 }
 
-base::DictionaryValue* ComponentManager::FindComponentGraftNode(
+base::DictionaryValue* ComponentManagerImpl::FindComponentGraftNode(
     const std::string& path, ErrorPtr* error) {
   base::DictionaryValue* root = nullptr;
   base::DictionaryValue* component = FindMutableComponent(path, error);
@@ -448,14 +453,14 @@ base::DictionaryValue* ComponentManager::FindComponentGraftNode(
   return root;
 }
 
-base::DictionaryValue* ComponentManager::FindMutableComponent(
+base::DictionaryValue* ComponentManagerImpl::FindMutableComponent(
     const std::string& path,
     ErrorPtr* error) {
   return const_cast<base::DictionaryValue*>(
       FindComponentAt(&components_, path, error));
 }
 
-const base::DictionaryValue* ComponentManager::FindComponentAt(
+const base::DictionaryValue* ComponentManagerImpl::FindComponentAt(
     const base::DictionaryValue* root,
     const std::string& path,
     ErrorPtr* error) {
