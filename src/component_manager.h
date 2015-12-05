@@ -169,6 +169,14 @@ class ComponentManager final {
   Token AddServerStateUpdatedCallback(
       const base::Callback<void(UpdateID)>& callback);
 
+  // Helper method for legacy API to obtain first component that implements
+  // the given trait. This is useful for routing commands that have no component
+  // path specified.
+  // Returns empty string if no components are found.
+  // This method only searches for component on the top level of components
+  // tree. No sub-components are searched.
+  std::string FindComponentWithTrait(const std::string& trait) const;
+
  private:
   // A helper method to find a JSON element of component at |path| to add new
   // sub-components to.

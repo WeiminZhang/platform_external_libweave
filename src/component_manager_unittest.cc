@@ -670,7 +670,7 @@ TEST(ComponentManager, AddCommand) {
   // Component comp1 doesn't have trait2.
   EXPECT_FALSE(manager.AddCommand(*command3, UserRole::kOwner, &id, nullptr));
 
-  // No component specified, use the first top-level component (comp1)
+  // No component specified, find the suitable component
   const char kCommand4[] = R"({
     "name": "trait1.command1",
     "parameters": {}
@@ -680,6 +680,16 @@ TEST(ComponentManager, AddCommand) {
   auto cmd = manager.FindCommand(id);
   ASSERT_NE(nullptr, cmd);
   EXPECT_EQ("comp1", cmd->GetComponent());
+
+  const char kCommand5[] = R"({
+    "name": "trait2.command1",
+    "parameters": {}
+  })";
+  auto command5 = CreateDictionaryValue(kCommand5);
+  EXPECT_TRUE(manager.AddCommand(*command5, UserRole::kOwner, &id, nullptr));
+  cmd = manager.FindCommand(id);
+  ASSERT_NE(nullptr, cmd);
+  EXPECT_EQ("comp2", cmd->GetComponent());
 }
 
 TEST(ComponentManager, AddCommandHandler) {
@@ -1083,6 +1093,24 @@ TEST(ComponentManager, ComponentStateUpdates) {
   EXPECT_EQ(snapshot.update_id, updates1.front());
   ASSERT_EQ(1u, updates2.size());
   EXPECT_EQ(snapshot.update_id, updates2.front());
+}
+
+TEST(ComponentManager, FindComponentWithTrait) {
+  ComponentManager manager;
+  const char kTraits[] = R"({
+    "trait1": {},
+    "trait2": {},
+    "trait3": {}
+  })";
+  auto traits = CreateDictionaryValue(kTraits);
+  ASSERT_TRUE(manager.LoadTraits(*traits, nullptr));
+  ASSERT_TRUE(manager.AddComponent("", "comp1", {"trait1", "trait2"}, nullptr));
+  ASSERT_TRUE(manager.AddComponent("", "comp2", {"trait3"}, nullptr));
+
+  EXPECT_EQ("comp1", manager.FindComponentWithTrait("trait1"));
+  EXPECT_EQ("comp1", manager.FindComponentWithTrait("trait2"));
+  EXPECT_EQ("comp2", manager.FindComponentWithTrait("trait3"));
+  EXPECT_EQ("", manager.FindComponentWithTrait("trait4"));
 }
 
 }  // namespace weave

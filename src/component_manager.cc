@@ -171,14 +171,18 @@ bool ComponentManager::AddCommand(const base::DictionaryValue& command,
 
   std::string component_path = command_instance->GetComponent();
   if (component_path.empty()) {
-    // Get the name of the first top-level component.
-    base::DictionaryValue::Iterator it(components_);
-    if (it.IsAtEnd()) {
-      Error::AddTo(error, FROM_HERE, errors::commands::kDomain,
-                   "component_not_found", "There are no components defined");
+    // Find the component to which to route this command. Get the trait name
+    // from the command name and find the first component that has this trait.
+    auto trait_name = SplitAtFirst(command_instance->GetName(), ".", true).first;
+    component_path = FindComponentWithTrait(trait_name);
+    if (component_path.empty()) {
+      Error::AddToPrintf(
+          error, FROM_HERE, errors::commands::kDomain, "unrouted_command",
+          "Unable route command '%s' because there is no component supporting"
+          "trait '%s'", command_instance->GetName().c_str(),
+          trait_name.c_str());
       return false;
     }
-    component_path = it.key();
     command_instance->SetComponent(component_path);
   }
 
@@ -412,6 +416,25 @@ ComponentManager::Token ComponentManager::AddServerStateUpdatedCallback(
   if (state_change_queues_.empty())
     callback.Run(GetLastStateChangeId());
   return Token{on_server_state_updated_.Add(callback).release()};
+}
+
+std::string ComponentManager::FindComponentWithTrait(
+    const std::string& trait) const {
+  for (base::DictionaryValue::Iterator it(components_); !it.IsAtEnd();
+       it.Advance()) {
+    const base::ListValue* supported_traits = nullptr;
+    const base::DictionaryValue* component = nullptr;
+    CHECK(it.value().GetAsDictionary(&component));
+    if (component->GetList("traits", &supported_traits)) {
+      for (const base::Value* value : *supported_traits) {
+        std::string supported_trait;
+        CHECK(value->GetAsString(&supported_trait));
+        if (trait == supported_trait)
+          return it.key();
+      }
+    }
+  }
+  return std::string{};
 }
 
 base::DictionaryValue* ComponentManager::FindComponentGraftNode(
