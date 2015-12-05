@@ -9,12 +9,19 @@
 #include <base/strings/string_util.h>
 
 #include "src/commands/schema_constants.h"
+#include "src/json_error_codes.h"
 #include "src/string_utils.h"
 #include "src/utils.h"
 
 namespace weave {
 
+namespace {
+// Max of 100 state update events should be enough in the queue.
+const size_t kMaxStateChangeQueueSize = 100;
+}  // namespace
+
 ComponentManager::ComponentManager() {}
+ComponentManager::ComponentManager(base::Clock* clock) : clock_{clock} {}
 ComponentManager::~ComponentManager() {}
 
 bool ComponentManager::AddComponent(const std::string& path,
@@ -49,6 +56,8 @@ bool ComponentManager::AddComponent(const std::string& path,
   traits_list->AppendStrings(traits);
   dict->Set("traits", traits_list.release());
   root->SetWithoutPathExpansion(name, dict.release());
+  for (const auto& cb : on_componet_tree_changed_)
+    cb.Run();
   return true;
 }
 
@@ -73,7 +82,15 @@ bool ComponentManager::AddComponentArrayItem(
   traits_list->AppendStrings(traits);
   dict->Set("traits", traits_list.release());
   array_value->Append(dict.release());
+  for (const auto& cb : on_componet_tree_changed_)
+    cb.Run();
   return true;
+}
+
+void ComponentManager::AddComponentTreeChangedCallback(
+    const base::Closure& callback) {
+  on_componet_tree_changed_.push_back(callback);
+  callback.Run();
 }
 
 bool ComponentManager::LoadTraits(const base::DictionaryValue& dict,
@@ -100,9 +117,10 @@ bool ComponentManager::LoadTraits(const base::DictionaryValue& dict,
         result = false;
         break;
       }
+    } else {
+      traits_.Set(it.key(), it.value().DeepCopy());
+      modified = true;
     }
-    traits_.Set(it.key(), it.value().DeepCopy());
-    modified = true;
   }
 
   if (modified) {
@@ -119,7 +137,8 @@ bool ComponentManager::LoadTraits(const std::string& json, ErrorPtr* error) {
   return LoadTraits(*dict, error);
 }
 
-void ComponentManager::AddTraitDefChanged(const base::Closure& callback) {
+void ComponentManager::AddTraitDefChangedCallback(
+    const base::Closure& callback) {
   on_trait_changed_.push_back(callback);
   callback.Run();
 }
@@ -163,7 +182,7 @@ bool ComponentManager::AddCommand(const base::DictionaryValue& command,
     command_instance->SetComponent(component_path);
   }
 
-  const auto* component = FindComponent(component_path, error);
+  const base::DictionaryValue* component = FindComponent(component_path, error);
   if (!component)
     return false;
 
@@ -266,16 +285,151 @@ bool ComponentManager::GetMinimalRole(const std::string& command_name,
   return true;
 }
 
+void ComponentManager::AddStateChangedCallback(const base::Closure& callback) {
+  on_state_changed_.push_back(callback);
+  callback.Run();  // Force to read current state.
+}
+
+bool ComponentManager::SetStateProperties(const std::string& component_path,
+                                          const base::DictionaryValue& dict,
+                                          ErrorPtr* error) {
+  base::DictionaryValue* component =
+      FindMutableComponent(component_path, error);
+  if (!component)
+    return false;
+
+  base::DictionaryValue* state = nullptr;
+  if (!component->GetDictionary("state", &state)) {
+    state = new base::DictionaryValue;
+    component->Set("state", state);
+  }
+  state->MergeDictionary(&dict);
+  last_state_change_id_++;
+  auto& queue = state_change_queues_[component_path];
+  if (!queue)
+    queue.reset(new StateChangeQueue{kMaxStateChangeQueueSize});
+  base::Time timestamp = clock_ ? clock_->Now() : base::Time::Now();
+  queue->NotifyPropertiesUpdated(timestamp, dict);
+  for (const auto& cb : on_state_changed_)
+    cb.Run();
+  return true;
+}
+
+bool ComponentManager::SetStatePropertiesFromJson(
+    const std::string& component_path,
+    const std::string& json,
+    ErrorPtr* error) {
+  std::unique_ptr<const base::DictionaryValue> dict = LoadJsonDict(json, error);
+  return dict && SetStateProperties(component_path, *dict, error);
+}
+
+const base::Value* ComponentManager::GetStateProperty(
+    const std::string& component_path,
+    const std::string& name,
+    ErrorPtr* error) const {
+  const base::DictionaryValue* component = FindComponent(component_path, error);
+  if (!component)
+    return false;
+  auto pair = SplitAtFirst(name, ".", true);
+  if (pair.first.empty()) {
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                       errors::commands::kPropertyMissing,
+                       "Empty state package in '%s'", name.c_str());
+    return false;
+  }
+  if (pair.second.empty()) {
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                       errors::commands::kPropertyMissing,
+                       "State property name not specified in '%s'",
+                       name.c_str());
+    return false;
+  }
+  std::string key = base::StringPrintf("state.%s", name.c_str());
+  const base::Value* value = nullptr;
+  if (!component->Get(key, &value)) {
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                       errors::commands::kPropertyMissing,
+                       "State property '%s' not found in component '%s'",
+                       name.c_str(), component_path.c_str());
+  }
+  return value;
+}
+
+bool ComponentManager::SetStateProperty(const std::string& component_path,
+                                        const std::string& name,
+                                        const base::Value& value,
+                                        ErrorPtr* error) {
+  base::DictionaryValue dict;
+  auto pair = SplitAtFirst(name, ".", true);
+  if (pair.first.empty()) {
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                       errors::commands::kPropertyMissing,
+                       "Empty state package in '%s'", name.c_str());
+    return false;
+  }
+  if (pair.second.empty()) {
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                       errors::commands::kPropertyMissing,
+                       "State property name not specified in '%s'",
+                       name.c_str());
+    return false;
+  }
+  dict.Set(name, value.DeepCopy());
+  return SetStateProperties(component_path, dict, error);
+}
+
+ComponentManager::StateSnapshot
+ComponentManager::GetAndClearRecordedStateChanges() {
+  StateSnapshot snapshot;
+  snapshot.update_id = GetLastStateChangeId();
+  for (auto& pair : state_change_queues_) {
+    auto changes = pair.second->GetAndClearRecordedStateChanges();
+    auto component = pair.first;
+    auto conv = [component](weave::StateChange& change) {
+      return ComponentStateChange{change.timestamp, component,
+                                  std::move(change.changed_properties)};
+    };
+    std::transform(changes.begin(), changes.end(),
+                   std::back_inserter(snapshot.state_changes), conv);
+  }
+
+  // Sort events by the timestamp.
+  auto pred = [](const ComponentStateChange& lhs,
+                 const ComponentStateChange& rhs) {
+    return lhs.timestamp < rhs.timestamp;
+  };
+  std::sort(snapshot.state_changes.begin(), snapshot.state_changes.end(), pred);
+  state_change_queues_.clear();
+  return snapshot;
+}
+
+void ComponentManager::NotifyStateUpdatedOnServer(UpdateID id) {
+  on_server_state_updated_.Notify(id);
+}
+
+ComponentManager::Token ComponentManager::AddServerStateUpdatedCallback(
+    const base::Callback<void(UpdateID)>& callback) {
+  if (state_change_queues_.empty())
+    callback.Run(GetLastStateChangeId());
+  return Token{on_server_state_updated_.Add(callback).release()};
+}
+
 base::DictionaryValue* ComponentManager::FindComponentGraftNode(
     const std::string& path, ErrorPtr* error) {
   base::DictionaryValue* root = nullptr;
-  auto component = const_cast<base::DictionaryValue*>(FindComponentAt(
-      &components_, path, error));
+  base::DictionaryValue* component = FindMutableComponent(path, error);
   if (component && !component->GetDictionary("components", &root)) {
     root = new base::DictionaryValue;
     component->Set("components", root);
   }
   return root;
+}
+
+base::DictionaryValue* ComponentManager::FindMutableComponent(
+    const std::string& path,
+    ErrorPtr* error) {
+  return const_cast<base::DictionaryValue*>(
+      FindComponentAt(&components_, path, error));
 }
 
 const base::DictionaryValue* ComponentManager::FindComponentAt(
