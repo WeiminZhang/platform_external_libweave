@@ -45,23 +45,9 @@ class Device {
   virtual void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) = 0;
 
-  // Adds provided commands definitions. Can be called multiple times with
-  // condition that definitions do not conflict.
-  // Invalid value is fatal.
-  virtual void AddCommandDefinitionsFromJson(const std::string& json) = 0;
-  virtual void AddCommandDefinitions(const base::DictionaryValue& dict) = 0;
-
   // Callback type for AddCommandHandler.
   using CommandHandlerCallback =
       base::Callback<void(const std::weak_ptr<Command>& command)>;
-
-  // Sets handler for new commands added to the queue.
-  // |command_name| is the full command name of the command to handle. e.g.
-  // "base.reboot". Each command can have no more than one handler.
-  // Empty |command_name| sets default handler for all unhanded commands.
-  // No new command handlers can be set after default handler was set.
-  virtual void AddCommandHandler(const std::string& command_name,
-                                 const CommandHandlerCallback& callback) = 0;
 
   // Adds a new command to the command queue.
   virtual bool AddCommand(const base::DictionaryValue& command,
@@ -75,38 +61,6 @@ class Device {
 
   // Sets callback which is called when stat is changed.
   virtual void AddStateChangedCallback(const base::Closure& callback) = 0;
-
-  // Adds provided state definitions. Can be called multiple times with
-  // condition that definitions do not conflict.
-  // Invalid value is fatal.
-  virtual void AddStateDefinitionsFromJson(const std::string& json) = 0;
-  virtual void AddStateDefinitions(const base::DictionaryValue& dict) = 0;
-
-  // Sets value of multiple properties of the state.
-  // It's recommended to call this to initialize state defined by
-  // AddStateDefinitions.
-  // Example:
-  //   device->SetStatePropertiesFromJson("{'base':{'firmwareVersion':'123'}}")
-  // Method completely replaces properties included |json| or |dict|.
-  // Properties of the state not included |json| or |dict| will stay unchanged.
-  virtual bool SetStatePropertiesFromJson(const std::string& json,
-                                          ErrorPtr* error) = 0;
-  virtual bool SetStateProperties(const base::DictionaryValue& dict,
-                                  ErrorPtr* error) = 0;
-
-  // Returns value of the single property.
-  // |name| is full property name, including package name. e.g. "base.network".
-  virtual const base::Value* GetStateProperty(
-      const std::string& name) const = 0;
-
-  // Sets value of the single property.
-  // |name| is full property name, including package name. e.g. "base.network".
-  virtual bool SetStateProperty(const std::string& name,
-                                const base::Value& value,
-                                ErrorPtr* error) = 0;
-
-  // Returns aggregated state properties across all registered packages.
-  virtual const base::DictionaryValue& GetState() const = 0;
 
   // Returns current state of GCD connection.
   virtual GcdState GetGcdState() const = 0;
@@ -147,6 +101,63 @@ class Device {
       provider::HttpServer* http_server,
       provider::Wifi* wifi,
       provider::Bluetooth* bluetooth_provider);
+
+  //========================== Deprecated APIs =========================
+
+  // Adds provided commands definitions. Can be called multiple times with
+  // condition that definitions do not conflict.
+  // Invalid value is fatal.
+  LIBWEAVE_DEPRECATED virtual void AddCommandDefinitionsFromJson(
+      const std::string& json) = 0;
+  LIBWEAVE_DEPRECATED virtual void AddCommandDefinitions(
+      const base::DictionaryValue& dict) = 0;
+
+  // Sets handler for new commands added to the queue.
+  // |command_name| is the full command name of the command to handle. e.g.
+  // "base.reboot". Each command can have no more than one handler.
+  // Empty |command_name| sets default handler for all unhanded commands.
+  // No new command handlers can be set after default handler was set.
+  LIBWEAVE_DEPRECATED virtual void AddCommandHandler(
+      const std::string& command_name,
+      const CommandHandlerCallback& callback) = 0;
+
+  // Adds provided state definitions. Can be called multiple times with
+  // condition that definitions do not conflict.
+  // Invalid value is fatal.
+  LIBWEAVE_DEPRECATED virtual void AddStateDefinitionsFromJson(
+      const std::string& json) = 0;
+  LIBWEAVE_DEPRECATED virtual void AddStateDefinitions(
+      const base::DictionaryValue& dict) = 0;
+
+  // Sets value of multiple properties of the state.
+  // It's recommended to call this to initialize state defined by
+  // AddStateDefinitions.
+  // Example:
+  //   device->SetStatePropertiesFromJson("{'base':{'firmwareVersion':'123'}}")
+  // Method completely replaces properties included |json| or |dict|.
+  // Properties of the state not included |json| or |dict| will stay unchanged.
+  LIBWEAVE_DEPRECATED virtual bool SetStatePropertiesFromJson(
+      const std::string& json,
+      ErrorPtr* error) = 0;
+  LIBWEAVE_DEPRECATED virtual bool SetStateProperties(
+      const base::DictionaryValue& dict,
+      ErrorPtr* error) = 0;
+
+  // Returns value of the single property.
+  // |name| is full property name, including package name. e.g. "base.network".
+  LIBWEAVE_DEPRECATED virtual const base::Value* GetStateProperty(
+      const std::string& name) const = 0;
+
+  // Sets value of the single property.
+  // |name| is full property name, including package name. e.g. "base.network".
+  LIBWEAVE_DEPRECATED virtual bool SetStateProperty(
+      const std::string& name,
+      const base::Value& value,
+      ErrorPtr* error) = 0;
+
+  // Returns aggregated state properties across all registered packages.
+  LIBWEAVE_DEPRECATED virtual const base::DictionaryValue& GetState() const = 0;
+
 };
 
 }  // namespace weave
