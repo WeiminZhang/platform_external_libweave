@@ -630,7 +630,7 @@ TEST_F(PrivetHandlerSetupTest, State) {
   EXPECT_PRED2(IsEqualJson, "{'state': {'test': {}}, 'fingerprint': '0'}",
                HandleRequest("/privet/v3/state", "{}"));
 
-  cloud_.NotifyOnStateChanged();
+  cloud_.NotifyOnComponentTreeChanged();
 
   EXPECT_PRED2(IsEqualJson, "{'state': {'test': {}}, 'fingerprint': '1'}",
                HandleRequest("/privet/v3/state", "{}"));
@@ -640,7 +640,7 @@ TEST_F(PrivetHandlerSetupTest, CommandsDefs) {
   EXPECT_PRED2(IsEqualJson, "{'commands': {'test':{}}, 'fingerprint': '0'}",
                HandleRequest("/privet/v3/commandDefs", "{}"));
 
-  cloud_.NotifyOnCommandDefsChanged();
+  cloud_.NotifyOnTraitDefsChanged();
 
   EXPECT_PRED2(IsEqualJson, "{'commands': {'test':{}}, 'fingerprint': '1'}",
                HandleRequest("/privet/v3/commandDefs", "{}"));
@@ -735,8 +735,8 @@ TEST_F(PrivetHandlerSetupTest, CommandsList) {
 TEST_F(PrivetHandlerSetupTest, CheckForUpdates_NoInput) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
-  cloud_.NotifyOnCommandDefsChanged();
-  cloud_.NotifyOnStateChanged();
+  cloud_.NotifyOnTraitDefsChanged();
+  cloud_.NotifyOnComponentTreeChanged();
   const char kInput[] = "{}";
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
@@ -750,8 +750,8 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_NoInput) {
 TEST_F(PrivetHandlerSetupTest, CheckForUpdates_AlreadyChanged) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
-  cloud_.NotifyOnCommandDefsChanged();
-  cloud_.NotifyOnStateChanged();
+  cloud_.NotifyOnTraitDefsChanged();
+  cloud_.NotifyOnComponentTreeChanged();
   const char kInput[] = R"({
    'commandsFingerprint': '0',
    'stateFingerprint': '0'
@@ -775,7 +775,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollCommands) {
   EXPECT_PRED2(IsEqualJson, "{}",
                HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
-  cloud_.NotifyOnCommandDefsChanged();
+  cloud_.NotifyOnTraitDefsChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
@@ -794,7 +794,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollState) {
   EXPECT_PRED2(IsEqualJson, "{}",
                HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
-  cloud_.NotifyOnStateChanged();
+  cloud_.NotifyOnComponentTreeChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '0',
@@ -812,9 +812,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreCommands) {
   EXPECT_PRED2(IsEqualJson, "{}",
                HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
-  cloud_.NotifyOnCommandDefsChanged();
+  cloud_.NotifyOnTraitDefsChanged();
   EXPECT_EQ(0, GetResponseCount());
-  cloud_.NotifyOnStateChanged();
+  cloud_.NotifyOnComponentTreeChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
@@ -832,9 +832,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreState) {
   EXPECT_PRED2(IsEqualJson, "{}",
                HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
-  cloud_.NotifyOnStateChanged();
+  cloud_.NotifyOnComponentTreeChanged();
   EXPECT_EQ(0, GetResponseCount());
-  cloud_.NotifyOnCommandDefsChanged();
+  cloud_.NotifyOnTraitDefsChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
@@ -953,7 +953,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ChangeBeforeTimeout) {
   EXPECT_PRED2(IsEqualJson, "{}",
                HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
-  cloud_.NotifyOnCommandDefsChanged();
+  cloud_.NotifyOnTraitDefsChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '1',

@@ -12,11 +12,8 @@ namespace weave {
 
 class BaseApiHandler;
 class Config;
-class CommandManager;
 class ComponentManager;
 class DeviceRegistrationInfo;
-class StateChangeQueue;
-class StateManager;
 
 namespace privet {
 class Manager;
@@ -103,9 +100,6 @@ class DeviceManager final : public Device {
                    provider::Bluetooth* bluetooth);
 
   std::unique_ptr<ComponentManager> component_manager_;
-  std::shared_ptr<CommandManager> command_manager_;
-  std::unique_ptr<StateChangeQueue> state_change_queue_;
-  std::shared_ptr<StateManager> state_manager_;
   std::unique_ptr<DeviceRegistrationInfo> device_info_;
   std::unique_ptr<BaseApiHandler> base_api_handler_;
   std::unique_ptr<privet::Manager> privet_;

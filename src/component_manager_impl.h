@@ -49,13 +49,22 @@ class ComponentManagerImpl final : public ComponentManager {
   // Sets callback which is called when new components are added.
   void AddComponentTreeChangedCallback(const base::Closure& callback) override;
 
-  // Parses the command definition from a json dictionary and adds it to the
-  // command queue. The new command ID is returned through optional |id| param.
-  bool AddCommand(const base::DictionaryValue& command,
-                  Command::Origin command_origin,
-                  UserRole role,
-                  std::string* id,
-                  ErrorPtr* error) override;
+  // Adds a new command instance to the command queue. The command specified in
+  // |command_instance| must be fully initialized and have its name, component,
+  // id populated.
+  void AddCommand(
+      std::unique_ptr<CommandInstance> command_instance) override;
+
+  // Parses the command definition from a json dictionary. The resulting command
+  // instance is populated with all the required fields and partially validated
+  // against syntax/schema.
+  // The new command ID is returned through optional |id| param.
+  std::unique_ptr<CommandInstance> ParseCommandInstance(
+      const base::DictionaryValue& command,
+      Command::Origin command_origin,
+      UserRole role,
+      std::string* id,
+      ErrorPtr* error) override;
 
   // Find a command instance with the given ID in the command queue.
   CommandInstance* FindCommand(const std::string& id) override;
@@ -180,6 +189,13 @@ class ComponentManagerImpl final : public ComponentManager {
       ErrorPtr* error);
 
   base::Clock* clock_{nullptr};
+  // An ID of last state change update. Each NotifyPropertiesUpdated()
+  // invocation increments this value by 1.
+  UpdateID last_state_change_id_{0};
+  // Callback list for state change queue event sinks.
+  // This member must be defined before |command_queue_|.
+  base::CallbackList<void(UpdateID)> on_server_state_updated_;
+
   base::DictionaryValue traits_;  // Trait definitions.
   base::DictionaryValue components_;  // Component instances.
   CommandQueue command_queue_;  // Command queue containing command instances.
@@ -187,13 +203,7 @@ class ComponentManagerImpl final : public ComponentManager {
   std::vector<base::Closure> on_componet_tree_changed_;
   std::vector<base::Closure> on_state_changed_;
   uint32_t next_command_id_{0};
-
   std::map<std::string, std::unique_ptr<StateChangeQueue>> state_change_queues_;
-  // An ID of last state change update. Each NotifyPropertiesUpdated()
-  // invocation increments this value by 1.
-  UpdateID last_state_change_id_{0};
-  // Callback list for state change queue event sinks.
-  base::CallbackList<void(UpdateID)> on_server_state_updated_;
 
   // Legacy API support.
   mutable base::DictionaryValue legacy_state_;  // Device state.

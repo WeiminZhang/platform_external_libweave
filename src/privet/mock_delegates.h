@@ -153,8 +153,10 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_CONST_METHOD0(GetSetupState, const SetupState&());
   MOCK_METHOD3(Setup, bool(const std::string&, const std::string&, ErrorPtr*));
   MOCK_CONST_METHOD0(GetCloudId, std::string());
-  MOCK_CONST_METHOD0(GetState, const base::DictionaryValue&());
-  MOCK_CONST_METHOD0(GetCommandDef, const base::DictionaryValue&());
+  MOCK_CONST_METHOD0(GetLegacyState, const base::DictionaryValue&());
+  MOCK_CONST_METHOD0(GetLegacyCommandDef, const base::DictionaryValue&());
+  MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
+  MOCK_CONST_METHOD0(GetTraits, const base::DictionaryValue&());
   MOCK_METHOD3(AddCommand,
                void(const base::DictionaryValue&,
                     const UserInfo&,
@@ -185,8 +187,11 @@ class MockCloudDelegate : public CloudDelegate {
     EXPECT_CALL(*this, GetSetupState()).WillRepeatedly(ReturnRef(setup_state_));
     EXPECT_CALL(*this, GetCloudId()).WillRepeatedly(Return("TestCloudId"));
     test_dict_.Set("test", new base::DictionaryValue);
-    EXPECT_CALL(*this, GetCommandDef()).WillRepeatedly(ReturnRef(test_dict_));
-    EXPECT_CALL(*this, GetState()).WillRepeatedly(ReturnRef(test_dict_));
+    EXPECT_CALL(*this, GetLegacyState()).WillRepeatedly(ReturnRef(test_dict_));
+    EXPECT_CALL(*this,
+                GetLegacyCommandDef()).WillRepeatedly(ReturnRef(test_dict_));
+    EXPECT_CALL(*this, GetTraits()).WillRepeatedly(ReturnRef(test_dict_));
+    EXPECT_CALL(*this, GetComponents()).WillRepeatedly(ReturnRef(test_dict_));
   }
 
   ConnectionState connection_state_{ConnectionState::kOnline};

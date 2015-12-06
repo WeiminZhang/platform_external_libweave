@@ -9,7 +9,6 @@
 #include <weave/error.h>
 #include <weave/export.h>
 
-#include "src/commands/command_dictionary.h"
 #include "src/commands/command_queue.h"
 #include "src/commands/schema_constants.h"
 #include "src/json_error_codes.h"

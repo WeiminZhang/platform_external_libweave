@@ -27,11 +27,10 @@ class Server;
 
 namespace weave {
 
-class CommandManager;
+class ComponentManager;
 class DeviceRegistrationInfo;
 class DnsServiceDiscovery;
 class Network;
-class StateManager;
 
 namespace privet {
 
@@ -52,8 +51,7 @@ class Manager : public CloudDelegate::Observer {
              provider::HttpServer* http_server,
              provider::Wifi* wifi,
              DeviceRegistrationInfo* device,
-             CommandManager* command_manager,
-             StateManager* state_manager);
+             ComponentManager* component_manager);
 
   std::string GetCurrentlyConnectedSsid() const;
 

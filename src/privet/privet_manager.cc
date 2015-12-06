@@ -18,6 +18,7 @@
 #include <weave/provider/network.h>
 
 #include "src/bind_lambda.h"
+#include "src/component_manager.h"
 #include "src/device_registration_info.h"
 #include "src/http_constants.h"
 #include "src/privet/auth_manager.h"
@@ -47,15 +48,14 @@ void Manager::Start(Network* network,
                     HttpServer* http_server,
                     Wifi* wifi,
                     DeviceRegistrationInfo* device,
-                    CommandManager* command_manager,
-                    StateManager* state_manager) {
+                    ComponentManager* component_manager) {
   disable_security_ = device->GetSettings().disable_security;
 
   device_ = DeviceDelegate::CreateDefault(
       task_runner_, http_server->GetHttpPort(), http_server->GetHttpsPort(),
       http_server->GetRequestTimeout());
-  cloud_ = CloudDelegate::CreateDefault(task_runner_, device, command_manager,
-                                        state_manager);
+  cloud_ = CloudDelegate::CreateDefault(task_runner_, device,
+                                        component_manager);
   cloud_observer_.Add(cloud_.get());
 
   auth_.reset(new AuthManager(device->GetSettings().secret,

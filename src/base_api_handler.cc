@@ -13,6 +13,8 @@
 namespace weave {
 
 namespace {
+const char kBaseComponent[] = "weave";
+const char kBaseTrait[] = "base";
 const char kBaseStateFirmwareVersion[] = "base.firmwareVersion";
 const char kBaseStateAnonymousAccessRole[] = "base.localAnonymousAccessMaxRole";
 const char kBaseStateDiscoveryEnabled[] = "base.localDiscoveryEnabled";
@@ -22,61 +24,64 @@ const char kBaseStatePairingEnabled[] = "base.localPairingEnabled";
 BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
                                Device* device)
     : device_info_{device_info}, device_{device} {
-  device_->AddStateDefinitionsFromJson(R"({
+  device_->AddTraitDefinitionsFromJson(R"({
     "base": {
-      "firmwareVersion": "string",
-      "localDiscoveryEnabled": "boolean",
-      "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
-      "localPairingEnabled": "boolean"
+      "commands": {
+        "updateBaseConfiguration": {
+          "minimalRole": "manager",
+          "parameters": {
+            "localAnonymousAccessMaxRole": {
+              "enum": [ "none", "viewer", "user" ],
+              "type": "string"
+            },
+            "localDiscoveryEnabled": {
+              "type": "boolean"
+            },
+            "localPairingEnabled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "updateDeviceInfo": {
+          "minimalRole": "manager",
+          "parameters": {
+            "description": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "state": {
+        "firmwareVersion": "string",
+        "localDiscoveryEnabled": "boolean",
+        "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
+        "localPairingEnabled": "boolean"
+      }
     }
   })");
+  CHECK(device_->AddComponent(kBaseComponent, {kBaseTrait}, nullptr));
   OnConfigChanged(device_->GetSettings());
 
   const auto& settings = device_info_->GetSettings();
   base::DictionaryValue state;
   state.SetString(kBaseStateFirmwareVersion, settings.firmware_version);
-  CHECK(device_->SetStateProperties(state, nullptr));
-
-  device->AddCommandDefinitionsFromJson(R"({
-    "base": {
-      "updateBaseConfiguration": {
-        "minimalRole": "manager",
-        "parameters": {
-          "localAnonymousAccessMaxRole": {
-            "enum": [ "none", "viewer", "user" ],
-            "type": "string"
-          },
-          "localDiscoveryEnabled": {
-            "type": "boolean"
-          },
-          "localPairingEnabled": {
-            "type": "boolean"
-          }
-        }
-      },
-      "updateDeviceInfo": {
-        "minimalRole": "manager",
-        "parameters": {
-          "description": {
-            "type": "string"
-          },
-          "location": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      }
-    }
-  })");
+  CHECK(device_->SetStateProperty(kBaseComponent, kBaseStateFirmwareVersion,
+                                  base::StringValue{settings.firmware_version},
+                                  nullptr));
 
   device_->AddCommandHandler(
+      kBaseComponent,
       "base.updateBaseConfiguration",
       base::Bind(&BaseApiHandler::UpdateBaseConfiguration,
                  weak_ptr_factory_.GetWeakPtr()));
 
-  device_->AddCommandHandler("base.updateDeviceInfo",
+  device_->AddCommandHandler(kBaseComponent, "base.updateDeviceInfo",
                              base::Bind(&BaseApiHandler::UpdateDeviceInfo,
                                         weak_ptr_factory_.GetWeakPtr()));
 
@@ -128,7 +133,7 @@ void BaseApiHandler::OnConfigChanged(const Settings& settings) {
   state.SetBoolean(kBaseStateDiscoveryEnabled,
                    settings.local_discovery_enabled);
   state.SetBoolean(kBaseStatePairingEnabled, settings.local_pairing_enabled);
-  device_->SetStateProperties(state, nullptr);
+  device_->SetStateProperties(kBaseComponent, state, nullptr);
 }
 
 void BaseApiHandler::UpdateDeviceInfo(const std::weak_ptr<Command>& cmd) {

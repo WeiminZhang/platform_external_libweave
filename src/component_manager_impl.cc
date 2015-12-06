@@ -18,7 +18,18 @@ namespace weave {
 namespace {
 // Max of 100 state update events should be enough in the queue.
 const size_t kMaxStateChangeQueueSize = 100;
-}  // namespace
+
+const EnumToStringMap<UserRole>::Map kMap[] = {
+    {UserRole::kViewer, commands::attributes::kCommand_Role_Viewer},
+    {UserRole::kUser, commands::attributes::kCommand_Role_User},
+    {UserRole::kOwner, commands::attributes::kCommand_Role_Owner},
+    {UserRole::kManager, commands::attributes::kCommand_Role_Manager},
+};
+}  // anonymous namespace
+
+template <>
+LIBWEAVE_EXPORT EnumToStringMap<UserRole>::EnumToStringMap()
+    : EnumToStringMap(kMap) {}
 
 ComponentManagerImpl::ComponentManagerImpl() {}
 
@@ -147,11 +158,17 @@ void ComponentManagerImpl::AddTraitDefChangedCallback(
   callback.Run();
 }
 
-bool ComponentManagerImpl::AddCommand(const base::DictionaryValue& command,
-                                      Command::Origin command_origin,
-                                      UserRole role,
-                                      std::string* id,
-                                      ErrorPtr* error) {
+void ComponentManagerImpl::AddCommand(
+    std::unique_ptr<CommandInstance> command_instance) {
+  command_queue_.Add(std::move(command_instance));
+}
+
+std::unique_ptr<CommandInstance> ComponentManagerImpl::ParseCommandInstance(
+    const base::DictionaryValue& command,
+    Command::Origin command_origin,
+    UserRole role,
+    std::string* id,
+    ErrorPtr* error) {
   std::string command_id;
   auto command_instance = CommandInstance::FromJson(&command, command_origin,
                                                     &command_id, error);
@@ -162,18 +179,18 @@ bool ComponentManagerImpl::AddCommand(const base::DictionaryValue& command,
     *id = command_id;
 
   if (!command_instance)
-    return false;
+    return nullptr;
 
   UserRole minimal_role;
   if (!GetMinimalRole(command_instance->GetName(), &minimal_role, error))
-    return false;
+    return nullptr;
 
   if (role < minimal_role) {
     Error::AddToPrintf(
         error, FROM_HERE, errors::commands::kDomain, "access_denied",
         "User role '%s' less than minimal: '%s'", EnumToString(role).c_str(),
         EnumToString(minimal_role).c_str());
-    return false;
+    return nullptr;
   }
 
   std::string component_path = command_instance->GetComponent();
@@ -188,14 +205,14 @@ bool ComponentManagerImpl::AddCommand(const base::DictionaryValue& command,
           "Unable route command '%s' because there is no component supporting"
           "trait '%s'", command_instance->GetName().c_str(),
           trait_name.c_str());
-      return false;
+      return nullptr;
     }
     command_instance->SetComponent(component_path);
   }
 
   const base::DictionaryValue* component = FindComponent(component_path, error);
   if (!component)
-    return false;
+    return nullptr;
 
   // Check that the command's trait is supported by the given component.
   auto pair = SplitAtFirst(command_instance->GetName(), ".", true);
@@ -218,18 +235,17 @@ bool ComponentManagerImpl::AddCommand(const base::DictionaryValue& command,
                        "trait_not_supported",
                        "Component '%s' doesn't support trait '%s'",
                        component_path.c_str(), pair.first.c_str());
-    return false;
+    return nullptr;
   }
 
   if (command_id.empty()) {
     command_id = std::to_string(++next_command_id_);
     command_instance->SetID(command_id);
+    if (id)
+      *id = command_id;
   }
 
-  if (id)
-    *id = command_id;
-  command_queue_.Add(std::move(command_instance));
-  return true;
+  return command_instance;
 }
 
 CommandInstance* ComponentManagerImpl::FindCommand(const std::string& id) {

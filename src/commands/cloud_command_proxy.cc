@@ -17,15 +17,15 @@ namespace weave {
 CloudCommandProxy::CloudCommandProxy(
     CommandInstance* command_instance,
     CloudCommandUpdateInterface* cloud_command_updater,
-    StateChangeQueueInterface* state_change_queue,
+    ComponentManager* component_manager,
     std::unique_ptr<BackoffEntry> backoff_entry,
     provider::TaskRunner* task_runner)
     : command_instance_{command_instance},
       cloud_command_updater_{cloud_command_updater},
-      state_change_queue_{state_change_queue},
+      component_manager_{component_manager},
       task_runner_{task_runner},
       cloud_backoff_entry_{std::move(backoff_entry)} {
-  callback_token_ = state_change_queue_->AddOnStateUpdatedCallback(
+  callback_token_ = component_manager_->AddServerStateUpdatedCallback(
       base::Bind(&CloudCommandProxy::OnDeviceStateUpdated,
                  weak_ptr_factory_.GetWeakPtr()));
   observer_.Add(command_instance);
@@ -67,7 +67,7 @@ void CloudCommandProxy::OnCommandDestroyed() {
 
 void CloudCommandProxy::QueueCommandUpdate(
     std::unique_ptr<base::DictionaryValue> patch) {
-  UpdateID id = state_change_queue_->GetLastStateChangeId();
+  ComponentManager::UpdateID id = component_manager_->GetLastStateChangeId();
   if (update_queue_.empty() || update_queue_.back().first != id) {
     // If queue is currently empty or the device state has changed since the
     // last patch request queued, add a new request to the queue.
@@ -158,7 +158,8 @@ void CloudCommandProxy::OnUpdateCommandDone(ErrorPtr error) {
   SendCommandUpdate();
 }
 
-void CloudCommandProxy::OnDeviceStateUpdated(UpdateID update_id) {
+void CloudCommandProxy::OnDeviceStateUpdated(
+    ComponentManager::UpdateID update_id) {
   last_state_update_id_ = update_id;
   // Try to send out any queued command updates that could be performed after
   // a device state is updated.

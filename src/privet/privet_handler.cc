@@ -378,7 +378,7 @@ PrivetHandler::~PrivetHandler() {
     ReplyToUpdateRequest(req.callback);
 }
 
-void PrivetHandler::OnCommandDefsChanged() {
+void PrivetHandler::OnTraitDefsChanged() {
   ++command_defs_fingerprint_;
   auto pred = [this](const UpdateRequestParameters& params) {
     return params.command_defs_fingerprint < 0;
@@ -390,7 +390,7 @@ void PrivetHandler::OnCommandDefsChanged() {
   update_requests_.erase(last, update_requests_.end());
 }
 
-void PrivetHandler::OnStateChanged() {
+void PrivetHandler::OnComponentTreeChanged() {
   ++state_fingerprint_;
   auto pred = [this](const UpdateRequestParameters& params) {
     return params.state_fingerprint < 0;
@@ -762,8 +762,7 @@ void PrivetHandler::HandleState(const base::DictionaryValue& input,
                                 const UserInfo& user_info,
                                 const RequestCallback& callback) {
   base::DictionaryValue output;
-  base::DictionaryValue* defs = cloud_->GetState().DeepCopy();
-  output.Set(kStateKey, defs);
+  output.Set(kStateKey, cloud_->GetLegacyState().DeepCopy());
   output.SetString(kFingerprintKey, std::to_string(state_fingerprint_));
 
   callback.Run(http::kOk, output);
@@ -773,8 +772,7 @@ void PrivetHandler::HandleCommandDefs(const base::DictionaryValue& input,
                                       const UserInfo& user_info,
                                       const RequestCallback& callback) {
   base::DictionaryValue output;
-  base::DictionaryValue* defs = cloud_->GetCommandDef().DeepCopy();
-  output.Set(kCommandsKey, defs);
+  output.Set(kCommandsKey, cloud_->GetLegacyCommandDef().DeepCopy());
   output.SetString(kFingerprintKey, std::to_string(command_defs_fingerprint_));
 
   callback.Run(http::kOk, output);

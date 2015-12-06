@@ -621,7 +621,7 @@ TEST(ComponentManager, FindComponent) {
   EXPECT_EQ(nullptr, manager.FindComponent("comp1.comp2[1", nullptr));
 }
 
-TEST(ComponentManager, AddCommand) {
+TEST(ComponentManager, ParseCommandInstance) {
   ComponentManagerImpl manager;
   const char kTraits[] = R"({
     "trait1": {
@@ -631,6 +631,12 @@ TEST(ComponentManager, AddCommand) {
       }
     },
     "trait2": {
+      "commands": {
+        "command1": { "minimalRole": "manager" },
+        "command2": { "minimalRole": "owner" }
+      }
+    },
+    "trait3": {
       "commands": {
         "command1": { "minimalRole": "manager" },
         "command2": { "minimalRole": "owner" }
@@ -650,12 +656,14 @@ TEST(ComponentManager, AddCommand) {
     "parameters": {}
   })";
   auto command1 = CreateDictionaryValue(kCommand1);
-  EXPECT_TRUE(manager.AddCommand(*command1, Command::Origin::kLocal,
-                                 UserRole::kUser, &id, nullptr));
+  EXPECT_NE(nullptr,
+            manager.ParseCommandInstance(*command1, Command::Origin::kLocal,
+                                         UserRole::kUser, &id, nullptr).get());
   EXPECT_EQ("1234-12345", id);
   // Not enough access rights
-  EXPECT_FALSE(manager.AddCommand(*command1, Command::Origin::kLocal,
-                                  UserRole::kViewer, &id, nullptr));
+  EXPECT_EQ(nullptr,
+            manager.ParseCommandInstance(*command1, Command::Origin::kLocal,
+                                         UserRole::kViewer, &id, nullptr).get());
 
   const char kCommand2[] = R"({
     "name": "trait1.command3",
@@ -664,8 +672,9 @@ TEST(ComponentManager, AddCommand) {
   })";
   auto command2 = CreateDictionaryValue(kCommand2);
   // trait1.command3 doesn't exist
-  EXPECT_FALSE(manager.AddCommand(*command2, Command::Origin::kLocal,
-                                  UserRole::kOwner, &id, nullptr));
+  EXPECT_EQ(nullptr,
+            manager.ParseCommandInstance(*command2, Command::Origin::kLocal,
+                                         UserRole::kOwner, &id, nullptr).get());
   EXPECT_TRUE(id.empty());
 
   const char kCommand3[] = R"({
@@ -675,8 +684,9 @@ TEST(ComponentManager, AddCommand) {
   })";
   auto command3 = CreateDictionaryValue(kCommand3);
   // Component comp1 doesn't have trait2.
-  EXPECT_FALSE(manager.AddCommand(*command3, Command::Origin::kLocal,
-                                  UserRole::kOwner, &id, nullptr));
+  EXPECT_EQ(nullptr,
+            manager.ParseCommandInstance(*command3, Command::Origin::kLocal,
+                                         UserRole::kOwner, &id, nullptr).get());
 
   // No component specified, find the suitable component
   const char kCommand4[] = R"({
@@ -684,22 +694,60 @@ TEST(ComponentManager, AddCommand) {
     "parameters": {}
   })";
   auto command4 = CreateDictionaryValue(kCommand4);
-  EXPECT_TRUE(manager.AddCommand(*command4, Command::Origin::kLocal,
-                                 UserRole::kOwner, &id, nullptr));
-  auto cmd = manager.FindCommand(id);
-  ASSERT_NE(nullptr, cmd);
-  EXPECT_EQ("comp1", cmd->GetComponent());
+  auto command_instance = manager.ParseCommandInstance(
+      *command4, Command::Origin::kLocal, UserRole::kOwner, &id, nullptr);
+  EXPECT_NE(nullptr, command_instance.get());
+  EXPECT_EQ("comp1", command_instance->GetComponent());
 
   const char kCommand5[] = R"({
     "name": "trait2.command1",
     "parameters": {}
   })";
   auto command5 = CreateDictionaryValue(kCommand5);
-  EXPECT_TRUE(manager.AddCommand(*command5, Command::Origin::kLocal,
-                                 UserRole::kOwner, &id, nullptr));
-  cmd = manager.FindCommand(id);
-  ASSERT_NE(nullptr, cmd);
-  EXPECT_EQ("comp2", cmd->GetComponent());
+  command_instance = manager.ParseCommandInstance(
+      *command5, Command::Origin::kLocal, UserRole::kOwner, &id, nullptr);
+  EXPECT_NE(nullptr, command_instance.get());
+  EXPECT_EQ("comp2", command_instance->GetComponent());
+
+  // Cannot route the command, no component with 'trait3'.
+  const char kCommand6[] = R"({
+    "name": "trait3.command1",
+    "parameters": {}
+  })";
+  auto command6 = CreateDictionaryValue(kCommand6);
+  EXPECT_EQ(nullptr,
+            manager.ParseCommandInstance(*command6, Command::Origin::kLocal,
+                                         UserRole::kOwner, &id, nullptr).get());
+}
+
+TEST(ComponentManager, AddCommand) {
+  ComponentManagerImpl manager;
+  const char kTraits[] = R"({
+    "trait1": {
+      "commands": {
+        "command1": { "minimalRole": "user" }
+      }
+    }
+  })";
+  auto traits = CreateDictionaryValue(kTraits);
+  ASSERT_TRUE(manager.LoadTraits(*traits, nullptr));
+  ASSERT_TRUE(manager.AddComponent("", "comp1", {"trait1"}, nullptr));
+
+  std::string id;
+  const char kCommand[] = R"({
+    "name": "trait1.command1",
+    "id": "1234-12345",
+    "component": "comp1",
+    "parameters": {}
+  })";
+  auto command = CreateDictionaryValue(kCommand);
+  auto command_instance = manager.ParseCommandInstance(
+      *command, Command::Origin::kLocal, UserRole::kUser, &id, nullptr);
+  ASSERT_NE(nullptr, command_instance.get());
+  manager.AddCommand(std::move(command_instance));
+  const auto* queued_command = manager.FindCommand(id);
+  ASSERT_NE(nullptr, queued_command);
+  EXPECT_EQ("trait1.command1", queued_command->GetName());
 }
 
 TEST(ComponentManager, AddCommandHandler) {
@@ -738,8 +786,10 @@ TEST(ComponentManager, AddCommandHandler) {
     "component": "comp1"
   })";
   auto command1 = CreateDictionaryValue(kCommand1);
-  EXPECT_TRUE(manager.AddCommand(*command1, Command::Origin::kCloud,
-                                 UserRole::kUser, nullptr, nullptr));
+  auto command_instance = manager.ParseCommandInstance(
+      *command1, Command::Origin::kCloud, UserRole::kUser, nullptr, nullptr);
+  ASSERT_NE(nullptr, command_instance.get());
+  manager.AddCommand(std::move(command_instance));
   EXPECT_EQ("1", last_tags);
   last_tags.clear();
 
@@ -748,8 +798,10 @@ TEST(ComponentManager, AddCommandHandler) {
     "component": "comp2"
   })";
   auto command2 = CreateDictionaryValue(kCommand2);
-  EXPECT_TRUE(manager.AddCommand(*command2, Command::Origin::kCloud,
-                                 UserRole::kUser, nullptr, nullptr));
+  command_instance = manager.ParseCommandInstance(
+      *command2, Command::Origin::kCloud, UserRole::kUser, nullptr, nullptr);
+  ASSERT_NE(nullptr, command_instance.get());
+  manager.AddCommand(std::move(command_instance));
   EXPECT_EQ("2", last_tags);
   last_tags.clear();
 
@@ -759,8 +811,10 @@ TEST(ComponentManager, AddCommandHandler) {
     "parameters": {}
   })";
   auto command3 = CreateDictionaryValue(kCommand3);
-  EXPECT_TRUE(manager.AddCommand(*command3, Command::Origin::kLocal,
-                                 UserRole::kUser, nullptr, nullptr));
+  command_instance = manager.ParseCommandInstance(
+      *command3, Command::Origin::kCloud, UserRole::kUser, nullptr, nullptr);
+  ASSERT_NE(nullptr, command_instance.get());
+  manager.AddCommand(std::move(command_instance));
   EXPECT_EQ("3", last_tags);
   last_tags.clear();
 }

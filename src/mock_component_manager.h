@@ -29,7 +29,9 @@ class MockComponentManager : public ComponentManager {
                     ErrorPtr* error));
   MOCK_METHOD1(AddComponentTreeChangedCallback,
                void(const base::Closure& callback));
-  MOCK_METHOD5(AddCommand, bool(const base::DictionaryValue& command,
+  MOCK_METHOD1(MockAddCommand, void(CommandInstance* command_instance));
+  MOCK_METHOD5(MockParseCommandInstance,
+               CommandInstance*(const base::DictionaryValue& command,
                                 Command::Origin command_origin,
                                 UserRole role,
                                 std::string* id,
@@ -89,6 +91,18 @@ class MockComponentManager : public ComponentManager {
                      const base::DictionaryValue&());
 
  private:
+  void AddCommand(std::unique_ptr<CommandInstance> command_instance) override {
+    MockAddCommand(command_instance.get());
+  }
+  std::unique_ptr<CommandInstance> ParseCommandInstance(
+      const base::DictionaryValue& command,
+      Command::Origin command_origin,
+      UserRole role,
+      std::string* id,
+      ErrorPtr* error) {
+    return std::unique_ptr<CommandInstance>{MockParseCommandInstance(
+        command, command_origin, role, id, error)};
+  }
   StateSnapshot GetAndClearRecordedStateChanges() override {
     return std::move(MockGetAndClearRecordedStateChanges());
   }

@@ -23,8 +23,6 @@ class StateChangeQueueTest : public ::testing::Test {
 };
 
 TEST_F(StateChangeQueueTest, Empty) {
-  EXPECT_TRUE(queue_->IsEmpty());
-  EXPECT_EQ(0u, queue_->GetLastStateChangeId());
   EXPECT_TRUE(queue_->GetAndClearRecordedStateChanges().empty());
 }
 
@@ -32,14 +30,10 @@ TEST_F(StateChangeQueueTest, UpdateOne) {
   auto timestamp = base::Time::Now();
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
       timestamp, *CreateDictionaryValue("{'prop': {'name': 23}}")));
-  EXPECT_FALSE(queue_->IsEmpty());
-  EXPECT_EQ(1u, queue_->GetLastStateChangeId());
   auto changes = queue_->GetAndClearRecordedStateChanges();
-  EXPECT_EQ(1u, queue_->GetLastStateChangeId());
   ASSERT_EQ(1u, changes.size());
   EXPECT_EQ(timestamp, changes.front().timestamp);
   EXPECT_JSON_EQ("{'prop':{'name': 23}}", *changes.front().changed_properties);
-  EXPECT_TRUE(queue_->IsEmpty());
   EXPECT_TRUE(queue_->GetAndClearRecordedStateChanges().empty());
 }
 
@@ -54,15 +48,12 @@ TEST_F(StateChangeQueueTest, UpdateMany) {
   ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
       timestamp2, *CreateDictionaryValue(state2)));
 
-  EXPECT_EQ(2u, queue_->GetLastStateChangeId());
-  EXPECT_FALSE(queue_->IsEmpty());
   auto changes = queue_->GetAndClearRecordedStateChanges();
   ASSERT_EQ(2u, changes.size());
   EXPECT_EQ(timestamp1, changes[0].timestamp);
   EXPECT_JSON_EQ(state1, *changes[0].changed_properties);
   EXPECT_EQ(timestamp2, changes[1].timestamp);
   EXPECT_JSON_EQ(state2, *changes[1].changed_properties);
-  EXPECT_TRUE(queue_->IsEmpty());
   EXPECT_TRUE(queue_->GetAndClearRecordedStateChanges().empty());
 }
 
@@ -84,7 +75,6 @@ TEST_F(StateChangeQueueTest, GroupByTimestamp) {
       *CreateDictionaryValue("{'prop': {'name1': 4}}")));
 
   auto changes = queue_->GetAndClearRecordedStateChanges();
-  EXPECT_EQ(4u, queue_->GetLastStateChangeId());
   ASSERT_EQ(2u, changes.size());
 
   const std::string expected1 = "{'prop': {'name1': 3, 'name2': 2}}";
@@ -113,7 +103,6 @@ TEST_F(StateChangeQueueTest, MaxQueueSize) {
       start_time + time_delta2,
       *CreateDictionaryValue("{'prop': {'name10': 10, 'name11': 11}}")));
 
-  EXPECT_EQ(3u, queue_->GetLastStateChangeId());
   auto changes = queue_->GetAndClearRecordedStateChanges();
   ASSERT_EQ(2u, changes.size());
 
@@ -126,28 +115,6 @@ TEST_F(StateChangeQueueTest, MaxQueueSize) {
       "{'prop': {'name10': 10, 'name11': 11}}";
   EXPECT_EQ(start_time + time_delta2, changes[1].timestamp);
   EXPECT_JSON_EQ(expected2, *changes[1].changed_properties);
-}
-
-TEST_F(StateChangeQueueTest, ImmediateStateChangeNotification) {
-  // When queue is empty, registering a new callback will trigger it.
-  bool called = false;
-  auto callback = [&called](StateChangeQueueInterface::UpdateID id) {
-    called = true;
-  };
-  queue_->AddOnStateUpdatedCallback(base::Bind(callback));
-  EXPECT_TRUE(called);
-}
-
-TEST_F(StateChangeQueueTest, DelayedStateChangeNotification) {
-  // When queue is not empty, registering a new callback will not trigger it.
-  ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      base::Time::Now(),
-      *CreateDictionaryValue("{'prop': {'name1': 1, 'name3': 2}}")));
-
-  auto callback = [](StateChangeQueueInterface::UpdateID id) {
-    FAIL() << "This should not be called";
-  };
-  queue_->AddOnStateUpdatedCallback(base::Bind(callback));
 }
 
 }  // namespace weave

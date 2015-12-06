@@ -18,7 +18,7 @@
 #include "src/backoff_entry.h"
 #include "src/commands/cloud_command_update_interface.h"
 #include "src/commands/command_instance.h"
-#include "src/states/state_change_queue_interface.h"
+#include "src/component_manager.h"
 
 namespace weave {
 
@@ -33,7 +33,7 @@ class CloudCommandProxy final : public CommandInstance::Observer {
  public:
   CloudCommandProxy(CommandInstance* command_instance,
                     CloudCommandUpdateInterface* cloud_command_updater,
-                    StateChangeQueueInterface* state_change_queue,
+                    ComponentManager* component_manager,
                     std::unique_ptr<BackoffEntry> backoff_entry,
                     provider::TaskRunner* task_runner);
   ~CloudCommandProxy() override = default;
@@ -46,10 +46,8 @@ class CloudCommandProxy final : public CommandInstance::Observer {
   void OnStateChanged() override;
 
  private:
-  using UpdateID = StateChangeQueueInterface::UpdateID;
-  using UpdateQueueEntry =
-      std::pair<UpdateID, std::unique_ptr<base::DictionaryValue>>;
-
+  using UpdateQueueEntry = std::pair<ComponentManager::UpdateID,
+                                     std::unique_ptr<base::DictionaryValue>>;
   // Puts a command update data into the update queue, and optionally sends an
   // asynchronous request to GCD server to update the command resource, if there
   // are no pending device status updates.
@@ -68,11 +66,11 @@ class CloudCommandProxy final : public CommandInstance::Observer {
   // Callback invoked by the device state change queue to notify of the
   // successful device state update. |update_id| is the ID of the state that
   // has been updated on the server.
-  void OnDeviceStateUpdated(UpdateID update_id);
+  void OnDeviceStateUpdated(ComponentManager::UpdateID update_id);
 
   CommandInstance* command_instance_;
   CloudCommandUpdateInterface* cloud_command_updater_;
-  StateChangeQueueInterface* state_change_queue_;
+  ComponentManager* component_manager_;
   provider::TaskRunner* task_runner_{nullptr};
 
   // Backoff for SendCommandUpdate() method.
@@ -87,11 +85,11 @@ class CloudCommandProxy final : public CommandInstance::Observer {
   // Callback token from the state change queue for OnDeviceStateUpdated()
   // callback for ask the device state change queue to call when the state
   // is updated on the server.
-  StateChangeQueueInterface::Token callback_token_;
+  ComponentManager::Token callback_token_;
 
   // Last device state update ID that has been sent out to the server
   // successfully.
-  UpdateID last_state_update_id_{0};
+  ComponentManager::UpdateID last_state_update_id_{0};
 
   ScopedObserver<CommandInstance, CommandInstance::Observer> observer_{this};
 

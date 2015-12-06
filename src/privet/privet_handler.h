@@ -45,8 +45,8 @@ class PrivetHandler : public CloudDelegate::Observer {
                 WifiDelegate* wifi);
   ~PrivetHandler() override;
 
-  void OnCommandDefsChanged() override;
-  void OnStateChanged() override;
+  void OnTraitDefsChanged() override;
+  void OnComponentTreeChanged() override;
 
   std::vector<std::string> GetHttpPaths() const;
   std::vector<std::string> GetHttpsPaths() const;

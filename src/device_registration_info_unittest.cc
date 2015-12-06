@@ -14,10 +14,8 @@
 #include <weave/test/unittest_utils.h>
 
 #include "src/bind_lambda.h"
-#include "src/commands/command_manager.h"
+#include "src/component_manager_impl.h"
 #include "src/http_constants.h"
-#include "src/states/mock_state_change_queue_interface.h"
-#include "src/states/state_manager.h"
 
 using testing::_;
 using testing::AtLeast;
@@ -115,17 +113,9 @@ std::pair<std::string, std::string> GetFormHeader() {
 class DeviceRegistrationInfoTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    EXPECT_CALL(mock_state_change_queue_, GetLastStateChangeId())
-        .WillRepeatedly(Return(0));
-    EXPECT_CALL(mock_state_change_queue_, MockAddOnStateUpdatedCallback(_))
-        .WillRepeatedly(Return(nullptr));
-
-    command_manager_ = std::make_shared<CommandManager>();
-    state_manager_ = std::make_shared<StateManager>(&mock_state_change_queue_);
-
     std::unique_ptr<Config> config{new Config{&config_store_}};
     config_ = config.get();
-    dev_reg_.reset(new DeviceRegistrationInfo{command_manager_, state_manager_,
+    dev_reg_.reset(new DeviceRegistrationInfo{&component_manager_,
                                               std::move(config), &task_runner_,
                                               &http_client_, nullptr});
 
@@ -196,9 +186,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   base::DictionaryValue data_;
   Config* config_{nullptr};
   std::unique_ptr<DeviceRegistrationInfo> dev_reg_;
-  std::shared_ptr<CommandManager> command_manager_;
-  StrictMock<MockStateChangeQueueInterface> mock_state_change_queue_;
-  std::shared_ptr<StateManager> state_manager_;
+  ComponentManagerImpl component_manager_;
 };
 
 TEST_F(DeviceRegistrationInfoTest, GetServiceURL) {
@@ -352,21 +340,33 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
 }
 
 TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
-  auto json_cmds = CreateDictionaryValue(R"({
+  auto json_traits = CreateDictionaryValue(R"({
     'base': {
-      'reboot': {
-        'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
-        'minimalRole': 'user'
+      'commands': {
+        'reboot': {
+          'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
+          'minimalRole': 'user'
+        }
+      },
+      'state': {
+        'firmwareVersion': {'type': 'string'}
       }
     },
     'robot': {
-      '_jump': {
-        'parameters': {'_height': {'type': 'integer'}},
-        'minimalRole': 'user'
+      'commands': {
+        '_jump': {
+          'parameters': {'_height': {'type': 'integer'}},
+          'minimalRole': 'user'
+        }
       }
     }
   })");
-  EXPECT_TRUE(command_manager_->LoadCommands(*json_cmds, nullptr));
+  EXPECT_TRUE(component_manager_.LoadTraits(*json_traits, nullptr));
+  EXPECT_TRUE(component_manager_.AddComponent("", "comp", {"base", "robot"},
+                                              nullptr));
+  base::StringValue ver{"1.0"};
+  EXPECT_TRUE(component_manager_.SetStateProperty(
+      "comp", "base.firmwareVersion", ver, nullptr));
 
   std::string ticket_url = dev_reg_->GetServiceURL("registrationTickets/") +
                            test_data::kClaimTicketId;
@@ -395,12 +395,9 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
         EXPECT_EQ("AAAAA", value);
         EXPECT_TRUE(json->GetString("deviceDraft.name", &value));
         EXPECT_EQ("Coffee Pot", value);
-        base::DictionaryValue* commandDefs = nullptr;
-        EXPECT_TRUE(
-            json->GetDictionary("deviceDraft.commandDefs", &commandDefs));
-        EXPECT_FALSE(commandDefs->empty());
-
-        auto expected = R"({
+        base::DictionaryValue* dict = nullptr;
+        EXPECT_TRUE(json->GetDictionary("deviceDraft.commandDefs", &dict));
+        auto expectedCommandDefs = R"({
             'base': {
               'reboot': {
                 'parameters': {
@@ -423,7 +420,50 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
               }
             }
           })";
-        EXPECT_JSON_EQ(expected, *commandDefs);
+        EXPECT_JSON_EQ(expectedCommandDefs, *dict);
+
+        EXPECT_TRUE(json->GetDictionary("deviceDraft.state", &dict));
+        auto expectedState = R"({
+            'base': {
+              'firmwareVersion': '1.0'
+            }
+          })";
+        EXPECT_JSON_EQ(expectedState, *dict);
+
+        EXPECT_TRUE(json->GetDictionary("deviceDraft.traits", &dict));
+        auto expectedTraits = R"({
+            'base': {
+              'commands': {
+                'reboot': {
+                  'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
+                  'minimalRole': 'user'
+                }
+              },
+              'state': {
+                'firmwareVersion': {'type': 'string'}
+              }
+            },
+            'robot': {
+              'commands': {
+                '_jump': {
+                  'parameters': {'_height': {'type': 'integer'}},
+                  'minimalRole': 'user'
+                }
+              }
+            }
+          })";
+        EXPECT_JSON_EQ(expectedTraits, *dict);
+
+        EXPECT_TRUE(json->GetDictionary("deviceDraft.components", &dict));
+        auto expectedComponents = R"({
+            'comp': {
+              'traits': ['base', 'robot'],
+              'state': {
+                'base': { 'firmwareVersion': '1.0' }
+              }
+            }
+          })";
+        EXPECT_JSON_EQ(expectedComponents, *dict);
 
         base::DictionaryValue json_resp;
         json_resp.SetString("id", test_data::kClaimTicketId);
@@ -519,22 +559,27 @@ class DeviceRegistrationInfoUpdateCommandTest
     ReloadSettings();
     SetAccessToken();
 
-    auto json_cmds = CreateDictionaryValue(R"({
+    auto json_traits = CreateDictionaryValue(R"({
       'robot': {
-        '_jump': {
-          'parameters': {'_height': 'integer'},
-          'progress': {'progress': 'integer'},
-          'results': {'status': 'string'},
-          'minimalRole': 'user'
+        'commands': {
+          '_jump': {
+            'parameters': {'_height': 'integer'},
+            'progress': {'progress': 'integer'},
+            'results': {'status': 'string'},
+            'minimalRole': 'user'
+          }
         }
       }
     })");
-    EXPECT_TRUE(command_manager_->LoadCommands(*json_cmds, nullptr));
+    EXPECT_TRUE(component_manager_.LoadTraits(*json_traits, nullptr));
+    EXPECT_TRUE(component_manager_.AddComponent("", "comp", {"robot"},
+                                                nullptr));
 
     command_url_ = dev_reg_->GetServiceURL("commands/1234");
 
     auto commands_json = CreateValue(R"([{
       'name':'robot._jump',
+      'component': 'comp',
       'id':'1234',
       'parameters': {'_height': 100},
       'minimalRole': 'user'
@@ -543,7 +588,7 @@ class DeviceRegistrationInfoUpdateCommandTest
     const base::ListValue* command_list = nullptr;
     ASSERT_TRUE(commands_json->GetAsList(&command_list));
     PublishCommands(*command_list);
-    command_ = command_manager_->FindCommand("1234");
+    command_ = component_manager_.FindCommand("1234");
     ASSERT_NE(nullptr, command_);
   }
 

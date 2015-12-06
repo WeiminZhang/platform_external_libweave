@@ -22,13 +22,11 @@
 
 #include "src/bind_lambda.h"
 #include "src/commands/cloud_command_proxy.h"
-#include "src/commands/command_manager.h"
 #include "src/commands/schema_constants.h"
 #include "src/data_encoding.h"
 #include "src/http_constants.h"
 #include "src/json_error_codes.h"
 #include "src/notification/xmpp_channel.h"
-#include "src/states/state_manager.h"
 #include "src/string_utils.h"
 #include "src/utils.h"
 
@@ -239,16 +237,14 @@ bool IsSuccessful(const HttpClient::Response& response) {
 }  // anonymous namespace
 
 DeviceRegistrationInfo::DeviceRegistrationInfo(
-    const std::shared_ptr<CommandManager>& command_manager,
-    const std::shared_ptr<StateManager>& state_manager,
+    ComponentManager* component_manager,
     std::unique_ptr<Config> config,
     provider::TaskRunner* task_runner,
     provider::HttpClient* http_client,
     provider::Network* network)
     : http_client_{http_client},
       task_runner_{task_runner},
-      command_manager_{command_manager},
-      state_manager_{state_manager},
+      component_manager_{component_manager},
       config_{std::move(config)},
       network_{network} {
   cloud_backoff_policy_.reset(new BackoffEntry::Policy{});
@@ -267,10 +263,13 @@ DeviceRegistrationInfo::DeviceRegistrationInfo(
   gcd_state_ =
       revoked ? GcdState::kInvalidCredentials : GcdState::kUnconfigured;
 
-  command_manager_->AddCommandDefChanged(
-      base::Bind(&DeviceRegistrationInfo::OnCommandDefsChanged,
+  component_manager_->AddTraitDefChangedCallback(
+      base::Bind(&DeviceRegistrationInfo::OnTraitDefsChanged,
                  weak_factory_.GetWeakPtr()));
-  state_manager_->AddChangedCallback(base::Bind(
+  component_manager_->AddComponentTreeChangedCallback(base::Bind(
+      &DeviceRegistrationInfo::OnComponentTreeChanged,
+      weak_factory_.GetWeakPtr()));
+  component_manager_->AddStateChangedCallback(base::Bind(
       &DeviceRegistrationInfo::OnStateChanged, weak_factory_.GetWeakPtr()));
 }
 
@@ -479,12 +478,6 @@ void DeviceRegistrationInfo::AddGcdStateChangedCallback(
 
 std::unique_ptr<base::DictionaryValue>
 DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
-  // Limit only to commands that are visible to the cloud.
-  const base::DictionaryValue& commands =
-      command_manager_->GetCommandDictionary().GetCommandsAsJson();
-
-  const base::DictionaryValue& state = state_manager_->GetState();
-
   std::unique_ptr<base::DictionaryValue> resource{new base::DictionaryValue};
   if (!GetSettings().cloud_id.empty())
     resource->SetString("id", GetSettings().cloud_id);
@@ -503,34 +496,12 @@ DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
     channel->SetString("supportedType", "pull");
   }
   resource->Set("channel", channel.release());
-  resource->Set("commandDefs", commands.DeepCopy());
-  resource->Set("state", state.DeepCopy());
+  resource->Set("commandDefs",
+                component_manager_->GetLegacyCommandDefinitions().DeepCopy());
+  resource->Set("state", component_manager_->GetLegacyState().DeepCopy());
+  resource->Set("traits", component_manager_->GetTraits().DeepCopy());
+  resource->Set("components", component_manager_->GetComponents().DeepCopy());
 
-  // TODO(avakulenko): Temporary code to generate a single top-level component
-  // using the new component-trait model. This is to unblock clients to start
-  // implementation on their side.
-  base::DictionaryValue traits;
-  base::DictionaryValue component;
-  std::set<std::string> all_traits;
-  for (const auto& pair : state_manager_->packages()) {
-    all_traits.insert(pair.first);
-    std::string key = base::StringPrintf("%s.state", pair.first.c_str());
-    traits.Set(key, pair.second->types().DeepCopy());
-    key = base::StringPrintf("state.%s", pair.first.c_str());
-    component.Set(key, pair.second->GetValuesAsJson().DeepCopy());
-  }
-  for (base::DictionaryValue::Iterator it(commands); !it.IsAtEnd();
-       it.Advance()) {
-    all_traits.insert(it.key());
-    std::string key = base::StringPrintf("%s.commands", it.key().c_str());
-    traits.Set(key, it.value().DeepCopy());
-  }
-  resource->Set("traits", traits.DeepCopy());
-  base::ListValue* trait_list = new base::ListValue();
-  for (const std::string& trait : all_traits)
-    trait_list->AppendString(trait);
-  component.Set("traits", trait_list);
-  resource->Set("components.device", component.DeepCopy());
   return resource;
 }
 
@@ -1102,8 +1073,8 @@ void DeviceRegistrationInfo::PublishCommand(
     const base::DictionaryValue& command) {
   std::string command_id;
   ErrorPtr error;
-  auto command_instance = CommandInstance::FromJson(
-      &command, Command::Origin::kCloud, &command_id, &error);
+  auto command_instance = component_manager_->ParseCommandInstance(
+      command, Command::Origin::kCloud, UserRole::kOwner, &command_id, &error);
   if (!command_instance) {
     LOG(WARNING) << "Failed to parse a command instance: " << command;
     if (!command_id.empty())
@@ -1112,19 +1083,19 @@ void DeviceRegistrationInfo::PublishCommand(
   }
 
   // TODO(antonm): Properly process cancellation of commands.
-  if (!command_manager_->FindCommand(command_instance->GetID())) {
+  if (!component_manager_->FindCommand(command_instance->GetID())) {
     LOG(INFO) << "New command '" << command_instance->GetName()
               << "' arrived, ID: " << command_instance->GetID();
     std::unique_ptr<BackoffEntry> backoff_entry{
         new BackoffEntry{cloud_backoff_policy_.get()}};
     std::unique_ptr<CloudCommandProxy> cloud_proxy{new CloudCommandProxy{
-        command_instance.get(), this, state_manager_->GetStateChangeQueue(),
+        command_instance.get(), this, component_manager_,
         std::move(backoff_entry), task_runner_}};
     // CloudCommandProxy::CloudCommandProxy() subscribe itself to Command
     // notifications. When Command is being destroyed it sends
     // ::OnCommandDestroyed() and CloudCommandProxy deletes itself.
     cloud_proxy.release();
-    command_manager_->AddCommand(std::move(command_instance));
+    component_manager_->AddCommand(std::move(command_instance));
   }
 }
 
@@ -1133,18 +1104,18 @@ void DeviceRegistrationInfo::PublishStateUpdates() {
   if (device_state_update_pending_)
     return;
 
-  StateChangeQueueInterface::UpdateID update_id = 0;
-  std::vector<StateChange> state_changes;
-  std::tie(update_id, state_changes) =
-      state_manager_->GetAndClearRecordedStateChanges();
-  if (state_changes.empty())
+  auto snapshot = component_manager_->GetAndClearRecordedStateChanges();
+  if (snapshot.state_changes.empty())
     return;
 
   std::unique_ptr<base::ListValue> patches{new base::ListValue};
-  for (auto& state_change : state_changes) {
+  for (auto& state_change : snapshot.state_changes) {
     std::unique_ptr<base::DictionaryValue> patch{new base::DictionaryValue};
     patch->SetString("timeMs",
                      std::to_string(state_change.timestamp.ToJavaTime()));
+    // TODO(avakulenko): Uncomment this once server supports "component"
+    // attribute on a state patch object.
+    // patch->SetString("component", state_change.component);
     patch->Set("patch", state_change.changed_properties.release());
     patches->Append(patch.release());
   }
@@ -1157,11 +1128,11 @@ void DeviceRegistrationInfo::PublishStateUpdates() {
   device_state_update_pending_ = true;
   DoCloudRequest(HttpClient::Method::kPost, GetDeviceURL("patchState"), &body,
                  base::Bind(&DeviceRegistrationInfo::OnPublishStateDone,
-                            AsWeakPtr(), update_id));
+                            AsWeakPtr(), snapshot.update_id));
 }
 
 void DeviceRegistrationInfo::OnPublishStateDone(
-    StateChangeQueueInterface::UpdateID update_id,
+    ComponentManager::UpdateID update_id,
     const base::DictionaryValue& reply,
     ErrorPtr error) {
   device_state_update_pending_ = false;
@@ -1169,7 +1140,7 @@ void DeviceRegistrationInfo::OnPublishStateDone(
     LOG(ERROR) << "Permanent failure while trying to update device state";
     return;
   }
-  state_manager_->NotifyStateUpdatedOnServer(update_id);
+  component_manager_->NotifyStateUpdatedOnServer(update_id);
   // See if there were more pending state updates since the previous request
   // had been sent out.
   PublishStateUpdates();
@@ -1183,7 +1154,7 @@ void DeviceRegistrationInfo::SetGcdState(GcdState new_state) {
     cb.Run(gcd_state_);
 }
 
-void DeviceRegistrationInfo::OnCommandDefsChanged() {
+void DeviceRegistrationInfo::OnTraitDefsChanged() {
   VLOG(1) << "CommandDefinitionChanged notification received";
   if (!HaveRegistrationCredentials() || !connected_to_cloud_)
     return;
@@ -1198,6 +1169,14 @@ void DeviceRegistrationInfo::OnStateChanged() {
 
   // TODO(vitalybuka): Integrate BackoffEntry.
   PublishStateUpdates();
+}
+
+void DeviceRegistrationInfo::OnComponentTreeChanged() {
+  VLOG(1) << "ComponentTreeChanged notification received";
+  if (!HaveRegistrationCredentials() || !connected_to_cloud_)
+    return;
+
+  UpdateDeviceResource(base::Bind(&IgnoreCloudError));
 }
 
 void DeviceRegistrationInfo::OnConnected(const std::string& channel_name) {

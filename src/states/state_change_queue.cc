@@ -5,7 +5,6 @@
 #include "src/states/state_change_queue.h"
 
 #include <base/logging.h>
-#include <base/values.h>
 
 namespace weave {
 
@@ -38,7 +37,6 @@ bool StateChangeQueue::NotifyPropertiesUpdated(
     std::swap(element_old->second, element_new->second);
     state_changes_.erase(element_old);
   }
-  ++last_change_id_;
   return true;
 }
 
@@ -50,17 +48,6 @@ std::vector<StateChange> StateChangeQueue::GetAndClearRecordedStateChanges() {
   }
   state_changes_.clear();
   return changes;
-}
-
-StateChangeQueueInterface::Token StateChangeQueue::AddOnStateUpdatedCallback(
-    const base::Callback<void(UpdateID)>& callback) {
-  if (state_changes_.empty())
-    callback.Run(last_change_id_);
-  return Token{callbacks_.Add(callback).release()};
-}
-
-void StateChangeQueue::NotifyStateUpdatedOnServer(UpdateID update_id) {
-  callbacks_.Notify(update_id);
 }
 
 }  // namespace weave

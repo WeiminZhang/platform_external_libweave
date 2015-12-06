@@ -13,12 +13,18 @@
 #include <base/values.h>
 #include <weave/error.h>
 
-#include "src/commands/command_dictionary.h"
 #include "src/commands/command_queue.h"
 
 namespace weave {
 
 class CommandInstance;
+
+enum class UserRole {
+  kViewer,
+  kUser,
+  kManager,
+  kOwner,
+};
 
 // A simple notification record event to track component state changes.
 // The |timestamp| records the time of the state change.
@@ -82,13 +88,22 @@ class ComponentManager {
   virtual void AddComponentTreeChangedCallback(
       const base::Closure& callback) = 0;
 
-  // Parses the command definition from a json dictionary and adds it to the
-  // command queue. The new command ID is returned through optional |id| param.
-  virtual bool AddCommand(const base::DictionaryValue& command,
-                          Command::Origin command_origin,
-                          UserRole role,
-                          std::string* id,
-                          ErrorPtr* error) = 0;
+  // Adds a new command instance to the command queue. The command specified in
+  // |command_instance| must be fully initialized and have its name, component,
+  // id populated.
+  virtual void AddCommand(
+      std::unique_ptr<CommandInstance> command_instance) = 0;
+
+  // Parses the command definition from a json dictionary. The resulting command
+  // instance is populated with all the required fields and partially validated
+  // against syntax/schema.
+  // The new command ID is returned through optional |id| param.
+  virtual std::unique_ptr<CommandInstance> ParseCommandInstance(
+      const base::DictionaryValue& command,
+      Command::Origin command_origin,
+      UserRole role,
+      std::string* id,
+      ErrorPtr* error) = 0;
 
   // Find a command instance with the given ID in the command queue.
   virtual CommandInstance* FindCommand(const std::string& id) = 0;

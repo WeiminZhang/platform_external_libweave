@@ -9,22 +9,15 @@
 #include <base/bind.h>
 
 #include "src/base_api_handler.h"
-#include "src/commands/command_manager.h"
+#include "src/commands/schema_constants.h"
 #include "src/component_manager_impl.h"
 #include "src/config.h"
 #include "src/device_registration_info.h"
 #include "src/privet/privet_manager.h"
-#include "src/states/state_change_queue.h"
-#include "src/states/state_manager.h"
+#include "src/string_utils.h"
+#include "src/utils.h"
 
 namespace weave {
-
-namespace {
-
-// Max of 100 state update events should be enough in the queue.
-const size_t kMaxStateChangeQueueSize = 100;
-
-}  // namespace
 
 DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::TaskRunner* task_runner,
@@ -35,16 +28,13 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::Wifi* wifi,
                              provider::Bluetooth* bluetooth) {
   component_manager_.reset(new ComponentManagerImpl);
-  command_manager_ = std::make_shared<CommandManager>();
-  state_change_queue_.reset(new StateChangeQueue(kMaxStateChangeQueueSize));
-  state_manager_ = std::make_shared<StateManager>(state_change_queue_.get());
 
   std::unique_ptr<Config> config{new Config{config_store}};
   config->Load();
 
   device_info_.reset(new DeviceRegistrationInfo(
-      command_manager_, state_manager_, std::move(config), task_runner,
-      http_client, network));
+      component_manager_.get(), std::move(config), task_runner, http_client,
+      network));
   base_api_handler_.reset(new BaseApiHandler{device_info_.get(), this});
 
   device_info_->Start();
@@ -79,7 +69,7 @@ void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
                                 provider::Bluetooth* bluetooth) {
   privet_.reset(new privet::Manager{task_runner});
   privet_->Start(network, dns_sd, http_server, wifi, device_info_.get(),
-                 command_manager_.get(), state_manager_.get());
+                 component_manager_.get());
 }
 
 GcdState DeviceManager::GetGcdState() const {
@@ -151,63 +141,108 @@ void DeviceManager::AddCommandHandler(const std::string& component,
 }
 
 void DeviceManager::AddCommandDefinitionsFromJson(const std::string& json) {
-  CHECK(command_manager_->LoadCommands(json, nullptr));
+  auto dict = LoadJsonDict(json, nullptr);
+  CHECK(dict);
+  AddCommandDefinitions(*dict);
 }
 
 void DeviceManager::AddCommandDefinitions(const base::DictionaryValue& dict) {
-  CHECK(command_manager_->LoadCommands(dict, nullptr));
+  CHECK(component_manager_->AddLegacyCommandDefinitions(dict, nullptr));
 }
 
 bool DeviceManager::AddCommand(const base::DictionaryValue& command,
                                std::string* id,
                                ErrorPtr* error) {
-  return command_manager_->AddCommand(command, id, error);
+  auto command_instance =
+      component_manager_->ParseCommandInstance(command, Command::Origin::kLocal,
+                                               UserRole::kOwner, id, error);
+  if (!command_instance)
+    return false;
+  component_manager_->AddCommand(std::move(command_instance));
+  return true;
 }
 
 Command* DeviceManager::FindCommand(const std::string& id) {
-  return command_manager_->FindCommand(id);
+  return component_manager_->FindCommand(id);
 }
 
 void DeviceManager::AddCommandHandler(const std::string& command_name,
                                       const CommandHandlerCallback& callback) {
-  return command_manager_->AddCommandHandler(command_name, callback);
+  if (command_name.empty())
+    return component_manager_->AddCommandHandler("", "", callback);
+
+  auto trait = SplitAtFirst(command_name, ".", true).first;
+  std::string component = component_manager_->FindComponentWithTrait(trait);
+  CHECK(!component.empty());
+  component_manager_->AddCommandHandler(component, command_name, callback);
 }
 
 void DeviceManager::AddStateChangedCallback(const base::Closure& callback) {
-  state_manager_->AddChangedCallback(callback);
+  component_manager_->AddStateChangedCallback(callback);
 }
 
 void DeviceManager::AddStateDefinitionsFromJson(const std::string& json) {
-  CHECK(state_manager_->LoadStateDefinitionFromJson(json, nullptr));
+  auto dict = LoadJsonDict(json, nullptr);
+  CHECK(dict);
+  AddStateDefinitions(*dict);
 }
 
 void DeviceManager::AddStateDefinitions(const base::DictionaryValue& dict) {
-  CHECK(state_manager_->LoadStateDefinition(dict, nullptr));
+  CHECK(component_manager_->AddLegacyStateDefinitions(dict, nullptr));
 }
 
 bool DeviceManager::SetStatePropertiesFromJson(const std::string& json,
                                                ErrorPtr* error) {
-  return state_manager_->SetPropertiesFromJson(json, error);
+  auto dict = LoadJsonDict(json, error);
+  return dict && SetStateProperties(*dict, error);
 }
 
 bool DeviceManager::SetStateProperties(const base::DictionaryValue& dict,
                                        ErrorPtr* error) {
-  return state_manager_->SetProperties(dict, error);
+  for (base::DictionaryValue::Iterator it(dict); !it.IsAtEnd(); it.Advance()) {
+    std::string component =
+        component_manager_->FindComponentWithTrait(it.key());
+    if (component.empty()) {
+      Error::AddToPrintf(
+        error, FROM_HERE, errors::commands::kDomain, "unrouted_state",
+        "Unable to set property value because there is no component supporting "
+        "trait '%s'", it.key().c_str());
+      return false;
+    }
+    base::DictionaryValue trait_state;
+    trait_state.Set(it.key(), it.value().DeepCopy());
+    if (!component_manager_->SetStateProperties(component, trait_state, error))
+      return false;
+  }
+  return true;
 }
 
 const base::Value* DeviceManager::GetStateProperty(
     const std::string& name) const {
-  return state_manager_->GetProperty(name);
+  auto trait = SplitAtFirst(name, ".", true).first;
+  std::string component = component_manager_->FindComponentWithTrait(trait);
+  if (component.empty())
+    return nullptr;
+  return component_manager_->GetStateProperty(component, name, nullptr);
 }
 
 bool DeviceManager::SetStateProperty(const std::string& name,
                                      const base::Value& value,
                                      ErrorPtr* error) {
-  return state_manager_->SetProperty(name, value, error);
+  auto trait = SplitAtFirst(name, ".", true).first;
+  std::string component = component_manager_->FindComponentWithTrait(trait);
+  if (component.empty()) {
+    Error::AddToPrintf(
+      error, FROM_HERE, errors::commands::kDomain, "unrouted_state",
+      "Unable set value of state property '%s' because there is no component "
+      "supporting trait '%s'", name.c_str(), trait.c_str());
+    return false;
+  }
+  return component_manager_->SetStateProperty(component, name, value, error);
 }
 
 const base::DictionaryValue& DeviceManager::GetState() const {
-  return state_manager_->GetState();
+  return component_manager_->GetLegacyState();
 }
 
 void DeviceManager::Register(const std::string& ticket_id,
