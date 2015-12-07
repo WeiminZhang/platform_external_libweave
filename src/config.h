@@ -28,6 +28,7 @@ class Config final {
     std::string robot_account;
     std::string last_configured_ssid;
     std::vector<uint8_t> secret;
+    bool local_auth_info_changed{true};
   };
 
   using OnChangedCallback = base::Callback<void(const weave::Settings&)>;
@@ -90,6 +91,9 @@ class Config final {
     }
     void set_secret(const std::vector<uint8_t>& secret) {
       settings_->secret = secret;
+    }
+    void set_local_auth_info_changed(bool local_auth_info_changed) {
+      settings_->local_auth_info_changed = local_auth_info_changed;
     }
 
     void Commit();

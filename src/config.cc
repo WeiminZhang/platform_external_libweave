@@ -42,6 +42,7 @@ const char kDeviceId[] = "device_id";
 const char kRobotAccount[] = "robot_account";
 const char kLastConfiguredSsid[] = "last_configured_ssid";
 const char kSecret[] = "secret";
+const char kLocalAuthInfoChanged[] = "local_auth_info_changed";
 
 }  // namespace config_keys
 
@@ -120,6 +121,7 @@ void Config::Load() {
   CHECK(settings_.robot_account.empty());
   CHECK(settings_.last_configured_ssid.empty());
   CHECK(settings_.secret.empty());
+  CHECK(settings_.local_auth_info_changed);
 
   change.LoadState();
 }
@@ -211,6 +213,9 @@ void Config::Transaction::LoadState() {
   std::vector<uint8_t> secret;
   if (dict->GetString(config_keys::kSecret, &tmp) && Base64Decode(tmp, &secret))
     set_secret(secret);
+
+  if (dict->GetBoolean(config_keys::kLocalAuthInfoChanged, &tmp_bool))
+    set_local_auth_info_changed(tmp_bool);
 }
 
 void Config::Save() {
@@ -232,6 +237,8 @@ void Config::Save() {
   dict.SetString(config_keys::kLastConfiguredSsid,
                  settings_.last_configured_ssid);
   dict.SetString(config_keys::kSecret, Base64Encode(settings_.secret));
+  dict.SetBoolean(config_keys::kLocalAuthInfoChanged,
+                  settings_.local_auth_info_changed);
   dict.SetString(config_keys::kName, settings_.name);
   dict.SetString(config_keys::kDescription, settings_.description);
   dict.SetString(config_keys::kLocation, settings_.location);

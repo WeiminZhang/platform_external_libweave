@@ -77,6 +77,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().robot_account);
   EXPECT_EQ("", GetSettings().last_configured_ssid);
   EXPECT_EQ(std::vector<uint8_t>(), GetSettings().secret);
+  EXPECT_TRUE(GetSettings().local_auth_info_changed);
 }
 
 TEST_F(ConfigTest, LoadStateV0) {
@@ -116,6 +117,7 @@ TEST_F(ConfigTest, LoadState) {
     "device_id": "state_device_id",
     "last_configured_ssid": "state_last_configured_ssid",
     "local_anonymous_access_role": "user",
+    "local_auth_info_changed": false,
     "local_discovery_enabled": false,
     "local_pairing_enabled": false,
     "location": "state_location",
@@ -159,6 +161,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ("state_robot_account", GetSettings().robot_account);
   EXPECT_EQ("state_last_configured_ssid", GetSettings().last_configured_ssid);
   EXPECT_EQ("c3RhdGVfc2VjcmV0", Base64Encode(GetSettings().secret));
+  EXPECT_FALSE(GetSettings().local_auth_info_changed);
 }
 
 TEST_F(ConfigTest, Setters) {
@@ -228,6 +231,9 @@ TEST_F(ConfigTest, Setters) {
   change.set_secret(secret);
   EXPECT_EQ(secret, GetSettings().secret);
 
+  change.set_local_auth_info_changed(false);
+  EXPECT_FALSE(GetSettings().local_auth_info_changed);
+
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
 
   EXPECT_CALL(config_store_, SaveSettings(_))
@@ -242,6 +248,7 @@ TEST_F(ConfigTest, Setters) {
           'device_id': 'set_device_id',
           'last_configured_ssid': 'set_last_configured_ssid',
           'local_anonymous_access_role': 'user',
+          'local_auth_info_changed': false,
           'local_discovery_enabled': true,
           'local_pairing_enabled': true,
           'location': 'set_location',
