@@ -24,7 +24,6 @@ class StorageInterface;
 class Config final {
  public:
   struct Settings : public weave::Settings {
-    std::string device_id;
     std::string refresh_token;
     std::string robot_account;
     std::string last_configured_ssid;
