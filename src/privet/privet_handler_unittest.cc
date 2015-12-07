@@ -408,7 +408,7 @@ TEST_F(PrivetHandlerTest, AuthPairing) {
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
 }
 
-class PrivetHandlerSetupTest : public PrivetHandlerTest {
+class PrivetHandlerTestWithAuth : public PrivetHandlerTest {
  public:
   void SetUp() override {
     PrivetHandlerTest::SetUp();
@@ -418,6 +418,8 @@ class PrivetHandlerSetupTest : public PrivetHandlerTest {
                               Return(UserInfo{AuthScope::kOwner, 1})));
   }
 };
+
+class PrivetHandlerSetupTest : public PrivetHandlerTestWithAuth {};
 
 TEST_F(PrivetHandlerSetupTest, StatusEmpty) {
   SetNoWifiAndGcd();
@@ -719,7 +721,9 @@ TEST_F(PrivetHandlerSetupTest, CommandsList) {
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/commands/list", "{}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_NoInput) {
+class PrivetHandlerCheckForUpdatesTest : public PrivetHandlerTestWithAuth {};
+
+TEST_F(PrivetHandlerCheckForUpdatesTest, NoInput) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   cloud_.NotifyOnTraitDefsChanged();
@@ -737,7 +741,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_NoInput) {
   EXPECT_EQ(1, GetResponseCount());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_AlreadyChanged) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, AlreadyChanged) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   cloud_.NotifyOnTraitDefsChanged();
@@ -760,7 +764,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_AlreadyChanged) {
   EXPECT_EQ(1, GetResponseCount());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollCommands) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollCommands) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
@@ -782,7 +786,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollCommands) {
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollTraits) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollTraits) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
@@ -804,7 +808,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollTraits) {
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollState) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollState) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
@@ -826,7 +830,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollState) {
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollComponents) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollComponents) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
@@ -848,7 +852,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollComponents) {
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreTraits) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollIgnoreTraits) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
@@ -870,7 +874,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreTraits) {
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreState) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollIgnoreState) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
@@ -894,7 +898,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreState) {
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_InstantTimeout) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, InstantTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
@@ -914,7 +918,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_InstantTimeout) {
                  HandleRequest("/privet/v3/checkForUpdates", kInput));
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_UserTimeout) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, UserTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
@@ -940,7 +944,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_UserTimeout) {
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerTimeout) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, ServerTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::FromMinutes(1)));
   const char kInput[] = R"({
@@ -965,7 +969,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerTimeout) {
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_VeryShortServerTimeout) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, VeryShortServerTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::FromSeconds(5)));
   const char kInput[] = R"({
@@ -978,7 +982,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_VeryShortServerTimeout) {
   EXPECT_EQ(1, GetResponseCount());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerAndUserTimeout) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, ServerAndUserTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::FromMinutes(1)));
   const char kInput[] = R"({
@@ -1004,7 +1008,7 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerAndUserTimeout) {
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ChangeBeforeTimeout) {
+TEST_F(PrivetHandlerCheckForUpdatesTest, ChangeBeforeTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
