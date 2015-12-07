@@ -48,7 +48,7 @@ const char kClientId[] =
     "123543821385-sfjkjshdkjhfk234sdfsdfkskd"
     "fkjh7f.apps.googleusercontent.com";
 const char kClientSecret[] = "5sdGdGlfolGlrFKfdFlgP6FG";
-const char kDeviceId[] = "4a7ea2d1-b331-1e1f-b206-e863c7635196";
+const char kCloudId[] = "4a7ea2d1-b331-1e1f-b206-e863c7635196";
 const char kClaimTicketId[] = "RTcUE";
 const char kAccessToken[] =
     "ya29.1.AADtN_V-dLUM-sVZ0qVjG9Dxm5NgdS9J"
@@ -146,7 +146,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   void ReloadSettings() {
     base::DictionaryValue dict;
     dict.SetString("refresh_token", test_data::kRefreshToken);
-    dict.SetString("cloud_id", test_data::kDeviceId);
+    dict.SetString("cloud_id", test_data::kCloudId);
     dict.SetString("robot_account", test_data::kRobotAccountEmail);
     std::string json_string;
     base::JSONWriter::WriteWithOptions(
@@ -304,7 +304,7 @@ TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
   EXPECT_FALSE(RefreshAccessToken(&error));
   EXPECT_TRUE(error->HasError(kErrorDomainOAuth2, "invalid_grant"));
   EXPECT_EQ(GcdState::kInvalidCredentials, GetGcdState());
-  EXPECT_EQ(test_data::kDeviceId, dev_reg_->GetSettings().cloud_id);
+  EXPECT_EQ(test_data::kCloudId, dev_reg_->GetSettings().cloud_id);
 }
 
 TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
@@ -321,7 +321,7 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
             base::DictionaryValue json;
             json.SetString("channel.supportedType", "xmpp");
             json.SetString("deviceKind", "vendor");
-            json.SetString("id", test_data::kDeviceId);
+            json.SetString("id", test_data::kCloudId);
             json.SetString("kind", "weave#device");
             callback.Run(ReplyWithJson(200, json), nullptr);
           })));
@@ -332,7 +332,7 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
     EXPECT_FALSE(error);
     std::string id;
     EXPECT_TRUE(info.GetString("id", &id));
-    EXPECT_EQ(test_data::kDeviceId, id);
+    EXPECT_EQ(test_data::kCloudId, id);
     succeeded = true;
   };
   dev_reg_->GetDeviceInfo(base::Bind(callback));
@@ -472,7 +472,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
         base::DictionaryValue* device_draft = nullptr;
         EXPECT_TRUE(json->GetDictionary("deviceDraft", &device_draft));
         device_draft = device_draft->DeepCopy();
-        device_draft->SetString("id", test_data::kDeviceId);
+        device_draft->SetString("id", test_data::kCloudId);
         device_draft->SetString("kind", "weave#device");
         json_resp.Set("deviceDraft", device_draft);
 
@@ -490,7 +490,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
             json.SetString("kind", "weave#registrationTicket");
             json.SetString("oauthClientId", test_data::kClientId);
             json.SetString("userEmail", "user@email.com");
-            json.SetString("deviceDraft.id", test_data::kDeviceId);
+            json.SetString("deviceDraft.id", test_data::kCloudId);
             json.SetString("deviceDraft.kind", "weave#device");
             json.SetString("deviceDraft.channel.supportedType", "xmpp");
             json.SetString("robotAccountEmail", test_data::kRobotAccountEmail);
@@ -531,7 +531,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
         EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
         // Validate the device info saved to storage...
-        EXPECT_EQ(test_data::kDeviceId, dev_reg_->GetSettings().cloud_id);
+        EXPECT_EQ(test_data::kCloudId, dev_reg_->GetSettings().cloud_id);
         EXPECT_EQ(test_data::kRefreshToken,
                   dev_reg_->GetSettings().refresh_token);
         EXPECT_EQ(test_data::kRobotAccountEmail,
