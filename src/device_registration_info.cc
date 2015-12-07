@@ -712,6 +712,12 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
     return;
   }
 
+  if (data->allow_response_without_content &&
+      response->GetContentType().empty()) {
+    cloud_backoff_entry_->InformOfRequest(true);
+    return data->callback.Run({}, nullptr);
+  }
+
   auto json_resp = ParseJsonResponse(*response, &error);
   if (!json_resp) {
     cloud_backoff_entry_->InformOfRequest(true);

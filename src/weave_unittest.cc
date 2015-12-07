@@ -198,7 +198,6 @@ class WeaveTest : public ::testing::Test {
               .Times(AtLeast(1))
               .WillRepeatedly(Return("application/json; charset=utf-8"));
           EXPECT_CALL(*response, GetData())
-              .Times(AtLeast(1))
               .WillRepeatedly(Return(json_response));
           callback.Run(std::move(response), nullptr);
         })));

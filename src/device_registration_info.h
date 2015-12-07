@@ -178,6 +178,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
     provider::HttpClient::Method method;
     std::string url;
     std::string body;
+    // Workaround for inconsistent APIs which returns no body.
+    bool allow_response_without_content = false;
     CloudRequestDoneCallback callback;
   };
   void SendCloudRequest(const std::shared_ptr<const CloudRequestData>& data);
