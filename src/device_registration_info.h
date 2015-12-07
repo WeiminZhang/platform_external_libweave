@@ -247,7 +247,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Builds Cloud API devices collection REST resource which matches
   // current state of the device including command definitions
   // for all supported commands and current device state.
-  std::unique_ptr<base::DictionaryValue> BuildDeviceResource(ErrorPtr* error);
+  std::unique_ptr<base::DictionaryValue> BuildDeviceResource() const;
 
   void SetGcdState(GcdState new_state);
   void SetDeviceId(const std::string& cloud_id);

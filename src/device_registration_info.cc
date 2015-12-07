@@ -477,7 +477,7 @@ void DeviceRegistrationInfo::AddGcdStateChangedCallback(
 }
 
 std::unique_ptr<base::DictionaryValue>
-DeviceRegistrationInfo::BuildDeviceResource(ErrorPtr* error) {
+DeviceRegistrationInfo::BuildDeviceResource() const {
   std::unique_ptr<base::DictionaryValue> resource{new base::DictionaryValue};
   if (!GetSettings().cloud_id.empty())
     resource->SetString("id", GetSettings().cloud_id);
@@ -521,11 +521,8 @@ void DeviceRegistrationInfo::RegisterDeviceError(const DoneCallback& callback,
 
 void DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
                                             const DoneCallback& callback) {
-  ErrorPtr error;
-  std::unique_ptr<base::DictionaryValue> device_draft =
-      BuildDeviceResource(&error);
-  if (!device_draft)
-    return RegisterDeviceError(callback, std::move(error));
+  std::unique_ptr<base::DictionaryValue> device_draft = BuildDeviceResource();
+  CHECK(device_draft);
 
   base::DictionaryValue req_json;
   req_json.SetString("id", ticket_id);
@@ -897,12 +894,9 @@ void DeviceRegistrationInfo::StartQueuedUpdateDeviceResource() {
   queued_resource_update_callbacks_.clear();
 
   VLOG(1) << "Updating GCD server with CDD...";
-  ErrorPtr error;
   std::unique_ptr<base::DictionaryValue> device_resource =
-      BuildDeviceResource(&error);
-  if (!device_resource) {
-    return OnUpdateDeviceResourceError(std::move(error));
-  }
+      BuildDeviceResource();
+  CHECK(device_resource);
 
   std::string url = GetDeviceURL(
       {}, {{"lastUpdateTimeMs", last_device_resource_updated_timestamp_}});
