@@ -7,8 +7,6 @@
 #include <gtest/gtest.h>
 #include <weave/test/unittest_utils.h>
 
-#include "src/commands/command_dictionary.h"
-
 namespace weave {
 
 using test::CreateDictionaryValue;
