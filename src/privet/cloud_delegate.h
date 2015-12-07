@@ -48,6 +48,7 @@ class CloudDelegate {
 
     virtual void OnDeviceInfoChanged() {}
     virtual void OnTraitDefsChanged() {}
+    virtual void OnStateChanged() {}
     virtual void OnComponentTreeChanged() {}
   };
 
@@ -132,6 +133,7 @@ class CloudDelegate {
 
   void NotifyOnDeviceInfoChanged();
   void NotifyOnTraitDefsChanged();
+  void NotifyOnStateChanged();
   void NotifyOnComponentTreeChanged();
 
   // Create default instance.

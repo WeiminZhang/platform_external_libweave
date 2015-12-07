@@ -45,15 +45,25 @@ using provider::test::MockHttpClientResponse;
 using test::CreateDictionaryValue;
 using test::ValueToString;
 
-const char kCommandDefs[] = R"({
-  "base": {
-    "reboot": {
-      "minimalRole": "user"
+const char kTraitDefs[] = R"({
+  "trait1": {
+    "commands": {
+      "reboot": {
+        "minimalRole": "user"
+      },
+      "shutdown": {
+        "minimalRole": "user",
+        "parameters": {},
+        "results": {}
+      }
     },
-    "_shutdown": {
-      "minimalRole": "user",
-      "parameters": {},
-      "results": {}
+    "state": {
+      "firmwareVersion": {"type": "string"}
+    }
+  },
+  "trait2": {
+    "state": {
+      "battery_level": {"type": "integer"}
     }
   }
 })";
@@ -72,7 +82,7 @@ const char kDeviceResource[] = R"({
   "description": "Developer device",
   "stateValidationEnabled": true,
   "commandDefs":{
-    "base": {
+    "trait1": {
       "reboot": {
         "minimalRole": "user",
         "parameters": {"delay": {"type": "integer"}},
@@ -86,15 +96,39 @@ const char kDeviceResource[] = R"({
     }
   },
   "state":{
-    "base":{
-      "firmwareVersion":"FIRMWARE_VERSION",
-      "localAnonymousAccessMaxRole":"viewer",
-      "localDiscoveryEnabled":true,
-      "localPairingEnabled":true,
-      "network":{
+    "trait1": {"firmwareVersion":"FIRMWARE_VERSION"},
+    "trait2": {"battery_level":44}
+  },
+  "traits": {
+    "trait1": {
+      "commands": {
+        "reboot": {
+          "minimalRole": "user"
+        },
+        "shutdown": {
+          "minimalRole": "user",
+          "parameters": {},
+          "results": {}
+        }
+      },
+      "state": {
+        "firmwareVersion": {"type": "string"}
       }
     },
-    "power": {"battery_level":44}
+    "trait2": {
+      "state": {
+        "battery_level": {"type": "integer"}
+      }
+    }
+  },
+  "components": {
+    "myComponent": {
+      "traits": ["trait1", "trait2"],
+      "state": {
+        "trait1": {"firmwareVersion":"FIRMWARE_VERSION"},
+        "trait2": {"battery_level":44}
+      }
+    }
   }
 })";
 
@@ -126,10 +160,6 @@ const char kAuthTokenResponse[] = R"({
   "expires_in" : 3599,
   "refresh_token" : "REFRESH_TOKEN"
 })";
-
-const char kStateDefs[] = R"({"power": {"battery_level":"integer"}})";
-
-const char kStateDefaults[] = R"({"power": {"battery_level":44}})";
 
 MATCHER_P(MatchTxt, txt, "") {
   std::vector<std::string> txt_copy = txt;
@@ -259,14 +289,17 @@ class WeaveTest : public ::testing::Test {
                   "/privet/v3/checkForUpdates", "/privet/v3/commandDefs",
                   "/privet/v3/commands/cancel", "/privet/v3/commands/execute",
                   "/privet/v3/commands/list", "/privet/v3/commands/status",
-                  "/privet/v3/pairing/cancel", "/privet/v3/pairing/confirm",
-                  "/privet/v3/pairing/start", "/privet/v3/setup/start",
-                  "/privet/v3/setup/status", "/privet/v3/state"}),
+                  "/privet/v3/components", "/privet/v3/pairing/cancel",
+                  "/privet/v3/pairing/confirm", "/privet/v3/pairing/start",
+                  "/privet/v3/setup/start", "/privet/v3/setup/status",
+                  "/privet/v3/state", "/privet/v3/traits"}),
               GetKeys(https_handlers_));
 
-    device_->AddCommandDefinitionsFromJson(kCommandDefs);
-    device_->AddStateDefinitionsFromJson(kStateDefs);
-    device_->SetStatePropertiesFromJson(kStateDefaults, nullptr);
+    device_->AddTraitDefinitionsFromJson(kTraitDefs);
+    EXPECT_TRUE(device_->AddComponent("myComponent", {"trait1", "trait2"},
+                                      nullptr));
+    EXPECT_TRUE(device_->SetStatePropertiesFromJson(
+        "myComponent", R"({"trait2": {"battery_level":44}})", nullptr));
 
     task_runner_.Run();
   }
@@ -324,7 +357,9 @@ TEST_F(WeaveTest, StartNoWifi) {
   device_ = weave::Device::Create(&config_store_, &task_runner_, &http_client_,
                                   &network_, &dns_sd_, &http_server_, nullptr,
                                   &bluetooth_);
-  device_->AddCommandDefinitionsFromJson(kCommandDefs);
+  device_->AddTraitDefinitionsFromJson(kTraitDefs);
+  EXPECT_TRUE(device_->AddComponent("myComponent", {"trait1", "trait2"},
+                                    nullptr));
 
   task_runner_.Run();
 }

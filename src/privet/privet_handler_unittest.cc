@@ -592,7 +592,7 @@ TEST_F(PrivetHandlerSetupTest, State) {
   EXPECT_JSON_EQ("{'state': {'test': {}}, 'fingerprint': '0'}",
                  HandleRequest("/privet/v3/state", "{}"));
 
-  cloud_.NotifyOnComponentTreeChanged();
+  cloud_.NotifyOnStateChanged();
 
   EXPECT_JSON_EQ("{'state': {'test': {}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/state", "{}"));
@@ -606,6 +606,32 @@ TEST_F(PrivetHandlerSetupTest, CommandsDefs) {
 
   EXPECT_JSON_EQ("{'commands': {'test':{}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/commandDefs", "{}"));
+}
+
+TEST_F(PrivetHandlerSetupTest, Traits) {
+  EXPECT_JSON_EQ("{'traits': {'test': {}}, 'fingerprint': '0'}",
+                 HandleRequest("/privet/v3/traits", "{}"));
+
+  cloud_.NotifyOnTraitDefsChanged();
+
+  EXPECT_JSON_EQ("{'traits': {'test': {}}, 'fingerprint': '1'}",
+                 HandleRequest("/privet/v3/traits", "{}"));
+}
+
+TEST_F(PrivetHandlerSetupTest, Components) {
+  EXPECT_JSON_EQ("{'components': {'test': {}}, 'fingerprint': '0'}",
+                 HandleRequest("/privet/v3/components", "{}"));
+
+  cloud_.NotifyOnComponentTreeChanged();
+
+  EXPECT_JSON_EQ("{'components': {'test': {}}, 'fingerprint': '1'}",
+                 HandleRequest("/privet/v3/components", "{}"));
+
+  // State change will also change the components fingerprint.
+  cloud_.NotifyOnStateChanged();
+
+  EXPECT_JSON_EQ("{'components': {'test': {}}, 'fingerprint': '2'}",
+                 HandleRequest("/privet/v3/components", "{}"));
 }
 
 TEST_F(PrivetHandlerSetupTest, CommandsExecute) {
@@ -698,10 +724,13 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_NoInput) {
       .WillOnce(Return(base::TimeDelta::Max()));
   cloud_.NotifyOnTraitDefsChanged();
   cloud_.NotifyOnComponentTreeChanged();
+  cloud_.NotifyOnStateChanged();
   const char kInput[] = "{}";
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
-   'stateFingerprint': '1'
+   'stateFingerprint': '1',
+   'traitsFingerprint': '1',
+   'componentsFingerprint': '2'
   })";
   EXPECT_JSON_EQ(kExpected,
                  HandleRequest("/privet/v3/checkForUpdates", kInput));
@@ -713,13 +742,18 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_AlreadyChanged) {
       .WillOnce(Return(base::TimeDelta::Max()));
   cloud_.NotifyOnTraitDefsChanged();
   cloud_.NotifyOnComponentTreeChanged();
+  cloud_.NotifyOnStateChanged();
   const char kInput[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
-   'stateFingerprint': '1'
+   'stateFingerprint': '1',
+   'traitsFingerprint': '1',
+   'componentsFingerprint': '2'
   })";
   EXPECT_JSON_EQ(kExpected,
                  HandleRequest("/privet/v3/checkForUpdates", kInput));
@@ -731,7 +765,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollCommands) {
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
@@ -739,7 +775,31 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollCommands) {
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '1',
+   'componentsFingerprint': '0'
+  })";
+  EXPECT_JSON_EQ(kExpected, GetResponse());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollTraits) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
+  })";
+  EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnTraitDefsChanged();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '1',
+   'stateFingerprint': '0',
+   'traitsFingerprint': '1',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -749,7 +809,31 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollState) {
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
+  })";
+  EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnStateChanged();
+  EXPECT_EQ(1, GetResponseCount());
+  const char kExpected[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '1',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '1'
+  })";
+  EXPECT_JSON_EQ(kExpected, GetResponse());
+}
+
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollComponents) {
+  EXPECT_CALL(device_, GetHttpRequestTimeout())
+      .WillOnce(Return(base::TimeDelta::Max()));
+  const char kInput[] = R"({
+   'commandsFingerprint': '0',
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
@@ -757,16 +841,19 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollState) {
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '1'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '1'
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
 
-TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreCommands) {
+TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreTraits) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
@@ -776,7 +863,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreCommands) {
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
-   'stateFingerprint': '1'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '1',
+   'componentsFingerprint': '1'
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -785,9 +874,12 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreState) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'commandsFingerprint': '0'
+   'commandsFingerprint': '0',
+   'traitsFingerprint': '0'
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
+  EXPECT_EQ(0, GetResponseCount());
+  cloud_.NotifyOnStateChanged();
   EXPECT_EQ(0, GetResponseCount());
   cloud_.NotifyOnComponentTreeChanged();
   EXPECT_EQ(0, GetResponseCount());
@@ -795,7 +887,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_LongPollIgnoreState) {
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
-   'stateFingerprint': '1'
+   'stateFingerprint': '1',
+   'traitsFingerprint': '1',
+   'componentsFingerprint': '2'
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -806,11 +900,15 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_InstantTimeout) {
   const char kInput[] = R"({
    'commandsFingerprint': '0',
    'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0',
    'waitTimeout': 0
   })";
   const char kExpected[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ(kExpected,
                  HandleRequest("/privet/v3/checkForUpdates", kInput));
@@ -822,6 +920,8 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_UserTimeout) {
   const char kInput[] = R"({
    'commandsFingerprint': '0',
    'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0',
    'waitTimeout': 3
   })";
   base::Closure callback;
@@ -833,7 +933,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_UserTimeout) {
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -843,7 +945,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerTimeout) {
       .WillOnce(Return(base::TimeDelta::FromMinutes(1)));
   const char kInput[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   base::Closure callback;
   EXPECT_CALL(device_, PostDelayedTask(_, _, base::TimeDelta::FromSeconds(50)))
@@ -854,7 +958,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerTimeout) {
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -864,7 +970,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_VeryShortServerTimeout) {
       .WillOnce(Return(base::TimeDelta::FromSeconds(5)));
   const char kInput[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ(kInput, HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(1, GetResponseCount());
@@ -876,6 +984,8 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerAndUserTimeout) {
   const char kInput[] = R"({
    'commandsFingerprint': '0',
    'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0',
    'waitTimeout': 10
   })";
   base::Closure callback;
@@ -887,7 +997,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ServerAndUserTimeout) {
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '0',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -898,6 +1010,8 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ChangeBeforeTimeout) {
   const char kInput[] = R"({
    'commandsFingerprint': '0',
    'stateFingerprint': '0',
+   'traitsFingerprint': '0',
+   'componentsFingerprint': '0',
    'waitTimeout': 10
   })";
   base::Closure callback;
@@ -909,7 +1023,9 @@ TEST_F(PrivetHandlerSetupTest, CheckForUpdates_ChangeBeforeTimeout) {
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
    'commandsFingerprint': '1',
-   'stateFingerprint': '0'
+   'stateFingerprint': '0',
+   'traitsFingerprint': '1',
+   'componentsFingerprint': '0'
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
   callback.Run();

@@ -58,7 +58,7 @@ class CloudDelegateImpl : public CloudDelegate {
     component_manager_->AddCommandRemovedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandRemoved, weak_factory_.GetWeakPtr()));
     component_manager_->AddStateChangedCallback(base::Bind(
-        &CloudDelegateImpl::NotifyOnComponentTreeChanged,
+        &CloudDelegateImpl::NotifyOnStateChanged,
         weak_factory_.GetWeakPtr()));
     component_manager_->AddComponentTreeChangedCallback(base::Bind(
         &CloudDelegateImpl::NotifyOnComponentTreeChanged,
@@ -373,6 +373,10 @@ void CloudDelegate::NotifyOnTraitDefsChanged() {
 
 void CloudDelegate::NotifyOnComponentTreeChanged() {
   FOR_EACH_OBSERVER(Observer, observer_list_, OnComponentTreeChanged());
+}
+
+void CloudDelegate::NotifyOnStateChanged() {
+  FOR_EACH_OBSERVER(Observer, observer_list_, OnStateChanged());
 }
 
 }  // namespace privet

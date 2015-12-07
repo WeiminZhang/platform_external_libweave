@@ -46,6 +46,7 @@ class PrivetHandler : public CloudDelegate::Observer {
   ~PrivetHandler() override;
 
   void OnTraitDefsChanged() override;
+  void OnStateChanged() override;
   void OnComponentTreeChanged() override;
 
   std::vector<std::string> GetHttpPaths() const;
@@ -118,6 +119,12 @@ class PrivetHandler : public CloudDelegate::Observer {
   void HandleCheckForUpdates(const base::DictionaryValue& input,
                              const UserInfo& user_info,
                              const RequestCallback& callback);
+  void HandleTraits(const base::DictionaryValue& input,
+                    const UserInfo& user_info,
+                    const RequestCallback& callback);
+  void HandleComponents(const base::DictionaryValue& input,
+                        const UserInfo& user_info,
+                        const RequestCallback& callback);
 
   void ReplyWithSetupStatus(const RequestCallback& callback) const;
   void ReplyToUpdateRequest(const RequestCallback& callback) const;
@@ -139,14 +146,16 @@ class PrivetHandler : public CloudDelegate::Observer {
     RequestCallback callback;
     int request_id = 0;
     int state_fingerprint = -1;
-    int command_defs_fingerprint = -1;
+    int traits_fingerprint = -1;
+    int components_fingerprint = -1;
   };
   std::vector<UpdateRequestParameters> update_requests_;
   int last_update_request_id_{0};
 
   uint64_t last_user_id_{0};
   int state_fingerprint_{0};
-  int command_defs_fingerprint_{0};
+  int traits_fingerprint_{0};
+  int components_fingerprint_{0};
   ScopedObserver<CloudDelegate, CloudDelegate::Observer> cloud_observer_{this};
 
   base::WeakPtrFactory<PrivetHandler> weak_ptr_factory_{this};

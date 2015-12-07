@@ -103,10 +103,14 @@ const char kSetupStartUserKey[] = "user";
 const char kFingerprintKey[] = "fingerprint";
 const char kStateKey[] = "state";
 const char kCommandsKey[] = "commands";
+const char kTraitsKey[] = "traits";
+const char kComponentsKey[] = "components";
 const char kCommandsIdKey[] = "id";
 
 const char kStateFingerprintKey[] = "stateFingerprint";
 const char kCommandsFingerprintKey[] = "commandsFingerprint";
+const char kTraitsFingerprintKey[] = "traitsFingerprint";
+const char kComponentsFingerprintKey[] = "componentsFingerprint";
 const char kWaitTimeoutKey[] = "waitTimeout";
 
 const char kInvalidParamValueFormat[] = "Invalid parameter: '%s'='%s'";
@@ -371,6 +375,10 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
                    &PrivetHandler::HandleCommandsList, AuthScope::kViewer);
   AddSecureHandler("/privet/v3/checkForUpdates",
                    &PrivetHandler::HandleCheckForUpdates, AuthScope::kViewer);
+  AddSecureHandler("/privet/v3/traits", &PrivetHandler::HandleTraits,
+                   AuthScope::kViewer);
+  AddSecureHandler("/privet/v3/components", &PrivetHandler::HandleComponents,
+                   AuthScope::kViewer);
 }
 
 PrivetHandler::~PrivetHandler() {
@@ -379,9 +387,23 @@ PrivetHandler::~PrivetHandler() {
 }
 
 void PrivetHandler::OnTraitDefsChanged() {
-  ++command_defs_fingerprint_;
+  ++traits_fingerprint_;
   auto pred = [this](const UpdateRequestParameters& params) {
-    return params.command_defs_fingerprint < 0;
+    return params.traits_fingerprint < 0;
+  };
+  auto last =
+      std::partition(update_requests_.begin(), update_requests_.end(), pred);
+  for (auto p = last; p != update_requests_.end(); ++p)
+    ReplyToUpdateRequest(p->callback);
+  update_requests_.erase(last, update_requests_.end());
+}
+
+void PrivetHandler::OnStateChanged() {
+  // State updates also change the component tree, so update both fingerprints.
+  ++state_fingerprint_;
+  ++components_fingerprint_;
+  auto pred = [this](const UpdateRequestParameters& params) {
+    return params.state_fingerprint < 0 && params.components_fingerprint < 0;
   };
   auto last =
       std::partition(update_requests_.begin(), update_requests_.end(), pred);
@@ -391,9 +413,9 @@ void PrivetHandler::OnTraitDefsChanged() {
 }
 
 void PrivetHandler::OnComponentTreeChanged() {
-  ++state_fingerprint_;
+  ++components_fingerprint_;
   auto pred = [this](const UpdateRequestParameters& params) {
-    return params.state_fingerprint < 0;
+    return params.components_fingerprint < 0;
   };
   auto last =
       std::partition(update_requests_.begin(), update_requests_.end(), pred);
@@ -768,12 +790,34 @@ void PrivetHandler::HandleState(const base::DictionaryValue& input,
   callback.Run(http::kOk, output);
 }
 
+void PrivetHandler::HandleTraits(const base::DictionaryValue& input,
+                                 const UserInfo& user_info,
+                                 const RequestCallback& callback) {
+  base::DictionaryValue output;
+  output.Set(kTraitsKey, cloud_->GetTraits().DeepCopy());
+  output.SetString(kFingerprintKey, std::to_string(traits_fingerprint_));
+
+  callback.Run(http::kOk, output);
+}
+
+void PrivetHandler::HandleComponents(const base::DictionaryValue& input,
+                                     const UserInfo& user_info,
+                                     const RequestCallback& callback) {
+  base::DictionaryValue output;
+  output.Set(kComponentsKey, cloud_->GetComponents().DeepCopy());
+  output.SetString(kFingerprintKey, std::to_string(components_fingerprint_));
+
+  callback.Run(http::kOk, output);
+}
+
 void PrivetHandler::HandleCommandDefs(const base::DictionaryValue& input,
                                       const UserInfo& user_info,
                                       const RequestCallback& callback) {
   base::DictionaryValue output;
   output.Set(kCommandsKey, cloud_->GetLegacyCommandDef().DeepCopy());
-  output.SetString(kFingerprintKey, std::to_string(command_defs_fingerprint_));
+  // Use traits fingerprint since right now we treat traits and command defs
+  // as being equivalent.
+  output.SetString(kFingerprintKey, std::to_string(traits_fingerprint_));
 
   callback.Run(http::kOk, output);
 }
@@ -845,12 +889,18 @@ void PrivetHandler::HandleCheckForUpdates(const base::DictionaryValue& input,
 
   std::string state_fingerprint;
   std::string commands_fingerprint;
+  std::string traits_fingerprint;
+  std::string components_fingerprint;
   input.GetString(kStateFingerprintKey, &state_fingerprint);
   input.GetString(kCommandsFingerprintKey, &commands_fingerprint);
+  input.GetString(kTraitsFingerprintKey, &traits_fingerprint);
+  input.GetString(kComponentsFingerprintKey, &components_fingerprint);
   const bool ignore_state = state_fingerprint.empty();
   const bool ignore_commands = commands_fingerprint.empty();
-  // If both fingerprints are missing, nothing to wait for, return immediately.
-  if (ignore_state && ignore_commands)
+  const bool ignore_traits = traits_fingerprint.empty();
+  const bool ignore_components = components_fingerprint.empty();
+  // If all fingerprints are missing, nothing to wait for, return immediately.
+  if (ignore_state && ignore_commands && ignore_traits && ignore_components)
     return ReplyToUpdateRequest(callback);
   // If the current state fingerprint is different from the requested one,
   // return new fingerprints.
@@ -858,17 +908,32 @@ void PrivetHandler::HandleCheckForUpdates(const base::DictionaryValue& input,
     return ReplyToUpdateRequest(callback);
   // If the current commands fingerprint is different from the requested one,
   // return new fingerprints.
+  // NOTE: We are using traits fingerprint for command fingerprint as well.
   if (!ignore_commands &&
-      commands_fingerprint != std::to_string(command_defs_fingerprint_)) {
+      commands_fingerprint != std::to_string(traits_fingerprint_)) {
+    return ReplyToUpdateRequest(callback);
+  }
+  // If the current traits fingerprint is different from the requested one,
+  // return new fingerprints.
+  if (!ignore_traits &&
+      traits_fingerprint != std::to_string(traits_fingerprint_)) {
+    return ReplyToUpdateRequest(callback);
+  }
+  // If the current components fingerprint is different from the requested one,
+  // return new fingerprints.
+  if (!ignore_components &&
+      components_fingerprint != std::to_string(components_fingerprint_)) {
     return ReplyToUpdateRequest(callback);
   }
 
   UpdateRequestParameters params;
   params.request_id = ++last_update_request_id_;
   params.callback = callback;
-  params.command_defs_fingerprint =
-      ignore_commands ? -1 : command_defs_fingerprint_;
+  params.traits_fingerprint =
+      (ignore_traits && ignore_commands) ? -1 : traits_fingerprint_;
   params.state_fingerprint = ignore_state ? -1 : state_fingerprint_;
+  params.components_fingerprint =
+      ignore_components ? -1 : components_fingerprint_;
   update_requests_.push_back(params);
   if (timeout != base::TimeDelta::Max()) {
     device_->PostDelayedTask(
@@ -884,7 +949,11 @@ void PrivetHandler::ReplyToUpdateRequest(
   base::DictionaryValue output;
   output.SetString(kStateFingerprintKey, std::to_string(state_fingerprint_));
   output.SetString(kCommandsFingerprintKey,
-                   std::to_string(command_defs_fingerprint_));
+                   std::to_string(traits_fingerprint_));
+  output.SetString(kTraitsFingerprintKey,
+                   std::to_string(traits_fingerprint_));
+  output.SetString(kComponentsFingerprintKey,
+                   std::to_string(components_fingerprint_));
   callback.Run(http::kOk, output);
 }
 
