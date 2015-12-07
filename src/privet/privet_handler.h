@@ -130,10 +130,10 @@ class PrivetHandler : public CloudDelegate::Observer {
   void ReplyToUpdateRequest(const RequestCallback& callback) const;
   void OnUpdateRequestTimeout(int update_request_id);
 
-  CloudDelegate* cloud_ = nullptr;
-  DeviceDelegate* device_ = nullptr;
-  SecurityDelegate* security_ = nullptr;
-  WifiDelegate* wifi_ = nullptr;
+  CloudDelegate* cloud_{nullptr};
+  DeviceDelegate* device_{nullptr};
+  SecurityDelegate* security_{nullptr};
+  WifiDelegate* wifi_{nullptr};
 
   struct HandlerParameters {
     ApiHandler handler;
@@ -144,18 +144,18 @@ class PrivetHandler : public CloudDelegate::Observer {
 
   struct UpdateRequestParameters {
     RequestCallback callback;
-    int request_id = 0;
-    int state_fingerprint = -1;
-    int traits_fingerprint = -1;
-    int components_fingerprint = -1;
+    int request_id{0};
+    uint64_t state_fingerprint{0};
+    uint64_t traits_fingerprint{0};
+    uint64_t components_fingerprint{0};
   };
   std::vector<UpdateRequestParameters> update_requests_;
   int last_update_request_id_{0};
 
   uint64_t last_user_id_{0};
-  int state_fingerprint_{0};
-  int traits_fingerprint_{0};
-  int components_fingerprint_{0};
+  uint64_t state_fingerprint_{1};
+  uint64_t traits_fingerprint_{1};
+  uint64_t components_fingerprint_{1};
   ScopedObserver<CloudDelegate, CloudDelegate::Observer> cloud_observer_{this};
 
   base::WeakPtrFactory<PrivetHandler> weak_ptr_factory_{this};

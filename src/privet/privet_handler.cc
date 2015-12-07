@@ -389,7 +389,7 @@ PrivetHandler::~PrivetHandler() {
 void PrivetHandler::OnTraitDefsChanged() {
   ++traits_fingerprint_;
   auto pred = [this](const UpdateRequestParameters& params) {
-    return params.traits_fingerprint < 0;
+    return params.traits_fingerprint == 0;
   };
   auto last =
       std::partition(update_requests_.begin(), update_requests_.end(), pred);
@@ -403,7 +403,7 @@ void PrivetHandler::OnStateChanged() {
   ++state_fingerprint_;
   ++components_fingerprint_;
   auto pred = [this](const UpdateRequestParameters& params) {
-    return params.state_fingerprint < 0 && params.components_fingerprint < 0;
+    return params.state_fingerprint == 0 && params.components_fingerprint == 0;
   };
   auto last =
       std::partition(update_requests_.begin(), update_requests_.end(), pred);
@@ -415,7 +415,7 @@ void PrivetHandler::OnStateChanged() {
 void PrivetHandler::OnComponentTreeChanged() {
   ++components_fingerprint_;
   auto pred = [this](const UpdateRequestParameters& params) {
-    return params.components_fingerprint < 0;
+    return params.components_fingerprint == 0;
   };
   auto last =
       std::partition(update_requests_.begin(), update_requests_.end(), pred);
@@ -930,10 +930,10 @@ void PrivetHandler::HandleCheckForUpdates(const base::DictionaryValue& input,
   params.request_id = ++last_update_request_id_;
   params.callback = callback;
   params.traits_fingerprint =
-      (ignore_traits && ignore_commands) ? -1 : traits_fingerprint_;
-  params.state_fingerprint = ignore_state ? -1 : state_fingerprint_;
+      (ignore_traits && ignore_commands) ? 0 : traits_fingerprint_;
+  params.state_fingerprint = ignore_state ? 0 : state_fingerprint_;
   params.components_fingerprint =
-      ignore_components ? -1 : components_fingerprint_;
+      ignore_components ? 0 : components_fingerprint_;
   update_requests_.push_back(params);
   if (timeout != base::TimeDelta::Max()) {
     device_->PostDelayedTask(
