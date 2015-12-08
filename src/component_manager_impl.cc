@@ -360,20 +360,20 @@ const base::Value* ComponentManagerImpl::GetStateProperty(
     ErrorPtr* error) const {
   const base::DictionaryValue* component = FindComponent(component_path, error);
   if (!component)
-    return false;
+    return nullptr;
   auto pair = SplitAtFirst(name, ".", true);
   if (pair.first.empty()) {
     Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                        errors::commands::kPropertyMissing,
                        "Empty state package in '%s'", name.c_str());
-    return false;
+    return nullptr;
   }
   if (pair.second.empty()) {
     Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                        errors::commands::kPropertyMissing,
                        "State property name not specified in '%s'",
                        name.c_str());
-    return false;
+    return nullptr;
   }
   std::string key = base::StringPrintf("state.%s", name.c_str());
   const base::Value* value = nullptr;
