@@ -12,23 +12,17 @@
 #include <base/memory/weak_ptr.h>
 #include <gtest/gtest.h>
 
-#include "src/commands/command_definition.h"
-#include "src/commands/object_schema.h"
 #include "src/string_utils.h"
 
 namespace weave {
 
 class CommandQueueTest : public testing::Test {
  public:
-  CommandQueueTest() {
-    command_definition_ = CommandDefinition::FromJson({}, nullptr);
-  }
-
   std::unique_ptr<CommandInstance> CreateDummyCommandInstance(
       const std::string& name,
       const std::string& id) {
     std::unique_ptr<CommandInstance> cmd{new CommandInstance{
-        name, Command::Origin::kLocal, command_definition_.get(), {}}};
+        name, Command::Origin::kLocal, {}}};
     cmd->SetID(id);
     return cmd;
   }
@@ -41,9 +35,6 @@ class CommandQueueTest : public testing::Test {
   }
 
   CommandQueue queue_;
-
- private:
-  std::unique_ptr<CommandDefinition> command_definition_;
 };
 
 // Keeps track of commands being added to and removed from the queue_.
@@ -84,14 +75,14 @@ class FakeDispatcher {
 
 TEST_F(CommandQueueTest, Empty) {
   EXPECT_TRUE(queue_.IsEmpty());
-  EXPECT_EQ(0, queue_.GetCount());
+  EXPECT_EQ(0u, queue_.GetCount());
 }
 
 TEST_F(CommandQueueTest, Add) {
   queue_.Add(CreateDummyCommandInstance("base.reboot", "id1"));
   queue_.Add(CreateDummyCommandInstance("base.reboot", "id2"));
   queue_.Add(CreateDummyCommandInstance("base.reboot", "id3"));
-  EXPECT_EQ(3, queue_.GetCount());
+  EXPECT_EQ(3u, queue_.GetCount());
   EXPECT_FALSE(queue_.IsEmpty());
 }
 
@@ -102,31 +93,31 @@ TEST_F(CommandQueueTest, Remove) {
   queue_.Add(CreateDummyCommandInstance("base.reboot", id2));
   EXPECT_FALSE(queue_.IsEmpty());
   EXPECT_FALSE(Remove("dummy"));
-  EXPECT_EQ(2, queue_.GetCount());
+  EXPECT_EQ(2u, queue_.GetCount());
   EXPECT_TRUE(Remove(id1));
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
   EXPECT_FALSE(Remove(id1));
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
   EXPECT_TRUE(Remove(id2));
-  EXPECT_EQ(0, queue_.GetCount());
+  EXPECT_EQ(0u, queue_.GetCount());
   EXPECT_FALSE(Remove(id2));
-  EXPECT_EQ(0, queue_.GetCount());
+  EXPECT_EQ(0u, queue_.GetCount());
   EXPECT_TRUE(queue_.IsEmpty());
 }
 
 TEST_F(CommandQueueTest, DelayedRemove) {
   const std::string id1 = "id1";
   queue_.Add(CreateDummyCommandInstance("base.reboot", id1));
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
 
   queue_.DelayedRemove(id1);
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
 
   Cleanup(base::TimeDelta::FromMinutes(1));
-  EXPECT_EQ(1, queue_.GetCount());
+  EXPECT_EQ(1u, queue_.GetCount());
 
   Cleanup(base::TimeDelta::FromMinutes(15));
-  EXPECT_EQ(0, queue_.GetCount());
+  EXPECT_EQ(0u, queue_.GetCount());
 }
 
 TEST_F(CommandQueueTest, Dispatch) {

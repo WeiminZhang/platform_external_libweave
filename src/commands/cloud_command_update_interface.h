@@ -21,7 +21,7 @@ class CloudCommandUpdateInterface {
                              const DoneCallback& callback) = 0;
 
  protected:
-  virtual ~CloudCommandUpdateInterface() = default;
+  virtual ~CloudCommandUpdateInterface() {}
 };
 
 }  // namespace weave

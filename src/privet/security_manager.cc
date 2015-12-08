@@ -19,14 +19,11 @@
 #include <weave/provider/task_runner.h>
 
 #include "src/data_encoding.h"
+#include "src/privet/auth_manager.h"
 #include "src/privet/constants.h"
 #include "src/privet/openssl_utils.h"
 #include "src/string_utils.h"
 #include "third_party/chromium/crypto/p224_spake.h"
-
-#if !defined(ARCH_CPU_LITTLE_ENDIAN)
-#error "Big-endian is not supported. See b/25017606"
-#endif
 
 namespace weave {
 namespace privet {
@@ -122,19 +119,17 @@ class UnsecureKeyExchanger : public SecurityManager::KeyExchanger {
 
 }  // namespace
 
-SecurityManager::SecurityManager(const std::string& secret,
+SecurityManager::SecurityManager(AuthManager* auth_manager,
                                  const std::set<PairingType>& pairing_modes,
                                  const std::string& embedded_code,
                                  bool disable_security,
                                  provider::TaskRunner* task_runner)
-    : is_security_disabled_(disable_security),
+    : auth_manager_{auth_manager},
+      is_security_disabled_(disable_security),
       pairing_modes_(pairing_modes),
       embedded_code_(embedded_code),
       task_runner_{task_runner} {
-  if (!Base64Decode(secret, &secret_) || secret_.size() != kSha256OutputSize) {
-    secret_.resize(kSha256OutputSize);
-    base::RandBytes(secret_.data(), secret_.size());
-  }
+  CHECK(auth_manager_);
   CHECK_EQ(embedded_code_.empty(),
            std::find(pairing_modes_.begin(), pairing_modes_.end(),
                      PairingType::kEmbeddedCode) == pairing_modes_.end());
@@ -148,25 +143,17 @@ SecurityManager::~SecurityManager() {
 // Returns "base64([hmac]scope:id:time)".
 std::string SecurityManager::CreateAccessToken(const UserInfo& user_info,
                                                const base::Time& time) {
-  std::string data_str{CreateTokenData(user_info, time)};
-  std::vector<uint8_t> data{data_str.begin(), data_str.end()};
-  std::vector<uint8_t> hash{HmacSha256(secret_, data)};
-  hash.insert(hash.end(), data.begin(), data.end());
-  return Base64Encode(hash);
+  return Base64Encode(auth_manager_->CreateAccessToken(user_info, time));
 }
 
 // Parses "base64([hmac]scope:id:time)".
 UserInfo SecurityManager::ParseAccessToken(const std::string& token,
                                            base::Time* time) const {
   std::vector<uint8_t> decoded;
-  if (!Base64Decode(token, &decoded) || decoded.size() <= kSha256OutputSize) {
+  if (!Base64Decode(token, &decoded))
     return UserInfo{};
-  }
-  std::vector<uint8_t> data(decoded.begin() + kSha256OutputSize, decoded.end());
-  decoded.resize(kSha256OutputSize);
-  if (decoded != HmacSha256(secret_, data))
-    return UserInfo{};
-  return SplitTokenData(std::string(data.begin(), data.end()), time);
+
+  return auth_manager_->ParseAccessToken(decoded, time);
 }
 
 std::set<PairingType> SecurityManager::GetPairingTypes() const {
@@ -258,7 +245,7 @@ bool SecurityManager::StartPairing(PairingType mode,
   } while (confirmed_sessions_.find(session) != confirmed_sessions_.end() ||
            pending_sessions_.find(session) != pending_sessions_.end());
   std::string commitment = spake->GetMessage();
-  pending_sessions_.emplace(session, std::move(spake));
+  pending_sessions_.insert(std::make_pair(session, std::move(spake)));
 
   task_runner_->PostDelayedTask(
       FROM_HERE,
@@ -291,7 +278,6 @@ bool SecurityManager::ConfirmPairing(const std::string& session_id,
                        session_id.c_str());
     return false;
   }
-  CHECK(!certificate_fingerprint_.empty());
 
   std::vector<uint8_t> commitment;
   if (!Base64Decode(client_commitment, &commitment)) {
@@ -313,11 +299,14 @@ bool SecurityManager::ConfirmPairing(const std::string& session_id,
   const std::string& key = session->second->GetKey();
   VLOG(3) << "KEY " << base::HexEncode(key.data(), key.size());
 
-  *fingerprint = Base64Encode(certificate_fingerprint_);
+  const auto& certificate_fingerprint =
+      auth_manager_->GetCertificateFingerprint();
+  *fingerprint = Base64Encode(certificate_fingerprint);
   std::vector<uint8_t> cert_hmac = HmacSha256(
-      std::vector<uint8_t>(key.begin(), key.end()), certificate_fingerprint_);
+      std::vector<uint8_t>(key.begin(), key.end()), certificate_fingerprint);
   *signature = Base64Encode(cert_hmac);
-  confirmed_sessions_.emplace(session->first, std::move(session->second));
+  confirmed_sessions_.insert(
+      std::make_pair(session->first, std::move(session->second)));
   task_runner_->PostDelayedTask(
       FROM_HERE,
       base::Bind(base::IgnoreResult(&SecurityManager::CloseConfirmedSession),
@@ -349,10 +338,6 @@ void SecurityManager::RegisterPairingListeners(
   CHECK(on_start_.is_null() && on_end_.is_null());
   on_start_ = on_start;
   on_end_ = on_end;
-}
-
-std::string SecurityManager::GetSecret() const {
-  return Base64Encode(secret_);
 }
 
 bool SecurityManager::CheckIfPairingAllowed(ErrorPtr* error) {

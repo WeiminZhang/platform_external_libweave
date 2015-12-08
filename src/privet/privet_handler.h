@@ -45,8 +45,9 @@ class PrivetHandler : public CloudDelegate::Observer {
                 WifiDelegate* wifi);
   ~PrivetHandler() override;
 
-  void OnCommandDefsChanged() override;
+  void OnTraitDefsChanged() override;
   void OnStateChanged() override;
+  void OnComponentTreeChanged() override;
 
   std::vector<std::string> GetHttpPaths() const;
   std::vector<std::string> GetHttpsPaths() const;
@@ -118,15 +119,21 @@ class PrivetHandler : public CloudDelegate::Observer {
   void HandleCheckForUpdates(const base::DictionaryValue& input,
                              const UserInfo& user_info,
                              const RequestCallback& callback);
+  void HandleTraits(const base::DictionaryValue& input,
+                    const UserInfo& user_info,
+                    const RequestCallback& callback);
+  void HandleComponents(const base::DictionaryValue& input,
+                        const UserInfo& user_info,
+                        const RequestCallback& callback);
 
   void ReplyWithSetupStatus(const RequestCallback& callback) const;
   void ReplyToUpdateRequest(const RequestCallback& callback) const;
   void OnUpdateRequestTimeout(int update_request_id);
 
-  CloudDelegate* cloud_ = nullptr;
-  DeviceDelegate* device_ = nullptr;
-  SecurityDelegate* security_ = nullptr;
-  WifiDelegate* wifi_ = nullptr;
+  CloudDelegate* cloud_{nullptr};
+  DeviceDelegate* device_{nullptr};
+  SecurityDelegate* security_{nullptr};
+  WifiDelegate* wifi_{nullptr};
 
   struct HandlerParameters {
     ApiHandler handler;
@@ -137,16 +144,18 @@ class PrivetHandler : public CloudDelegate::Observer {
 
   struct UpdateRequestParameters {
     RequestCallback callback;
-    int request_id = 0;
-    int state_fingerprint = -1;
-    int command_defs_fingerprint = -1;
+    int request_id{0};
+    uint64_t state_fingerprint{0};
+    uint64_t traits_fingerprint{0};
+    uint64_t components_fingerprint{0};
   };
   std::vector<UpdateRequestParameters> update_requests_;
   int last_update_request_id_{0};
 
   uint64_t last_user_id_{0};
-  int state_fingerprint_{0};
-  int command_defs_fingerprint_{0};
+  uint64_t state_fingerprint_{1};
+  uint64_t traits_fingerprint_{1};
+  uint64_t components_fingerprint_{1};
   ScopedObserver<CloudDelegate, CloudDelegate::Observer> cloud_observer_{this};
 
   base::WeakPtrFactory<PrivetHandler> weak_ptr_factory_{this};

@@ -6,12 +6,12 @@
 
 #include <gtest/gtest.h>
 
-#include "base/build/build_config.h"
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/strings/string_piece.h"
 #include "base/strings/utf_string_conversion_utils.h"
 #include "base/values.h"
+#include "build/build_config.h"
 
 namespace base {
 

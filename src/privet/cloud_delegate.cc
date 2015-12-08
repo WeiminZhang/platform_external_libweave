@@ -15,11 +15,10 @@
 #include <weave/provider/task_runner.h>
 
 #include "src/backoff_entry.h"
-#include "src/commands/command_manager.h"
+#include "src/component_manager.h"
 #include "src/config.h"
 #include "src/device_registration_info.h"
 #include "src/privet/constants.h"
-#include "src/states/state_manager.h"
 
 namespace weave {
 namespace privet {
@@ -42,26 +41,28 @@ class CloudDelegateImpl : public CloudDelegate {
  public:
   CloudDelegateImpl(provider::TaskRunner* task_runner,
                     DeviceRegistrationInfo* device,
-                    CommandManager* command_manager,
-                    StateManager* state_manager)
+                    ComponentManager* component_manager)
       : task_runner_{task_runner},
         device_{device},
-        command_manager_{command_manager},
-        state_manager_{state_manager} {
+        component_manager_{component_manager} {
     device_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
         &CloudDelegateImpl::OnConfigChanged, weak_factory_.GetWeakPtr()));
     device_->AddGcdStateChangedCallback(base::Bind(
         &CloudDelegateImpl::OnRegistrationChanged, weak_factory_.GetWeakPtr()));
 
-    command_manager_->AddCommandDefChanged(base::Bind(
-        &CloudDelegateImpl::OnCommandDefChanged, weak_factory_.GetWeakPtr()));
-    command_manager_->AddCommandAddedCallback(base::Bind(
+    component_manager_->AddTraitDefChangedCallback(base::Bind(
+        &CloudDelegateImpl::NotifyOnTraitDefsChanged,
+        weak_factory_.GetWeakPtr()));
+    component_manager_->AddCommandAddedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandAdded, weak_factory_.GetWeakPtr()));
-    command_manager_->AddCommandRemovedCallback(base::Bind(
+    component_manager_->AddCommandRemovedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandRemoved, weak_factory_.GetWeakPtr()));
-
-    state_manager_->AddChangedCallback(base::Bind(
-        &CloudDelegateImpl::OnStateChanged, weak_factory_.GetWeakPtr()));
+    component_manager_->AddStateChangedCallback(base::Bind(
+        &CloudDelegateImpl::NotifyOnStateChanged,
+        weak_factory_.GetWeakPtr()));
+    component_manager_->AddComponentTreeChangedCallback(base::Bind(
+        &CloudDelegateImpl::NotifyOnComponentTreeChanged,
+        weak_factory_.GetWeakPtr()));
   }
 
   ~CloudDelegateImpl() override = default;
@@ -139,10 +140,20 @@ class CloudDelegateImpl : public CloudDelegate {
                : "";
   }
 
-  const base::DictionaryValue& GetState() const override { return state_; }
+  const base::DictionaryValue& GetLegacyCommandDef() const override {
+    return component_manager_->GetLegacyCommandDefinitions();
+  }
 
-  const base::DictionaryValue& GetCommandDef() const override {
-    return command_defs_;
+  const base::DictionaryValue& GetLegacyState() const override {
+    return component_manager_->GetLegacyState();
+  }
+
+  const base::DictionaryValue& GetComponents() const override {
+    return component_manager_->GetComponents();
+  }
+
+  const base::DictionaryValue& GetTraits() const override {
+    return component_manager_->GetTraits();
   }
 
   void AddCommand(const base::DictionaryValue& command,
@@ -162,11 +173,13 @@ class CloudDelegateImpl : public CloudDelegate {
     }
 
     std::string id;
-    if (!command_manager_->AddCommand(command, role, &id, &error))
+    auto command_instance = component_manager_->ParseCommandInstance(
+        command, Command::Origin::kLocal, role, &id, &error);
+    if (!command_instance)
       return callback.Run({}, std::move(error));
-
+    component_manager_->AddCommand(std::move(command_instance));
     command_owners_[id] = user_info.user_id();
-    callback.Run(*command_manager_->FindCommand(id)->ToJson(), nullptr);
+    callback.Run(*component_manager_->FindCommand(id)->ToJson(), nullptr);
   }
 
   void GetCommand(const std::string& id,
@@ -200,7 +213,7 @@ class CloudDelegateImpl : public CloudDelegate {
     for (const auto& it : command_owners_) {
       if (CanAccessCommand(it.second, user_info, nullptr)) {
         list_value.Append(
-            command_manager_->FindCommand(it.first)->ToJson().release());
+            component_manager_->FindCommand(it.first)->ToJson().release());
       }
     }
 
@@ -213,7 +226,7 @@ class CloudDelegateImpl : public CloudDelegate {
  private:
   void OnCommandAdded(Command* command) {
     // Set to 0 for any new unknown command.
-    command_owners_.emplace(command->GetID(), 0);
+    command_owners_.insert(std::make_pair(command->GetID(), 0));
   }
 
   void OnCommandRemoved(Command* command) {
@@ -239,23 +252,6 @@ class CloudDelegateImpl : public CloudDelegate {
       connection_state_ = ConnectionState{std::move(error)};
     }
     NotifyOnDeviceInfoChanged();
-  }
-
-  void OnStateChanged() {
-    state_.Clear();
-    auto state = state_manager_->GetState();
-    CHECK(state);
-    state_.MergeDictionary(state.get());
-    NotifyOnStateChanged();
-  }
-
-  void OnCommandDefChanged() {
-    command_defs_.Clear();
-    auto commands =
-      command_manager_->GetCommandDictionary().GetCommandsAsJson(nullptr);
-    CHECK(commands);
-    command_defs_.MergeDictionary(commands.get());
-    NotifyOnCommandDefsChanged();
   }
 
   void OnRegisterSuccess(const std::string& cloud_id) {
@@ -306,7 +302,7 @@ class CloudDelegateImpl : public CloudDelegate {
         return nullptr;
     }
 
-    auto command = command_manager_->FindCommand(command_id);
+    auto command = component_manager_->FindCommand(command_id);
     if (!command)
       return ReturnNotFound(command_id, error);
 
@@ -331,20 +327,13 @@ class CloudDelegateImpl : public CloudDelegate {
 
   provider::TaskRunner* task_runner_{nullptr};
   DeviceRegistrationInfo* device_{nullptr};
-  CommandManager* command_manager_{nullptr};
-  StateManager* state_manager_{nullptr};
+  ComponentManager* component_manager_{nullptr};
 
   // Primary state of GCD.
   ConnectionState connection_state_{ConnectionState::kDisabled};
 
   // State of the current or last setup.
   SetupState setup_state_{SetupState::kNone};
-
-  // Current device state.
-  base::DictionaryValue state_;
-
-  // Current commands definitions.
-  base::DictionaryValue command_defs_;
 
   // Map of command IDs to user IDs.
   std::map<std::string, uint64_t> command_owners_;
@@ -369,18 +358,21 @@ CloudDelegate::~CloudDelegate() {}
 std::unique_ptr<CloudDelegate> CloudDelegate::CreateDefault(
     provider::TaskRunner* task_runner,
     DeviceRegistrationInfo* device,
-    CommandManager* command_manager,
-    StateManager* state_manager) {
+    ComponentManager* component_manager) {
   return std::unique_ptr<CloudDelegateImpl>{new CloudDelegateImpl{
-      task_runner, device, command_manager, state_manager}};
+      task_runner, device, component_manager}};
 }
 
 void CloudDelegate::NotifyOnDeviceInfoChanged() {
   FOR_EACH_OBSERVER(Observer, observer_list_, OnDeviceInfoChanged());
 }
 
-void CloudDelegate::NotifyOnCommandDefsChanged() {
-  FOR_EACH_OBSERVER(Observer, observer_list_, OnCommandDefsChanged());
+void CloudDelegate::NotifyOnTraitDefsChanged() {
+  FOR_EACH_OBSERVER(Observer, observer_list_, OnTraitDefsChanged());
+}
+
+void CloudDelegate::NotifyOnComponentTreeChanged() {
+  FOR_EACH_OBSERVER(Observer, observer_list_, OnComponentTreeChanged());
 }
 
 void CloudDelegate::NotifyOnStateChanged() {

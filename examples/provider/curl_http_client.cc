@@ -118,12 +118,6 @@ SendRequestBlocking(CurlHttpClient::Method method,
       response->content_type = header.second;
   }
 
-  if (response->content_type.empty()) {
-    Error::AddTo(&error, FROM_HERE, "curl", "no_content_header",
-                 "Content-Type header is missing");
-    return {nullptr, std::move(error)};
-  }
-
   CHECK_EQ(CURLE_OK, curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE,
                                        &response->status));
 

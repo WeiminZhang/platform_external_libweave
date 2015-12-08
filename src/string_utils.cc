@@ -45,9 +45,6 @@ std::vector<std::string> Split(const std::string& str,
                                bool trim_whitespaces,
                                bool purge_empty_strings) {
   std::vector<std::string> tokens;
-  if (str.empty())
-    return tokens;
-
   for (std::string::size_type i = 0;;) {
     const std::string::size_type pos =
         delimiter.empty() ? (i + 1) : str.find(delimiter, i);

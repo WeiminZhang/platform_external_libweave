@@ -9,8 +9,6 @@
 #include <weave/error.h>
 #include <weave/export.h>
 
-#include "src/commands/command_definition.h"
-#include "src/commands/command_dictionary.h"
 #include "src/commands/command_queue.h"
 #include "src/commands/schema_constants.h"
 #include "src/json_error_codes.h"
@@ -36,13 +34,6 @@ const EnumToStringMap<Command::Origin>::Map kMapOrigin[] = {
     {Command::Origin::kCloud, "cloud"},
 };
 
-bool ReportDestroyedError(ErrorPtr* error) {
-  Error::AddTo(error, FROM_HERE, errors::commands::kDomain,
-               errors::commands::kCommandDestroyed,
-               "Command has been destroyed");
-  return false;
-}
-
 bool ReportInvalidStateTransition(ErrorPtr* error,
                                   Command::State from,
                                   Command::State to) {
@@ -65,12 +56,8 @@ LIBWEAVE_EXPORT EnumToStringMap<Command::Origin>::EnumToStringMap()
 
 CommandInstance::CommandInstance(const std::string& name,
                                  Command::Origin origin,
-                                 const CommandDefinition* command_definition,
                                  const base::DictionaryValue& parameters)
-    : name_{name},
-      origin_{origin},
-      command_definition_{command_definition} {
-  CHECK(command_definition_);
+    : name_{name}, origin_{origin} {
   parameters_.MergeDictionary(&parameters);
 }
 
@@ -86,6 +73,10 @@ const std::string& CommandInstance::GetName() const {
   return name_;
 }
 
+const std::string& CommandInstance::GetComponent() const {
+  return component_;
+}
+
 Command::State CommandInstance::GetState() const {
   return state_;
 }
@@ -94,16 +85,16 @@ Command::Origin CommandInstance::GetOrigin() const {
   return origin_;
 }
 
-std::unique_ptr<base::DictionaryValue> CommandInstance::GetParameters() const {
-  return std::unique_ptr<base::DictionaryValue>(parameters_.DeepCopy());
+const base::DictionaryValue& CommandInstance::GetParameters() const {
+  return parameters_;
 }
 
-std::unique_ptr<base::DictionaryValue> CommandInstance::GetProgress() const {
-  return std::unique_ptr<base::DictionaryValue>(progress_.DeepCopy());
+const base::DictionaryValue& CommandInstance::GetProgress() const {
+  return progress_;
 }
 
-std::unique_ptr<base::DictionaryValue> CommandInstance::GetResults() const {
-  return std::unique_ptr<base::DictionaryValue>(results_.DeepCopy());
+const base::DictionaryValue& CommandInstance::GetResults() const {
+  return results_;
 }
 
 const Error* CommandInstance::GetError() const {
@@ -148,14 +139,12 @@ bool CommandInstance::SetError(const Error* command_error, ErrorPtr* error) {
 namespace {
 
 // Helper method to retrieve command parameters from the command definition
-// object passed in as |json| and corresponding command definition schema
-// specified in |command_def|.
+// object passed in as |json|.
 // On success, returns |true| and the validated parameters and values through
 // |parameters|. Otherwise returns |false| and additional error information in
 // |error|.
 std::unique_ptr<base::DictionaryValue> GetCommandParameters(
     const base::DictionaryValue* json,
-    const CommandDefinition* command_def,
     ErrorPtr* error) {
   // Get the command parameters from 'parameters' property.
   std::unique_ptr<base::DictionaryValue> params;
@@ -183,7 +172,6 @@ std::unique_ptr<base::DictionaryValue> GetCommandParameters(
 std::unique_ptr<CommandInstance> CommandInstance::FromJson(
     const base::Value* value,
     Command::Origin origin,
-    const CommandDictionary& dictionary,
     std::string* command_id,
     ErrorPtr* error) {
   std::unique_ptr<CommandInstance> instance;
@@ -212,16 +200,8 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
                  errors::commands::kPropertyMissing, "Command name is missing");
     return instance;
   }
-  // Make sure we know how to handle the command with this name.
-  auto command_def = dictionary.FindCommand(command_name);
-  if (!command_def) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                       errors::commands::kInvalidCommandName,
-                       "Unknown command received: %s", command_name.c_str());
-    return instance;
-  }
 
-  auto parameters = GetCommandParameters(json, command_def, error);
+  auto parameters = GetCommandParameters(json, error);
   if (!parameters) {
     Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                        errors::commands::kCommandFailed,
@@ -229,11 +209,15 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
     return instance;
   }
 
-  instance.reset(
-      new CommandInstance{command_name, origin, command_def, *parameters});
+  instance.reset(new CommandInstance{command_name, origin, *parameters});
 
   if (!command_id->empty())
     instance->SetID(*command_id);
+
+  // Get the component name this command is for.
+  std::string component;
+  if (json->GetString(commands::attributes::kCommand_Component, &component))
+    instance->SetComponent(component);
 
   return instance;
 }

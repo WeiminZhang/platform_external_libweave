@@ -9,6 +9,51 @@
 #include <base/bind.h>
 #include <base/memory/weak_ptr.h>
 
+namespace {
+
+const char kTraits[] = R"({
+  "onOff": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "state": {
+            "type": "string",
+            "enum": [ "on", "standby" ]
+          }
+        }
+      }
+    },
+    "state": {
+      "type": "string",
+      "enum": [ "on", "standby" ]
+    }
+  },
+  "volume": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "volume": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "isMuted": { "type": "boolean" }
+        }
+      }
+    },
+    "state": {
+      "isMuted": { "type": "boolean" },
+      "volume": { "type": "integer" }
+    }
+  }
+})";
+
+const char kComponent[] = "speaker";
+
+}  // anonymous namespace
+
 // SpeakerHandler is a command handler example that shows
 // how to handle commands for a Weave speaker.
 class SpeakerHandler {
@@ -17,48 +62,14 @@ class SpeakerHandler {
   void Register(weave::Device* device) {
     device_ = device;
 
-    device->AddStateDefinitionsFromJson(R"({
-      "onOff": {"state": {"type": "string", "enum": ["on", "standby"]}},
-      "volume": {
-        "volume": {"type": "integer"},
-        "isMuted": {"type": "boolean"}
-      }
-    })");
+    device->AddTraitDefinitionsFromJson(kTraits);
+    CHECK(device->AddComponent(kComponent, {"onOff", "volume"}, nullptr));
+    UpdateSpeakerState();
 
-    device->SetStatePropertiesFromJson(R"({
-      "onOff":{"state": "standby"},
-      "volume":{
-        "volume": 100,
-        "isMuted": false
-      }
-    })",
-                                       nullptr);
-
-    device->AddCommandDefinitionsFromJson(R"({
-      "onOff": {
-         "setConfig":{
-           "parameters": {
-             "state": {"type": "string", "enum": ["on", "standby"]}
-           }
-         }
-       },
-       "volume": {
-         "setConfig":{
-           "parameters": {
-             "volume": {
-               "type": "integer",
-               "minimum": 0,
-               "maximum": 100
-             },
-             "isMuted": {"type": "boolean"}
-           }
-        }
-      }
-    })");
-    device->AddCommandHandler("onOff.setConfig",
+    device->AddCommandHandler(kComponent, "onOff.setConfig",
                               base::Bind(&SpeakerHandler::OnOnOffSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler("volume.setConfig",
+    device->AddCommandHandler(kComponent, "volume.setConfig",
                               base::Bind(&SpeakerHandler::OnVolumeSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
   }
@@ -70,9 +81,10 @@ class SpeakerHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
 
+    const auto& params = cmd->GetParameters();
     // Handle volume parameter
     int32_t volume_value = 0;
-    if (cmd->GetParameters()->GetInteger("volume", &volume_value)) {
+    if (params.GetInteger("volume", &volume_value)) {
       // Display this command in terminal.
       LOG(INFO) << cmd->GetName() << " volume: " << volume_value;
 
@@ -86,7 +98,7 @@ class SpeakerHandler {
 
     // Handle isMuted parameter
     bool isMuted_status = false;
-    if (cmd->GetParameters()->GetBoolean("isMuted", &isMuted_status)) {
+    if (params.GetBoolean("isMuted", &isMuted_status)) {
       // Display this command in terminal.
       LOG(INFO) << cmd->GetName() << " is "
                 << (isMuted_status ? "muted" : "not muted");
@@ -108,8 +120,9 @@ class SpeakerHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
+    const auto& params = cmd->GetParameters();
     std::string requested_state;
-    if (cmd->GetParameters()->GetString("state", &requested_state)) {
+    if (params.GetString("state", &requested_state)) {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
       bool new_speaker_status = requested_state == "on";
@@ -128,7 +141,7 @@ class SpeakerHandler {
     state.SetString("onOff.state", speaker_status_ ? "on" : "standby");
     state.SetBoolean("volume.isMuted", isMuted_status_);
     state.SetInteger("volume.volume", volume_value_);
-    device_->SetStateProperties(state, nullptr);
+    device_->SetStateProperties(kComponent, state, nullptr);
   }
 
   weave::Device* device_{nullptr};

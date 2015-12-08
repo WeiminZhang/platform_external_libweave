@@ -28,7 +28,7 @@ class TaskRunner {
                                base::TimeDelta delay) = 0;
 
  protected:
-  virtual ~TaskRunner() = default;
+  virtual ~TaskRunner() {}
 };
 
 }  // namespace provider

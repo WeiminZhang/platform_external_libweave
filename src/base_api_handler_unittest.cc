@@ -10,13 +10,11 @@
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/provider/test/mock_http_client.h>
 #include <weave/test/mock_device.h>
+#include <weave/test/unittest_utils.h>
 
-#include "src/commands/command_manager.h"
-#include "src/commands/unittest_utils.h"
+#include "src/component_manager_impl.h"
 #include "src/config.h"
 #include "src/device_registration_info.h"
-#include "src/states/mock_state_change_queue_interface.h"
-#include "src/states/state_manager.h"
 
 using testing::_;
 using testing::AnyOf;
@@ -31,35 +29,33 @@ namespace weave {
 class BaseApiHandlerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    EXPECT_CALL(mock_state_change_queue_, MockNotifyPropertiesUpdated(_, _))
-        .WillRepeatedly(Return(true));
-
-    command_manager_ = std::make_shared<CommandManager>();
-
-    state_manager_ = std::make_shared<StateManager>(&mock_state_change_queue_);
-
-    EXPECT_CALL(device_, AddStateDefinitionsFromJson(_))
+    EXPECT_CALL(device_, AddTraitDefinitionsFromJson(_))
         .WillRepeatedly(Invoke([this](const std::string& json) {
-          EXPECT_TRUE(
-              state_manager_->LoadStateDefinitionFromJson(json, nullptr));
+          EXPECT_TRUE(component_manager_.LoadTraits(json, nullptr));
         }));
-    EXPECT_CALL(device_, SetStateProperties(_, _))
-        .WillRepeatedly(
-            Invoke(state_manager_.get(), &StateManager::SetProperties));
-    EXPECT_CALL(device_, AddCommandDefinitionsFromJson(_))
-        .WillRepeatedly(Invoke([this](const std::string& json) {
-          EXPECT_TRUE(command_manager_->LoadCommands(json, nullptr));
+    EXPECT_CALL(device_, SetStateProperties(_, _, _))
+        .WillRepeatedly(Invoke(&component_manager_,
+                               &ComponentManager::SetStateProperties));
+    EXPECT_CALL(device_, SetStateProperty(_, _, _, _))
+        .WillRepeatedly(Invoke(&component_manager_,
+                               &ComponentManager::SetStateProperty));
+    EXPECT_CALL(device_, AddComponent(_, _, _))
+        .WillRepeatedly(Invoke([this](const std::string& name,
+                                      const std::vector<std::string>& traits,
+                                      ErrorPtr* error) {
+          return component_manager_.AddComponent("", name, traits, error);
         }));
 
-    EXPECT_CALL(device_, AddCommandHandler(AnyOf("base.updateBaseConfiguration",
+    EXPECT_CALL(device_, AddCommandHandler(_,
+                                           AnyOf("base.updateBaseConfiguration",
                                                  "base.updateDeviceInfo"),
                                            _))
-        .WillRepeatedly(
-            Invoke(command_manager_.get(), &CommandManager::AddCommandHandler));
+        .WillRepeatedly(Invoke(&component_manager_,
+                               &ComponentManager::AddCommandHandler));
 
     std::unique_ptr<Config> config{new Config{&config_store_}};
     config->Load();
-    dev_reg_.reset(new DeviceRegistrationInfo(command_manager_, state_manager_,
+    dev_reg_.reset(new DeviceRegistrationInfo(&component_manager_,
                                               std::move(config), nullptr,
                                               &http_client_, nullptr));
 
@@ -70,47 +66,44 @@ class BaseApiHandlerTest : public ::testing::Test {
   }
 
   void AddCommand(const std::string& command) {
-    auto command_instance = CommandInstance::FromJson(
-        test::CreateDictionaryValue(command.c_str()).get(),
-        Command::Origin::kLocal, command_manager_->GetCommandDictionary(),
-        nullptr, nullptr);
-    EXPECT_TRUE(!!command_instance);
-
-    std::string id{base::IntToString(++command_id_)};
-    command_instance->SetID(id);
-    command_manager_->AddCommand(std::move(command_instance));
+    std::string id;
+    auto command_instance = component_manager_.ParseCommandInstance(
+        *test::CreateDictionaryValue(command.c_str()), Command::Origin::kLocal,
+        UserRole::kOwner, &id, nullptr);
+    ASSERT_NE(nullptr, command_instance.get());
+    component_manager_.AddCommand(std::move(command_instance));
     EXPECT_EQ(Command::State::kDone,
-              command_manager_->FindCommand(id)->GetState());
+              component_manager_.FindCommand(id)->GetState());
   }
 
   std::unique_ptr<base::DictionaryValue> GetBaseState() {
-    auto state = state_manager_->GetState();
-    std::set<std::string> result;
-    for (base::DictionaryValue::Iterator it{*state}; !it.IsAtEnd();
-         it.Advance()) {
-      if (it.key() != "base")
-        state->Remove(it.key(), nullptr);
-    }
+    std::unique_ptr<base::DictionaryValue> state;
+    std::string path = component_manager_.FindComponentWithTrait("base");
+    EXPECT_FALSE(path.empty());
+    const auto* component = component_manager_.FindComponent(path, nullptr);
+    CHECK(component);
+    const base::DictionaryValue* base_state = nullptr;
+    if (component->GetDictionary("state.base", &base_state))
+      state.reset(base_state->DeepCopy());
+    else
+      state.reset(new base::DictionaryValue);
     return state;
   }
 
   provider::test::MockConfigStore config_store_;
   StrictMock<provider::test::MockHttpClient> http_client_;
   std::unique_ptr<DeviceRegistrationInfo> dev_reg_;
-  std::shared_ptr<CommandManager> command_manager_;
-  testing::StrictMock<MockStateChangeQueueInterface> mock_state_change_queue_;
-  std::shared_ptr<StateManager> state_manager_;
+  ComponentManagerImpl component_manager_;
   std::unique_ptr<BaseApiHandler> handler_;
   StrictMock<test::MockDevice> device_;
-  int command_id_{0};
 };
 
 TEST_F(BaseApiHandlerTest, Initialization) {
-  auto command_defs =
-      command_manager_->GetCommandDictionary().GetCommandsAsJson(nullptr);
+  const base::DictionaryValue* trait = nullptr;
+  ASSERT_TRUE(component_manager_.GetTraits().GetDictionary("base", &trait));
 
   auto expected = R"({
-    "base": {
+    "commands": {
       "updateBaseConfiguration": {
         "minimalRole": "manager",
         "parameters": {
@@ -140,9 +133,15 @@ TEST_F(BaseApiHandlerTest, Initialization) {
           }
         }
       }
-    }
+    },
+   "state": {
+      "firmwareVersion": "string",
+      "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
+      "localDiscoveryEnabled": "boolean",
+      "localPairingEnabled": "boolean"
+   }
   })";
-  EXPECT_JSON_EQ(expected, *command_defs);
+  EXPECT_JSON_EQ(expected, *trait);
 }
 
 TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
@@ -150,6 +149,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
 
   AddCommand(R"({
     'name' : 'base.updateBaseConfiguration',
+    'component': 'weave',
     'parameters': {
       'localDiscoveryEnabled': false,
       'localAnonymousAccessMaxRole': 'none',
@@ -161,17 +161,16 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
   EXPECT_FALSE(settings.local_pairing_enabled);
 
   auto expected = R"({
-    'base': {
-      'firmwareVersion': 'TEST_FIRMWARE',
-      'localAnonymousAccessMaxRole': 'none',
-      'localDiscoveryEnabled': false,
-      'localPairingEnabled': false
-    }
+    'firmwareVersion': 'TEST_FIRMWARE',
+    'localAnonymousAccessMaxRole': 'none',
+    'localDiscoveryEnabled': false,
+    'localPairingEnabled': false
   })";
   EXPECT_JSON_EQ(expected, *GetBaseState());
 
   AddCommand(R"({
     'name' : 'base.updateBaseConfiguration',
+    'component': 'weave',
     'parameters': {
       'localDiscoveryEnabled': true,
       'localAnonymousAccessMaxRole': 'user',
@@ -182,12 +181,10 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
   EXPECT_TRUE(settings.local_discovery_enabled);
   EXPECT_TRUE(settings.local_pairing_enabled);
   expected = R"({
-    'base': {
-      'firmwareVersion': 'TEST_FIRMWARE',
-      'localAnonymousAccessMaxRole': 'user',
-      'localDiscoveryEnabled': true,
-      'localPairingEnabled': true
-    }
+    'firmwareVersion': 'TEST_FIRMWARE',
+    'localAnonymousAccessMaxRole': 'user',
+    'localDiscoveryEnabled': true,
+    'localPairingEnabled': true
   })";
   EXPECT_JSON_EQ(expected, *GetBaseState());
 
@@ -196,12 +193,10 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
     change.set_local_anonymous_access_role(AuthScope::kViewer);
   }
   expected = R"({
-    'base': {
-      'firmwareVersion': 'TEST_FIRMWARE',
-      'localAnonymousAccessMaxRole': 'viewer',
-      'localDiscoveryEnabled': true,
-      'localPairingEnabled': true
-    }
+    'firmwareVersion': 'TEST_FIRMWARE',
+    'localAnonymousAccessMaxRole': 'viewer',
+    'localDiscoveryEnabled': true,
+    'localPairingEnabled': true
   })";
   EXPECT_JSON_EQ(expected, *GetBaseState());
 }
@@ -209,6 +204,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
 TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
   AddCommand(R"({
     'name' : 'base.updateDeviceInfo',
+    'component': 'weave',
     'parameters': {
       'name': 'testName',
       'description': 'testDescription',
@@ -223,6 +219,7 @@ TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
 
   AddCommand(R"({
     'name' : 'base.updateDeviceInfo',
+    'component': 'weave',
     'parameters': {
       'location': 'newLocation'
     }

@@ -15,16 +15,12 @@
 #include <weave/error.h>
 #include <weave/command.h>
 
-#include "src/commands/prop_values.h"
-#include "src/commands/schema_utils.h"
-
 namespace base {
 class Value;
 }  // namespace base
 
 namespace weave {
 
-class CommandDefinition;
 class CommandDictionary;
 class CommandObserver;
 class CommandQueue;
@@ -40,7 +36,7 @@ class CommandInstance final : public Command {
     virtual void OnStateChanged() = 0;
 
    protected:
-    virtual ~Observer() = default;
+    virtual ~Observer() {}
   };
 
   // Construct a command instance given the full command |name| which must
@@ -48,18 +44,18 @@ class CommandInstance final : public Command {
   // their values specified in |parameters|.
   CommandInstance(const std::string& name,
                   Command::Origin origin,
-                  const CommandDefinition* command_definition,
                   const base::DictionaryValue& parameters);
   ~CommandInstance() override;
 
   // Command overrides.
   const std::string& GetID() const override;
   const std::string& GetName() const override;
+  const std::string& GetComponent() const override;
   Command::State GetState() const override;
   Command::Origin GetOrigin() const override;
-  std::unique_ptr<base::DictionaryValue> GetParameters() const override;
-  std::unique_ptr<base::DictionaryValue> GetProgress() const override;
-  std::unique_ptr<base::DictionaryValue> GetResults() const override;
+  const base::DictionaryValue& GetParameters() const override;
+  const base::DictionaryValue& GetProgress() const override;
+  const base::DictionaryValue& GetResults() const override;
   const Error* GetError() const override;
   bool SetProgress(const base::DictionaryValue& progress,
                    ErrorPtr* error) override;
@@ -69,15 +65,9 @@ class CommandInstance final : public Command {
   bool Abort(const Error* command_error, ErrorPtr* error) override;
   bool Cancel(ErrorPtr* error) override;
 
-  // Returns command definition.
-  const CommandDefinition* GetCommandDefinition() const {
-    return command_definition_;
-  }
-
   // Parses a command instance JSON definition and constructs a CommandInstance
-  // object, checking the JSON |value| against the command definition schema
-  // found in command |dictionary|. On error, returns null unique_ptr and
-  // fills in error details in |error|.
+  // object.
+  // On error, returns null unique_ptr and fills in error details in |error|.
   // |command_id| is the ID of the command returned, as parsed from the |value|.
   // The command ID extracted (if present in the JSON object) even if other
   // parsing/validation error occurs and command instance is not constructed.
@@ -85,7 +75,6 @@ class CommandInstance final : public Command {
   static std::unique_ptr<CommandInstance> FromJson(
       const base::Value* value,
       Command::Origin origin,
-      const CommandDictionary& dictionary,
       std::string* command_id,
       ErrorPtr* error);
 
@@ -94,6 +83,7 @@ class CommandInstance final : public Command {
   // Sets the command ID (normally done by CommandQueue when the command
   // instance is added to it).
   void SetID(const std::string& id) { id_ = id; }
+  void SetComponent(const std::string& component) { component_ = component; }
 
   void AddObserver(Observer* observer);
   void RemoveObserver(Observer* observer);
@@ -103,7 +93,6 @@ class CommandInstance final : public Command {
   void DetachFromQueue() {
     observers_.Clear();
     queue_ = nullptr;
-    command_definition_ = nullptr;
   }
 
  private:
@@ -117,12 +106,12 @@ class CommandInstance final : public Command {
 
   // Unique command ID within a command queue.
   std::string id_;
-  // Full command name as "<package_name>.<command_name>".
+  // Full command name as "<trait_name>.<command_name>".
   std::string name_;
+  // Full path to the component this command is intended for.
+  std::string component_;
   // The origin of the command, either "local" or "cloud".
   Command::Origin origin_ = Command::Origin::kLocal;
-  // Command definition.
-  const CommandDefinition* command_definition_{nullptr};
   // Command parameters and their values.
   base::DictionaryValue parameters_;
   // Current command execution progress.

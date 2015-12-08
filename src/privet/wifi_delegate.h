@@ -18,7 +18,7 @@ namespace privet {
 class WifiDelegate {
  public:
   WifiDelegate() = default;
-  virtual ~WifiDelegate() = default;
+  virtual ~WifiDelegate() {}
 
   // Returns status of the WiFi connection.
   virtual const ConnectionState& GetConnectionState() const = 0;

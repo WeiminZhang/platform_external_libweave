@@ -34,7 +34,8 @@ void EventTaskRunner::AddIoCompletionTask(
   flags |= (what & kClosed) ? EV_CLOSED : 0;
   event* ioevent = event_new(base_.get(), fd, flags, FdEventHandler, this);
   EventPtr<event> ioeventPtr{ioevent};
-  fd_task_map_.emplace(fd, std::make_pair(std::move(ioeventPtr), task));
+  fd_task_map_.insert(
+      std::make_pair(fd, std::make_pair(std::move(ioeventPtr), task)));
   event_add(ioevent, nullptr);
 }
 

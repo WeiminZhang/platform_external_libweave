@@ -45,16 +45,12 @@
 /* public header */
 #include "modp_b64.h"
 
-/*
- * If you are ripping this out of the library, comment out the next
- * line and uncomment the next lines as approrpiate
- */
-//#include "config.h"
+#include <build/build_config.h>
 
-/* if on motoral, sun, ibm; uncomment this */
-/* #define WORDS_BIGENDIAN 1 */
-/* else for Intel, Amd; uncomment this */
-/* #undef WORDS_BIGENDIAN */
+#undef WORDS_BIGENDIAN
+#if !defined(ARCH_CPU_LITTLE_ENDIAN)
+#define WORDS_BIGENDIAN 1
+#endif
 
 #include "modp_b64_data.h"
 
@@ -118,7 +114,7 @@ size_t modp_b64_encode(char* dest, const char* str, size_t len)
 }
 
 #ifdef WORDS_BIGENDIAN   /* BIG ENDIAN -- SUN / IBM / MOTOROLA */
-int modp_b64_decode(char* dest, const char* src, int len)
+size_t modp_b64_decode(char* dest, const char* src, size_t len)
 {
     if (len == 0) return 0;
 
