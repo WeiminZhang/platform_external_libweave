@@ -14,7 +14,7 @@
 #include "base/compiler_specific.h"
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
-#include "base/build/build_config.h"
+#include "build/build_config.h"
 
 namespace base {
 

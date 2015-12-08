@@ -16,8 +16,8 @@
 #include <ostream>
 
 #include "base/basictypes.h"
-#include "base/build/build_config.h"
 #include "base/logging.h"
+#include "build/build_config.h"
 
 namespace {
 

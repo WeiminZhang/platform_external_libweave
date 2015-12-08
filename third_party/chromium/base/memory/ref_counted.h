@@ -10,10 +10,10 @@
 #include <iosfwd>
 
 #include "base/base_export.h"
-#include "base/build/build_config.h"
 #include "base/compiler_specific.h"
 #include "base/logging.h"
 #include "base/move.h"
+#include "build/build_config.h"
 
 namespace base {
 

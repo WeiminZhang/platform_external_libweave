@@ -45,7 +45,7 @@
 /* public header */
 #include "modp_b64.h"
 
-#include <base/build/build_config.h>
+#include <build/build_config.h>
 
 #undef WORDS_BIGENDIAN
 #if !defined(ARCH_CPU_LITTLE_ENDIAN)

@@ -8,7 +8,7 @@
 #include <cstddef>  // For size_t.
 #include <type_traits>
 
-#include "base/build/build_config.h"
+#include "build/build_config.h"
 
 namespace base {
 
