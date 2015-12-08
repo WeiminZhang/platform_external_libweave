@@ -9,6 +9,51 @@
 #include <base/bind.h>
 #include <base/memory/weak_ptr.h>
 
+namespace {
+
+const char kTraits[] = R"({
+  "onOff": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "state": {
+            "type": "string",
+            "enum": [ "on", "standby" ]
+          }
+        }
+      }
+    },
+    "state": {
+      "type": "string",
+      "enum": [ "on", "standby" ]
+    }
+  },
+  "volume": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "volume": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "isMuted": { "type": "boolean" }
+        }
+      }
+    },
+    "state": {
+      "isMuted": { "type": "boolean" },
+      "volume": { "type": "integer" }
+    }
+  }
+})";
+
+const char kComponent[] = "speaker";
+
+}  // anonymous namespace
+
 // SpeakerHandler is a command handler example that shows
 // how to handle commands for a Weave speaker.
 class SpeakerHandler {
@@ -17,50 +62,14 @@ class SpeakerHandler {
   void Register(weave::Device* device) {
     device_ = device;
 
-    device->AddStateDefinitionsFromJson(R"({
-      "onOff": {"state": {"type": "string", "enum": ["on", "standby"]}},
-      "volume": {
-        "volume": {"type": "integer"},
-        "isMuted": {"type": "boolean"}
-      }
-    })");
+    device->AddTraitDefinitionsFromJson(kTraits);
+    CHECK(device->AddComponent(kComponent, {"onOff", "volume"}, nullptr));
+    UpdateSpeakerState();
 
-    device->SetStatePropertiesFromJson(R"({
-      "onOff":{"state": "standby"},
-      "volume":{
-        "volume": 100,
-        "isMuted": false
-      }
-    })",
-                                       nullptr);
-
-    device->AddCommandDefinitionsFromJson(R"({
-      "onOff": {
-        "setConfig":{
-          "minimalRole": "user",
-          "parameters": {
-            "state": {"type": "string", "enum": ["on", "standby"]}
-          }
-        }
-      },
-      "volume": {
-        "setConfig":{
-          "minimalRole": "user",
-          "parameters": {
-            "volume": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100
-            },
-            "isMuted": {"type": "boolean"}
-          }
-        }
-      }
-    })");
-    device->AddCommandHandler("onOff.setConfig",
+    device->AddCommandHandler(kComponent, "onOff.setConfig",
                               base::Bind(&SpeakerHandler::OnOnOffSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler("volume.setConfig",
+    device->AddCommandHandler(kComponent, "volume.setConfig",
                               base::Bind(&SpeakerHandler::OnVolumeSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
   }
@@ -132,7 +141,7 @@ class SpeakerHandler {
     state.SetString("onOff.state", speaker_status_ ? "on" : "standby");
     state.SetBoolean("volume.isMuted", isMuted_status_);
     state.SetInteger("volume.volume", volume_value_);
-    device_->SetStateProperties(state, nullptr);
+    device_->SetStateProperties(kComponent, state, nullptr);
   }
 
   weave::Device* device_{nullptr};

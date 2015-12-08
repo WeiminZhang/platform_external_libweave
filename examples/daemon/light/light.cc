@@ -9,6 +9,145 @@
 #include <base/bind.h>
 #include <base/memory/weak_ptr.h>
 
+namespace {
+
+const char kTraits[] = R"({
+  "onOff": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "state": {
+            "type": "string",
+            "enum": [ "on", "standby" ]
+          }
+        }
+      }
+    },
+    "state": {
+      "state": {
+        "type": "string",
+        "enum": [ "on", "standby" ]
+      }
+    }
+  },
+  "brightness": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "brightness": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    "state": { "brightness": { "type": "integer" } }
+  },
+  "colorXY": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "colorSetting": {
+            "type": "object",
+            "required": [
+              "colorX",
+              "colorY"
+            ],
+            "properties": {
+              "colorX": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0
+              },
+              "colorY": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    "state": {
+      "colorSetting": {
+        "properties": {
+          "colorX": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "colorY": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          }
+        }
+      },
+      "colorCapRed": {
+        "properties": {
+          "colorX": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "colorY": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          }
+        }
+      },
+      "colorCapGreen": {
+        "properties": {
+          "colorX": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "colorY": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          }
+        }
+      },
+      "colorCapBlue": {
+        "properties": {
+          "colorX": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "colorY": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          }
+        }
+      }
+    }
+  }
+})";
+
+const char kDefaultState[] = R"({
+  "colorXY": {
+    "colorSetting": {"colorX": 0, "colorY": 0},
+    "colorCapRed":  {"colorX": 0.674, "colorY": 0.322},
+    "colorCapGreen":{"colorX": 0.408, "colorY": 0.517},
+    "colorCapBlue": {"colorX": 0.168, "colorY": 0.041}
+  }
+})";
+
+const char kComponent[] = "light";
+
+}  // anonymous namespace
+
 // LightHandler is a command handler example that shows
 // how to handle commands for a Weave light.
 class LightHandler {
@@ -17,105 +156,20 @@ class LightHandler {
   void Register(weave::Device* device) {
     device_ = device;
 
-    device->AddStateDefinitionsFromJson(R"({
-      "onOff": {"state": {"type": "string", "enum": ["on", "standby"]}},
-      "brightness": {"brightness": {"type": "integer"}},
-      "colorXY": {
-        "colorSetting": {
-          "properties": {
-            "colorX": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-            "colorY": {"type": "number", "minimum": 0.0, "maximum": 1.0}
-          }
-        },
-        "colorCapRed": {
-          "properties": {
-            "colorX": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-            "colorY": {"type": "number", "minimum": 0.0, "maximum": 1.0}
-          }
-        },
-        "colorCapGreen": {
-          "properties": {
-            "colorX": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-            "colorY": {"type": "number", "minimum": 0.0, "maximum": 1.0}
-          }
-        },
-        "colorCapBlue": {
-          "properties": {
-            "colorX": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-            "colorY": {"type": "number", "minimum": 0.0, "maximum": 1.0}
-          }
-        }
-      }
-    })");
+    device->AddTraitDefinitionsFromJson(kTraits);
+    CHECK(device->AddComponent(kComponent, {"onOff", "brightness", "colorXY"},
+                               nullptr));
+    CHECK(device->SetStatePropertiesFromJson(kComponent, kDefaultState,
+                                             nullptr));
+    UpdateLightState();
 
-    device->SetStatePropertiesFromJson(R"({
-      "onOff":{"state": "standby"},
-      "brightness":{"brightness": 0},
-      "colorXY": {
-        "colorSetting": {"colorX": 0, "colorY": 0},
-        "colorCapRed":  {"colorX": 0.674, "colorY": 0.322},
-        "colorCapGreen":{"colorX": 0.408, "colorY": 0.517},
-        "colorCapBlue": {"colorX": 0.168, "colorY": 0.041}
-      }
-    })",
-                                       nullptr);
-
-    device->AddCommandDefinitionsFromJson(R"({
-      "onOff": {
-        "setConfig":{
-          "minimalRole": "user",
-          "parameters": {
-            "state": {"type": "string", "enum": ["on", "standby"]}
-          }
-        }
-      },
-      "brightness": {
-        "setConfig":{
-          "minimalRole": "user",
-          "parameters": {
-            "brightness": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100
-            }
-          }
-        }
-      },
-      "colorXY": {
-        "setConfig": {
-          "minimalRole": "user",
-          "parameters": {
-            "colorSetting": {
-              "type": "object",
-              "required": [
-                "colorX",
-                "colorY"
-              ],
-              "properties": {
-                "colorX": {
-                  "type": "number",
-                  "minimum": 0.0,
-                  "maximum": 1.0
-                },
-                "colorY": {
-                  "type": "number",
-                  "minimum": 0.0,
-                  "maximum": 1.0
-                }
-              },
-              "additionalProperties": false
-            }
-          }
-        }
-      }
-    })");
-    device->AddCommandHandler("onOff.setConfig",
+    device->AddCommandHandler(kComponent, "onOff.setConfig",
                               base::Bind(&LightHandler::OnOnOffSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler("brightness.setConfig",
+    device->AddCommandHandler(kComponent, "brightness.setConfig",
                               base::Bind(&LightHandler::OnBrightnessSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler("colorXY.setConfig",
+    device->AddCommandHandler(kComponent, "colorXY.setConfig",
                               base::Bind(&LightHandler::OnColorXYSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
   }
@@ -213,16 +267,15 @@ class LightHandler {
     std::unique_ptr<base::DictionaryValue> colorXY(new base::DictionaryValue());
     colorXY->SetDouble("colorX", color_X_);
     colorXY->SetDouble("colorY", color_Y_);
-    state.Set("colorXY.colorSetting", colorXY.get());
-    device_->SetStateProperties(state, nullptr);
-    colorXY.release();
+    state.Set("colorXY.colorSetting", colorXY.release());
+    device_->SetStateProperties(kComponent, state, nullptr);
   }
 
   weave::Device* device_{nullptr};
 
   // Simulate the state of the light.
-  bool light_status_;
-  int32_t brightness_state_;
+  bool light_status_{false};
+  int32_t brightness_state_{0};
   double color_X_{0.0};
   double color_Y_{0.0};
   base::WeakPtrFactory<LightHandler> weak_ptr_factory_{this};

@@ -14,6 +14,43 @@
 namespace {
 // Supported LED count on this device
 const size_t kLedCount = 3;
+
+const char kTraits[] = R"({
+  "_ledflasher": {
+    "commands": {
+      "_set": {
+        "minimalRole": "user",
+        "parameters": {
+          "_led": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "_on": { "type": "boolean" }
+        }
+      },
+      "_toggle": {
+        "minimalRole": "user",
+        "parameters": {
+          "_led": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          }
+        }
+      }
+    },
+    "state": {
+      "_leds": {
+        "type": "array",
+        "items": { "type": "boolean" }
+      }
+    }
+  }
+})";
+
+const char kComponent[] = "lock";
+
 }  // namespace
 
 // LedFlasherHandler is a complete command handler example that shows
@@ -24,39 +61,18 @@ class LedFlasherHandler {
   void Register(weave::Device* device) {
     device_ = device;
 
-    device->AddStateDefinitionsFromJson(R"({
-      "_ledflasher": {"_leds": {"type": "array", "items": {"type": "boolean"}}}
-    })");
+    device->AddTraitDefinitionsFromJson(kTraits);
+    CHECK(device->AddComponent(kComponent, {"_ledflasher"}, nullptr));
+    UpdateLedState();
 
-    device->SetStatePropertiesFromJson(R"({
-      "_ledflasher":{"_leds": [false, false, false]}
-    })",
-                                       nullptr);
-
-    device->AddCommandDefinitionsFromJson(R"({
-      "_ledflasher": {
-        "_set":{
-          "minimalRole": "user",
-          "parameters": {
-            "_led": {"type": "integer", "minimum": 1, "maximum": 3},
-            "_on": {"type": "boolean"}
-          }
-        },
-        "_toggle":{
-          "minimalRole": "user",
-          "parameters": {
-            "_led": {"type": "integer", "minimum": 1, "maximum": 3}
-          }
-        }
-      }
-    })");
     device->AddCommandHandler(
-        "_ledflasher._toggle",
+        kComponent, "_ledflasher._toggle",
         base::Bind(&LedFlasherHandler::OnFlasherToggleCommand,
                    weak_ptr_factory_.GetWeakPtr()));
     device->AddCommandHandler(
-        "_ledflasher._set", base::Bind(&LedFlasherHandler::OnFlasherSetCommand,
-                                       weak_ptr_factory_.GetWeakPtr()));
+        kComponent, "_ledflasher._set",
+        base::Bind(&LedFlasherHandler::OnFlasherSetCommand,
+                   weak_ptr_factory_.GetWeakPtr()));
   }
 
  private:
@@ -118,7 +134,7 @@ class LedFlasherHandler {
     for (uint32_t i = 0; i < led_status_.size(); i++)
       list.AppendBoolean(led_status_[i] ? true : false);
 
-    device_->SetStateProperty("_ledflasher._leds", list, nullptr);
+    device_->SetStateProperty(kComponent, "_ledflasher._leds", list, nullptr);
   }
 
   weave::Device* device_{nullptr};
