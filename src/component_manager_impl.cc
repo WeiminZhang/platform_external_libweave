@@ -266,8 +266,12 @@ void ComponentManagerImpl::AddCommandHandler(
     const std::string& component_path,
     const std::string& command_name,
     const Device::CommandHandlerCallback& callback) {
-  CHECK(FindCommandDefinition(command_name))
-      << "Command undefined: " << command_name;
+  // If both component_path and command_name are empty, we are adding the
+  // default handler for all commands.
+  if (!component_path.empty() || !command_name.empty()) {
+    CHECK(FindCommandDefinition(command_name))
+        << "Command undefined: " << command_name;
+  }
   command_queue_.AddCommandHandler(component_path, command_name, callback);
 }
 

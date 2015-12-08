@@ -819,6 +819,55 @@ TEST(ComponentManager, AddCommandHandler) {
   last_tags.clear();
 }
 
+TEST(ComponentManager, AddDefaultCommandHandler) {
+  ComponentManagerImpl manager;
+  const char kTraits[] = R"({
+    "trait1": {
+      "commands": {
+        "command1": { "minimalRole": "user" }
+      }
+    },
+    "trait2": {
+      "commands": {
+        "command2": { "minimalRole": "user" }
+      }
+    }
+  })";
+  auto traits = CreateDictionaryValue(kTraits);
+  ASSERT_TRUE(manager.LoadTraits(*traits, nullptr));
+  ASSERT_TRUE(manager.AddComponent("", "comp", {"trait1", "trait2"}, nullptr));
+
+  int count = 0;
+  auto handler = [&count](int tag, const std::weak_ptr<Command>& command) {
+    count++;
+  };
+
+  manager.AddCommandHandler("", "", base::Bind(handler, 1));
+  EXPECT_EQ(0, count);
+
+  const char kCommand1[] = R"({
+    "name": "trait1.command1",
+    "component": "comp"
+  })";
+  auto command1 = CreateDictionaryValue(kCommand1);
+  auto command_instance = manager.ParseCommandInstance(
+      *command1, Command::Origin::kCloud, UserRole::kUser, nullptr, nullptr);
+  ASSERT_NE(nullptr, command_instance.get());
+  manager.AddCommand(std::move(command_instance));
+  EXPECT_EQ(1, count);
+
+  const char kCommand2[] = R"({
+    "name": "trait2.command2",
+    "component": "comp"
+  })";
+  auto command2 = CreateDictionaryValue(kCommand2);
+  command_instance = manager.ParseCommandInstance(
+      *command2, Command::Origin::kCloud, UserRole::kUser, nullptr, nullptr);
+  ASSERT_NE(nullptr, command_instance.get());
+  manager.AddCommand(std::move(command_instance));
+  EXPECT_EQ(2, count);
+}
+
 TEST(ComponentManager, SetStateProperties) {
   ComponentManagerImpl manager;
   CreateTestComponentTree(&manager);
