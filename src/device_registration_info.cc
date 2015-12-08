@@ -714,8 +714,8 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
     return;
   }
 
-  if (data->allow_response_without_content &&
-      response->GetContentType().empty()) {
+  if (response->GetContentType().empty()) {
+    // Assume no body if no content type.
     cloud_backoff_entry_->InformOfRequest(true);
     return data->callback.Run({}, nullptr);
   }
