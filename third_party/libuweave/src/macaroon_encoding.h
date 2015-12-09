@@ -10,7 +10,7 @@
  * cryptographic use, such as signatures. We only need to support a very small
  * subset of the CBOR standard, since only these are used in our cryptographic
  * designs. The supported data types are: unsigned integers (maximum 32 bits),
- * byte strings, and text strings.
+ * byte strings, text strings, and arrays.
  */
 
 #include <stdbool.h>
@@ -25,6 +25,9 @@ bool uw_macaroon_encoding_get_item_len_(const uint8_t* cbor, size_t cbor_len,
 bool uw_macaroon_encoding_encode_uint_(const uint32_t unsigned_int,
                                        uint8_t* buffer, size_t buffer_size,
                                        size_t* resulting_cbor_len);
+bool uw_macaroon_encoding_encode_array_len_(const uint32_t array_len,
+                                            uint8_t* buffer, size_t buffer_size,
+                                            size_t* resulting_cbor_len);
 bool uw_macaroon_encoding_encode_byte_str_(const uint8_t* str, size_t str_len,
                                            uint8_t* buffer, size_t buffer_size,
                                            size_t* resulting_cbor_len);
@@ -34,6 +37,8 @@ bool uw_macaroon_encoding_encode_text_str_(const uint8_t* str, size_t str_len,
 
 bool uw_macaroon_encoding_decode_uint_(const uint8_t* cbor, size_t cbor_len,
                                        uint32_t* unsigned_int);
+bool uw_macaroon_encoding_decode_array_len_(const uint8_t* cbor,
+                                            size_t cbor_len, uint32_t* array_len);
 bool uw_macaroon_encoding_decode_byte_str_(const uint8_t* cbor, size_t cbor_len,
                                            const uint8_t** str,
                                            size_t* str_len);
