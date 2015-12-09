@@ -16,15 +16,16 @@ namespace examples {
 
 class FileConfigStore : public provider::ConfigStore {
  public:
-  explicit FileConfigStore(bool disable_security, const std::string& model_id);
+  FileConfigStore(bool disable_security, const std::string& model_id);
 
   bool LoadDefaults(Settings* settings) override;
   std::string LoadSettings() override;
   void SaveSettings(const std::string& settings) override;
 
  private:
-  bool disable_security_{false};
-  std::string model_id_{"AAAAA"};
+  const bool disable_security_;
+  const std::string model_id_;
+  const std::string settings_path_;
 };
 
 }  // namespace examples

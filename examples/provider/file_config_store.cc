@@ -16,11 +16,10 @@ namespace weave {
 namespace examples {
 
 const char kSettingsDir[] = "/var/lib/weave/";
-const char kSettingsPath[] = "/var/lib/weave/weave_settings.json";
-const char kCategory[] = "example";
 
 FileConfigStore::FileConfigStore(bool disable_security, const std::string& model_id)
-    : disable_security_{disable_security}, model_id_{model_id} {}
+    : disable_security_{disable_security}, model_id_{model_id},
+      settings_path_{"/var/lib/weave/weave_settings_" + model_id + ".json"} {}
 
 bool FileConfigStore::LoadDefaults(Settings* settings) {
   char host_name[HOST_NAME_MAX] = {};
@@ -54,16 +53,16 @@ bool FileConfigStore::LoadDefaults(Settings* settings) {
 }
 
 std::string FileConfigStore::LoadSettings() {
-  LOG(INFO) << "Loading settings from " << kSettingsPath;
-  std::ifstream str(kSettingsPath);
+  LOG(INFO) << "Loading settings from " << settings_path_;
+  std::ifstream str(settings_path_);
   return std::string(std::istreambuf_iterator<char>(str),
                      std::istreambuf_iterator<char>());
 }
 
 void FileConfigStore::SaveSettings(const std::string& settings) {
   CHECK(mkdir(kSettingsDir, S_IRWXU) == 0 || errno == EEXIST);
-  LOG(INFO) << "Saving settings to " << kSettingsPath;
-  std::ofstream str(kSettingsPath);
+  LOG(INFO) << "Saving settings to " << settings_path_;
+  std::ofstream str(settings_path_);
   str << settings;
 }
 
