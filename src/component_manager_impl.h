@@ -5,6 +5,8 @@
 #ifndef LIBWEAVE_SRC_COMPONENT_MANAGER_IMPL_H_
 #define LIBWEAVE_SRC_COMPONENT_MANAGER_IMPL_H_
 
+#include <base/time/default_clock.h>
+
 #include "src/commands/command_queue.h"
 #include "src/component_manager.h"
 #include "src/states/state_change_queue.h"
@@ -13,8 +15,7 @@ namespace weave {
 
 class ComponentManagerImpl final : public ComponentManager {
  public:
-  ComponentManagerImpl();
-  explicit ComponentManagerImpl(base::Clock* clock);
+  explicit ComponentManagerImpl(base::Clock* clock = nullptr);
   ~ComponentManagerImpl() override;
 
   // Loads trait definition schema.
@@ -188,6 +189,7 @@ class ComponentManagerImpl final : public ComponentManager {
       const std::string& path,
       ErrorPtr* error);
 
+  base::DefaultClock default_clock_;
   base::Clock* clock_{nullptr};
   // An ID of last state change update. Each NotifyPropertiesUpdated()
   // invocation increments this value by 1.

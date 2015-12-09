@@ -31,10 +31,8 @@ template <>
 LIBWEAVE_EXPORT EnumToStringMap<UserRole>::EnumToStringMap()
     : EnumToStringMap(kMap) {}
 
-ComponentManagerImpl::ComponentManagerImpl() {}
-
-ComponentManagerImpl::ComponentManagerImpl(base::Clock* clock) : clock_{clock} {
-}
+ComponentManagerImpl::ComponentManagerImpl(base::Clock* clock)
+    : clock_{clock ? clock : &default_clock_} {}
 
 ComponentManagerImpl::~ComponentManagerImpl() {}
 
@@ -343,7 +341,7 @@ bool ComponentManagerImpl::SetStateProperties(const std::string& component_path,
   auto& queue = state_change_queues_[component_path];
   if (!queue)
     queue.reset(new StateChangeQueue{kMaxStateChangeQueueSize});
-  base::Time timestamp = clock_ ? clock_->Now() : base::Time::Now();
+  base::Time timestamp = clock_->Now();
   queue->NotifyPropertiesUpdated(timestamp, dict);
   for (const auto& cb : on_state_changed_)
     cb.Run();
