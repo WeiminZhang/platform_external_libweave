@@ -84,6 +84,8 @@ class SecurityManager : public SecurityDelegate {
   void RegisterPairingListeners(const PairingStartListener& on_start,
                                 const PairingEndListener& on_end);
 
+  const AuthManager* GetAuthManager() const { return auth_manager_; }
+
  private:
   FRIEND_TEST_ALL_PREFIXES(SecurityManagerTest, ThrottlePairing);
   // Allows limited number of new sessions without successful authorization.

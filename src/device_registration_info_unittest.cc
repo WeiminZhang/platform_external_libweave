@@ -117,7 +117,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
     config_ = config.get();
     dev_reg_.reset(new DeviceRegistrationInfo{&component_manager_,
                                               std::move(config), &task_runner_,
-                                              &http_client_, nullptr});
+                                              &http_client_, nullptr, nullptr});
 
     ReloadDefaults();
   }

@@ -41,6 +41,10 @@ class Network;
 class TaskRunner;
 }
 
+namespace privet {
+class AuthManager;
+}
+
 extern const char kErrorDomainOAuth2[];
 extern const char kErrorDomainGCD[];
 extern const char kErrorDomainGCDServer[];
@@ -53,12 +57,13 @@ class DeviceRegistrationInfo : public NotificationDelegate,
       base::Callback<void(const base::DictionaryValue& response,
                           ErrorPtr error)>;
 
-  DeviceRegistrationInfo(
-      ComponentManager* component_manager,
-      std::unique_ptr<Config> config,
-      provider::TaskRunner* task_runner,
-      provider::HttpClient* http_client,
-      provider::Network* network);
+  DeviceRegistrationInfo(ComponentManager* component_manager,
+                         std::unique_ptr<Config>
+                             config,
+                         provider::TaskRunner* task_runner,
+                         provider::HttpClient* http_client,
+                         provider::Network* network,
+                         privet::AuthManager* auth_manager);
 
   ~DeviceRegistrationInfo() override;
 
@@ -337,6 +342,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   bool notification_channel_starting_{false};
 
   provider::Network* network_{nullptr};
+  privet::AuthManager* auth_manager_{nullptr};
 
   // Tracks our GCD state.
   GcdState gcd_state_{GcdState::kUnconfigured};

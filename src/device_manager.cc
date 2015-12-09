@@ -13,6 +13,7 @@
 #include "src/component_manager_impl.h"
 #include "src/config.h"
 #include "src/device_registration_info.h"
+#include "src/privet/auth_manager.h"
 #include "src/privet/privet_manager.h"
 #include "src/string_utils.h"
 #include "src/utils.h"
@@ -32,9 +33,21 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
   std::unique_ptr<Config> config{new Config{config_store}};
   config->Load();
 
+  if (http_server) {
+    auth_manager_.reset(
+        new privet::AuthManager(config->GetSettings().secret,
+                                http_server->GetHttpsCertificateFingerprint()));
+
+    if (auth_manager_->GetSecret() != config->GetSettings().secret) {
+      // There is no Config::OnChangedCallback registered.
+      Config::Transaction transaction(config.get());
+      transaction.set_secret(auth_manager_->GetSecret());
+    }
+  }
+
   device_info_.reset(new DeviceRegistrationInfo(
       component_manager_.get(), std::move(config), task_runner, http_client,
-      network));
+      network, auth_manager_.get()));
   base_api_handler_.reset(new BaseApiHandler{device_info_.get(), this});
 
   device_info_->Start();
@@ -68,8 +81,8 @@ void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
                                 provider::Wifi* wifi,
                                 provider::Bluetooth* bluetooth) {
   privet_.reset(new privet::Manager{task_runner});
-  privet_->Start(network, dns_sd, http_server, wifi, device_info_.get(),
-                 component_manager_.get());
+  privet_->Start(network, dns_sd, http_server, wifi, auth_manager_.get(),
+                 device_info_.get(), component_manager_.get());
 }
 
 GcdState DeviceManager::GetGcdState() const {

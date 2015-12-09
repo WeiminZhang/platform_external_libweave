@@ -57,7 +57,7 @@ class BaseApiHandlerTest : public ::testing::Test {
     config->Load();
     dev_reg_.reset(new DeviceRegistrationInfo(&component_manager_,
                                               std::move(config), nullptr,
-                                              &http_client_, nullptr));
+                                              &http_client_, nullptr, nullptr));
 
     EXPECT_CALL(device_, GetSettings())
         .WillRepeatedly(ReturnRef(dev_reg_->GetSettings()));

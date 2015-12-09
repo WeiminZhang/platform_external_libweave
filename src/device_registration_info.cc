@@ -238,15 +238,18 @@ bool IsSuccessful(const HttpClient::Response& response) {
 
 DeviceRegistrationInfo::DeviceRegistrationInfo(
     ComponentManager* component_manager,
-    std::unique_ptr<Config> config,
+    std::unique_ptr<Config>
+        config,
     provider::TaskRunner* task_runner,
     provider::HttpClient* http_client,
-    provider::Network* network)
+    provider::Network* network,
+    privet::AuthManager* auth_manager)
     : http_client_{http_client},
       task_runner_{task_runner},
       component_manager_{component_manager},
       config_{std::move(config)},
-      network_{network} {
+      network_{network},
+      auth_manager_{auth_manager} {
   cloud_backoff_policy_.reset(new BackoffEntry::Policy{});
   cloud_backoff_policy_->num_errors_to_ignore = 0;
   cloud_backoff_policy_->initial_delay_ms = 1000;
