@@ -25,6 +25,39 @@ EnumToStringMap<lockstate::LockState>::EnumToStringMap()
     : EnumToStringMap(lockstate::kLockMapMethod) {}
 }  // namespace weave
 
+namespace {
+
+const char kTraits[] = R"({
+  "lock": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "lockedState": {
+            "type": "string",
+            "enum": [ "locked", "unlocked" ]
+          }
+        }
+      }
+    },
+    "state": {
+      "lockedState": {
+        "type": "string",
+        "enum": [ "locked", "unlocked", "partiallyLocked" ]
+      },
+      "isLockingSupported": { "type": "boolean" }
+    }
+  }
+})";
+
+const char kDefaultState[] = R"({
+  "lock":{"isLockingSupported": true}
+})";
+
+const char kComponent[] = "lock";
+
+}  // anonymous namespace
+
 // LockHandler is a command handler example that shows
 // how to handle commands for a Weave lock.
 class LockHandler {
@@ -33,33 +66,13 @@ class LockHandler {
   void Register(weave::Device* device) {
     device_ = device;
 
-    device->AddStateDefinitionsFromJson(R"({
-      "lock": {
-        "lockedState": {
-          "type": "string",
-          "enum": ["locked", "unlocked", "partiallyLocked"],
-        }
-        "isLockingSupported": {"type": "boolean"}}
-    })");
+    device->AddTraitDefinitionsFromJson(kTraits);
+    CHECK(device->AddComponent(kComponent, {"lock"}, nullptr));
+    CHECK(device->SetStatePropertiesFromJson(kComponent, kDefaultState,
+                                             nullptr));
+    UpdateLockState();
 
-    device->SetStatePropertiesFromJson(R"({
-      "lock":{
-        "lockedState": "locked",
-        "isLockingSupported": true
-      }
-    })",
-                                       nullptr);
-
-    device->AddCommandDefinitionsFromJson(R"({
-        "lock": {
-          "setConfig":{
-            "parameters": {
-              "lockedState": {"type": "string", "enum":["locked", "unlocked"]}
-            }
-          }
-        }
-    })");
-    device->AddCommandHandler("lock.setConfig",
+    device->AddCommandHandler(kComponent, "lock.setConfig",
                               base::Bind(&LockHandler::OnLockSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
   }
@@ -70,8 +83,9 @@ class LockHandler {
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
+    const auto& params = cmd->GetParameters();
     std::string requested_state;
-    if (cmd->GetParameters()->GetString("lockedState", &requested_state)) {
+    if (params.GetString("lockedState", &requested_state)) {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
       weave::lockstate::LockState new_lock_status;
@@ -101,10 +115,9 @@ class LockHandler {
   }
 
   void UpdateLockState() {
-    base::DictionaryValue state;
     std::string updated_state = weave::EnumToString(lock_state_);
-    state.SetString("lock.lockedState", updated_state);
-    device_->SetStateProperties(state, nullptr);
+    device_->SetStateProperty(kComponent, "lock.lockedState",
+                              base::StringValue{updated_state}, nullptr);
   }
 
   weave::Device* device_{nullptr};

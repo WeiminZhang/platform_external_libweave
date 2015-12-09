@@ -10,11 +10,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>
+#include <weave/test/unittest_utils.h>
 
-#include "src/commands/command_dictionary.h"
 #include "src/commands/command_instance.h"
-#include "src/commands/unittest_utils.h"
-#include "src/states/mock_state_change_queue_interface.h"
+#include "src/mock_component_manager.h"
 
 using testing::_;
 using testing::DoAll;
@@ -66,36 +65,15 @@ class TestBackoffEntry : public BackoffEntry {
 class CloudCommandProxyTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    // Set up the test StateChangeQueue.
-    auto callback = [this](
-        const base::Callback<void(StateChangeQueueInterface::UpdateID)>& call) {
+    // Set up the test ComponentManager.
+    auto callback =
+        [this](const base::Callback<void(ComponentManager::UpdateID)>& call) {
       return callbacks_.Add(call).release();
     };
-    EXPECT_CALL(state_change_queue_, MockAddOnStateUpdatedCallback(_))
+    EXPECT_CALL(component_manager_, MockAddServerStateUpdatedCallback(_))
         .WillRepeatedly(Invoke(callback));
-    EXPECT_CALL(state_change_queue_, GetLastStateChangeId())
+    EXPECT_CALL(component_manager_, GetLastStateChangeId())
         .WillRepeatedly(testing::ReturnPointee(&current_state_update_id_));
-
-    // Set up the command schema.
-    auto json = CreateDictionaryValue(R"({
-      'calc': {
-        'add': {
-          'parameters': {
-            'value1': 'integer',
-            'value2': 'integer'
-          },
-          'progress': {
-            'status' : 'string'
-          },
-          'results': {
-            'sum' : 'integer'
-          }
-        }
-      }
-    })");
-    CHECK(json.get());
-    CHECK(command_dictionary_.LoadCommands(*json, nullptr))
-        << "Failed to parse test command dictionary";
 
     CreateCommandInstance();
   }
@@ -111,9 +89,8 @@ class CloudCommandProxyTest : public ::testing::Test {
     })");
     CHECK(command_json.get());
 
-    command_instance_ =
-        CommandInstance::FromJson(command_json.get(), Command::Origin::kCloud,
-                                  command_dictionary_, nullptr, nullptr);
+    command_instance_ = CommandInstance::FromJson(
+        command_json.get(), Command::Origin::kCloud, nullptr, nullptr);
     CHECK(command_instance_.get());
 
     // Backoff - start at 1s and double with each backoff attempt and no jitter.
@@ -124,7 +101,7 @@ class CloudCommandProxyTest : public ::testing::Test {
 
     // Finally construct the CloudCommandProxy we are going to test here.
     std::unique_ptr<CloudCommandProxy> proxy{new CloudCommandProxy{
-        command_instance_.get(), &cloud_updater_, &state_change_queue_,
+        command_instance_.get(), &cloud_updater_, &component_manager_,
         std::move(backoff), &task_runner_}};
     // CloudCommandProxy::CloudCommandProxy() subscribe itself to weave::Command
     // notifications. When weave::Command is being destroyed it sends
@@ -132,13 +109,12 @@ class CloudCommandProxyTest : public ::testing::Test {
     proxy.release();
   }
 
-  StateChangeQueueInterface::UpdateID current_state_update_id_{0};
-  base::CallbackList<void(StateChangeQueueInterface::UpdateID)> callbacks_;
+  ComponentManager::UpdateID current_state_update_id_{0};
+  base::CallbackList<void(ComponentManager::UpdateID)> callbacks_;
   testing::StrictMock<MockCloudCommandUpdateInterface> cloud_updater_;
-  testing::StrictMock<MockStateChangeQueueInterface> state_change_queue_;
+  testing::StrictMock<MockComponentManager> component_manager_;
   testing::StrictMock<provider::test::FakeTaskRunner> task_runner_;
   std::queue<base::Closure> task_queue_;
-  CommandDictionary command_dictionary_;
   std::unique_ptr<CommandInstance> command_instance_;
 };
 

@@ -22,9 +22,8 @@ class DictionaryValue;
 
 namespace weave {
 
-class CommandManager;
+class ComponentManager;
 class DeviceRegistrationInfo;
-class StateManager;
 
 namespace provider {
 class TaskRunner;
@@ -45,11 +44,12 @@ class CloudDelegate {
 
   class Observer {
    public:
-    virtual ~Observer() = default;
+    virtual ~Observer() {}
 
     virtual void OnDeviceInfoChanged() {}
-    virtual void OnCommandDefsChanged() {}
+    virtual void OnTraitDefsChanged() {}
     virtual void OnStateChanged() {}
+    virtual void OnComponentTreeChanged() {}
   };
 
   // Returns the ID of the device.
@@ -95,11 +95,17 @@ class CloudDelegate {
   // Returns cloud id if the registered device or empty string if unregistered.
   virtual std::string GetCloudId() const = 0;
 
-  // Returns dictionary with device state.
-  virtual const base::DictionaryValue& GetState() const = 0;
+  // Returns dictionary with device state (for legacy APIs).
+  virtual const base::DictionaryValue& GetLegacyState() const = 0;
 
-  // Returns dictionary with commands definitions.
-  virtual const base::DictionaryValue& GetCommandDef() const = 0;
+  // Returns dictionary with commands definitions (for legacy APIs).
+  virtual const base::DictionaryValue& GetLegacyCommandDef() const = 0;
+
+  // Returns dictionary with component tree.
+  virtual const base::DictionaryValue& GetComponents() const = 0;
+
+  // Returns dictionary with trait definitions.
+  virtual const base::DictionaryValue& GetTraits() const = 0;
 
   // Adds command created from the given JSON representation.
   virtual void AddCommand(const base::DictionaryValue& command,
@@ -126,15 +132,15 @@ class CloudDelegate {
   }
 
   void NotifyOnDeviceInfoChanged();
-  void NotifyOnCommandDefsChanged();
+  void NotifyOnTraitDefsChanged();
   void NotifyOnStateChanged();
+  void NotifyOnComponentTreeChanged();
 
   // Create default instance.
   static std::unique_ptr<CloudDelegate> CreateDefault(
       provider::TaskRunner* task_runner,
       DeviceRegistrationInfo* device,
-      CommandManager* command_manager,
-      StateManager* state_manager);
+      ComponentManager* component_manager);
 
  private:
   base::ObserverList<Observer> observer_list_;

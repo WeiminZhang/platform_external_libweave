@@ -6,29 +6,36 @@
 #define LIBWEAVE_SRC_STATES_STATE_CHANGE_QUEUE_H_
 
 #include <map>
+#include <memory>
 #include <vector>
 
 #include <base/macros.h>
-
-#include "src/states/state_change_queue_interface.h"
+#include <base/time/time.h>
+#include <base/values.h>
 
 namespace weave {
 
+// A simple notification record event to track device state changes.
+// The |timestamp| records the time of the state change.
+// |changed_properties| contains a property set with the new property values
+// which were updated at the time the event was recorded.
+struct StateChange {
+  StateChange(base::Time time,
+              std::unique_ptr<base::DictionaryValue> properties)
+      : timestamp{time}, changed_properties{std::move(properties)} {}
+  base::Time timestamp;
+  std::unique_ptr<base::DictionaryValue> changed_properties;
+};
+
 // An object to record and retrieve device state change notification events.
-class StateChangeQueue : public StateChangeQueueInterface {
+class StateChangeQueue {
  public:
   explicit StateChangeQueue(size_t max_queue_size);
 
-  // Overrides from StateChangeQueueInterface.
-  bool IsEmpty() const override { return state_changes_.empty(); }
   bool NotifyPropertiesUpdated(
       base::Time timestamp,
-      std::unique_ptr<base::DictionaryValue> changed_properties) override;
-  std::vector<StateChange> GetAndClearRecordedStateChanges() override;
-  UpdateID GetLastStateChangeId() const override { return last_change_id_; }
-  Token AddOnStateUpdatedCallback(
-      const base::Callback<void(UpdateID)>& callback) override;
-  void NotifyStateUpdatedOnServer(UpdateID update_id) override;
+      const base::DictionaryValue& changed_properties);
+  std::vector<StateChange> GetAndClearRecordedStateChanges();
 
  private:
   // Maximum queue size. If it is full, the oldest state update records are
@@ -37,13 +44,6 @@ class StateChangeQueue : public StateChangeQueueInterface {
 
   // Accumulated list of device state change notifications.
   std::map<base::Time, std::unique_ptr<base::DictionaryValue>> state_changes_;
-
-  // An ID of last state change update. Each NotifyPropertiesUpdated()
-  // invocation increments this value by 1.
-  UpdateID last_change_id_{0};
-
-  // Callback list for state change queue even sinks.
-  base::CallbackList<void(UpdateID)> callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN(StateChangeQueue);
 };

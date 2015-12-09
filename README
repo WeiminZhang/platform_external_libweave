@@ -1,6 +1,6 @@
 Overview
 --------
-libWeave is the library to with device side implementation of Weave
+libWeave is the library with device side implementation of Weave
 protocol.
 
 Sources
@@ -71,7 +71,6 @@ Common:
   libtool
   gyp
   libexpat1-dev
-  ninja-build
 
 For tests:
 
@@ -90,18 +89,18 @@ Compiling
 ---------
 Everywhere below Debug can be replaced with Release.
 
-Generate ninja build files:
+Generate build files:
 
   gyp -I libweave_common.gypi --toplevel-dir=. --depth=. \
-      -f ninja libweave_standalone.gyp
+      -f make libweave_standalone.gyp
 
 Build library with tests:
 
-  ninja -C out/Debug
+  make
 
 Build library only:
 
-  ninja -C out/Debug libweave
+  make libweave
 
 Testing
 -------
@@ -130,7 +129,3 @@ Upload CL:
   repo upload .
 
 Go to the url from the output of "repo upload" and add reviewers.
-
-Known Issues
-------------
-* No big-endian support. Pairing fails on big-endian hardware.

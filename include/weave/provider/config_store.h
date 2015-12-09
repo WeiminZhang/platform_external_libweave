@@ -75,7 +75,7 @@ class ConfigStore {
   virtual void SaveSettings(const std::string& settings) = 0;
 
  protected:
-  virtual ~ConfigStore() = default;
+  virtual ~ConfigStore() {}
 };
 
 }  // namespace provider

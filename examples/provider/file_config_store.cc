@@ -19,8 +19,8 @@ const char kSettingsDir[] = "/var/lib/weave/";
 const char kSettingsPath[] = "/var/lib/weave/weave_settings.json";
 const char kCategory[] = "example";
 
-FileConfigStore::FileConfigStore(bool disable_security)
-    : disable_security_{disable_security} {}
+FileConfigStore::FileConfigStore(bool disable_security, const std::string& model_id)
+    : disable_security_{disable_security}, model_id_{model_id} {}
 
 bool FileConfigStore::LoadDefaults(Settings* settings) {
   char host_name[HOST_NAME_MAX] = {};
@@ -35,7 +35,7 @@ bool FileConfigStore::LoadDefaults(Settings* settings) {
   settings->firmware_version = uname_data.sysname;
   settings->oem_name = "Unknown";
   settings->model_name = "Unknown";
-  settings->model_id = "AAAAA";
+  settings->model_id = model_id_;
   settings->pairing_modes = {PairingType::kEmbeddedCode};
   settings->embedded_code = "0000";
 

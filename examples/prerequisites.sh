@@ -20,7 +20,6 @@ sudo apt-get update && sudo apt-get install ${APT_GET_OPTS} \
   libnl-route-3-dev \
   libssl-dev \
   libtool \
-  ninja-build \
   || exit 1
 
 mkdir -p $ROOT_DIR/third_party/lib $ROOT_DIR/third_party/include 2> /dev/null

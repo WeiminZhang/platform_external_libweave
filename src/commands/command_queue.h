@@ -34,7 +34,8 @@ class CommandQueue final {
   // Adds notifications callback for a command is removed from the queue.
   void AddCommandRemovedCallback(const CommandCallback& callback);
 
-  void AddCommandHandler(const std::string& command_name,
+  void AddCommandHandler(const std::string& component_path,
+                         const std::string& command_name,
                          const Device::CommandHandlerCallback& callback);
 
   // Checks if the command queue is empty.

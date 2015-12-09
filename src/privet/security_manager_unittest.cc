@@ -22,6 +22,7 @@
 #include <weave/provider/test/fake_task_runner.h>
 
 #include "src/data_encoding.h"
+#include "src/privet/auth_manager.h"
 #include "src/privet/openssl_utils.h"
 #include "third_party/chromium/crypto/p224_spake.h"
 
@@ -55,14 +56,6 @@ class MockPairingCallbacks {
 }  // namespace
 
 class SecurityManagerTest : public testing::Test {
- public:
-  void SetUp() override {
-    std::vector<uint8_t> fingerprint;
-    fingerprint.resize(32);
-    base::RandBytes(fingerprint.data(), fingerprint.size());
-    security_.SetCertificateFingerprint(fingerprint);
-  }
-
  protected:
   void PairAndAuthenticate(std::string* fingerprint, std::string* signature) {
     std::string session_id;
@@ -101,28 +94,19 @@ class SecurityManagerTest : public testing::Test {
 
   const base::Time time_ = base::Time::FromTimeT(1410000000);
   provider::test::FakeTaskRunner task_runner_;
-  SecurityManager security_{{},
+  AuthManager auth_manager_{
+      {},
+      {{
+          59, 47, 77, 247, 129, 187, 188, 158, 172, 105, 246, 93, 102, 83, 8,
+          138, 176, 141, 37, 63, 223, 40, 153, 121, 134, 23, 120, 106, 24, 205,
+          7, 135,
+      }}};
+  SecurityManager security_{&auth_manager_,
                             {PairingType::kEmbeddedCode},
                             "1234",
                             false,
                             &task_runner_};
 };
-
-TEST_F(SecurityManagerTest, RandomSecret) {
-  EXPECT_GE(security_.GetSecret().size(), 32);
-  EXPECT_TRUE(IsBase64(security_.GetSecret()));
-}
-
-TEST_F(SecurityManagerTest, DifferentSecret) {
-  SecurityManager security{{}, {}, "", false, &task_runner_};
-  EXPECT_NE(security_.GetSecret(), security.GetSecret());
-}
-
-TEST_F(SecurityManagerTest, ExternalSecret) {
-  const std::string kSecret = "T1SDv9CVGNO82zHKeRrUSzpAzjb1hmRyzXGotsn1gcU=";
-  SecurityManager security{kSecret, {}, "", false, &task_runner_};
-  EXPECT_EQ(kSecret, security.GetSecret());
-}
 
 TEST_F(SecurityManagerTest, IsBase64) {
   EXPECT_TRUE(IsBase64(
@@ -155,15 +139,17 @@ TEST_F(SecurityManagerTest, CreateTokenDifferentTime) {
 }
 
 TEST_F(SecurityManagerTest, CreateTokenDifferentInstance) {
+  AuthManager auth{{}, {}};
   EXPECT_NE(security_.CreateAccessToken(UserInfo{AuthScope::kUser, 123}, time_),
-            SecurityManager({}, {}, "", false, &task_runner_)
+            SecurityManager(&auth, {}, "", false, &task_runner_)
                 .CreateAccessToken(UserInfo{AuthScope::kUser, 123}, time_));
 }
 
 TEST_F(SecurityManagerTest, ParseAccessToken) {
   // Multiple attempts with random secrets.
   for (size_t i = 0; i < 1000; ++i) {
-    SecurityManager security{{}, {}, "", false, &task_runner_};
+    AuthManager auth{{}, {}};
+    SecurityManager security{&auth, {}, "", false, &task_runner_};
 
     std::string token =
         security.CreateAccessToken(UserInfo{AuthScope::kUser, 5}, time_);

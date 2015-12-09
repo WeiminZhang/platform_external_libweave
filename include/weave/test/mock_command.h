@@ -22,12 +22,12 @@ class MockCommand : public Command {
 
   MOCK_CONST_METHOD0(GetID, const std::string&());
   MOCK_CONST_METHOD0(GetName, const std::string&());
-  MOCK_CONST_METHOD0(GetCategory, const std::string&());
+  MOCK_CONST_METHOD0(GetComponent, const std::string&());
   MOCK_CONST_METHOD0(GetState, Command::State());
   MOCK_CONST_METHOD0(GetOrigin, Command::Origin());
-  MOCK_CONST_METHOD0(MockGetParameters, const std::string&());
-  MOCK_CONST_METHOD0(MockGetProgress, const std::string&());
-  MOCK_CONST_METHOD0(MockGetResults, const std::string&());
+  MOCK_CONST_METHOD0(GetParameters, const base::DictionaryValue&());
+  MOCK_CONST_METHOD0(GetProgress, const base::DictionaryValue&());
+  MOCK_CONST_METHOD0(GetResults, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetError, const Error*());
   MOCK_METHOD2(SetProgress, bool(const base::DictionaryValue&, ErrorPtr*));
   MOCK_METHOD2(Complete, bool(const base::DictionaryValue&, ErrorPtr*));
@@ -35,10 +35,6 @@ class MockCommand : public Command {
   MOCK_METHOD2(SetError, bool(const Error*, ErrorPtr*));
   MOCK_METHOD2(Abort, bool(const Error*, ErrorPtr*));
   MOCK_METHOD1(Cancel, bool(ErrorPtr*));
-
-  std::unique_ptr<base::DictionaryValue> GetParameters() const override;
-  std::unique_ptr<base::DictionaryValue> GetProgress() const override;
-  std::unique_ptr<base::DictionaryValue> GetResults() const override;
 };
 
 }  // namespace test
