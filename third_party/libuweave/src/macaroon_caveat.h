@@ -24,6 +24,13 @@ typedef enum {
   kUwMacaroonCaveatTypeSessionIdentifier = 16
 } UwMacaroonCaveatType;
 
+typedef enum {
+  kUwMacaroonCaveatScopeTypeOwner = 0,
+  kUwMacaroonCaveatScopeTypeManager = 1,
+  kUwMacaroonCaveatScopeTypeUser = 2,
+  kUwMacaroonCaveatScopeTypeViewer = 3,
+} UwMacaroonCaveatScopeType;
+
 bool uw_macaroon_caveat_create_without_value_(UwMacaroonCaveatType type,
                                               uint8_t* buffer,
                                               size_t buffer_size,

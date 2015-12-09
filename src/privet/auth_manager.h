@@ -31,6 +31,7 @@ class AuthManager {
   const std::vector<uint8_t>& GetCertificateFingerprint() const {
     return certificate_fingerprint_;
   }
+  std::vector<uint8_t> GetRootDeviceToken(const base::Time& time) const;
 
  private:
   std::vector<uint8_t> secret_;

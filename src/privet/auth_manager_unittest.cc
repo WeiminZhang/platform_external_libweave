@@ -25,6 +25,9 @@ class AuthManagerTest : public testing::Test {
   const std::vector<uint8_t> kSecret{69, 53, 17, 37, 80, 73, 2,  5,  79, 64, 41,
                                      57, 12, 54, 65, 63, 72, 74, 93, 81, 20, 95,
                                      89, 3,  94, 92, 27, 21, 49, 90, 36, 6};
+  const std::vector<uint8_t> kSecret2{
+      78, 40, 39, 68, 29, 19, 70, 86, 38, 61, 13, 55, 33, 32, 51, 52,
+      34, 43, 97, 48, 8,  56, 11, 99, 50, 59, 24, 26, 31, 71, 76, 28};
   const std::vector<uint8_t> kFingerprint{
       22, 47, 23, 77, 42, 98, 96, 25,  83, 16, 9, 14, 91, 44, 15, 75,
       60, 62, 10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85};
@@ -37,7 +40,7 @@ TEST_F(AuthManagerTest, RandomSecret) {
 }
 
 TEST_F(AuthManagerTest, DifferentSecret) {
-  AuthManager auth{{}, {}};
+  AuthManager auth{kSecret2, {}};
   EXPECT_GE(auth.GetSecret().size(), 32u);
   EXPECT_NE(auth_.GetSecret(), auth.GetSecret());
 }
@@ -102,6 +105,23 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
     // Token timestamp resolution is one second.
     EXPECT_GE(1, std::abs((time_ - time2).InSeconds()));
   }
+}
+
+TEST_F(AuthManagerTest, GetRootDeviceToken) {
+  EXPECT_EQ("UJdl3l856QHDzlohsiGpxseCQgEARgMaVArkgA==",
+            Base64Encode(auth_.GetRootDeviceToken(time_)));
+}
+
+TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentTime) {
+  EXPECT_EQ("UHwWhChuQzQ+yb8gRGURu3GCQgEARgMaVB6rAA==",
+            Base64Encode(auth_.GetRootDeviceToken(
+                time_ + base::TimeDelta::FromDays(15))));
+}
+
+TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentSecret) {
+  AuthManager auth{kSecret2, {}};
+  EXPECT_EQ("UJW4F3R0YMeRctcu8aC6VpyCQgEARgMaVArkgA==",
+            Base64Encode(auth.GetRootDeviceToken(time_)));
 }
 
 }  // namespace privet

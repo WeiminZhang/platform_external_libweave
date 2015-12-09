@@ -11,12 +11,18 @@
 #include "src/privet/openssl_utils.h"
 #include "src/string_utils.h"
 
+extern "C" {
+#include "third_party/libuweave/src/macaroon.h"
+}
+
 namespace weave {
 namespace privet {
 
 namespace {
 
 const char kTokenDelimeter[] = ":";
+const size_t kCaveatBuffetSize = 32;
+const size_t kMaxMacaroonSize = 1024;
 
 // Returns "scope:id:time".
 std::string CreateTokenData(const UserInfo& user_info, const base::Time& time) {
@@ -48,6 +54,22 @@ UserInfo SplitTokenData(const std::string& token, base::Time* time) {
   *time = base::Time::FromTimeT(timestamp);
   return UserInfo{static_cast<AuthScope>(scope), id};
 }
+
+class Caveat {
+ public:
+  Caveat(UwMacaroonCaveatType type, uint32_t value) {
+    CHECK(uw_macaroon_caveat_create_with_uint_(type, value, buffer,
+                                               sizeof(buffer), &caveat));
+  }
+
+  const UwMacaroonCaveat& GetCaveat() const { return caveat; }
+
+ private:
+  UwMacaroonCaveat caveat;
+  uint8_t buffer[kCaveatBuffetSize];
+
+  DISALLOW_COPY_AND_ASSIGN(Caveat);
+};
 
 }  // namespace
 
@@ -82,6 +104,27 @@ UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   if (hash != HmacSha256(secret_, data))
     return UserInfo{};
   return SplitTokenData(std::string(data.begin(), data.end()), time);
+}
+
+std::vector<uint8_t> AuthManager::GetRootDeviceToken(
+    const base::Time& time) const {
+  Caveat scope{kUwMacaroonCaveatTypeScope, kUwMacaroonCaveatScopeTypeOwner};
+  Caveat issued{kUwMacaroonCaveatTypeIssued,
+                static_cast<uint32_t>(time.ToTimeT())};
+
+  UwMacaroonCaveat caveats[] = {
+      scope.GetCaveat(), issued.GetCaveat(),
+  };
+
+  UwMacaroon macaroon{};
+  CHECK(uw_macaroon_new_from_root_key_(
+      &macaroon, secret_.data(), secret_.size(), caveats, arraysize(caveats)));
+
+  std::vector<uint8_t> token(kMaxMacaroonSize);
+  size_t len = 0;
+  CHECK(uw_macaroon_dump_(&macaroon, token.data(), token.size(), &len));
+  token.resize(len);
+  return token;
 }
 
 }  // namespace privet
