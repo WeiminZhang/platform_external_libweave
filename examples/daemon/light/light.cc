@@ -283,6 +283,7 @@ class LightHandler {
 
 int main(int argc, char** argv) {
   Daemon::Options opts;
+  opts.model_id_ = "AIAAA";
   if (!opts.Parse(argc, argv)) {
     Daemon::Options::ShowUsage(argv[0]);
     return 1;
