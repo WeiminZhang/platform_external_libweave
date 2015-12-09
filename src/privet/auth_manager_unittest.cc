@@ -7,16 +7,29 @@
 #include <gtest/gtest.h>
 #include <weave/settings.h>
 
+#include "src/data_encoding.h"
+
 namespace weave {
 namespace privet {
 
 class AuthManagerTest : public testing::Test {
  public:
-  void SetUp() override {}
+  void SetUp() override {
+    EXPECT_GE(auth_.GetSecret().size(), 32u);
+    EXPECT_GE(auth_.GetCertificateFingerprint().size(), 32u);
+  }
 
  protected:
   const base::Time time_ = base::Time::FromTimeT(1410000000);
-  AuthManager auth_{{}, {}};
+
+  const std::vector<uint8_t> kSecret{69, 53, 17, 37, 80, 73, 2,  5,  79, 64, 41,
+                                     57, 12, 54, 65, 63, 72, 74, 93, 81, 20, 95,
+                                     89, 3,  94, 92, 27, 21, 49, 90, 36, 6};
+  const std::vector<uint8_t> kFingerprint{
+      22, 47, 23, 77, 42, 98, 96, 25,  83, 16, 9, 14, 91, 44, 15, 75,
+      60, 62, 10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85};
+
+  AuthManager auth_{kSecret, kFingerprint};
 };
 
 TEST_F(AuthManagerTest, RandomSecret) {
@@ -25,20 +38,29 @@ TEST_F(AuthManagerTest, RandomSecret) {
 
 TEST_F(AuthManagerTest, DifferentSecret) {
   AuthManager auth{{}, {}};
+  EXPECT_GE(auth.GetSecret().size(), 32u);
   EXPECT_NE(auth_.GetSecret(), auth.GetSecret());
 }
 
 TEST_F(AuthManagerTest, Constructor) {
-  std::vector<uint8_t> secret;
-  std::vector<uint8_t> fingerpint;
-  for (uint8_t i = 0; i < 32; ++i) {
-    secret.push_back(i);
-    fingerpint.push_back(i + 100);
-  }
+  EXPECT_EQ(kSecret, auth_.GetSecret());
+  EXPECT_EQ(kFingerprint, auth_.GetCertificateFingerprint());
+}
 
-  AuthManager auth{secret, fingerpint};
-  EXPECT_EQ(secret, auth.GetSecret());
-  EXPECT_EQ(fingerpint, auth.GetCertificateFingerprint());
+TEST_F(AuthManagerTest, CreateAccessToken) {
+  EXPECT_EQ("OUH2L2npY+Gzwjf9AnqigGSK3hxIVR+xX8/Cnu4DGf8wOjA6MTQxMDAwMDAwMA==",
+            Base64Encode(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kNone, 123}, time_)));
+  EXPECT_EQ("iZx0qgEHFF5lq+Q503GtgU0d6gLQ9TlLsU+DcFbZb2QxOjIzNDoxNDEwMDAwMDAw",
+            Base64Encode(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer, 234}, time_)));
+  EXPECT_EQ("qAmlJykiPTnFljfOKSf3BUII9YZG8/ttzD76q+fII1YyOjM0NToxNDEwOTUwNDAw",
+            Base64Encode(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kUser, 345},
+                time_ + base::TimeDelta::FromDays(11))));
+  EXPECT_EQ("fTjecsbwtYj6i8/qPJz900B8EMAjRqU8jLT9kfMoz0czOjQ1NjoxNDEwMDAwMDAw",
+            Base64Encode(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kOwner, 456}, time_)));
 }
 
 TEST_F(AuthManagerTest, CreateSameToken) {
