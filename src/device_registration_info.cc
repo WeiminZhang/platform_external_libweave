@@ -237,17 +237,16 @@ bool IsSuccessful(const HttpClient::Response& response) {
 }  // anonymous namespace
 
 DeviceRegistrationInfo::DeviceRegistrationInfo(
+    Config* config,
     ComponentManager* component_manager,
-    std::unique_ptr<Config>
-        config,
     provider::TaskRunner* task_runner,
     provider::HttpClient* http_client,
     provider::Network* network,
     privet::AuthManager* auth_manager)
     : http_client_{http_client},
       task_runner_{task_runner},
+      config_{config},
       component_manager_{component_manager},
-      config_{std::move(config)},
       network_{network},
       auth_manager_{auth_manager} {
   cloud_backoff_policy_.reset(new BackoffEntry::Policy{});
@@ -631,7 +630,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent(
   access_token_expiration_ =
       base::Time::Now() + base::TimeDelta::FromSeconds(expires_in);
 
-  Config::Transaction change{config_.get()};
+  Config::Transaction change{config_};
   change.set_cloud_id(cloud_id);
   change.set_robot_account(robot_account);
   change.set_refresh_token(refresh_token);
@@ -807,7 +806,7 @@ void DeviceRegistrationInfo::OnConnectedToCloud(ErrorPtr error) {
 void DeviceRegistrationInfo::UpdateDeviceInfo(const std::string& name,
                                               const std::string& description,
                                               const std::string& location) {
-  Config::Transaction change{config_.get()};
+  Config::Transaction change{config_};
   change.set_name(name);
   change.set_description(description);
   change.set_location(location);
@@ -821,7 +820,7 @@ void DeviceRegistrationInfo::UpdateDeviceInfo(const std::string& name,
 void DeviceRegistrationInfo::UpdateBaseConfig(AuthScope anonymous_access_role,
                                               bool local_discovery_enabled,
                                               bool local_pairing_enabled) {
-  Config::Transaction change(config_.get());
+  Config::Transaction change(config_);
   change.set_local_anonymous_access_role(anonymous_access_role);
   change.set_local_discovery_enabled(local_discovery_enabled);
   change.set_local_pairing_enabled(local_pairing_enabled);
@@ -839,7 +838,7 @@ bool DeviceRegistrationInfo::UpdateServiceConfig(
                  "Unable to change config for registered device");
     return false;
   }
-  Config::Transaction change{config_.get()};
+  Config::Transaction change{config_};
   change.set_client_id(client_id);
   change.set_client_secret(client_secret);
   change.set_api_key(api_key);
@@ -1273,7 +1272,7 @@ void DeviceRegistrationInfo::RemoveCredentials() {
   connected_to_cloud_ = false;
 
   LOG(INFO) << "Device is unregistered from the cloud. Deleting credentials";
-  Config::Transaction change{config_.get()};
+  Config::Transaction change{config_};
   // Keep cloud_id to switch to detect kInvalidCredentials after restart.
   change.set_robot_account("");
   change.set_refresh_token("");

@@ -100,6 +100,7 @@ class DeviceManager final : public Device {
                    provider::Wifi* wifi,
                    provider::Bluetooth* bluetooth);
 
+  std::unique_ptr<Config> config_;
   std::unique_ptr<privet::AuthManager> auth_manager_;
   std::unique_ptr<ComponentManager> component_manager_;
   std::unique_ptr<DeviceRegistrationInfo> device_info_;

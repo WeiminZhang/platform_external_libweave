@@ -27,26 +27,25 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::DnsServiceDiscovery* dns_sd,
                              provider::HttpServer* http_server,
                              provider::Wifi* wifi,
-                             provider::Bluetooth* bluetooth) {
-  component_manager_.reset(new ComponentManagerImpl);
-
-  std::unique_ptr<Config> config{new Config{config_store}};
-  config->Load();
+                             provider::Bluetooth* bluetooth)
+    : config_{new Config{config_store}},
+      component_manager_{new ComponentManagerImpl} {
+  config_->Load();
 
   if (http_server) {
     auth_manager_.reset(
-        new privet::AuthManager(config->GetSettings().secret,
+        new privet::AuthManager(config_->GetSettings().secret,
                                 http_server->GetHttpsCertificateFingerprint()));
 
-    if (auth_manager_->GetSecret() != config->GetSettings().secret) {
+    if (auth_manager_->GetSecret() != config_->GetSettings().secret) {
       // There is no Config::OnChangedCallback registered.
-      Config::Transaction transaction(config.get());
+      Config::Transaction transaction(config_.get());
       transaction.set_secret(auth_manager_->GetSecret());
     }
   }
 
   device_info_.reset(new DeviceRegistrationInfo(
-      component_manager_.get(), std::move(config), task_runner, http_client,
+      config_.get(), component_manager_.get(), task_runner, http_client,
       network, auth_manager_.get()));
   base_api_handler_.reset(new BaseApiHandler{device_info_.get(), this});
 

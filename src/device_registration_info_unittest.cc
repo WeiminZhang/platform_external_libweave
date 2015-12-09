@@ -113,11 +113,9 @@ std::pair<std::string, std::string> GetFormHeader() {
 class DeviceRegistrationInfoTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<Config> config{new Config{&config_store_}};
-    config_ = config.get();
-    dev_reg_.reset(new DeviceRegistrationInfo{&component_manager_,
-                                              std::move(config), &task_runner_,
-                                              &http_client_, nullptr, nullptr});
+    dev_reg_.reset(new DeviceRegistrationInfo{&config_, &component_manager_,
+                                              &task_runner_, &http_client_,
+                                              nullptr, nullptr});
 
     ReloadDefaults();
   }
@@ -139,7 +137,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
           settings->service_url = test_data::kServiceURL;
           return true;
         }));
-    config_->Load();
+    config_.Load();
     dev_reg_->Start();
   }
 
@@ -184,7 +182,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   provider::test::MockConfigStore config_store_;
   StrictMock<MockHttpClient> http_client_;
   base::DictionaryValue data_;
-  Config* config_{nullptr};
+  Config config_{&config_store_};
   std::unique_ptr<DeviceRegistrationInfo> dev_reg_;
   ComponentManagerImpl component_manager_;
 };

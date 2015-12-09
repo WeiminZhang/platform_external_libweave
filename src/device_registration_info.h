@@ -57,9 +57,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
       base::Callback<void(const base::DictionaryValue& response,
                           ErrorPtr error)>;
 
-  DeviceRegistrationInfo(ComponentManager* component_manager,
-                         std::unique_ptr<Config>
-                             config,
+  DeviceRegistrationInfo(Config* config,
+                         ComponentManager* component_manager,
                          provider::TaskRunner* task_runner,
                          provider::HttpClient* http_client,
                          provider::Network* network,
@@ -121,7 +120,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   // TODO(vitalybuka): remove getters and pass config to dependent code.
   const Config::Settings& GetSettings() const { return config_->GetSettings(); }
-  Config* GetMutableConfig() { return config_.get(); }
+  Config* GetMutableConfig() { return config_; }
 
   GcdState GetGcdState() const { return gcd_state_; }
 
@@ -306,10 +305,11 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   provider::HttpClient* http_client_{nullptr};
 
   provider::TaskRunner* task_runner_{nullptr};
+
+  Config* config_{nullptr};
+
   // Global component manager.
   ComponentManager* component_manager_{nullptr};
-
-  std::unique_ptr<Config> config_;
 
   // Backoff manager for DoCloudRequest() method.
   std::unique_ptr<BackoffEntry::Policy> cloud_backoff_policy_;

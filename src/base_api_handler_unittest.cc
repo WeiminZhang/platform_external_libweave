@@ -53,11 +53,10 @@ class BaseApiHandlerTest : public ::testing::Test {
         .WillRepeatedly(Invoke(&component_manager_,
                                &ComponentManager::AddCommandHandler));
 
-    std::unique_ptr<Config> config{new Config{&config_store_}};
-    config->Load();
-    dev_reg_.reset(new DeviceRegistrationInfo(&component_manager_,
-                                              std::move(config), nullptr,
-                                              &http_client_, nullptr, nullptr));
+    config_.Load();
+    dev_reg_.reset(new DeviceRegistrationInfo(&config_, &component_manager_,
+                                              nullptr, &http_client_, nullptr,
+                                              nullptr));
 
     EXPECT_CALL(device_, GetSettings())
         .WillRepeatedly(ReturnRef(dev_reg_->GetSettings()));
@@ -91,6 +90,7 @@ class BaseApiHandlerTest : public ::testing::Test {
   }
 
   provider::test::MockConfigStore config_store_;
+  Config config_{&config_store_};
   StrictMock<provider::test::MockHttpClient> http_client_;
   std::unique_ptr<DeviceRegistrationInfo> dev_reg_;
   ComponentManagerImpl component_manager_;
