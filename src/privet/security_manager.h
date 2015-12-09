@@ -30,6 +30,8 @@ class TaskRunner;
 
 namespace privet {
 
+class AuthManager;
+
 class SecurityManager : public SecurityDelegate {
  public:
   using PairingStartListener =
@@ -41,7 +43,7 @@ class SecurityManager : public SecurityDelegate {
 
   class KeyExchanger {
    public:
-    virtual ~KeyExchanger() = default;
+    virtual ~KeyExchanger() {}
 
     virtual const std::string& GetMessage() = 0;
     virtual bool ProcessMessage(const std::string& message,
@@ -49,7 +51,7 @@ class SecurityManager : public SecurityDelegate {
     virtual const std::string& GetKey() const = 0;
   };
 
-  SecurityManager(const std::string& secret,
+  SecurityManager(AuthManager* auth_manager,
                   const std::set<PairingType>& pairing_modes,
                   const std::string& embedded_code,
                   bool disable_security,
@@ -82,18 +84,14 @@ class SecurityManager : public SecurityDelegate {
   void RegisterPairingListeners(const PairingStartListener& on_start,
                                 const PairingEndListener& on_end);
 
-  void SetCertificateFingerprint(const std::vector<uint8_t>& fingerprint) {
-    certificate_fingerprint_ = fingerprint;
-  }
-
-  std::string GetSecret() const;
-
  private:
   FRIEND_TEST_ALL_PREFIXES(SecurityManagerTest, ThrottlePairing);
   // Allows limited number of new sessions without successful authorization.
   bool CheckIfPairingAllowed(ErrorPtr* error);
   bool ClosePendingSession(const std::string& session_id);
   bool CloseConfirmedSession(const std::string& session_id);
+
+  AuthManager* auth_manager_{nullptr};
 
   // If true allows unencrypted pairing and accepts any access code.
   bool is_security_disabled_{false};
@@ -105,8 +103,6 @@ class SecurityManager : public SecurityDelegate {
   std::map<std::string, std::unique_ptr<KeyExchanger>> confirmed_sessions_;
   mutable int pairing_attemts_{0};
   mutable base::Time block_pairing_until_;
-  std::vector<uint8_t> secret_;
-  std::vector<uint8_t> certificate_fingerprint_;
   PairingStartListener on_start_;
   PairingEndListener on_end_;
 

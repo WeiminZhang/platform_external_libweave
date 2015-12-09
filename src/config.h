@@ -24,11 +24,11 @@ class StorageInterface;
 class Config final {
  public:
   struct Settings : public weave::Settings {
-    std::string device_id;
     std::string refresh_token;
     std::string robot_account;
     std::string last_configured_ssid;
-    std::string secret;
+    std::vector<uint8_t> secret;
+    bool local_auth_info_changed{true};
   };
 
   using OnChangedCallback = base::Callback<void(const weave::Settings&)>;
@@ -89,7 +89,12 @@ class Config final {
     void set_last_configured_ssid(const std::string& ssid) {
       settings_->last_configured_ssid = ssid;
     }
-    void set_secret(const std::string& secret) { settings_->secret = secret; }
+    void set_secret(const std::vector<uint8_t>& secret) {
+      settings_->secret = secret;
+    }
+    void set_local_auth_info_changed(bool local_auth_info_changed) {
+      settings_->local_auth_info_changed = local_auth_info_changed;
+    }
 
     void Commit();
 

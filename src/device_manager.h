@@ -12,10 +12,8 @@ namespace weave {
 
 class BaseApiHandler;
 class Config;
-class CommandManager;
+class ComponentManager;
 class DeviceRegistrationInfo;
-class StateChangeQueue;
-class StateManager;
 
 namespace privet {
 class Manager;
@@ -37,27 +35,35 @@ class DeviceManager final : public Device {
   const Settings& GetSettings() const override;
   void AddSettingsChangedCallback(
       const SettingsChangedCallback& callback) override;
-  void AddCommandDefinitionsFromJson(const std::string& json) override;
-  void AddCommandDefinitions(const base::DictionaryValue& dict) override;
+  void AddTraitDefinitionsFromJson(const std::string& json) override;
+  void AddTraitDefinitions(const base::DictionaryValue& dict) override;
+  const base::DictionaryValue& GetTraits() const override;
+  bool AddComponent(const std::string& name,
+                    const std::vector<std::string>& traits,
+                    ErrorPtr* error) override;
+  void AddComponentTreeChangedCallback(const base::Closure& callback) override;
+  const base::DictionaryValue& GetComponents() const override;
+  bool SetStatePropertiesFromJson(const std::string& component,
+                                  const std::string& json,
+                                  ErrorPtr* error) override;
+  bool SetStateProperties(const std::string& component,
+                          const base::DictionaryValue& dict,
+                          ErrorPtr* error) override;
+  const base::Value* GetStateProperty(const std::string& component,
+                                      const std::string& name,
+                                      ErrorPtr* error) const override;
+  bool SetStateProperty(const std::string& component,
+                        const std::string& name,
+                        const base::Value& value,
+                        ErrorPtr* error) override;
+  void AddCommandHandler(const std::string& component,
+                         const std::string& command_name,
+                         const CommandHandlerCallback& callback) override;
   bool AddCommand(const base::DictionaryValue& command,
                   std::string* id,
                   ErrorPtr* error) override;
   Command* FindCommand(const std::string& id) override;
-  void AddCommandHandler(const std::string& command_name,
-                         const CommandHandlerCallback& callback) override;
   void AddStateChangedCallback(const base::Closure& callback) override;
-  void AddStateDefinitionsFromJson(const std::string& json) override;
-  void AddStateDefinitions(const base::DictionaryValue& dict) override;
-  bool SetStatePropertiesFromJson(const std::string& json,
-                                  ErrorPtr* error) override;
-  bool SetStateProperties(const base::DictionaryValue& dict,
-                          ErrorPtr* error) override;
-  std::unique_ptr<base::Value> GetStateProperty(
-      const std::string& name) const override;
-  bool SetStateProperty(const std::string& name,
-                        const base::Value& value,
-                        ErrorPtr* error) override;
-  std::unique_ptr<base::DictionaryValue> GetState() const override;
   void Register(const std::string& ticket_id,
                 const DoneCallback& callback) override;
   GcdState GetGcdState() const override;
@@ -66,6 +72,22 @@ class DeviceManager final : public Device {
   void AddPairingChangedCallbacks(
       const PairingBeginCallback& begin_callback,
       const PairingEndCallback& end_callback) override;
+
+  void AddCommandDefinitionsFromJson(const std::string& json) override;
+  void AddCommandDefinitions(const base::DictionaryValue& dict) override;
+  void AddCommandHandler(const std::string& command_name,
+                         const CommandHandlerCallback& callback) override;
+  void AddStateDefinitionsFromJson(const std::string& json) override;
+  void AddStateDefinitions(const base::DictionaryValue& dict) override;
+  bool SetStatePropertiesFromJson(const std::string& json,
+                                  ErrorPtr* error) override;
+  bool SetStateProperties(const base::DictionaryValue& dict,
+                          ErrorPtr* error) override;
+  const base::Value* GetStateProperty(const std::string& name) const override;
+  bool SetStateProperty(const std::string& name,
+                        const base::Value& value,
+                        ErrorPtr* error) override;
+  const base::DictionaryValue& GetState() const override;
 
   Config* GetConfig();
 
@@ -77,9 +99,7 @@ class DeviceManager final : public Device {
                    provider::Wifi* wifi,
                    provider::Bluetooth* bluetooth);
 
-  std::shared_ptr<CommandManager> command_manager_;
-  std::unique_ptr<StateChangeQueue> state_change_queue_;
-  std::shared_ptr<StateManager> state_manager_;
+  std::unique_ptr<ComponentManager> component_manager_;
   std::unique_ptr<DeviceRegistrationInfo> device_info_;
   std::unique_ptr<BaseApiHandler> base_api_handler_;
   std::unique_ptr<privet::Manager> privet_;

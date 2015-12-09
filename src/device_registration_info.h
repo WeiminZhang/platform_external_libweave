@@ -21,13 +21,12 @@
 
 #include "src/backoff_entry.h"
 #include "src/commands/cloud_command_update_interface.h"
-#include "src/commands/command_manager.h"
+#include "src/component_manager.h"
 #include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/notification/notification_channel.h"
 #include "src/notification/notification_delegate.h"
 #include "src/notification/pull_channel.h"
-#include "src/states/state_change_queue_interface.h"
 
 namespace base {
 class DictionaryValue;
@@ -54,12 +53,12 @@ class DeviceRegistrationInfo : public NotificationDelegate,
       base::Callback<void(const base::DictionaryValue& response,
                           ErrorPtr error)>;
 
-  DeviceRegistrationInfo(const std::shared_ptr<CommandManager>& command_manager,
-                         const std::shared_ptr<StateManager>& state_manager,
-                         std::unique_ptr<Config> config,
-                         provider::TaskRunner* task_runner,
-                         provider::HttpClient* http_client,
-                         provider::Network* network);
+  DeviceRegistrationInfo(
+      ComponentManager* component_manager,
+      std::unique_ptr<Config> config,
+      provider::TaskRunner* task_runner,
+      provider::HttpClient* http_client,
+      provider::Network* network);
 
   ~DeviceRegistrationInfo() override;
 
@@ -179,6 +178,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
     provider::HttpClient::Method method;
     std::string url;
     std::string body;
+    // Workaround for inconsistent APIs which returns no body.
+    bool allow_response_without_content = false;
     CloudRequestDoneCallback callback;
   };
   void SendCloudRequest(const std::shared_ptr<const CloudRequestData>& data);
@@ -236,7 +237,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void FetchAndPublishCommands(const std::string& reason);
 
   void PublishStateUpdates();
-  void OnPublishStateDone(StateChangeQueueInterface::UpdateID update_id,
+  void OnPublishStateDone(ComponentManager::UpdateID update_id,
                           const base::DictionaryValue& reply,
                           ErrorPtr error);
   void OnPublishStateError(ErrorPtr error);
@@ -248,13 +249,14 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Builds Cloud API devices collection REST resource which matches
   // current state of the device including command definitions
   // for all supported commands and current device state.
-  std::unique_ptr<base::DictionaryValue> BuildDeviceResource(ErrorPtr* error);
+  std::unique_ptr<base::DictionaryValue> BuildDeviceResource() const;
 
   void SetGcdState(GcdState new_state);
   void SetDeviceId(const std::string& cloud_id);
 
   // Callback called when command definitions are changed to re-publish new CDD.
-  void OnCommandDefsChanged();
+  void OnTraitDefsChanged();
+  void OnComponentTreeChanged();
   void OnStateChanged();
 
   // Overrides from NotificationDelegate.
@@ -299,10 +301,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   provider::HttpClient* http_client_{nullptr};
 
   provider::TaskRunner* task_runner_{nullptr};
-  // Global command manager.
-  std::shared_ptr<CommandManager> command_manager_;
-  // Device state manager.
-  std::shared_ptr<StateManager> state_manager_;
+  // Global component manager.
+  ComponentManager* component_manager_{nullptr};
 
   std::unique_ptr<Config> config_;
 

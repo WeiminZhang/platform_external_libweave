@@ -15,6 +15,7 @@
 #include <base/values.h>
 #include <weave/enum_to_string.h>
 
+#include "src/data_encoding.h"
 #include "src/privet/privet_types.h"
 #include "src/string_utils.h"
 
@@ -41,6 +42,7 @@ const char kDeviceId[] = "device_id";
 const char kRobotAccount[] = "robot_account";
 const char kLastConfiguredSsid[] = "last_configured_ssid";
 const char kSecret[] = "secret";
+const char kLocalAuthInfoChanged[] = "local_auth_info_changed";
 
 }  // namespace config_keys
 
@@ -65,7 +67,7 @@ Config::Settings CreateDefaultSettings() {
   result.oauth_url = "https://accounts.google.com/o/oauth2/";
   result.service_url = kWeaveUrl;
   result.local_anonymous_access_role = AuthScope::kViewer;
-  result.pairing_modes.emplace(PairingType::kPinCode);
+  result.pairing_modes.insert(PairingType::kPinCode);
   result.device_id = base::GenerateGUID();
   return result;
 }
@@ -119,6 +121,7 @@ void Config::Load() {
   CHECK(settings_.robot_account.empty());
   CHECK(settings_.last_configured_ssid.empty());
   CHECK(settings_.secret.empty());
+  CHECK(settings_.local_auth_info_changed);
 
   change.LoadState();
 }
@@ -207,8 +210,12 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kLastConfiguredSsid, &tmp))
     set_last_configured_ssid(tmp);
 
-  if (dict->GetString(config_keys::kSecret, &tmp))
-    set_secret(tmp);
+  std::vector<uint8_t> secret;
+  if (dict->GetString(config_keys::kSecret, &tmp) && Base64Decode(tmp, &secret))
+    set_secret(secret);
+
+  if (dict->GetBoolean(config_keys::kLocalAuthInfoChanged, &tmp_bool))
+    set_local_auth_info_changed(tmp_bool);
 }
 
 void Config::Save() {
@@ -229,7 +236,9 @@ void Config::Save() {
   dict.SetString(config_keys::kRobotAccount, settings_.robot_account);
   dict.SetString(config_keys::kLastConfiguredSsid,
                  settings_.last_configured_ssid);
-  dict.SetString(config_keys::kSecret, settings_.secret);
+  dict.SetString(config_keys::kSecret, Base64Encode(settings_.secret));
+  dict.SetBoolean(config_keys::kLocalAuthInfoChanged,
+                  settings_.local_auth_info_changed);
   dict.SetString(config_keys::kName, settings_.name);
   dict.SetString(config_keys::kDescription, settings_.description);
   dict.SetString(config_keys::kLocation, settings_.location);

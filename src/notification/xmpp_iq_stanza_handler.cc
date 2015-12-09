@@ -72,7 +72,7 @@ void IqStanzaHandler::SendRequestWithCustomTimeout(
     const ResponseCallback& response_callback,
     const TimeoutCallback& timeout_callback) {
   // Remember the response callback to call later.
-  requests_.emplace(++last_request_id_, response_callback);
+  requests_.insert(std::make_pair(++last_request_id_, response_callback));
   // Schedule a time-out callback for this request.
   if (timeout < base::TimeDelta::Max()) {
     task_runner_->PostDelayedTask(

@@ -14,7 +14,7 @@
 #include "base/compiler_specific.h"
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
-#include "base/build/build_config.h"
+#include "build/build_config.h"
 
 namespace base {
 
@@ -584,7 +584,7 @@ TEST(TimeDelta, WindowsEpoch) {
   exploded.millisecond = 0;
   Time t = Time::FromUTCExploded(exploded);
   // Unix 1970 epoch.
-  EXPECT_EQ(INT64_C(11644473600000000), t.ToInternalValue());
+  EXPECT_EQ(11644473600000000ll, t.ToInternalValue());
 
   // We can't test 1601 epoch, since the system time functions on Linux
   // only compute years starting from 1900.

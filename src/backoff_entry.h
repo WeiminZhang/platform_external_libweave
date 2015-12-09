@@ -57,7 +57,7 @@ class BackoffEntry {
   // Lifetime of policy must enclose lifetime of BackoffEntry. The
   // pointer must be valid but is not dereferenced during construction.
   explicit BackoffEntry(const Policy* const policy);
-  virtual ~BackoffEntry() = default;
+  virtual ~BackoffEntry() {}
 
   // Inform this item that a request for the network resource it is
   // tracking was made, and whether it failed or succeeded.

@@ -6,11 +6,11 @@
 #define BASE_BIND_INTERNAL_H_
 
 #include "base/bind_helpers.h"
-#include "base/build/build_config.h"
 #include "base/callback_internal.h"
 #include "base/memory/weak_ptr.h"
 #include "base/template_util.h"
 #include "base/tuple.h"
+#include "build/build_config.h"
 
 #if defined(OS_WIN)
 #include "base/bind_internal_win.h"

@@ -36,7 +36,7 @@ void XmppStreamParser::HandleElementStart(void* user_data,
   std::map<std::string, std::string> attributes;
   if (attr != nullptr) {
     for (size_t n = 0; attr[n] != nullptr && attr[n + 1] != nullptr; n += 2) {
-      attributes.emplace(attr[n], attr[n + 1]);
+      attributes.insert(std::make_pair(attr[n], attr[n + 1]));
     }
   }
   self->OnOpenElement(element, std::move(attributes));

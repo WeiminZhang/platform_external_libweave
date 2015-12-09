@@ -164,14 +164,14 @@ void HttpServerImpl::ProcessReply(std::shared_ptr<RequestImpl> request,
 void HttpServerImpl::AddHttpRequestHandler(
     const std::string& path,
     const RequestHandlerCallback& callback) {
-  handlers_.emplace(path, callback);
+  handlers_.insert(std::make_pair(path, callback));
   evhttp_set_cb(httpd_.get(), path.c_str(), &ProcessRequestCallback, this);
 }
 
 void HttpServerImpl::AddHttpsRequestHandler(
     const std::string& path,
     const RequestHandlerCallback& callback) {
-  handlers_.emplace(path, callback);
+  handlers_.insert(std::make_pair(path, callback));
   evhttp_set_cb(httpsd_.get(), path.c_str(), &ProcessRequestCallback, this);
 }
 

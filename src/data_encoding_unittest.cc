@@ -30,7 +30,7 @@ TEST(data_encoding, WebParamsEncoding) {
   EXPECT_EQ("q=test&path=%2Fusr%2Fbin&%23=%25", encoded);
 
   auto params = WebParamsDecode(encoded);
-  EXPECT_EQ(3, params.size());
+  EXPECT_EQ(3u, params.size());
   EXPECT_EQ("q", params[0].first);
   EXPECT_EQ("test", params[0].second);
   EXPECT_EQ("path", params[1].first);

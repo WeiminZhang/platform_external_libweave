@@ -1,4 +1,7 @@
+*.target.mk
 *~
 /out/
 /third_party/include
 /third_party/lib
+gomacc.lock
+Makefile

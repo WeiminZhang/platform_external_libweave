@@ -15,13 +15,13 @@ StateChangeQueue::StateChangeQueue(size_t max_queue_size)
 
 bool StateChangeQueue::NotifyPropertiesUpdated(
     base::Time timestamp,
-    std::unique_ptr<base::DictionaryValue> changed_properties) {
+    const base::DictionaryValue& changed_properties) {
   auto& stored_changes = state_changes_[timestamp];
   // Merge the old property set.
   if (stored_changes)
-    stored_changes->MergeDictionary(changed_properties.get());
+    stored_changes->MergeDictionary(&changed_properties);
   else
-    stored_changes = std::move(changed_properties);
+    stored_changes.reset(changed_properties.DeepCopy());
 
   while (state_changes_.size() > max_queue_size_) {
     // Queue is full.
@@ -37,7 +37,6 @@ bool StateChangeQueue::NotifyPropertiesUpdated(
     std::swap(element_old->second, element_new->second);
     state_changes_.erase(element_old);
   }
-  ++last_change_id_;
   return true;
 }
 
@@ -49,17 +48,6 @@ std::vector<StateChange> StateChangeQueue::GetAndClearRecordedStateChanges() {
   }
   state_changes_.clear();
   return changes;
-}
-
-StateChangeQueueInterface::Token StateChangeQueue::AddOnStateUpdatedCallback(
-    const base::Callback<void(UpdateID)>& callback) {
-  if (state_changes_.empty())
-    callback.Run(last_change_id_);
-  return Token{callbacks_.Add(callback).release()};
-}
-
-void StateChangeQueue::NotifyStateUpdatedOnServer(UpdateID update_id) {
-  callbacks_.Notify(update_id);
 }
 
 }  // namespace weave

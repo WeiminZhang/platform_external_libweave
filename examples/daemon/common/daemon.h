@@ -19,10 +19,11 @@
 class Daemon {
  public:
   struct Options {
-    bool force_bootstrapping_ = false;
-    bool disable_security_ = false;
-    bool disable_privet_ = false;
+    bool force_bootstrapping_{false};
+    bool disable_security_{false};
+    bool disable_privet_{false};
     std::string registration_ticket_;
+    std::string model_id_{"AAAAA"};
 
     static void ShowUsage(const std::string& name) {
       LOG(ERROR) << "\nUsage: " << name << " <option(s)>"
@@ -69,7 +70,7 @@ class Daemon {
 
   Daemon(const Options& opts)
       : config_store_{new weave::examples::FileConfigStore(
-            opts.disable_security_)},
+            opts.disable_security_, opts.model_id_)},
         task_runner_{new weave::examples::EventTaskRunner},
         http_client_{new weave::examples::CurlHttpClient(task_runner_.get())},
         network_{new weave::examples::EventNetworkImpl(task_runner_.get())},

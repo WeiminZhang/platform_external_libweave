@@ -15,7 +15,7 @@ namespace weave {
 // Interface for async input streaming.
 class InputStream {
  public:
-  virtual ~InputStream() = default;
+  virtual ~InputStream() {}
 
   // Callback type for Read.
   using ReadCallback = base::Callback<void(size_t size, ErrorPtr error)>;
@@ -31,7 +31,7 @@ class InputStream {
 // Interface for async input streaming.
 class OutputStream {
  public:
-  virtual ~OutputStream() = default;
+  virtual ~OutputStream() {}
 
   using WriteCallback = base::Callback<void(ErrorPtr error)>;
 
@@ -47,7 +47,7 @@ class OutputStream {
 // Interface for async bi-directional streaming.
 class Stream : public InputStream, public OutputStream {
  public:
-  ~Stream() override = default;
+  ~Stream() override {}
 
   // Cancels all pending read or write requests. Canceled operations must not
   // call any callbacks.

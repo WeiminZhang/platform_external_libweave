@@ -64,6 +64,9 @@ struct Settings {
   // Cloud ID of the registered device. Empty if device is not registered.
   std::string cloud_id;
 
+  // Local device id.
+  std::string device_id;
+
   // Internal options to tweak some library functionality. External code should
   // avoid using them.
   bool wifi_auto_setup_enabled{true};
