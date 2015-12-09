@@ -32,6 +32,7 @@ libweaveCommonCIncludes := \
 	$(LOCAL_PATH)/.. \
 	$(LOCAL_PATH)/include \
 	$(LOCAL_PATH)/third_party/modp_b64/modp_b64 \
+	$(LOCAL_PATH)/third_party/libuweave \
 	external/gtest/include \
 
 libweaveSharedLibraries := \
@@ -57,6 +58,12 @@ LOCAL_SRC_FILES := \
 	third_party/chromium/crypto/p224.cc \
 	third_party/chromium/crypto/p224_spake.cc \
 	third_party/chromium/crypto/sha2.cc \
+	third_party/libuweave/src/crypto_hmac.c \
+	third_party/libuweave/src/crypto_utils.c \
+	third_party/libuweave/src/macaroon.c \
+	third_party/libuweave/src/macaroon_caveat.c \
+	third_party/libuweave/src/macaroon_context.c \
+	third_party/libuweave/src/macaroon_encoding.c \
 	third_party/modp_b64/modp_b64.cc \
 
 include $(BUILD_STATIC_LIBRARY)
@@ -79,17 +86,10 @@ LOCAL_SRC_FILES := \
 	src/backoff_entry.cc \
 	src/base_api_handler.cc \
 	src/commands/cloud_command_proxy.cc \
-	src/commands/command_definition.cc \
-	src/commands/command_dictionary.cc \
 	src/commands/command_instance.cc \
-	src/commands/command_manager.cc \
 	src/commands/command_queue.cc \
-	src/commands/object_schema.cc \
-	src/commands/prop_constraints.cc \
-	src/commands/prop_types.cc \
-	src/commands/prop_values.cc \
 	src/commands/schema_constants.cc \
-	src/commands/schema_utils.cc \
+	src/component_manager_impl.cc \
 	src/config.cc \
 	src/data_encoding.cc \
 	src/device_manager.cc \
@@ -103,6 +103,7 @@ LOCAL_SRC_FILES := \
 	src/notification/xmpp_channel.cc \
 	src/notification/xmpp_iq_stanza_handler.cc \
 	src/notification/xmpp_stream_parser.cc \
+	src/privet/auth_manager.cc \
 	src/privet/cloud_delegate.cc \
 	src/privet/constants.cc \
 	src/privet/device_delegate.cc \
@@ -116,10 +117,7 @@ LOCAL_SRC_FILES := \
 	src/privet/wifi_bootstrap_manager.cc \
 	src/privet/wifi_ssid_generator.cc \
 	src/registration_status.cc \
-	src/states/error_codes.cc \
 	src/states/state_change_queue.cc \
-	src/states/state_manager.cc \
-	src/states/state_package.cc \
 	src/string_utils.cc \
 	src/utils.cc \
 
@@ -145,7 +143,6 @@ LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 LOCAL_SRC_FILES := \
 	src/test/fake_stream.cc \
 	src/test/fake_task_runner.cc \
-	src/test/mock_command.cc \
 	src/test/unittest_utils.cc \
 
 include $(BUILD_STATIC_LIBRARY)
@@ -159,7 +156,7 @@ LOCAL_CFLAGS := $(libweaveCommonCFlags)
 LOCAL_CPPFLAGS := $(libweaveCommonCppFlags)
 LOCAL_C_INCLUDES := $(libweaveCommonCIncludes)
 LOCAL_SHARED_LIBRARIES := $(libweaveSharedLibraries)
-LOCAL_WHOLE_STATIC_LIBRARIES := libweave-external libweave-common
+LOCAL_WHOLE_STATIC_LIBRARIES := libweave-common libweave-external
 LOCAL_CLANG := true
 LOCAL_RTTI_FLAG := -frtti
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
@@ -185,8 +182,8 @@ LOCAL_SHARED_LIBRARIES := \
 	$(libweaveSharedLibraries) \
 
 LOCAL_STATIC_LIBRARIES := \
-	libweave-external \
 	libweave-common \
+	libweave-external \
 	libweave-test \
 	libgtest libgmock \
 	libchrome_test_helpers \
@@ -198,13 +195,9 @@ LOCAL_SRC_FILES := \
 	src/backoff_entry_unittest.cc \
 	src/base_api_handler_unittest.cc \
 	src/commands/cloud_command_proxy_unittest.cc \
-	src/commands/command_definition_unittest.cc \
-	src/commands/command_dictionary_unittest.cc \
 	src/commands/command_instance_unittest.cc \
-	src/commands/command_manager_unittest.cc \
 	src/commands/command_queue_unittest.cc \
-	src/commands/object_schema_unittest.cc \
-	src/commands/schema_utils_unittest.cc \
+	src/component_manager_unittest.cc \
 	src/config_unittest.cc \
 	src/data_encoding_unittest.cc \
 	src/device_registration_info_unittest.cc \
@@ -214,12 +207,11 @@ LOCAL_SRC_FILES := \
 	src/notification/xmpp_channel_unittest.cc \
 	src/notification/xmpp_iq_stanza_handler_unittest.cc \
 	src/notification/xmpp_stream_parser_unittest.cc \
+	src/privet/auth_manager_unittest.cc \
 	src/privet/privet_handler_unittest.cc \
 	src/privet/security_manager_unittest.cc \
 	src/privet/wifi_ssid_generator_unittest.cc \
 	src/states/state_change_queue_unittest.cc \
-	src/states/state_manager_unittest.cc \
-	src/states/state_package_unittest.cc \
 	src/string_utils_unittest.cc \
 	src/test/weave_testrunner.cc \
 	src/weave_unittest.cc \
