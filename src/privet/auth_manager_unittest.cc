@@ -108,19 +108,19 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 }
 
 TEST_F(AuthManagerTest, GetRootDeviceToken) {
-  EXPECT_EQ("UJdl3l856QHDzlohsiGpxseCQgEARgMaVArkgA==",
+  EXPECT_EQ("UFTBUcgd9d0HnPRnLeroN2mCQgECRgMaVArkgA==",
             Base64Encode(auth_.GetRootDeviceToken(time_)));
 }
 
 TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentTime) {
-  EXPECT_EQ("UHwWhChuQzQ+yb8gRGURu3GCQgEARgMaVB6rAA==",
+  EXPECT_EQ("UGKqwMYGQNOd8jeYFDOsM02CQgECRgMaVB6rAA==",
             Base64Encode(auth_.GetRootDeviceToken(
                 time_ + base::TimeDelta::FromDays(15))));
 }
 
 TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentSecret) {
   AuthManager auth{kSecret2, {}};
-  EXPECT_EQ("UJW4F3R0YMeRctcu8aC6VpyCQgEARgMaVArkgA==",
+  EXPECT_EQ("UK1ACOc3cWGjGBoTIX2bd3qCQgECRgMaVArkgA==",
             Base64Encode(auth.GetRootDeviceToken(time_)));
 }
 

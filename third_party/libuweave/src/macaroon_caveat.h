@@ -21,14 +21,14 @@ typedef enum {
   kUwMacaroonCaveatTypeIssued = 3,
   kUwMacaroonCaveatTypeTTL = 4,
   kUwMacaroonCaveatTypeExpiration = 5,
-  kUwMacaroonCaveatTypeSessionIdentifier = 16
+  kUwMacaroonCaveatTypeSessionIdentifier = 16,
 } UwMacaroonCaveatType;
 
 typedef enum {
-  kUwMacaroonCaveatScopeTypeOwner = 0,
-  kUwMacaroonCaveatScopeTypeManager = 1,
-  kUwMacaroonCaveatScopeTypeUser = 2,
-  kUwMacaroonCaveatScopeTypeViewer = 3,
+  kUwMacaroonCaveatScopeTypeOwner = 2,
+  kUwMacaroonCaveatScopeTypeManager = 8,
+  kUwMacaroonCaveatScopeTypeUser = 14,
+  kUwMacaroonCaveatScopeTypeViewer = 20,
 } UwMacaroonCaveatScopeType;
 
 bool uw_macaroon_caveat_create_without_value_(UwMacaroonCaveatType type,
