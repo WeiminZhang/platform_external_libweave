@@ -74,8 +74,11 @@ class Caveat {
 }  // namespace
 
 AuthManager::AuthManager(const std::vector<uint8_t>& secret,
-                         const std::vector<uint8_t>& certificate_fingerprint)
-    : secret_{secret}, certificate_fingerprint_{certificate_fingerprint} {
+                         const std::vector<uint8_t>& certificate_fingerprint,
+                         base::Clock* clock)
+    : clock_{clock ? clock : &default_clock_},
+      secret_{secret},
+      certificate_fingerprint_{certificate_fingerprint} {
   if (secret_.size() != kSha256OutputSize) {
     secret_.resize(kSha256OutputSize);
     base::RandBytes(secret_.data(), secret_.size());
@@ -85,9 +88,8 @@ AuthManager::AuthManager(const std::vector<uint8_t>& secret,
 AuthManager::~AuthManager() {}
 
 // Returns "[hmac]scope:id:time".
-std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
-                                                    const base::Time& time) {
-  std::string data_str{CreateTokenData(user_info, time)};
+std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info) {
+  std::string data_str{CreateTokenData(user_info, Now())};
   std::vector<uint8_t> data{data_str.begin(), data_str.end()};
   std::vector<uint8_t> hash{HmacSha256(secret_, data)};
   hash.insert(hash.end(), data.begin(), data.end());
@@ -106,11 +108,10 @@ UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   return SplitTokenData(std::string(data.begin(), data.end()), time);
 }
 
-std::vector<uint8_t> AuthManager::GetRootDeviceToken(
-    const base::Time& time) const {
+std::vector<uint8_t> AuthManager::GetRootDeviceToken() const {
   Caveat scope{kUwMacaroonCaveatTypeScope, kUwMacaroonCaveatScopeTypeOwner};
   Caveat issued{kUwMacaroonCaveatTypeIssued,
-                static_cast<uint32_t>(time.ToTimeT())};
+                static_cast<uint32_t>(Now().ToTimeT())};
 
   UwMacaroonCaveat caveats[] = {
       scope.GetCaveat(), issued.GetCaveat(),
@@ -125,6 +126,10 @@ std::vector<uint8_t> AuthManager::GetRootDeviceToken(
   CHECK(uw_macaroon_dump_(&macaroon, token.data(), token.size(), &len));
   token.resize(len);
   return token;
+}
+
+base::Time AuthManager::Now() const {
+  return clock_->Now();
 }
 
 }  // namespace privet

@@ -60,8 +60,7 @@ class SecurityManager : public SecurityDelegate {
   ~SecurityManager() override;
 
   // SecurityDelegate methods
-  std::string CreateAccessToken(const UserInfo& user_info,
-                                const base::Time& time) override;
+  std::string CreateAccessToken(const UserInfo& user_info) override;
   UserInfo ParseAccessToken(const std::string& token,
                             base::Time* time) const override;
   std::set<PairingType> GetPairingTypes() const override;

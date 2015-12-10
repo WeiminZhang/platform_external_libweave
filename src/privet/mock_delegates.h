@@ -62,8 +62,7 @@ class MockDeviceDelegate : public DeviceDelegate {
 
 class MockSecurityDelegate : public SecurityDelegate {
  public:
-  MOCK_METHOD2(CreateAccessToken,
-               std::string(const UserInfo&, const base::Time&));
+  MOCK_METHOD1(CreateAccessToken, std::string(const UserInfo&));
   MOCK_CONST_METHOD2(ParseAccessToken,
                      UserInfo(const std::string&, base::Time*));
   MOCK_CONST_METHOD0(GetPairingTypes, std::set<PairingType>());
@@ -81,7 +80,7 @@ class MockSecurityDelegate : public SecurityDelegate {
   MOCK_METHOD2(CancelPairing, bool(const std::string&, ErrorPtr*));
 
   MockSecurityDelegate() {
-    EXPECT_CALL(*this, CreateAccessToken(_, _))
+    EXPECT_CALL(*this, CreateAccessToken(_))
         .WillRepeatedly(Return("GuestAccessToken"));
 
     EXPECT_CALL(*this, ParseAccessToken(_, _))

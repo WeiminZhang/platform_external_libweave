@@ -191,6 +191,7 @@ class ComponentManagerImpl final : public ComponentManager {
 
   base::DefaultClock default_clock_;
   base::Clock* clock_{nullptr};
+
   // An ID of last state change update. Each NotifyPropertiesUpdated()
   // invocation increments this value by 1.
   UpdateID last_state_change_id_{0};

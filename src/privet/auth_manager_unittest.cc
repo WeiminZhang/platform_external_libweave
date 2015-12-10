@@ -4,10 +4,14 @@
 
 #include "src/privet/auth_manager.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <weave/settings.h>
 
 #include "src/data_encoding.h"
+#include "src/test/mock_clock.h"
+
+using testing::Return;
 
 namespace weave {
 namespace privet {
@@ -17,11 +21,12 @@ class AuthManagerTest : public testing::Test {
   void SetUp() override {
     EXPECT_GE(auth_.GetSecret().size(), 32u);
     EXPECT_GE(auth_.GetCertificateFingerprint().size(), 32u);
+
+    EXPECT_CALL(clock_, Now())
+        .WillRepeatedly(Return(base::Time::FromTimeT(1410000000)));
   }
 
  protected:
-  const base::Time time_ = base::Time::FromTimeT(1410000000);
-
   const std::vector<uint8_t> kSecret{69, 53, 17, 37, 80, 73, 2,  5,  79, 64, 41,
                                      57, 12, 54, 65, 63, 72, 74, 93, 81, 20, 95,
                                      89, 3,  94, 92, 27, 21, 49, 90, 36, 6};
@@ -32,7 +37,8 @@ class AuthManagerTest : public testing::Test {
       22, 47, 23, 77, 42, 98, 96, 25,  83, 16, 9, 14, 91, 44, 15, 75,
       60, 62, 10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85};
 
-  AuthManager auth_{kSecret, kFingerprint};
+  test::MockClock clock_;
+  AuthManager auth_{kSecret, kFingerprint, &clock_};
 };
 
 TEST_F(AuthManagerTest, RandomSecret) {
@@ -51,77 +57,80 @@ TEST_F(AuthManagerTest, Constructor) {
 }
 
 TEST_F(AuthManagerTest, CreateAccessToken) {
-  EXPECT_EQ("OUH2L2npY+Gzwjf9AnqigGSK3hxIVR+xX8/Cnu4DGf8wOjA6MTQxMDAwMDAwMA==",
-            Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kNone, 123}, time_)));
-  EXPECT_EQ("iZx0qgEHFF5lq+Q503GtgU0d6gLQ9TlLsU+DcFbZb2QxOjIzNDoxNDEwMDAwMDAw",
-            Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kViewer, 234}, time_)));
-  EXPECT_EQ("qAmlJykiPTnFljfOKSf3BUII9YZG8/ttzD76q+fII1YyOjM0NToxNDEwOTUwNDAw",
-            Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kUser, 345},
-                time_ + base::TimeDelta::FromDays(11))));
-  EXPECT_EQ("fTjecsbwtYj6i8/qPJz900B8EMAjRqU8jLT9kfMoz0czOjQ1NjoxNDEwMDAwMDAw",
-            Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kOwner, 456}, time_)));
+  EXPECT_EQ(
+      "OUH2L2npY+Gzwjf9AnqigGSK3hxIVR+xX8/Cnu4DGf8wOjA6MTQxMDAwMDAwMA==",
+      Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kNone, 123})));
+  EXPECT_EQ(
+      "iZx0qgEHFF5lq+Q503GtgU0d6gLQ9TlLsU+DcFbZb2QxOjIzNDoxNDEwMDAwMDAw",
+      Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 234})));
+  EXPECT_EQ(
+      "fTjecsbwtYj6i8/qPJz900B8EMAjRqU8jLT9kfMoz0czOjQ1NjoxNDEwMDAwMDAw",
+      Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456})));
+  EXPECT_CALL(clock_, Now())
+      .WillRepeatedly(Return(clock_.Now() + base::TimeDelta::FromDays(11)));
+  EXPECT_EQ(
+      "qAmlJykiPTnFljfOKSf3BUII9YZG8/ttzD76q+fII1YyOjM0NToxNDEwOTUwNDAw",
+      Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kUser, 345})));
 }
 
 TEST_F(AuthManagerTest, CreateSameToken) {
-  EXPECT_EQ(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 555}, time_),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 555}, time_));
+  EXPECT_EQ(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 555}),
+            auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 555}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentScope) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 456}, time_),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456}, time_));
+  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 456}),
+            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentUser) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456}, time_),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 789}, time_));
+  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456}),
+            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 789}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentTime) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 567}, time_),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 567},
-                                    base::Time::FromTimeT(1400000000)));
+  auto token = auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 567});
+  EXPECT_CALL(clock_, Now())
+      .WillRepeatedly(Return(base::Time::FromTimeT(1400000000)));
+  EXPECT_NE(token, auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 567}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentInstance) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kUser, 123}, time_),
-            AuthManager({}, {})
-                .CreateAccessToken(UserInfo{AuthScope::kUser, 123}, time_));
+  EXPECT_NE(
+      auth_.CreateAccessToken(UserInfo{AuthScope::kUser, 123}),
+      AuthManager({}, {}).CreateAccessToken(UserInfo{AuthScope::kUser, 123}));
 }
 
 TEST_F(AuthManagerTest, ParseAccessToken) {
   // Multiple attempts with random secrets.
   for (size_t i = 0; i < 1000; ++i) {
-    AuthManager auth{{}, {}};
+    AuthManager auth{{}, {}, &clock_};
 
-    auto token = auth.CreateAccessToken(UserInfo{AuthScope::kUser, 5}, time_);
+    auto token = auth.CreateAccessToken(UserInfo{AuthScope::kUser, 5});
     base::Time time2;
     EXPECT_EQ(AuthScope::kUser, auth.ParseAccessToken(token, &time2).scope());
     EXPECT_EQ(5u, auth.ParseAccessToken(token, &time2).user_id());
     // Token timestamp resolution is one second.
-    EXPECT_GE(1, std::abs((time_ - time2).InSeconds()));
+    EXPECT_GE(1, std::abs((clock_.Now() - time2).InSeconds()));
   }
 }
 
 TEST_F(AuthManagerTest, GetRootDeviceToken) {
   EXPECT_EQ("UFTBUcgd9d0HnPRnLeroN2mCQgECRgMaVArkgA==",
-            Base64Encode(auth_.GetRootDeviceToken(time_)));
+            Base64Encode(auth_.GetRootDeviceToken()));
 }
 
 TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentTime) {
+  EXPECT_CALL(clock_, Now())
+      .WillRepeatedly(Return(clock_.Now() + base::TimeDelta::FromDays(15)));
   EXPECT_EQ("UGKqwMYGQNOd8jeYFDOsM02CQgECRgMaVB6rAA==",
-            Base64Encode(auth_.GetRootDeviceToken(
-                time_ + base::TimeDelta::FromDays(15))));
+            Base64Encode(auth_.GetRootDeviceToken()));
 }
 
 TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentSecret) {
-  AuthManager auth{kSecret2, {}};
+  AuthManager auth{kSecret2, {}, &clock_};
   EXPECT_EQ("UK1ACOc3cWGjGBoTIX2bd3qCQgECRgMaVArkgA==",
-            Base64Encode(auth.GetRootDeviceToken(time_)));
+            Base64Encode(auth.GetRootDeviceToken()));
 }
 
 }  // namespace privet
