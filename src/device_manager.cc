@@ -105,6 +105,10 @@ const base::DictionaryValue& DeviceManager::GetTraits() const {
   return component_manager_->GetTraits();
 }
 
+void DeviceManager::AddTraitDefsChangedCallback(const base::Closure& callback) {
+  component_manager_->AddTraitDefChangedCallback(callback);
+}
+
 bool DeviceManager::AddComponent(const std::string& name,
                                  const std::vector<std::string>& traits,
                                  ErrorPtr* error) {

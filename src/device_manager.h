@@ -39,6 +39,7 @@ class DeviceManager final : public Device {
   void AddTraitDefinitionsFromJson(const std::string& json) override;
   void AddTraitDefinitions(const base::DictionaryValue& dict) override;
   const base::DictionaryValue& GetTraits() const override;
+  void AddTraitDefsChangedCallback(const base::Closure& callback) override;
   bool AddComponent(const std::string& name,
                     const std::vector<std::string>& traits,
                     ErrorPtr* error) override;
