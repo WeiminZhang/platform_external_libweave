@@ -15,9 +15,10 @@
 // #define FLAG_8BYTE_UINT 27  // Do not support 8-byte
 
 typedef enum {
-  kCborMajorTypeUint = 0,          // type 0
-  kCborMajorTypeByteStr = 2 << 5,  // type 2
-  kCborMajorTypeTextStr = 3 << 5,  // type 3
+  kCborMajorTypeUint = 0,          // type 0 -- unsigned integers
+  kCborMajorTypeByteStr = 2 << 5,  // type 2 -- byte strings
+  kCborMajorTypeTextStr = 3 << 5,  // type 3 -- text strings
+  kCborMajorTypeArray = 4 << 5,    // type 4 -- arrays
 } CborMajorType;
 
 // -- Prototypes begin --
@@ -49,7 +50,7 @@ bool uw_macaroon_encoding_get_item_len_(const uint8_t* cbor, size_t cbor_len,
 
   CborMajorType type = get_type_(cbor);
   if (type != kCborMajorTypeUint && type != kCborMajorTypeByteStr &&
-      type != kCborMajorTypeTextStr) {
+      type != kCborMajorTypeTextStr && type != kCborMajorTypeArray) {
     // Other types are not supported
     return false;
   }
@@ -61,6 +62,8 @@ bool uw_macaroon_encoding_get_item_len_(const uint8_t* cbor, size_t cbor_len,
 
   *first_item_len = uint_min_len_(unsigned_int) + 1;
 
+  // For arrays, it returns only the length of the array length portion, not the
+  // length of the whole array
   if (type == kCborMajorTypeByteStr || type == kCborMajorTypeTextStr) {
     *first_item_len += (size_t)unsigned_int;
   }
@@ -81,6 +84,18 @@ bool uw_macaroon_encoding_encode_uint_(const uint32_t unsigned_int,
 
   set_type_(kCborMajorTypeUint, buffer);
   return blindly_encode_uint_(unsigned_int, buffer, buffer_size,
+                              resulting_cbor_len);
+}
+
+bool uw_macaroon_encoding_encode_array_len_(const uint32_t array_len,
+                                            uint8_t* buffer, size_t buffer_size,
+                                            size_t* resulting_cbor_len) {
+  if (buffer == NULL || buffer_size == 0 || resulting_cbor_len == NULL) {
+    return false;
+  }
+
+  set_type_(kCborMajorTypeArray, buffer);
+  return blindly_encode_uint_(array_len, buffer, buffer_size,
                               resulting_cbor_len);
 }
 
@@ -110,27 +125,30 @@ bool uw_macaroon_encoding_encode_text_str_(const uint8_t* str, size_t str_len,
 
 bool uw_macaroon_encoding_decode_uint_(const uint8_t* cbor, size_t cbor_len,
                                        uint32_t* unsigned_int) {
-  if (cbor == NULL || cbor_len == 0 || unsigned_int == NULL) {
-    return false;
-  }
-
-  CborMajorType type = get_type_(cbor);
-  if (type != kCborMajorTypeUint) {
+  if (cbor == NULL || cbor_len == 0 || unsigned_int == NULL ||
+      get_type_(cbor) != kCborMajorTypeUint) {
     return false;
   }
 
   return blindly_decode_uint_(cbor, cbor_len, unsigned_int);
 }
 
-bool uw_macaroon_encoding_decode_byte_str_(const uint8_t* cbor, size_t cbor_len,
-                                           const uint8_t** out_str,
-                                           size_t* out_str_len) {
-  if (cbor == NULL || cbor_len == 0 || out_str == NULL || out_str_len == NULL) {
+bool uw_macaroon_encoding_decode_array_len_(const uint8_t* cbor,
+                                            size_t cbor_len,
+                                            uint32_t* array_len) {
+  if (cbor == NULL || cbor_len == 0 || array_len == NULL ||
+      get_type_(cbor) != kCborMajorTypeArray) {
     return false;
   }
 
-  CborMajorType type = get_type_(cbor);
-  if (type != kCborMajorTypeByteStr) {
+  return blindly_decode_uint_(cbor, cbor_len, array_len);
+}
+
+bool uw_macaroon_encoding_decode_byte_str_(const uint8_t* cbor, size_t cbor_len,
+                                           const uint8_t** out_str,
+                                           size_t* out_str_len) {
+  if (cbor == NULL || cbor_len == 0 || out_str == NULL || out_str_len == NULL ||
+      get_type_(cbor) != kCborMajorTypeByteStr) {
     return false;
   }
 
@@ -140,12 +158,8 @@ bool uw_macaroon_encoding_decode_byte_str_(const uint8_t* cbor, size_t cbor_len,
 bool uw_macaroon_encoding_decode_text_str_(const uint8_t* cbor, size_t cbor_len,
                                            const uint8_t** out_str,
                                            size_t* out_str_len) {
-  if (cbor == NULL || cbor_len == 0 || out_str == NULL || out_str_len == NULL) {
-    return false;
-  }
-
-  CborMajorType type = get_type_(cbor);
-  if (type != kCborMajorTypeTextStr) {
+  if (cbor == NULL || cbor_len == 0 || out_str == NULL || out_str_len == NULL ||
+      get_type_(cbor) != kCborMajorTypeTextStr) {
     return false;
   }
 

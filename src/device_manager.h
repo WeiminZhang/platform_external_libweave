@@ -16,6 +16,7 @@ class ComponentManager;
 class DeviceRegistrationInfo;
 
 namespace privet {
+class AuthManager;
 class Manager;
 }  // namespace privet
 
@@ -38,6 +39,7 @@ class DeviceManager final : public Device {
   void AddTraitDefinitionsFromJson(const std::string& json) override;
   void AddTraitDefinitions(const base::DictionaryValue& dict) override;
   const base::DictionaryValue& GetTraits() const override;
+  void AddTraitDefsChangedCallback(const base::Closure& callback) override;
   bool AddComponent(const std::string& name,
                     const std::vector<std::string>& traits,
                     ErrorPtr* error) override;
@@ -99,6 +101,8 @@ class DeviceManager final : public Device {
                    provider::Wifi* wifi,
                    provider::Bluetooth* bluetooth);
 
+  std::unique_ptr<Config> config_;
+  std::unique_ptr<privet::AuthManager> auth_manager_;
   std::unique_ptr<ComponentManager> component_manager_;
   std::unique_ptr<DeviceRegistrationInfo> device_info_;
   std::unique_ptr<BaseApiHandler> base_api_handler_;

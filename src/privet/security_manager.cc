@@ -141,9 +141,8 @@ SecurityManager::~SecurityManager() {
 }
 
 // Returns "base64([hmac]scope:id:time)".
-std::string SecurityManager::CreateAccessToken(const UserInfo& user_info,
-                                               const base::Time& time) {
-  return Base64Encode(auth_manager_->CreateAccessToken(user_info, time));
+std::string SecurityManager::CreateAccessToken(const UserInfo& user_info) {
+  return Base64Encode(auth_manager_->CreateAccessToken(user_info));
 }
 
 // Parses "base64([hmac]scope:id:time)".
@@ -344,7 +343,7 @@ bool SecurityManager::CheckIfPairingAllowed(ErrorPtr* error) {
   if (is_security_disabled_)
     return true;
 
-  if (block_pairing_until_ > base::Time::Now()) {
+  if (block_pairing_until_ > auth_manager_->Now()) {
     Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kDeviceBusy,
                  "Too many pairing attempts");
     return false;
@@ -353,7 +352,7 @@ bool SecurityManager::CheckIfPairingAllowed(ErrorPtr* error) {
   if (++pairing_attemts_ >= kMaxAllowedPairingAttemts) {
     LOG(INFO) << "Pairing blocked for" << kPairingBlockingTimeMinutes
               << "minutes.";
-    block_pairing_until_ = base::Time::Now();
+    block_pairing_until_ = auth_manager_->Now();
     block_pairing_until_ +=
         base::TimeDelta::FromMinutes(kPairingBlockingTimeMinutes);
   }

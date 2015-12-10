@@ -12,7 +12,7 @@
 
 // TODO(bozhu): Find a better way to pre-allocate memory for HMACc computations?
 // Are C99 variable-length arrays allowed on embedded devices?
-#define HMAC_STATE_BUFFER_SIZE 300
+#define HMAC_STATE_BUFFER_SIZE 1024
 
 static bool create_caveat_(UwMacaroonCaveatType type, const void* value,
                            size_t value_len, uint8_t* buffer,

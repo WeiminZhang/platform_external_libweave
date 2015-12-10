@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include <base/time/default_clock.h>
 #include <base/time/time.h>
 #include <weave/error.h>
 
@@ -19,11 +20,11 @@ namespace privet {
 class AuthManager {
  public:
   AuthManager(const std::vector<uint8_t>& secret,
-              const std::vector<uint8_t>& certificate_fingerprint);
+              const std::vector<uint8_t>& certificate_fingerprint,
+              base::Clock* clock = nullptr);
   ~AuthManager();
 
-  std::vector<uint8_t> CreateAccessToken(const UserInfo& user_info,
-                                         const base::Time& time);
+  std::vector<uint8_t> CreateAccessToken(const UserInfo& user_info);
   UserInfo ParseAccessToken(const std::vector<uint8_t>& token,
                             base::Time* time) const;
 
@@ -31,8 +32,14 @@ class AuthManager {
   const std::vector<uint8_t>& GetCertificateFingerprint() const {
     return certificate_fingerprint_;
   }
+  std::vector<uint8_t> GetRootDeviceToken() const;
+
+  base::Time Now() const;
 
  private:
+  base::DefaultClock default_clock_;
+  base::Clock* clock_{nullptr};
+
   std::vector<uint8_t> secret_;
   std::vector<uint8_t> certificate_fingerprint_;
 
