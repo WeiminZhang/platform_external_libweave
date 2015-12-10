@@ -41,6 +41,10 @@ class Network;
 class TaskRunner;
 }
 
+namespace privet {
+class AuthManager;
+}
+
 extern const char kErrorDomainOAuth2[];
 extern const char kErrorDomainGCD[];
 extern const char kErrorDomainGCDServer[];
@@ -53,12 +57,12 @@ class DeviceRegistrationInfo : public NotificationDelegate,
       base::Callback<void(const base::DictionaryValue& response,
                           ErrorPtr error)>;
 
-  DeviceRegistrationInfo(
-      ComponentManager* component_manager,
-      std::unique_ptr<Config> config,
-      provider::TaskRunner* task_runner,
-      provider::HttpClient* http_client,
-      provider::Network* network);
+  DeviceRegistrationInfo(Config* config,
+                         ComponentManager* component_manager,
+                         provider::TaskRunner* task_runner,
+                         provider::HttpClient* http_client,
+                         provider::Network* network,
+                         privet::AuthManager* auth_manager);
 
   ~DeviceRegistrationInfo() override;
 
@@ -116,7 +120,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   // TODO(vitalybuka): remove getters and pass config to dependent code.
   const Config::Settings& GetSettings() const { return config_->GetSettings(); }
-  Config* GetMutableConfig() { return config_.get(); }
+  Config* GetMutableConfig() { return config_; }
 
   GcdState GetGcdState() const { return gcd_state_; }
 
@@ -178,8 +182,6 @@ class DeviceRegistrationInfo : public NotificationDelegate,
     provider::HttpClient::Method method;
     std::string url;
     std::string body;
-    // Workaround for inconsistent APIs which returns no body.
-    bool allow_response_without_content = false;
     CloudRequestDoneCallback callback;
   };
   void SendCloudRequest(const std::shared_ptr<const CloudRequestData>& data);
@@ -198,6 +200,9 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void OnUpdateDeviceResourceDone(const base::DictionaryValue& device_info,
                                   ErrorPtr error);
   void OnUpdateDeviceResourceError(ErrorPtr error);
+
+  void SendAuthInfo();
+  void OnSendAuthInfoDone(const base::DictionaryValue& body, ErrorPtr error);
 
   // Callback from GetDeviceInfo() to retrieve the device resource timestamp
   // and retry UpdateDeviceResource() call.
@@ -301,10 +306,11 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   provider::HttpClient* http_client_{nullptr};
 
   provider::TaskRunner* task_runner_{nullptr};
+
+  Config* config_{nullptr};
+
   // Global component manager.
   ComponentManager* component_manager_{nullptr};
-
-  std::unique_ptr<Config> config_;
 
   // Backoff manager for DoCloudRequest() method.
   std::unique_ptr<BackoffEntry::Policy> cloud_backoff_policy_;
@@ -331,12 +337,15 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // is in flight to the cloud server.
   ResourceUpdateCallbackList queued_resource_update_callbacks_;
 
+  bool auth_info_update_inprogress_{false};
+
   std::unique_ptr<NotificationChannel> primary_notification_channel_;
   std::unique_ptr<PullChannel> pull_channel_;
   NotificationChannel* current_notification_channel_{nullptr};
   bool notification_channel_starting_{false};
 
   provider::Network* network_{nullptr};
+  privet::AuthManager* auth_manager_{nullptr};
 
   // Tracks our GCD state.
   GcdState gcd_state_{GcdState::kUnconfigured};

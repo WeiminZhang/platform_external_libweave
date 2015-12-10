@@ -104,7 +104,7 @@ class SampleHandler {
 
     device_->SetStateProperty(kComponent, "_sample._ping_count",
                               base::FundamentalValue{++ping_count_}, nullptr);
-    LOG(INFO) << "New state: " << device_->GetState();
+    LOG(INFO) << "New component state: " << device_->GetComponents();
 
     base::DictionaryValue result;
     cmd->Complete(result, nullptr);

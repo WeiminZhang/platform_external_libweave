@@ -53,6 +53,10 @@ class Device {
   // Returns the full JSON dictionary containing trait definitions.
   virtual const base::DictionaryValue& GetTraits() const = 0;
 
+  // Sets callback which is called when new trait definitions are added.
+  virtual void AddTraitDefsChangedCallback(
+      const base::Closure& callback) = 0;
+
   // Adds a new component instance to device. Traits used by this component
   // must be already defined.
   virtual bool AddComponent(const std::string& name,
@@ -172,6 +176,7 @@ class Device {
   // Adds provided commands definitions. Can be called multiple times with
   // condition that definitions do not conflict.
   // Invalid value is fatal.
+  // DO NOT USE IN YOUR CODE: use AddTraitDefinitions() instead.
   LIBWEAVE_DEPRECATED virtual void AddCommandDefinitionsFromJson(
       const std::string& json) = 0;
   LIBWEAVE_DEPRECATED virtual void AddCommandDefinitions(
@@ -182,6 +187,7 @@ class Device {
   // "base.reboot". Each command can have no more than one handler.
   // Empty |command_name| sets default handler for all unhanded commands.
   // No new command handlers can be set after default handler was set.
+  // DO NOT USE IN YOUR CODE: use AddCommandHandler() with component parameter.
   LIBWEAVE_DEPRECATED virtual void AddCommandHandler(
       const std::string& command_name,
       const CommandHandlerCallback& callback) = 0;
@@ -189,6 +195,7 @@ class Device {
   // Adds provided state definitions. Can be called multiple times with
   // condition that definitions do not conflict.
   // Invalid value is fatal.
+  // DO NOT USE IN YOUR CODE: use AddTraitDefinitions() instead.
   LIBWEAVE_DEPRECATED virtual void AddStateDefinitionsFromJson(
       const std::string& json) = 0;
   LIBWEAVE_DEPRECATED virtual void AddStateDefinitions(
@@ -201,6 +208,7 @@ class Device {
   //   device->SetStatePropertiesFromJson("{'base':{'firmwareVersion':'123'}}")
   // Method completely replaces properties included |json| or |dict|.
   // Properties of the state not included |json| or |dict| will stay unchanged.
+  // DO NOT USE IN YOUR CODE: use SetStateProperties() with component parameter.
   LIBWEAVE_DEPRECATED virtual bool SetStatePropertiesFromJson(
       const std::string& json,
       ErrorPtr* error) = 0;
@@ -210,19 +218,21 @@ class Device {
 
   // Returns value of the single property.
   // |name| is full property name, including package name. e.g. "base.network".
+  // DO NOT USE IN YOUR CODE: use GetStateProperty() with component parameter.
   LIBWEAVE_DEPRECATED virtual const base::Value* GetStateProperty(
       const std::string& name) const = 0;
 
   // Sets value of the single property.
   // |name| is full property name, including package name. e.g. "base.network".
+  // DO NOT USE IN YOUR CODE: use SetStateProperty() with component parameter.
   LIBWEAVE_DEPRECATED virtual bool SetStateProperty(
       const std::string& name,
       const base::Value& value,
       ErrorPtr* error) = 0;
 
   // Returns aggregated state properties across all registered packages.
+  // DO NOT USE IN YOUR CODE: use GetComponents() instead.
   LIBWEAVE_DEPRECATED virtual const base::DictionaryValue& GetState() const = 0;
-
 };
 
 }  // namespace weave

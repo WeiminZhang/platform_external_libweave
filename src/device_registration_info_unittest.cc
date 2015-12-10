@@ -16,9 +16,12 @@
 #include "src/bind_lambda.h"
 #include "src/component_manager_impl.h"
 #include "src/http_constants.h"
+#include "src/privet/auth_manager.h"
+#include "src/test/mock_clock.h"
 
 using testing::_;
 using testing::AtLeast;
+using testing::HasSubstr;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Mock;
@@ -49,6 +52,7 @@ const char kClientId[] =
     "fkjh7f.apps.googleusercontent.com";
 const char kClientSecret[] = "5sdGdGlfolGlrFKfdFlgP6FG";
 const char kCloudId[] = "4a7ea2d1-b331-1e1f-b206-e863c7635196";
+const char kDeviceId[] = "f6885e46-b432-42d7-86a5-d759bfb61f62";
 const char kClaimTicketId[] = "RTcUE";
 const char kAccessToken[] =
     "ya29.1.AADtN_V-dLUM-sVZ0qVjG9Dxm5NgdS9J"
@@ -63,6 +67,12 @@ const char kRobotAccountAuthCode[] =
 const char kRobotAccountEmail[] =
     "6ed0b3f54f9bd619b942f4ad2441c252@"
     "clouddevices.gserviceaccount.com";
+const char kAuthInfo[] = R"({
+  "certFingerprint":
+  "FQY6BEINDjw3FgsmYChRWgMzMhc4TC8uG0UUUFhdDz0=",
+  "clientToken": "UBPkqttkiWt5VWgICLP0eHuCQgECRgMaVm0+gA==",
+  "localId": "f6885e46-b432-42d7-86a5-d759bfb61f62"
+})";
 
 }  // namespace test_data
 
@@ -113,11 +123,11 @@ std::pair<std::string, std::string> GetFormHeader() {
 class DeviceRegistrationInfoTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<Config> config{new Config{&config_store_}};
-    config_ = config.get();
-    dev_reg_.reset(new DeviceRegistrationInfo{&component_manager_,
-                                              std::move(config), &task_runner_,
-                                              &http_client_, nullptr});
+    EXPECT_CALL(clock_, Now())
+        .WillRepeatedly(Return(base::Time::FromTimeT(1450000000)));
+    dev_reg_.reset(new DeviceRegistrationInfo{&config_, &component_manager_,
+                                              &task_runner_, &http_client_,
+                                              nullptr, &auth_});
 
     ReloadDefaults();
   }
@@ -139,7 +149,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
           settings->service_url = test_data::kServiceURL;
           return true;
         }));
-    config_->Load();
+    config_.Load();
     dev_reg_->Start();
   }
 
@@ -148,6 +158,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
     dict.SetString("refresh_token", test_data::kRefreshToken);
     dict.SetString("cloud_id", test_data::kCloudId);
     dict.SetString("robot_account", test_data::kRobotAccountEmail);
+    dict.SetString("device_id", test_data::kDeviceId);
     std::string json_string;
     base::JSONWriter::WriteWithOptions(
         dict, base::JSONWriter::OPTIONS_PRETTY_PRINT, &json_string);
@@ -184,7 +195,14 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   provider::test::MockConfigStore config_store_;
   StrictMock<MockHttpClient> http_client_;
   base::DictionaryValue data_;
-  Config* config_{nullptr};
+  Config config_{&config_store_};
+  test::MockClock clock_;
+  privet::AuthManager auth_{
+      {68, 52, 36, 95, 74, 89, 25, 2, 31, 5, 65, 87, 64, 32, 17, 26, 8, 73, 57,
+       16, 33, 82, 71, 10, 72, 62, 45, 1, 77, 97, 70, 24},
+      {21, 6, 58, 4, 66, 13, 14, 60, 55, 22, 11, 38, 96, 40, 81, 90, 3, 51, 50,
+       23, 56, 76, 47, 46, 27, 69, 20, 80, 88, 93, 15, 61},
+      &clock_};
   std::unique_ptr<DeviceRegistrationInfo> dev_reg_;
   ComponentManagerImpl component_manager_;
 };
@@ -243,6 +261,18 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
 
         callback.Run(ReplyWithJson(200, json), nullptr);
       })));
+
+  EXPECT_CALL(
+      http_client_,
+      SendRequest(HttpClient::Method::kPost, HasSubstr("upsertLocalAuthInfo"),
+                  HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
+      .WillOnce(WithArgs<3, 4>(
+          Invoke([](const std::string& data,
+                    const HttpClient::SendRequestCallback& callback) {
+            EXPECT_JSON_EQ(test_data::kAuthInfo, *CreateDictionaryValue(data));
+            base::DictionaryValue json;
+            callback.Run(ReplyWithJson(200, json), nullptr);
+          })));
 
   EXPECT_TRUE(RefreshAccessToken(nullptr));
   EXPECT_TRUE(HaveRegistrationCredentials());
@@ -340,6 +370,8 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
 }
 
 TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
+  ReloadSettings();
+
   auto json_traits = CreateDictionaryValue(R"({
     'base': {
       'commands': {
@@ -521,6 +553,18 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
 
         callback.Run(ReplyWithJson(200, json), nullptr);
       })));
+
+  EXPECT_CALL(
+      http_client_,
+      SendRequest(HttpClient::Method::kPost, HasSubstr("upsertLocalAuthInfo"),
+                  HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
+      .WillOnce(WithArgs<3, 4>(
+          Invoke([](const std::string& data,
+                    const HttpClient::SendRequestCallback& callback) {
+            EXPECT_JSON_EQ(test_data::kAuthInfo, *CreateDictionaryValue(data));
+            base::DictionaryValue json;
+            callback.Run(ReplyWithJson(200, json), nullptr);
+          })));
 
   bool done = false;
   dev_reg_->RegisterDevice(

@@ -115,6 +115,7 @@
       'third_party/chromium/base/third_party/dmg_fp/dtoa.cc',
       'third_party/chromium/base/third_party/icu/icu_utf.cc',
       'third_party/chromium/base/time/clock.cc',
+      'third_party/chromium/base/time/default_clock.cc',
       'third_party/chromium/base/time/time.cc',
       'third_party/chromium/base/time/time_posix.cc',
       'third_party/chromium/base/values.cc',
