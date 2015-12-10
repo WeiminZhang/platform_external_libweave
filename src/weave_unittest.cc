@@ -292,6 +292,8 @@ class WeaveTest : public ::testing::Test {
     EXPECT_EQ((std::set<std::string>{
                   // clang-format off
                   "/privet/info",
+                  "/privet/v3/accessControl/claim",
+                  "/privet/v3/accessControl/confirm",
                   "/privet/v3/auth",
                   "/privet/v3/checkForUpdates",
                   "/privet/v3/commandDefs",

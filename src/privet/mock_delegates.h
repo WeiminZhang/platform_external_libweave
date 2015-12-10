@@ -88,6 +88,9 @@ class MockSecurityDelegate : public SecurityDelegate {
     EXPECT_CALL(*this, ClaimRootClientAuthToken(_))
         .WillRepeatedly(Return("RootClientAuthToken"));
 
+    EXPECT_CALL(*this, ConfirmAuthToken("DerivedClientAuthToken", _))
+        .WillRepeatedly(Return(true));
+
     EXPECT_CALL(*this, ParseAccessToken(_, _))
         .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
                               Return(UserInfo{AuthScope::kViewer, 1234567})));

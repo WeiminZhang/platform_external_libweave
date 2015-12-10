@@ -594,7 +594,18 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/setup/start", kInput));
 }
 
-TEST_F(PrivetHandlerSetupTest, State) {
+TEST_F(PrivetHandlerTestWithAuth, ClaimAccessControl) {
+  EXPECT_JSON_EQ("{'clientToken': 'RootClientAuthToken'}",
+                 HandleRequest("/privet/v3/accessControl/claim", "{}"));
+}
+
+TEST_F(PrivetHandlerTestWithAuth, ConfirmAccessControl) {
+  EXPECT_JSON_EQ("{}",
+                 HandleRequest("/privet/v3/accessControl/confirm",
+                               "{'clientToken': 'DerivedClientAuthToken'}"));
+}
+
+TEST_F(PrivetHandlerTestWithAuth, State) {
   EXPECT_JSON_EQ("{'state': {'test': {}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/state", "{}"));
 
@@ -604,7 +615,7 @@ TEST_F(PrivetHandlerSetupTest, State) {
                  HandleRequest("/privet/v3/state", "{}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsDefs) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsDefs) {
   EXPECT_JSON_EQ("{'commands': {'test':{}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/commandDefs", "{}"));
 
@@ -614,7 +625,7 @@ TEST_F(PrivetHandlerSetupTest, CommandsDefs) {
                  HandleRequest("/privet/v3/commandDefs", "{}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, Traits) {
+TEST_F(PrivetHandlerTestWithAuth, Traits) {
   EXPECT_JSON_EQ("{'traits': {'test': {}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/traits", "{}"));
 
@@ -624,7 +635,7 @@ TEST_F(PrivetHandlerSetupTest, Traits) {
                  HandleRequest("/privet/v3/traits", "{}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, Components) {
+TEST_F(PrivetHandlerTestWithAuth, Components) {
   EXPECT_JSON_EQ("{'components': {'test': {}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/components", "{}"));
 
@@ -640,7 +651,7 @@ TEST_F(PrivetHandlerSetupTest, Components) {
                  HandleRequest("/privet/v3/components", "{}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
+TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
   const char kComponents[] = R"({
     "comp1": {
       "traits": ["a", "b"],
@@ -778,7 +789,7 @@ TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
                     "{'path':'comp7', 'filter':['traits', 'components']}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsExecute) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsExecute) {
   const char kInput[] = "{'name': 'test'}";
   base::DictionaryValue command;
   LoadTestJson(kInput, &command);
@@ -793,7 +804,7 @@ TEST_F(PrivetHandlerSetupTest, CommandsExecute) {
                  HandleRequest("/privet/v3/commands/execute", kInput));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsStatus) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsStatus) {
   const char kInput[] = "{'id': '5'}";
   base::DictionaryValue command;
   LoadTestJson(kInput, &command);
@@ -819,7 +830,7 @@ TEST_F(PrivetHandlerSetupTest, CommandsStatus) {
                HandleRequest("/privet/v3/commands/status", "{'id': '15'}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsCancel) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsCancel) {
   const char kExpected[] = "{'id': '5', 'name':'test', 'state':'cancelled'}";
   base::DictionaryValue command;
   LoadTestJson(kExpected, &command);
@@ -844,7 +855,7 @@ TEST_F(PrivetHandlerSetupTest, CommandsCancel) {
                HandleRequest("/privet/v3/commands/cancel", "{'id': '11'}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsList) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsList) {
   const char kExpected[] = R"({
     'commands' : [
         {'id':'5', 'state':'cancelled'},

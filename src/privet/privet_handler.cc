@@ -17,6 +17,7 @@
 #include <weave/enum_to_string.h>
 #include <weave/provider/task_runner.h>
 
+#include "src/config.h"
 #include "src/http_constants.h"
 #include "src/privet/cloud_delegate.h"
 #include "src/privet/constants.h"
@@ -90,6 +91,7 @@ const char kAuthAccessTokenKey[] = "accessToken";
 const char kAuthTokenTypeKey[] = "tokenType";
 const char kAuthExpiresInKey[] = "expiresIn";
 const char kAuthScopeKey[] = "scope";
+const char kAuthClientTokenKey[] = "clientToken";
 
 const char kAuthorizationHeaderPrefix[] = "Privet";
 
@@ -413,6 +415,11 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
 
   AddSecureHandler("/privet/v3/auth", &PrivetHandler::HandleAuth,
                    AuthScope::kNone);
+  AddSecureHandler("/privet/v3/accessControl/claim",
+                   &PrivetHandler::HandleAccessControlClaim, AuthScope::kOwner);
+  AddSecureHandler("/privet/v3/accessControl/confirm",
+                   &PrivetHandler::HandleAccessControlConfirm,
+                   AuthScope::kOwner);
   AddSecureHandler("/privet/v3/setup/start", &PrivetHandler::HandleSetupStart,
                    AuthScope::kOwner);
   AddSecureHandler("/privet/v3/setup/status", &PrivetHandler::HandleSetupStatus,
@@ -739,6 +746,40 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   output.SetInteger(kAuthExpiresInKey, kAccessTokenExpirationSeconds);
   output.SetString(kAuthScopeKey, EnumToString(requested_auth_scope));
 
+  callback.Run(http::kOk, output);
+}
+
+void PrivetHandler::HandleAccessControlClaim(const base::DictionaryValue& input,
+                                             const UserInfo& user_info,
+                                             const RequestCallback& callback) {
+  ErrorPtr error;
+  auto token = security_->ClaimRootClientAuthToken(&error);
+  if (token.empty())
+    return ReturnError(*error, callback);
+
+  base::DictionaryValue output;
+  output.SetString(kAuthClientTokenKey, token);
+  callback.Run(http::kOk, output);
+}
+
+void PrivetHandler::HandleAccessControlConfirm(
+    const base::DictionaryValue& input,
+    const UserInfo& user_info,
+    const RequestCallback& callback) {
+  ErrorPtr error;
+
+  std::string token;
+  if (!input.GetString(kAuthClientTokenKey, &token)) {
+    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
+                       errors::kInvalidParams, kInvalidParamValueFormat,
+                       kAuthClientTokenKey, token.c_str());
+    return ReturnError(*error, callback);
+  }
+
+  if (!security_->ConfirmAuthToken(token, &error))
+    return ReturnError(*error, callback);
+
+  base::DictionaryValue output;
   callback.Run(http::kOk, output);
 }
 
