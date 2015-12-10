@@ -108,7 +108,7 @@ UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   return SplitTokenData(std::string(data.begin(), data.end()), time);
 }
 
-std::vector<uint8_t> AuthManager::GetRootDeviceToken() const {
+std::vector<uint8_t> AuthManager::GetRootClientAuthToken() const {
   Caveat scope{kUwMacaroonCaveatTypeScope, kUwMacaroonCaveatScopeTypeOwner};
   Caveat issued{kUwMacaroonCaveatTypeIssued,
                 static_cast<uint32_t>(Now().ToTimeT())};

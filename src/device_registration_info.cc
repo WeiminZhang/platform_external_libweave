@@ -936,7 +936,7 @@ void DeviceRegistrationInfo::SendAuthInfo() {
   auth_info_update_inprogress_ = true;
 
   std::string id = GetSettings().device_id;
-  std::string token = Base64Encode(auth_manager_->GetRootDeviceToken());
+  std::string token = Base64Encode(auth_manager_->GetRootClientAuthToken());
   std::string fingerprint =
       Base64Encode(auth_manager_->GetCertificateFingerprint());
 

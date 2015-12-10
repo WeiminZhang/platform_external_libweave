@@ -115,22 +115,22 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
   }
 }
 
-TEST_F(AuthManagerTest, GetRootDeviceToken) {
+TEST_F(AuthManagerTest, GetRootClientAuthToken) {
   EXPECT_EQ("UFTBUcgd9d0HnPRnLeroN2mCQgECRgMaVArkgA==",
-            Base64Encode(auth_.GetRootDeviceToken()));
+            Base64Encode(auth_.GetRootClientAuthToken()));
 }
 
-TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentTime) {
+TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
   EXPECT_CALL(clock_, Now())
       .WillRepeatedly(Return(clock_.Now() + base::TimeDelta::FromDays(15)));
   EXPECT_EQ("UGKqwMYGQNOd8jeYFDOsM02CQgECRgMaVB6rAA==",
-            Base64Encode(auth_.GetRootDeviceToken()));
+            Base64Encode(auth_.GetRootClientAuthToken()));
 }
 
-TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentSecret) {
+TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentSecret) {
   AuthManager auth{kSecret2, {}, &clock_};
   EXPECT_EQ("UK1ACOc3cWGjGBoTIX2bd3qCQgECRgMaVArkgA==",
-            Base64Encode(auth.GetRootDeviceToken()));
+            Base64Encode(auth.GetRootClientAuthToken()));
 }
 
 }  // namespace privet

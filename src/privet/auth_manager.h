@@ -32,7 +32,7 @@ class AuthManager {
   const std::vector<uint8_t>& GetCertificateFingerprint() const {
     return certificate_fingerprint_;
   }
-  std::vector<uint8_t> GetRootDeviceToken() const;
+  std::vector<uint8_t> GetRootClientAuthToken() const;
 
   base::Time Now() const;
 
