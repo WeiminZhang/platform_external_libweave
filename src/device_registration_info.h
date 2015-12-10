@@ -201,6 +201,9 @@ class DeviceRegistrationInfo : public NotificationDelegate,
                                   ErrorPtr error);
   void OnUpdateDeviceResourceError(ErrorPtr error);
 
+  void SendAuthInfo();
+  void OnSendAuthInfoDone(const base::DictionaryValue& body, ErrorPtr error);
+
   // Callback from GetDeviceInfo() to retrieve the device resource timestamp
   // and retry UpdateDeviceResource() call.
   void OnDeviceInfoRetrieved(const base::DictionaryValue& device_info,
@@ -333,6 +336,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // Callbacks for device resource update requests queued while another request
   // is in flight to the cloud server.
   ResourceUpdateCallbackList queued_resource_update_callbacks_;
+
+  bool auth_info_update_inprogress_{false};
 
   std::unique_ptr<NotificationChannel> primary_notification_channel_;
   std::unique_ptr<PullChannel> pull_channel_;

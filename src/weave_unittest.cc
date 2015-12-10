@@ -183,10 +183,11 @@ class WeaveTest : public ::testing::Test {
  protected:
   void SetUp() override {}
 
+  template <class UrlMatcher>
   void ExpectRequest(HttpClient::Method method,
-                     const std::string& url,
+                     const UrlMatcher& url_matcher,
                      const std::string& json_response) {
-    EXPECT_CALL(http_client_, SendRequest(method, url, _, _, _))
+    EXPECT_CALL(http_client_, SendRequest(method, url_matcher, _, _, _))
         .WillOnce(WithArgs<4>(Invoke([json_response](
             const HttpClient::SendRequestCallback& callback) {
           std::unique_ptr<provider::test::MockHttpClientResponse> response{
@@ -399,6 +400,9 @@ TEST_F(WeaveBasicTest, Register) {
   ExpectRequest(HttpClient::Method::kPost,
                 "https://accounts.google.com/o/oauth2/token",
                 kAuthTokenResponse);
+
+  ExpectRequest(HttpClient::Method::kPost, HasSubstr("upsertLocalAuthInfo"),
+                {});
 
   InitDnsSdPublishing(true, "DB");
 

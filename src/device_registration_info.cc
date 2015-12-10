@@ -27,6 +27,7 @@
 #include "src/http_constants.h"
 #include "src/json_error_codes.h"
 #include "src/notification/xmpp_channel.h"
+#include "src/privet/auth_manager.h"
 #include "src/string_utils.h"
 #include "src/utils.h"
 
@@ -234,6 +235,17 @@ bool IsSuccessful(const HttpClient::Response& response) {
   return code >= http::kContinue && code < http::kBadRequest;
 }
 
+std::unique_ptr<base::DictionaryValue> BuildDeviceLocalAuth(
+    const std::string& id,
+    const std::string& client_token,
+    const std::string& cert_fingerprint) {
+  std::unique_ptr<base::DictionaryValue> auth{new base::DictionaryValue};
+  auth->SetString("localId", id);
+  auth->SetString("clientToken", client_token);
+  auth->SetString("certFingerprint", cert_fingerprint);
+  return auth;
+}
+
 }  // anonymous namespace
 
 DeviceRegistrationInfo::DeviceRegistrationInfo(
@@ -430,6 +442,9 @@ void DeviceRegistrationInfo::OnRefreshAccessTokenDone(
     // Now that we have a new access token, retry the connection.
     StartNotificationChannel();
   }
+
+  SendAuthInfo();
+
   callback.Run(nullptr);
 }
 
@@ -639,6 +654,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent(
   task_runner_->PostDelayedTask(FROM_HERE, base::Bind(callback, nullptr), {});
 
   StartNotificationChannel();
+  SendAuthInfo();
 
   // We're going to respond with our success immediately and we'll connect to
   // cloud shortly after.
@@ -912,6 +928,48 @@ void DeviceRegistrationInfo::StartQueuedUpdateDeviceResource() {
   DoCloudRequest(HttpClient::Method::kPut, url, device_resource.get(),
                  base::Bind(&DeviceRegistrationInfo::OnUpdateDeviceResourceDone,
                             AsWeakPtr()));
+}
+
+void DeviceRegistrationInfo::SendAuthInfo() {
+  if (!auth_manager_ || auth_info_update_inprogress_)
+    return;
+  auth_info_update_inprogress_ = true;
+
+  std::string id = GetSettings().device_id;
+  std::string token = Base64Encode(auth_manager_->GetRootDeviceToken());
+  std::string fingerprint =
+      Base64Encode(auth_manager_->GetCertificateFingerprint());
+
+  std::unique_ptr<base::DictionaryValue> auth =
+      BuildDeviceLocalAuth(id, token, fingerprint);
+
+  // TODO(vitalybuka): Remove args from URL when server is ready.
+  std::string url =
+      GetDeviceURL("upsertLocalAuthInfo", {{"localid", id},
+                                           {"clienttoken", token},
+                                           {"certfingerprint", fingerprint}});
+  DoCloudRequest(
+      HttpClient::Method::kPost, url, auth.get(),
+      base::Bind(&DeviceRegistrationInfo::OnSendAuthInfoDone, AsWeakPtr()));
+}
+
+void DeviceRegistrationInfo::OnSendAuthInfoDone(
+    const base::DictionaryValue& body,
+    ErrorPtr error) {
+  CHECK(auth_info_update_inprogress_);
+  auth_info_update_inprogress_ = false;
+
+  if (!error) {
+    // TODO(vitalybuka): Enable this when we start uploading real data.
+    // Config::Transaction change{config_.get()};
+    // change.set_local_auth_info_changed(false);
+    // change.Commit();
+    return;
+  }
+
+  task_runner_->PostDelayedTask(
+      FROM_HERE, base::Bind(&DeviceRegistrationInfo::SendAuthInfo, AsWeakPtr()),
+      {});
 }
 
 void DeviceRegistrationInfo::OnDeviceInfoRetrieved(
