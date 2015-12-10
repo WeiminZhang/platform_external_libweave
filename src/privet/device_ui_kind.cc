@@ -4,42 +4,40 @@
 
 #include "src/privet/device_ui_kind.h"
 
+#include <unordered_map>
+
 #include <base/logging.h>
 
 namespace weave {
 namespace privet {
 
 std::string GetDeviceUiKind(const std::string& manifest_id) {
+
+  // Map of device short id to ui device kind
+  static const std::unordered_map<std::string, std::string> device_kind_map = {
+    {"AC", "accessPoint"},
+    {"AK", "aggregator"},
+    {"AM", "camera"},
+    {"AB", "developmentBoard"},
+    {"AH", "acHeating"},
+    {"AI", "light"},
+    {"AO", "lock"},
+    {"AE", "printer"},
+    {"AF", "scanner"},
+    {"AD", "speaker"},
+    {"AL", "storage"},
+    {"AJ", "toy"},
+    {"AA", "vendor"},
+    {"AN", "video"}
+  };
+
   CHECK_EQ(5u, manifest_id.size());
-  std::string kind = manifest_id.substr(0, 2);
-  if (kind == "AC")
-    return "accessPoint";
-  if (kind == "AK")
-    return "aggregator";
-  if (kind == "AM")
-    return "camera";
-  if (kind == "AB")
-    return "developmentBoard";
-  if (kind == "AH")
-    return "acHeating";
-  if (kind == "AI")
-    return "light";
-  if (kind == "AO")
-    return "lock";
-  if (kind == "AE")
-    return "printer";
-  if (kind == "AF")
-    return "scanner";
-  if (kind == "AD")
-    return "speaker";
-  if (kind == "AL")
-    return "storage";
-  if (kind == "AJ")
-    return "toy";
-  if (kind == "AA")
-    return "vendor";
-  if (kind == "AN")
-    return "video";
+  std::string short_id = manifest_id.substr(0, 2);
+
+  auto iter = device_kind_map.find(short_id);
+  if (iter != device_kind_map.end())
+    return iter->second;
+
   LOG(FATAL) << "Invalid model id: " << manifest_id;
   return std::string();
 }

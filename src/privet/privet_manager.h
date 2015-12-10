@@ -50,6 +50,7 @@ class Manager : public CloudDelegate::Observer {
              provider::DnsServiceDiscovery* dns_sd,
              provider::HttpServer* http_server,
              provider::Wifi* wifi,
+             AuthManager* auth_manager,
              DeviceRegistrationInfo* device,
              ComponentManager* component_manager);
 
@@ -78,13 +79,10 @@ class Manager : public CloudDelegate::Observer {
   void OnChanged();
   void OnConnectivityChanged();
 
-  void SaveDeviceSecret(Config* config);
-
   bool disable_security_{false};
   provider::TaskRunner* task_runner_{nullptr};
   std::unique_ptr<CloudDelegate> cloud_;
   std::unique_ptr<DeviceDelegate> device_;
-  std::unique_ptr<AuthManager> auth_;
   std::unique_ptr<SecurityManager> security_;
   std::unique_ptr<WifiBootstrapManager> wifi_bootstrap_manager_;
   std::unique_ptr<Publisher> publisher_;

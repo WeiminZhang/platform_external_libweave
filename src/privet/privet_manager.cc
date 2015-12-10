@@ -47,8 +47,12 @@ void Manager::Start(Network* network,
                     DnsServiceDiscovery* dns_sd,
                     HttpServer* http_server,
                     Wifi* wifi,
+                    AuthManager* auth_manager,
                     DeviceRegistrationInfo* device,
                     ComponentManager* component_manager) {
+  CHECK(auth_manager);
+  CHECK(device);
+
   disable_security_ = device->GetSettings().disable_security;
 
   device_ = DeviceDelegate::CreateDefault(
@@ -58,19 +62,9 @@ void Manager::Start(Network* network,
                                         component_manager);
   cloud_observer_.Add(cloud_.get());
 
-  auth_.reset(new AuthManager(device->GetSettings().secret,
-                              http_server->GetHttpsCertificateFingerprint()));
   security_.reset(new SecurityManager(
-      auth_.get(), device->GetSettings().pairing_modes,
+      auth_manager, device->GetSettings().pairing_modes,
       device->GetSettings().embedded_code, disable_security_, task_runner_));
-  if (device->GetSettings().secret.empty()) {
-    // TODO(vitalybuka): Post all Config::Transaction to avoid following.
-    task_runner_->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(&Manager::SaveDeviceSecret, weak_ptr_factory_.GetWeakPtr(),
-                   base::Unretained(device->GetMutableConfig())),
-        {});
-  }
   network->AddConnectionChangedCallback(
       base::Bind(&Manager::OnConnectivityChanged, base::Unretained(this)));
 
@@ -172,11 +166,6 @@ void Manager::OnChanged() {
 
 void Manager::OnConnectivityChanged() {
   OnChanged();
-}
-
-void Manager::SaveDeviceSecret(Config* config) {
-  Config::Transaction transaction(config);
-  transaction.set_secret(auth_->GetSecret());
 }
 
 }  // namespace privet
