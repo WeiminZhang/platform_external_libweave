@@ -1076,24 +1076,24 @@ TEST_F(ComponentManagerTest, AddStateChangedCallback) {
   manager_.AddStateChangedCallback(base::Bind([&count2]() { count2++; }));
   EXPECT_EQ(1, count);
   EXPECT_EQ(1, count2);
-  EXPECT_EQ(0, manager_.GetLastStateChangeId());
+  EXPECT_EQ(0u, manager_.GetLastStateChangeId());
 
   base::StringValue p1("foo");
   ASSERT_TRUE(manager_.SetStateProperty("comp1", "trait1.prop1", p1, nullptr));
   EXPECT_EQ(2, count);
   EXPECT_EQ(2, count2);
-  EXPECT_EQ(1, manager_.GetLastStateChangeId());
+  EXPECT_EQ(1u, manager_.GetLastStateChangeId());
 
   ASSERT_TRUE(manager_.SetStateProperty("comp1", "trait1.prop2", p1, nullptr));
   EXPECT_EQ(3, count);
   EXPECT_EQ(3, count2);
-  EXPECT_EQ(2, manager_.GetLastStateChangeId());
+  EXPECT_EQ(2u, manager_.GetLastStateChangeId());
 
   // Fail - no component.
   ASSERT_FALSE(manager_.SetStateProperty("comp2", "trait1.prop2", p1, nullptr));
   EXPECT_EQ(3, count);
   EXPECT_EQ(3, count2);
-  EXPECT_EQ(2, manager_.GetLastStateChangeId());
+  EXPECT_EQ(2u, manager_.GetLastStateChangeId());
 }
 
 TEST_F(ComponentManagerTest, ComponentStateUpdates) {
