@@ -36,37 +36,6 @@ const int kPairingExpirationTimeMinutes = 5;
 const int kMaxAllowedPairingAttemts = 3;
 const int kPairingBlockingTimeMinutes = 1;
 
-// Returns "scope:id:time".
-std::string CreateTokenData(const UserInfo& user_info, const base::Time& time) {
-  return base::IntToString(static_cast<int>(user_info.scope())) +
-         kTokenDelimeter + base::Uint64ToString(user_info.user_id()) +
-         kTokenDelimeter + base::Int64ToString(time.ToTimeT());
-}
-
-// Splits string of "scope:id:time" format.
-UserInfo SplitTokenData(const std::string& token, base::Time* time) {
-  const UserInfo kNone;
-  auto parts = Split(token, kTokenDelimeter, false, false);
-  if (parts.size() != 3)
-    return kNone;
-  int scope = 0;
-  if (!base::StringToInt(parts[0], &scope) ||
-      scope < static_cast<int>(AuthScope::kNone) ||
-      scope > static_cast<int>(AuthScope::kOwner)) {
-    return kNone;
-  }
-
-  uint64_t id{0};
-  if (!base::StringToUint64(parts[1], &id))
-    return kNone;
-
-  int64_t timestamp{0};
-  if (!base::StringToInt64(parts[2], &timestamp))
-    return kNone;
-  *time = base::Time::FromTimeT(timestamp);
-  return UserInfo{static_cast<AuthScope>(scope), id};
-}
-
 class Spakep224Exchanger : public SecurityManager::KeyExchanger {
  public:
   explicit Spakep224Exchanger(const std::string& password)
