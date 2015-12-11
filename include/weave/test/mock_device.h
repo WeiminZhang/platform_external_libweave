@@ -24,6 +24,8 @@ class MockDevice : public Device {
   MOCK_METHOD1(AddTraitDefinitionsFromJson, void(const std::string& json));
   MOCK_METHOD1(AddTraitDefinitions, void(const base::DictionaryValue& dict));
   MOCK_CONST_METHOD0(GetTraits, const base::DictionaryValue&());
+  MOCK_METHOD1(AddTraitDefsChangedCallback,
+               void(const base::Closure& callback));
   MOCK_METHOD3(AddComponent, bool(const std::string& name,
                                   const std::vector<std::string>& traits,
                                   ErrorPtr* error));

@@ -392,7 +392,7 @@ TEST_F(PrivetHandlerTest, AuthAnonymous) {
 TEST_F(PrivetHandlerTest, AuthPairing) {
   EXPECT_CALL(security_, IsValidPairingCode("testToken"))
       .WillRepeatedly(Return(true));
-  EXPECT_CALL(security_, CreateAccessToken(_, _))
+  EXPECT_CALL(security_, CreateAccessToken(_))
       .WillRepeatedly(Return("OwnerAccessToken"));
   const char kInput[] = R"({
     'mode': 'pairing',

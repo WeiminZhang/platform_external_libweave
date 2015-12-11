@@ -27,6 +27,7 @@
 #include "src/http_constants.h"
 #include "src/json_error_codes.h"
 #include "src/notification/xmpp_channel.h"
+#include "src/privet/auth_manager.h"
 #include "src/string_utils.h"
 #include "src/utils.h"
 
@@ -234,19 +235,32 @@ bool IsSuccessful(const HttpClient::Response& response) {
   return code >= http::kContinue && code < http::kBadRequest;
 }
 
+std::unique_ptr<base::DictionaryValue> BuildDeviceLocalAuth(
+    const std::string& id,
+    const std::string& client_token,
+    const std::string& cert_fingerprint) {
+  std::unique_ptr<base::DictionaryValue> auth{new base::DictionaryValue};
+  auth->SetString("localId", id);
+  auth->SetString("clientToken", client_token);
+  auth->SetString("certFingerprint", cert_fingerprint);
+  return auth;
+}
+
 }  // anonymous namespace
 
 DeviceRegistrationInfo::DeviceRegistrationInfo(
+    Config* config,
     ComponentManager* component_manager,
-    std::unique_ptr<Config> config,
     provider::TaskRunner* task_runner,
     provider::HttpClient* http_client,
-    provider::Network* network)
+    provider::Network* network,
+    privet::AuthManager* auth_manager)
     : http_client_{http_client},
       task_runner_{task_runner},
+      config_{config},
       component_manager_{component_manager},
-      config_{std::move(config)},
-      network_{network} {
+      network_{network},
+      auth_manager_{auth_manager} {
   cloud_backoff_policy_.reset(new BackoffEntry::Policy{});
   cloud_backoff_policy_->num_errors_to_ignore = 0;
   cloud_backoff_policy_->initial_delay_ms = 1000;
@@ -428,6 +442,9 @@ void DeviceRegistrationInfo::OnRefreshAccessTokenDone(
     // Now that we have a new access token, retry the connection.
     StartNotificationChannel();
   }
+
+  SendAuthInfo();
+
   callback.Run(nullptr);
 }
 
@@ -628,7 +645,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent(
   access_token_expiration_ =
       base::Time::Now() + base::TimeDelta::FromSeconds(expires_in);
 
-  Config::Transaction change{config_.get()};
+  Config::Transaction change{config_};
   change.set_cloud_id(cloud_id);
   change.set_robot_account(robot_account);
   change.set_refresh_token(refresh_token);
@@ -637,6 +654,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent(
   task_runner_->PostDelayedTask(FROM_HERE, base::Bind(callback, nullptr), {});
 
   StartNotificationChannel();
+  SendAuthInfo();
 
   // We're going to respond with our success immediately and we'll connect to
   // cloud shortly after.
@@ -712,8 +730,8 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
     return;
   }
 
-  if (data->allow_response_without_content &&
-      response->GetContentType().empty()) {
+  if (response->GetContentType().empty()) {
+    // Assume no body if no content type.
     cloud_backoff_entry_->InformOfRequest(true);
     return data->callback.Run({}, nullptr);
   }
@@ -804,7 +822,7 @@ void DeviceRegistrationInfo::OnConnectedToCloud(ErrorPtr error) {
 void DeviceRegistrationInfo::UpdateDeviceInfo(const std::string& name,
                                               const std::string& description,
                                               const std::string& location) {
-  Config::Transaction change{config_.get()};
+  Config::Transaction change{config_};
   change.set_name(name);
   change.set_description(description);
   change.set_location(location);
@@ -818,7 +836,7 @@ void DeviceRegistrationInfo::UpdateDeviceInfo(const std::string& name,
 void DeviceRegistrationInfo::UpdateBaseConfig(AuthScope anonymous_access_role,
                                               bool local_discovery_enabled,
                                               bool local_pairing_enabled) {
-  Config::Transaction change(config_.get());
+  Config::Transaction change(config_);
   change.set_local_anonymous_access_role(anonymous_access_role);
   change.set_local_discovery_enabled(local_discovery_enabled);
   change.set_local_pairing_enabled(local_pairing_enabled);
@@ -836,7 +854,7 @@ bool DeviceRegistrationInfo::UpdateServiceConfig(
                  "Unable to change config for registered device");
     return false;
   }
-  Config::Transaction change{config_.get()};
+  Config::Transaction change{config_};
   change.set_client_id(client_id);
   change.set_client_secret(client_secret);
   change.set_api_key(api_key);
@@ -910,6 +928,48 @@ void DeviceRegistrationInfo::StartQueuedUpdateDeviceResource() {
   DoCloudRequest(HttpClient::Method::kPut, url, device_resource.get(),
                  base::Bind(&DeviceRegistrationInfo::OnUpdateDeviceResourceDone,
                             AsWeakPtr()));
+}
+
+void DeviceRegistrationInfo::SendAuthInfo() {
+  if (!auth_manager_ || auth_info_update_inprogress_)
+    return;
+  auth_info_update_inprogress_ = true;
+
+  std::string id = GetSettings().device_id;
+  std::string token = Base64Encode(auth_manager_->GetRootDeviceToken());
+  std::string fingerprint =
+      Base64Encode(auth_manager_->GetCertificateFingerprint());
+
+  std::unique_ptr<base::DictionaryValue> auth =
+      BuildDeviceLocalAuth(id, token, fingerprint);
+
+  // TODO(vitalybuka): Remove args from URL when server is ready.
+  std::string url =
+      GetDeviceURL("upsertLocalAuthInfo", {{"localid", id},
+                                           {"clienttoken", token},
+                                           {"certfingerprint", fingerprint}});
+  DoCloudRequest(
+      HttpClient::Method::kPost, url, auth.get(),
+      base::Bind(&DeviceRegistrationInfo::OnSendAuthInfoDone, AsWeakPtr()));
+}
+
+void DeviceRegistrationInfo::OnSendAuthInfoDone(
+    const base::DictionaryValue& body,
+    ErrorPtr error) {
+  CHECK(auth_info_update_inprogress_);
+  auth_info_update_inprogress_ = false;
+
+  if (!error) {
+    // TODO(vitalybuka): Enable this when we start uploading real data.
+    // Config::Transaction change{config_.get()};
+    // change.set_local_auth_info_changed(false);
+    // change.Commit();
+    return;
+  }
+
+  task_runner_->PostDelayedTask(
+      FROM_HERE, base::Bind(&DeviceRegistrationInfo::SendAuthInfo, AsWeakPtr()),
+      {});
 }
 
 void DeviceRegistrationInfo::OnDeviceInfoRetrieved(
@@ -1270,7 +1330,7 @@ void DeviceRegistrationInfo::RemoveCredentials() {
   connected_to_cloud_ = false;
 
   LOG(INFO) << "Device is unregistered from the cloud. Deleting credentials";
-  Config::Transaction change{config_.get()};
+  Config::Transaction change{config_};
   // Keep cloud_id to switch to detect kInvalidCredentials after restart.
   change.set_robot_account("");
   change.set_refresh_token("");

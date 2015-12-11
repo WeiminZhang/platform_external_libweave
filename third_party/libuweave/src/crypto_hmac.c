@@ -24,7 +24,7 @@ bool uw_crypto_hmac_init_(uint8_t* state_buffer,
   }
   HMAC_CTX* context = (HMAC_CTX*)state_buffer;
   HMAC_CTX_init(context);
-  return HMAC_Init(context, key, key_len, EVP_sha256()) ? 0 : sizeof(HMAC_CTX);
+  return HMAC_Init(context, key, key_len, EVP_sha256());
 }
 
 bool uw_crypto_hmac_update_(uint8_t* state_buffer,

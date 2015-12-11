@@ -44,4 +44,21 @@ bool uw_macaroon_extend_(const UwMacaroon* old_macaroon,
                          const UwMacaroonCaveat* additional_caveat,
                          uint8_t* buffer, size_t buffer_size);
 
+// Encode a Macaroon to a byte string
+bool uw_macaroon_dump_(const UwMacaroon* macaroon,
+                       uint8_t* out,
+                       size_t out_len,
+                       size_t* resulting_str_len);
+
+// Decode a byte string to a Macaroon (the caveats_buffer here is used only for
+// the caveat pointer list *caveats in the UwMacaroon *macaroon). One note is
+// that the function doesn't copy string values to new buffers, so the caller
+// may maintain the input string around to make caveats with string values to
+// be usuable.
+bool uw_macaroon_load_(const uint8_t* in,
+                       size_t in_len,
+                       uint8_t* caveats_buffer,
+                       size_t caveats_buffer_size,
+                       UwMacaroon* macaroon);
+
 #endif  // LIBUWEAVE_SRC_MACAROON_H_

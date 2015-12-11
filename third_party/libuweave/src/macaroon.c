@@ -7,6 +7,8 @@
 #include <string.h>
 
 #include "src/crypto_utils.h"
+#include "src/macaroon_caveat.h"
+#include "src/macaroon_encoding.h"
 
 static bool create_mac_tag_(const uint8_t* key, size_t key_len,
                             const UwMacaroonCaveat* caveats, size_t num_caveats,
@@ -123,4 +125,95 @@ bool uw_macaroon_extend_(const UwMacaroon* old_macaroon,
   // Compute the new MAC tag
   return create_mac_tag_(old_macaroon->mac_tag, UW_MACAROON_MAC_LEN,
                          additional_caveat, 1, new_macaroon->mac_tag);
+}
+
+// Encode a Macaroon to a byte string
+bool uw_macaroon_dump_(const UwMacaroon* macaroon,
+                       uint8_t* out,
+                       size_t out_len,
+                       size_t* resulting_str_len) {
+  if (macaroon == NULL || out == NULL || out_len == 0 ||
+      resulting_str_len == NULL) {
+    return false;
+  }
+
+  size_t offset = 0, item_len;
+
+  if (!uw_macaroon_encoding_encode_byte_str_(
+          macaroon->mac_tag, UW_MACAROON_MAC_LEN, out, out_len, &item_len)) {
+    return false;
+  }
+  offset += item_len;
+
+  if (!uw_macaroon_encoding_encode_array_len_(
+          (uint32_t)(macaroon->num_caveats), out + offset, out_len - offset, &item_len)) {
+    return false;
+  }
+  offset += item_len;
+
+  for (size_t i = 0; i < macaroon->num_caveats; i++) {
+    if (!uw_macaroon_encoding_encode_byte_str_(
+            macaroon->caveats[i].bytes, macaroon->caveats[i].num_bytes,
+            out + offset, out_len - offset, &item_len)) {
+      return false;
+    }
+    offset += item_len;
+  }
+
+  *resulting_str_len = offset;
+  return true;
+}
+
+// Decode a byte string to a Macaroon
+bool uw_macaroon_load_(const uint8_t* in,
+                       size_t in_len,
+                       uint8_t* caveats_buffer,
+                       size_t caveats_buffer_size,
+                       UwMacaroon* macaroon) {
+  if (in == NULL || in_len == 0 || caveats_buffer == NULL ||
+      caveats_buffer_size == 0 || macaroon == NULL) {
+    return false;
+  }
+
+  const uint8_t* tag;
+  size_t tag_len;
+  if (!uw_macaroon_encoding_decode_byte_str_(in, in_len, &tag, &tag_len) ||
+      tag_len != UW_MACAROON_MAC_LEN) {
+    return false;
+  }
+  memcpy(macaroon->mac_tag, tag, UW_MACAROON_MAC_LEN);
+
+  size_t offset = 0, cbor_item_len;
+  if (!uw_macaroon_encoding_get_item_len_(in, in_len, &cbor_item_len)) {
+    return false;
+  }
+  offset += cbor_item_len;
+
+  uint32_t array_len;
+  if (!uw_macaroon_encoding_decode_array_len_(in + offset, in_len - offset,
+                                              &array_len)) {
+    return false;
+  }
+  macaroon->num_caveats = (size_t)array_len;
+  if (caveats_buffer_size < array_len * sizeof(UwMacaroonCaveat)) {
+    return false;
+  }
+
+  UwMacaroonCaveat* caveats = (UwMacaroonCaveat*)caveats_buffer;
+  for (size_t i = 0; i < array_len; i++) {
+    if (!uw_macaroon_encoding_get_item_len_(in + offset, in_len - offset,
+                                            &cbor_item_len)) {
+      return false;
+    }
+    offset += cbor_item_len;
+
+    if (!uw_macaroon_encoding_decode_byte_str_(in + offset, in_len - offset,
+                                               &(caveats[i].bytes),
+                                               &(caveats[i].num_bytes))) {
+      return false;
+    }
+  }
+  macaroon->caveats = caveats;
+
+  return true;
 }

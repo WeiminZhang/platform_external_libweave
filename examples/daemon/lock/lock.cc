@@ -129,6 +129,7 @@ class LockHandler {
 
 int main(int argc, char** argv) {
   Daemon::Options opts;
+  opts.model_id_ = "AOAAA";
   if (!opts.Parse(argc, argv)) {
     Daemon::Options::ShowUsage(argv[0]);
     return 1;

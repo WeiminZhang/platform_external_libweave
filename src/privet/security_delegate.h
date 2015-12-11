@@ -22,8 +22,7 @@ class SecurityDelegate {
   virtual ~SecurityDelegate() {}
 
   // Creates access token for the given scope, user id and |time|.
-  virtual std::string CreateAccessToken(const UserInfo& user_info,
-                                        const base::Time& time) = 0;
+  virtual std::string CreateAccessToken(const UserInfo& user_info) = 0;
 
   // Validates |token| and returns scope and user id parsed from that.
   virtual UserInfo ParseAccessToken(const std::string& token,

@@ -676,10 +676,9 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   }
 
   base::DictionaryValue output;
-  output.SetString(
-      kAuthAccessTokenKey,
-      security_->CreateAccessToken(
-          UserInfo{requested_auth_scope, ++last_user_id_}, base::Time::Now()));
+  output.SetString(kAuthAccessTokenKey,
+                   security_->CreateAccessToken(
+                       UserInfo{requested_auth_scope, ++last_user_id_}));
   output.SetString(kAuthTokenTypeKey, kAuthorizationHeaderPrefix);
   output.SetInteger(kAuthExpiresInKey, kAccessTokenExpirationSeconds);
   output.SetString(kAuthScopeKey, EnumToString(requested_auth_scope));
