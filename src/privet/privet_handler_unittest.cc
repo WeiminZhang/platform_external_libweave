@@ -94,7 +94,7 @@ class PrivetHandlerTest : public testing::Test {
  protected:
   void SetUp() override {
     EXPECT_CALL(clock_, Now())
-        .WillRepeatedly(Return(base::Time::FromTimeT(1410000000)));
+        .WillRepeatedly(Return(base::Time::FromTimeT(1410000001)));
 
     auth_header_ = "Privet anonymous";
     handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, &wifi_,
@@ -248,7 +248,7 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
       'status': 'disabled'
     },
     'uptime': 3600,
-    'timeMs': '1410000000000'
+    'time': 1410000001000.0
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }
@@ -310,7 +310,7 @@ TEST_F(PrivetHandlerTest, Info) {
       'status': 'online'
     },
     'uptime': 3600,
-    'timeMs': '1410000000000'
+    'time': 1410000001000.0
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }
