@@ -28,7 +28,7 @@ namespace {
 const BackoffEntry::Policy register_backoff_policy = {0,    1000, 2.0,  0.2,
                                                       5000, -1,   false};
 
-const int kMaxDeviceRegistrationTimeMinutes = 5;
+const int kMaxDeviceRegistrationRetries = 100;  // ~ 8 minutes @5s retries.
 
 CommandInstance* ReturnNotFound(const std::string& command_id,
                                 ErrorPtr* error) {
@@ -113,22 +113,24 @@ class CloudDelegateImpl : public CloudDelegate {
   bool Setup(const std::string& ticket_id,
              const std::string& user,
              ErrorPtr* error) override {
-    if (setup_state_.IsStatusEqual(SetupState::kInProgress)) {
-      Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kDeviceBusy,
-                   "Setup in progress");
-      return false;
-    }
     VLOG(1) << "GCD Setup started. ticket_id: " << ticket_id
             << ", user:" << user;
+    // Set (or reset) the retry counter, since we are starting a new
+    // registration process.
+    registation_retry_count_ = kMaxDeviceRegistrationRetries;
+    ticket_id_ = ticket_id;
+    if (setup_state_.IsStatusEqual(SetupState::kInProgress)) {
+      // Another registration is in progress. In case it fails, we will use
+      // the new ticket ID when retrying the request.
+      return true;
+    }
     setup_state_ = SetupState(SetupState::kInProgress);
     setup_weak_factory_.InvalidateWeakPtrs();
     backoff_entry_.Reset();
-    base::Time deadline = base::Time::Now();
-    deadline += base::TimeDelta::FromMinutes(kMaxDeviceRegistrationTimeMinutes);
     task_runner_->PostDelayedTask(
         FROM_HERE,
         base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
-                   setup_weak_factory_.GetWeakPtr(), ticket_id, deadline),
+                   setup_weak_factory_.GetWeakPtr()),
         {});
     // Return true because we initiated setup.
     return true;
@@ -259,10 +261,10 @@ class CloudDelegateImpl : public CloudDelegate {
     setup_state_ = SetupState(SetupState::kSuccess);
   }
 
-  void CallManagerRegisterDevice(const std::string& ticket_id,
-                                 const base::Time& deadline) {
+  void CallManagerRegisterDevice() {
     ErrorPtr error;
-    if (base::Time::Now() > deadline) {
+    CHECK_GE(registation_retry_count_, 0);
+    if (registation_retry_count_-- == 0) {
       Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
                    "Failed to register device");
       setup_state_ = SetupState{std::move(error)};
@@ -270,21 +272,18 @@ class CloudDelegateImpl : public CloudDelegate {
     }
 
     device_->RegisterDevice(
-        ticket_id,
-        base::Bind(&CloudDelegateImpl::RegisterDeviceDone,
-                   setup_weak_factory_.GetWeakPtr(), ticket_id, deadline));
+        ticket_id_, base::Bind(&CloudDelegateImpl::RegisterDeviceDone,
+                               setup_weak_factory_.GetWeakPtr()));
   }
 
-  void RegisterDeviceDone(const std::string& ticket_id,
-                          const base::Time& deadline,
-                          ErrorPtr error) {
+  void RegisterDeviceDone(ErrorPtr error) {
     if (error) {
       // Registration failed. Retry with backoff.
       backoff_entry_.InformOfRequest(false);
       return task_runner_->PostDelayedTask(
           FROM_HERE,
           base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
-                     setup_weak_factory_.GetWeakPtr(), ticket_id, deadline),
+                     setup_weak_factory_.GetWeakPtr()),
           backoff_entry_.GetTimeUntilRelease());
     }
     backoff_entry_.InformOfRequest(true);
@@ -334,6 +333,12 @@ class CloudDelegateImpl : public CloudDelegate {
 
   // State of the current or last setup.
   SetupState setup_state_{SetupState::kNone};
+
+  // Ticket ID for registering the device.
+  std::string ticket_id_;
+
+  // Number of remaining retries for device registration process.
+  int registation_retry_count_{0};
 
   // Map of command IDs to user IDs.
   std::map<std::string, uint64_t> command_owners_;
