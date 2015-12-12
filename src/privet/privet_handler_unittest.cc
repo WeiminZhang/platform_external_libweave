@@ -247,7 +247,6 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
       'id': '',
       'status': 'disabled'
     },
-    'uptime': 3600,
     'time': 1410000001000.0
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
@@ -309,7 +308,6 @@ TEST_F(PrivetHandlerTest, Info) {
       'id': 'TestCloudId',
       'status': 'online'
     },
-    'uptime': 3600,
     'time': 1410000001000.0
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));

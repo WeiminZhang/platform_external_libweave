@@ -35,9 +35,6 @@ class DeviceDelegate {
   // The same |GetHttpEnpoint| but for HTTPS.
   virtual std::pair<uint16_t, uint16_t> GetHttpsEnpoint() const = 0;
 
-  // Returns device uptime.
-  virtual base::TimeDelta GetUptime() const = 0;
-
   // Returns the max request timeout of http server. Returns TimeDelta::Max() if
   // no timeout is set.
   virtual base::TimeDelta GetHttpRequestTimeout() const = 0;

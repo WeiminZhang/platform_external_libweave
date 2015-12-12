@@ -44,7 +44,6 @@ class MockDeviceDelegate : public DeviceDelegate {
  public:
   MOCK_CONST_METHOD0(GetHttpEnpoint, IntPair());
   MOCK_CONST_METHOD0(GetHttpsEnpoint, IntPair());
-  MOCK_CONST_METHOD0(GetUptime, base::TimeDelta());
   MOCK_CONST_METHOD0(GetHttpRequestTimeout, base::TimeDelta());
   MOCK_METHOD3(PostDelayedTask, void(const tracked_objects::Location&,
                                      const base::Closure&,
@@ -55,8 +54,6 @@ class MockDeviceDelegate : public DeviceDelegate {
         .WillRepeatedly(Return(std::make_pair(0, 0)));
     EXPECT_CALL(*this, GetHttpsEnpoint())
         .WillRepeatedly(Return(std::make_pair(0, 0)));
-    EXPECT_CALL(*this, GetUptime())
-        .WillRepeatedly(Return(base::TimeDelta::FromHours(1)));
   }
 };
 

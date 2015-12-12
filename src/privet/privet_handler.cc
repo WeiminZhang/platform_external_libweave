@@ -69,7 +69,6 @@ const char kInfoWifiCapabilitiesKey[] = "capabilities";
 const char kInfoWifiSsidKey[] = "ssid";
 const char kInfoWifiHostedSsidKey[] = "hostedSsid";
 
-const char kInfoUptimeKey[] = "uptime";
 const char kInfoTimeKey[] = "time";
 
 const char kPairingKey[] = "pairing";
@@ -547,7 +546,6 @@ void PrivetHandler::HandleInfo(const base::DictionaryValue&,
 
   output.Set(kGcdKey, CreateGcdSection(*cloud_).release());
 
-  output.SetInteger(kInfoUptimeKey, device_->GetUptime().InSeconds());
   output.SetDouble(kInfoTimeKey, clock_->Now().ToJsTime());
 
   callback.Run(http::kOk, output);
