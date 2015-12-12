@@ -19,6 +19,7 @@
 
 #include "src/privet/constants.h"
 #include "src/privet/mock_delegates.h"
+#include "src/test/mock_clock.h"
 
 using testing::_;
 using testing::DoAll;
@@ -92,8 +93,12 @@ class PrivetHandlerTest : public testing::Test {
 
  protected:
   void SetUp() override {
+    EXPECT_CALL(clock_, Now())
+        .WillRepeatedly(Return(base::Time::FromTimeT(1410000000)));
+
     auth_header_ = "Privet anonymous";
-    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, &wifi_));
+    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, &wifi_,
+                                     &clock_));
   }
 
   const base::DictionaryValue& HandleRequest(
@@ -124,7 +129,8 @@ class PrivetHandlerTest : public testing::Test {
   int GetResponseCount() const { return response_count_; }
 
   void SetNoWifiAndGcd() {
-    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, nullptr));
+    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, nullptr,
+                                     &clock_));
     EXPECT_CALL(cloud_, GetCloudId()).WillRepeatedly(Return(""));
     EXPECT_CALL(cloud_, GetConnectionState())
         .WillRepeatedly(ReturnRef(gcd_disabled_state_));
@@ -136,6 +142,7 @@ class PrivetHandlerTest : public testing::Test {
         .WillRepeatedly(DoAll(Invoke(set_error), Return(false)));
   }
 
+  test::MockClock clock_;
   testing::StrictMock<MockCloudDelegate> cloud_;
   testing::StrictMock<MockDeviceDelegate> device_;
   testing::StrictMock<MockSecurityDelegate> security_;
@@ -240,7 +247,8 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
       'id': '',
       'status': 'disabled'
     },
-    'uptime': 3600
+    'uptime': 3600,
+    'timeMs': '1410000000000'
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }
@@ -301,7 +309,8 @@ TEST_F(PrivetHandlerTest, Info) {
       'id': 'TestCloudId',
       'status': 'online'
     },
-    'uptime': 3600
+    'uptime': 3600,
+    'timeMs': '1410000000000'
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }

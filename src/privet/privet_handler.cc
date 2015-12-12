@@ -70,6 +70,7 @@ const char kInfoWifiSsidKey[] = "ssid";
 const char kInfoWifiHostedSsidKey[] = "hostedSsid";
 
 const char kInfoUptimeKey[] = "uptime";
+const char kInfoTimeMsKey[] = "timeMs";
 
 const char kPairingKey[] = "pairing";
 const char kPairingSessionIdKey[] = "sessionId";
@@ -340,11 +341,14 @@ std::vector<std::string> PrivetHandler::GetHttpsPaths() const {
 PrivetHandler::PrivetHandler(CloudDelegate* cloud,
                              DeviceDelegate* device,
                              SecurityDelegate* security,
-                             WifiDelegate* wifi)
-    : cloud_(cloud), device_(device), security_(security), wifi_(wifi) {
+                             WifiDelegate* wifi,
+                             base::Clock* clock)
+    : cloud_(cloud), device_(device), security_(security), wifi_(wifi),
+      clock_(clock ? clock : &default_clock_) {
   CHECK(cloud_);
   CHECK(device_);
   CHECK(security_);
+  CHECK(clock_);
   cloud_observer_.Add(cloud_);
 
   AddHandler("/privet/info", &PrivetHandler::HandleInfo, AuthScope::kNone);
@@ -466,7 +470,7 @@ void PrivetHandler::HandleRequest(const std::string& api,
     time += base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
     time +=
         base::TimeDelta::FromSeconds(kAccessTokenExpirationThresholdSeconds);
-    if (time < base::Time::Now()) {
+    if (time < clock_->Now()) {
       Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                          errors::kAuthorizationExpired, "Token expired: %s",
                          token.c_str());
@@ -544,6 +548,7 @@ void PrivetHandler::HandleInfo(const base::DictionaryValue&,
   output.Set(kGcdKey, CreateGcdSection(*cloud_).release());
 
   output.SetInteger(kInfoUptimeKey, device_->GetUptime().InSeconds());
+  output.SetString(kInfoTimeMsKey, std::to_string(clock_->Now().ToJavaTime()));
 
   callback.Run(http::kOk, output);
 }
