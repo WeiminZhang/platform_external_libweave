@@ -36,6 +36,8 @@ class AuthManager {
 
   base::Time Now() const;
 
+  bool IsValidAuthToken(const std::vector<uint8_t>& token) const;
+
  private:
   base::DefaultClock default_clock_;
   base::Clock* clock_{nullptr};

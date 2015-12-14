@@ -133,5 +133,16 @@ base::Time AuthManager::Now() const {
   return clock_->Now();
 }
 
+bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token) const {
+  std::vector<uint8_t> buffer(kMaxMacaroonSize);
+  UwMacaroon macaroon{};
+  if (!uw_macaroon_load_(token.data(), token.size(), buffer.data(),
+                         buffer.size(), &macaroon)) {
+    return false;
+  }
+
+  return uw_macaroon_verify_(&macaroon, secret_.data(), secret_.size());
+}
+
 }  // namespace privet
 }  // namespace weave

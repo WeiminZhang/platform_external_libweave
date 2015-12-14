@@ -134,5 +134,17 @@ TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentSecret) {
             Base64Encode(auth.GetRootClientAuthToken()));
 }
 
+TEST_F(AuthManagerTest, IsValidAuthToken) {
+  EXPECT_TRUE(auth_.IsValidAuthToken(auth_.GetRootClientAuthToken()));
+  // Multiple attempts with random secrets.
+  for (size_t i = 0; i < 1000; ++i) {
+    AuthManager auth{{}, {}, &clock_};
+
+    auto token = auth.GetRootClientAuthToken();
+    EXPECT_FALSE(auth_.IsValidAuthToken(token));
+    EXPECT_TRUE(auth.IsValidAuthToken(token));
+  }
+}
+
 }  // namespace privet
 }  // namespace weave
