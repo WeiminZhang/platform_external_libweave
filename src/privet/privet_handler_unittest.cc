@@ -643,6 +643,145 @@ TEST_F(PrivetHandlerSetupTest, Components) {
                  HandleRequest("/privet/v3/components", "{}"));
 }
 
+TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
+  const char kComponents[] = R"({
+    "comp1": {
+      "traits": ["a", "b"],
+      "state": {
+        "a" : {
+          "prop": 1
+        }
+      },
+      "components": {
+        "comp2": {
+          "traits": ["c"],
+          "components": {
+            "comp4": {
+              "traits": ["d"]
+            }
+          }
+        },
+        "comp3": {
+          "traits": ["e"]
+        }
+      }
+    }
+  })";
+  base::DictionaryValue components;
+  LoadTestJson(kComponents, &components);
+  EXPECT_CALL(cloud_, FindComponent(_, _)).WillRepeatedly(Return(nullptr));
+  EXPECT_CALL(cloud_, GetComponents()).WillRepeatedly(ReturnRef(components));
+  const char kExpected1[] = R"({
+    "components": {
+      "comp1": {
+        "state": {
+          "a" : {
+            "prop": 1
+          }
+        }
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected1, HandleRequest("/privet/v3/components",
+                                           "{'filter':['state']}"));
+
+  const char kExpected2[] = R"({
+    "components": {
+      "comp1": {
+        "traits": ["a", "b"]
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected2, HandleRequest("/privet/v3/components",
+                                           "{'filter':['traits']}"));
+
+  const char kExpected3[] = R"({
+    "components": {
+      "comp1": {
+        "components": {
+          "comp2": {
+            "components": {
+              "comp4": {}
+            }
+          },
+          "comp3": {}
+        }
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected3, HandleRequest("/privet/v3/components",
+                                           "{'filter':['components']}"));
+
+  const char kExpected4[] = R"({
+    "components": {
+      "comp1": {
+        "traits": ["a", "b"],
+        "state": {
+          "a" : {
+            "prop": 1
+          }
+        },
+        "components": {
+          "comp2": {
+            "traits": ["c"],
+            "components": {
+              "comp4": {
+                "traits": ["d"]
+              }
+            }
+          },
+          "comp3": {
+            "traits": ["e"]
+          }
+        }
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected4,
+                 HandleRequest("/privet/v3/components",
+                               "{'filter':['traits', 'components', 'state']}"));
+
+  const base::DictionaryValue* comp2 = nullptr;
+  ASSERT_TRUE(components.GetDictionary("comp1.components.comp2", &comp2));
+  EXPECT_CALL(cloud_, FindComponent("comp1.comp2", _))
+      .WillOnce(Return(comp2));
+
+  const char kExpected5[] = R"({
+    "components": {
+      "comp2": {
+        "traits": ["c"],
+        "components": {
+          "comp4": {
+            "traits": ["d"]
+          }
+        }
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected5, HandleRequest(
+      "/privet/v3/components",
+      "{'path':'comp1.comp2', 'filter':['traits', 'components']}"));
+
+  auto error_handler = [](ErrorPtr* error) -> const base::DictionaryValue* {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, "componentNotFound", "");
+    return nullptr;
+  };
+  EXPECT_CALL(cloud_, FindComponent("comp7", _))
+      .WillOnce(WithArgs<1>(Invoke(error_handler)));
+
+  EXPECT_PRED2(
+      IsEqualError,
+      CodeWithReason(500, "componentNotFound"),
+      HandleRequest(
+          "/privet/v3/components",
+          "{'path':'comp7', 'filter':['traits', 'components']}"));
+}
+
 TEST_F(PrivetHandlerSetupTest, CommandsExecute) {
   const char kInput[] = "{'name': 'test'}";
   base::DictionaryValue command;

@@ -154,6 +154,11 @@ class CloudDelegateImpl : public CloudDelegate {
     return component_manager_->GetComponents();
   }
 
+  const base::DictionaryValue* FindComponent(const std::string& path,
+                                             ErrorPtr* error) const override {
+    return component_manager_->FindComponent(path, error);
+  }
+
   const base::DictionaryValue& GetTraits() const override {
     return component_manager_->GetTraits();
   }
