@@ -33,15 +33,8 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
   config_->Load();
 
   if (http_server) {
-    auth_manager_.reset(
-        new privet::AuthManager(config_->GetSettings().secret,
-                                http_server->GetHttpsCertificateFingerprint()));
-
-    if (auth_manager_->GetSecret() != config_->GetSettings().secret) {
-      // There is no Config::OnChangedCallback registered.
-      Config::Transaction transaction(config_.get());
-      transaction.set_secret(auth_manager_->GetSecret());
-    }
+    auth_manager_.reset(new privet::AuthManager(
+        config_.get(), http_server->GetHttpsCertificateFingerprint()));
   }
 
   device_info_.reset(new DeviceRegistrationInfo(

@@ -16,10 +16,17 @@
 #include "src/privet/privet_types.h"
 
 namespace weave {
+
+class Config;
+
 namespace privet {
 
 class AuthManager {
  public:
+  AuthManager(Config* config,
+              const std::vector<uint8_t>& certificate_fingerprint);
+
+  // Constructor for tests.
   AuthManager(const std::vector<uint8_t>& secret,
               const std::vector<uint8_t>& certificate_fingerprint,
               base::Clock* clock = nullptr);
@@ -43,8 +50,11 @@ class AuthManager {
   bool IsValidAuthToken(const std::vector<uint8_t>& token) const;
 
  private:
+  void SetSecret(const std::vector<uint8_t>& secret);
+
+  Config* config_{nullptr};
   base::DefaultClock default_clock_;
-  base::Clock* clock_{nullptr};
+  base::Clock* clock_{&default_clock_};
 
   std::vector<uint8_t> secret_;
   std::vector<uint8_t> certificate_fingerprint_;

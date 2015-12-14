@@ -7,6 +7,7 @@
 #include <base/rand_util.h>
 #include <base/strings/string_number_conversions.h>
 
+#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/openssl_utils.h"
 #include "src/string_utils.h"
@@ -73,17 +74,36 @@ class Caveat {
   DISALLOW_COPY_AND_ASSIGN(Caveat);
 };
 
+std::vector<uint8_t> CreateSecret() {
+  std::vector<uint8_t> secret(kSha256OutputSize);
+  base::RandBytes(secret.data(), secret.size());
+  return secret;
+}
+
 }  // namespace
+
+AuthManager::AuthManager(Config* config,
+                         const std::vector<uint8_t>& certificate_fingerprint)
+    : config_{config}, certificate_fingerprint_{certificate_fingerprint} {
+  SetSecret(config_ ? config_->GetSettings().secret : std::vector<uint8_t>{});
+}
 
 AuthManager::AuthManager(const std::vector<uint8_t>& secret,
                          const std::vector<uint8_t>& certificate_fingerprint,
                          base::Clock* clock)
-    : clock_{clock ? clock : &default_clock_},
-      secret_{secret},
-      certificate_fingerprint_{certificate_fingerprint} {
-  if (secret_.size() != kSha256OutputSize) {
-    secret_.resize(kSha256OutputSize);
-    base::RandBytes(secret_.data(), secret_.size());
+    : AuthManager(nullptr, certificate_fingerprint) {
+  SetSecret(secret);
+  if (clock)
+    clock_ = clock;
+}
+
+void AuthManager::SetSecret(const std::vector<uint8_t>& secret) {
+  secret_ = secret.size() == kSha256OutputSize ? secret : CreateSecret();
+  if (config_ && config_->GetSettings().secret != secret_) {
+    Config::Transaction change{config_};
+    change.set_secret(secret);
+    change.set_root_client_token_owner(RootClientTokenOwner::kNone);
+    change.Commit();
   }
 }
 
@@ -112,7 +132,7 @@ UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
 
 std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken() {
   pending_claims_.push_back(
-      std::unique_ptr<AuthManager>{new AuthManager{{}, {}, clock_}});
+      std::unique_ptr<AuthManager>{new AuthManager{nullptr, {}}});
   if (pending_claims_.size() > kMaxPendingClaims)
     pending_claims_.pop_front();
   return pending_claims_.back()->GetRootClientAuthToken();
@@ -144,6 +164,7 @@ std::vector<uint8_t> AuthManager::GetRootClientAuthToken() const {
       scope.GetCaveat(), issued.GetCaveat(),
   };
 
+  CHECK_EQ(kSha256OutputSize, secret_.size());
   UwMacaroon macaroon{};
   CHECK(uw_macaroon_new_from_root_key_(
       &macaroon, secret_.data(), secret_.size(), caveats, arraysize(caveats)));
@@ -167,6 +188,7 @@ bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token) const {
     return false;
   }
 
+  CHECK_EQ(kSha256OutputSize, secret_.size());
   return uw_macaroon_verify_(&macaroon, secret_.data(), secret_.size());
 }
 
