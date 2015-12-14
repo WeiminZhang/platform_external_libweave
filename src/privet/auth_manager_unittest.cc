@@ -108,6 +108,7 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 
     auto token = auth.CreateAccessToken(UserInfo{AuthScope::kUser, 5});
     base::Time time2;
+    EXPECT_EQ(AuthScope::kNone, auth_.ParseAccessToken(token, nullptr).scope());
     EXPECT_EQ(AuthScope::kUser, auth.ParseAccessToken(token, &time2).scope());
     EXPECT_EQ(5u, auth.ParseAccessToken(token, &time2).user_id());
     // Token timestamp resolution is one second.

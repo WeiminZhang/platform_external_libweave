@@ -51,7 +51,8 @@ UserInfo SplitTokenData(const std::string& token, base::Time* time) {
   int64_t timestamp{0};
   if (!base::StringToInt64(parts[2], &timestamp))
     return kNone;
-  *time = base::Time::FromTimeT(timestamp);
+  if (time)
+    *time = base::Time::FromTimeT(timestamp);
   return UserInfo{static_cast<AuthScope>(scope), id};
 }
 
