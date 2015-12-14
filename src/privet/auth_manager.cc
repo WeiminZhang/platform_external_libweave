@@ -23,6 +23,7 @@ namespace {
 const char kTokenDelimeter[] = ":";
 const size_t kCaveatBuffetSize = 32;
 const size_t kMaxMacaroonSize = 1024;
+const size_t kMaxPendingClaims = 10;
 
 // Returns "scope:id:time".
 std::string CreateTokenData(const UserInfo& user_info, const base::Time& time) {
@@ -107,6 +108,32 @@ UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   if (hash != HmacSha256(secret_, data))
     return UserInfo{};
   return SplitTokenData(std::string(data.begin(), data.end()), time);
+}
+
+std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken() {
+  pending_claims_.push_back(
+      std::unique_ptr<AuthManager>{new AuthManager{{}, {}}});
+  if (pending_claims_.size() > kMaxPendingClaims)
+    pending_claims_.pop_front();
+  return pending_claims_.back()->GetRootClientAuthToken();
+}
+
+bool AuthManager::ConfirmRootClientAuthToken(
+    const std::vector<uint8_t>& token) {
+  // Cover case when caller sent confirm twice.
+  if (pending_claims_.empty() && IsValidAuthToken(token))
+    return true;
+
+  auto claim = std::find_if(pending_claims_.begin(), pending_claims_.end(),
+                            [&token](const std::unique_ptr<AuthManager>& auth) {
+                              return auth->IsValidAuthToken(token);
+                            });
+  if (claim == pending_claims_.end())
+    return false;
+
+  secret_ = (*claim)->GetSecret();
+  pending_claims_.clear();
+  return true;
 }
 
 std::vector<uint8_t> AuthManager::GetRootClientAuthToken() const {

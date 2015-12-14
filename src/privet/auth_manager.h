@@ -5,6 +5,7 @@
 #ifndef LIBWEAVE_SRC_PRIVET_AUTH_MANAGER_H_
 #define LIBWEAVE_SRC_PRIVET_AUTH_MANAGER_H_
 
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -32,11 +33,15 @@ class AuthManager {
   const std::vector<uint8_t>& GetCertificateFingerprint() const {
     return certificate_fingerprint_;
   }
-  std::vector<uint8_t> GetRootClientAuthToken() const;
 
   base::Time Now() const;
 
+  std::vector<uint8_t> GetRootClientAuthToken() const;
+
   bool IsValidAuthToken(const std::vector<uint8_t>& token) const;
+
+  std::vector<uint8_t> ClaimRootClientAuthToken();
+  bool ConfirmRootClientAuthToken(const std::vector<uint8_t>& token);
 
  private:
   base::DefaultClock default_clock_;
@@ -44,6 +49,8 @@ class AuthManager {
 
   std::vector<uint8_t> secret_;
   std::vector<uint8_t> certificate_fingerprint_;
+
+  std::deque<std::unique_ptr<AuthManager>> pending_claims_;
 
   DISALLOW_COPY_AND_ASSIGN(AuthManager);
 };
