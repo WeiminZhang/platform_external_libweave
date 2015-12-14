@@ -36,12 +36,11 @@ class AuthManager {
 
   base::Time Now() const;
 
-  std::vector<uint8_t> GetRootClientAuthToken() const;
-
-  bool IsValidAuthToken(const std::vector<uint8_t>& token) const;
-
   std::vector<uint8_t> ClaimRootClientAuthToken();
-  bool ConfirmRootClientAuthToken(const std::vector<uint8_t>& token);
+  bool ConfirmAuthToken(const std::vector<uint8_t>& token);
+
+  std::vector<uint8_t> GetRootClientAuthToken() const;
+  bool IsValidAuthToken(const std::vector<uint8_t>& token) const;
 
  private:
   base::DefaultClock default_clock_;

@@ -685,6 +685,7 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   output.SetString(kAuthTokenTypeKey, kAuthorizationHeaderPrefix);
   output.SetInteger(kAuthExpiresInKey, kAccessTokenExpirationSeconds);
   output.SetString(kAuthScopeKey, EnumToString(requested_auth_scope));
+
   callback.Run(http::kOk, output);
 }
 

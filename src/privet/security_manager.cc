@@ -135,6 +135,17 @@ std::set<CryptoType> SecurityManager::GetCryptoTypes() const {
   return result;
 }
 
+std::string SecurityManager::ClaimRootClientAuthToken() {
+  return Base64Encode(auth_manager_->ClaimRootClientAuthToken());
+}
+
+bool SecurityManager::ConfirmAuthToken(const std::string& token) {
+  std::vector<uint8_t> token_decoded;
+  if (!Base64Decode(token, &token_decoded))
+    return false;
+  return auth_manager_->ConfirmAuthToken(token_decoded);
+}
+
 bool SecurityManager::IsValidPairingCode(const std::string& auth_code) const {
   if (is_security_disabled_)
     return true;

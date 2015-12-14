@@ -150,28 +150,28 @@ TEST_F(AuthManagerTest, ClaimRootClientAuthToken) {
   auto token = auth_.ClaimRootClientAuthToken();
   EXPECT_FALSE(auth_.IsValidAuthToken(token));
 
-  EXPECT_TRUE(auth_.ConfirmRootClientAuthToken(token));
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
   EXPECT_TRUE(auth_.IsValidAuthToken(token));
 }
 
 TEST_F(AuthManagerTest, ClaimRootClientAuthTokenDoubleConfirm) {
   auto token = auth_.ClaimRootClientAuthToken();
-  EXPECT_TRUE(auth_.ConfirmRootClientAuthToken(token));
-  EXPECT_TRUE(auth_.ConfirmRootClientAuthToken(token));
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
 }
 
 TEST_F(AuthManagerTest, DoubleClaimRootClientAuthToken) {
   auto token1 = auth_.ClaimRootClientAuthToken();
   auto token2 = auth_.ClaimRootClientAuthToken();
-  EXPECT_TRUE(auth_.ConfirmRootClientAuthToken(token1));
-  EXPECT_FALSE(auth_.ConfirmRootClientAuthToken(token2));
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token1));
+  EXPECT_FALSE(auth_.ConfirmAuthToken(token2));
 }
 
 TEST_F(AuthManagerTest, ClaimRootClientAuthTokenOverflow) {
   auto token = auth_.ClaimRootClientAuthToken();
   for (size_t i = 0; i < 100; ++i)
     auth_.ClaimRootClientAuthToken();
-  EXPECT_FALSE(auth_.ConfirmRootClientAuthToken(token));
+  EXPECT_FALSE(auth_.ConfirmAuthToken(token));
 }
 
 }  // namespace privet
