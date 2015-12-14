@@ -936,36 +936,33 @@ void DeviceRegistrationInfo::SendAuthInfo() {
   auth_info_update_inprogress_ = true;
 
   std::string id = GetSettings().device_id;
-  std::string token = Base64Encode(auth_manager_->ClaimRootClientAuthToken());
+  std::vector<uint8_t> token = auth_manager_->ClaimRootClientAuthToken();
+  std::string token_base64 = Base64Encode(token);
   std::string fingerprint =
       Base64Encode(auth_manager_->GetCertificateFingerprint());
 
   std::unique_ptr<base::DictionaryValue> auth =
-      BuildDeviceLocalAuth(id, token, fingerprint);
+      BuildDeviceLocalAuth(id, token_base64, fingerprint);
 
   // TODO(vitalybuka): Remove args from URL when server is ready.
   std::string url =
       GetDeviceURL("upsertLocalAuthInfo", {{"localid", id},
-                                           {"clienttoken", token},
+                                           {"clienttoken", token_base64},
                                            {"certfingerprint", fingerprint}});
-  DoCloudRequest(
-      HttpClient::Method::kPost, url, auth.get(),
-      base::Bind(&DeviceRegistrationInfo::OnSendAuthInfoDone, AsWeakPtr()));
+  DoCloudRequest(HttpClient::Method::kPost, url, auth.get(),
+                 base::Bind(&DeviceRegistrationInfo::OnSendAuthInfoDone,
+                            AsWeakPtr(), token));
 }
 
 void DeviceRegistrationInfo::OnSendAuthInfoDone(
+    const std::vector<uint8_t>& token,
     const base::DictionaryValue& body,
     ErrorPtr error) {
   CHECK(auth_info_update_inprogress_);
   auth_info_update_inprogress_ = false;
 
-  if (!error) {
-    // TODO(vitalybuka): Enable this when we start uploading real data.
-    // Config::Transaction change{config_.get()};
-    // change.set_local_auth_info_changed(false);
-    // change.Commit();
+  if (!error && auth_manager_->ConfirmAuthToken(token))
     return;
-  }
 
   task_runner_->PostDelayedTask(
       FROM_HERE, base::Bind(&DeviceRegistrationInfo::SendAuthInfo, AsWeakPtr()),
