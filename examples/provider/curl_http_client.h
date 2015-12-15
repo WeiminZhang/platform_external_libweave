@@ -37,7 +37,8 @@ class CurlHttpClient : public provider::HttpClient {
 
   std::vector<
       std::pair<std::future<std::pair<std::unique_ptr<Response>, ErrorPtr>>,
-                SendRequestCallback>> pending_tasks_;
+                SendRequestCallback>>
+      pending_tasks_;
   provider::TaskRunner* task_runner_{nullptr};
 
   base::WeakPtrFactory<CurlHttpClient> weak_ptr_factory_{this};

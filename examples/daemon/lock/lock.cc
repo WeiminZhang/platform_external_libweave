@@ -68,8 +68,8 @@ class LockHandler {
 
     device->AddTraitDefinitionsFromJson(kTraits);
     CHECK(device->AddComponent(kComponent, {"lock"}, nullptr));
-    CHECK(device->SetStatePropertiesFromJson(kComponent, kDefaultState,
-                                             nullptr));
+    CHECK(
+        device->SetStatePropertiesFromJson(kComponent, kDefaultState, nullptr));
     UpdateLockState();
 
     device->AddCommandHandler(kComponent, "lock.setConfig",

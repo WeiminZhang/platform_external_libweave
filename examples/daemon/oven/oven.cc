@@ -136,7 +136,7 @@ class OvenHandler {
                                          weak_ptr_factory_.GetWeakPtr()));
   }
 
-private:
+ private:
   void OnSetTempCommand(const std::weak_ptr<weave::Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
@@ -158,8 +158,8 @@ private:
       LOG(INFO) << cmd->GetName() << " updated oven, matching temp";
 
       if (target_temperature_ != current_temperature_ && !is_match_ticking_) {
-        double tickIncrement = ((target_temperature_ - current_temperature_) /
-            kWarmUpTime);
+        double tickIncrement =
+            ((target_temperature_ - current_temperature_) / kWarmUpTime);
         DoTick(tickIncrement);
       }
       return;

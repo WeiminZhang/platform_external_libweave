@@ -14,14 +14,15 @@ namespace weave {
 class MockComponentManager : public ComponentManager {
  public:
   ~MockComponentManager() override {}
-  MOCK_METHOD2(LoadTraits, bool(const base::DictionaryValue& dict,
-                                ErrorPtr* error));
+  MOCK_METHOD2(LoadTraits,
+               bool(const base::DictionaryValue& dict, ErrorPtr* error));
   MOCK_METHOD2(LoadTraits, bool(const std::string& json, ErrorPtr* error));
   MOCK_METHOD1(AddTraitDefChangedCallback, void(const base::Closure& callback));
-  MOCK_METHOD4(AddComponent, bool(const std::string& path,
-                                  const std::string& name,
-                                  const std::vector<std::string>& traits,
-                                  ErrorPtr* error));
+  MOCK_METHOD4(AddComponent,
+               bool(const std::string& path,
+                    const std::string& name,
+                    const std::vector<std::string>& traits,
+                    ErrorPtr* error));
   MOCK_METHOD4(AddComponentArrayItem,
                bool(const std::string& path,
                     const std::string& name,
@@ -53,14 +54,16 @@ class MockComponentManager : public ComponentManager {
   MOCK_CONST_METHOD1(
       FindCommandDefinition,
       const base::DictionaryValue*(const std::string& command_name));
-  MOCK_CONST_METHOD3(GetMinimalRole, bool(const std::string& command_name,
-                                          UserRole* minimal_role,
-                                          ErrorPtr* error));
+  MOCK_CONST_METHOD3(GetMinimalRole,
+                     bool(const std::string& command_name,
+                          UserRole* minimal_role,
+                          ErrorPtr* error));
   MOCK_CONST_METHOD0(GetTraits, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
-  MOCK_METHOD3(SetStateProperties, bool(const std::string& component_path,
-                                        const base::DictionaryValue& dict,
-                                        ErrorPtr* error));
+  MOCK_METHOD3(SetStateProperties,
+               bool(const std::string& component_path,
+                    const base::DictionaryValue& dict,
+                    ErrorPtr* error));
   MOCK_METHOD3(SetStatePropertiesFromJson,
                bool(const std::string& component_path,
                     const std::string& json,
@@ -69,17 +72,18 @@ class MockComponentManager : public ComponentManager {
                      const base::Value*(const std::string& component_path,
                                         const std::string& name,
                                         ErrorPtr* error));
-  MOCK_METHOD4(SetStateProperty, bool(const std::string& component_path,
-                                      const std::string& name,
-                                      const base::Value& value,
-                                      ErrorPtr* error));
+  MOCK_METHOD4(SetStateProperty,
+               bool(const std::string& component_path,
+                    const std::string& name,
+                    const base::Value& value,
+                    ErrorPtr* error));
   MOCK_METHOD1(AddStateChangedCallback, void(const base::Closure& callback));
   MOCK_METHOD0(MockGetAndClearRecordedStateChanges, StateSnapshot&());
   MOCK_METHOD1(NotifyStateUpdatedOnServer, void(UpdateID id));
   MOCK_CONST_METHOD0(GetLastStateChangeId, UpdateID());
   MOCK_METHOD1(MockAddServerStateUpdatedCallback,
                base::CallbackList<void(UpdateID)>::Subscription*(
-                  const base::Callback<void(UpdateID)>& callback));
+                   const base::Callback<void(UpdateID)>& callback));
   MOCK_CONST_METHOD1(FindComponentWithTrait,
                      std::string(const std::string& trait));
   MOCK_METHOD2(AddLegacyCommandDefinitions,
@@ -100,8 +104,8 @@ class MockComponentManager : public ComponentManager {
       UserRole role,
       std::string* id,
       ErrorPtr* error) {
-    return std::unique_ptr<CommandInstance>{MockParseCommandInstance(
-        command, command_origin, role, id, error)};
+    return std::unique_ptr<CommandInstance>{
+        MockParseCommandInstance(command, command_origin, role, id, error)};
   }
   StateSnapshot GetAndClearRecordedStateChanges() override {
     return std::move(MockGetAndClearRecordedStateChanges());

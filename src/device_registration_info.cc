@@ -277,12 +277,11 @@ DeviceRegistrationInfo::DeviceRegistrationInfo(
   gcd_state_ =
       revoked ? GcdState::kInvalidCredentials : GcdState::kUnconfigured;
 
-  component_manager_->AddTraitDefChangedCallback(
-      base::Bind(&DeviceRegistrationInfo::OnTraitDefsChanged,
+  component_manager_->AddTraitDefChangedCallback(base::Bind(
+      &DeviceRegistrationInfo::OnTraitDefsChanged, weak_factory_.GetWeakPtr()));
+  component_manager_->AddComponentTreeChangedCallback(
+      base::Bind(&DeviceRegistrationInfo::OnComponentTreeChanged,
                  weak_factory_.GetWeakPtr()));
-  component_manager_->AddComponentTreeChangedCallback(base::Bind(
-      &DeviceRegistrationInfo::OnComponentTreeChanged,
-      weak_factory_.GetWeakPtr()));
   component_manager_->AddStateChangedCallback(base::Bind(
       &DeviceRegistrationInfo::OnStateChanged, weak_factory_.GetWeakPtr()));
 }
@@ -611,12 +610,11 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
   // Now get access_token and refresh_token
   RequestSender sender2{HttpClient::Method::kPost, GetOAuthURL("token"),
                         http_client_};
-  sender2.SetFormData(
-      {{"code", auth_code},
-       {"client_id", GetSettings().client_id},
-       {"client_secret", GetSettings().client_secret},
-       {"redirect_uri", "oob"},
-       {"grant_type", "authorization_code"}});
+  sender2.SetFormData({{"code", auth_code},
+                       {"client_id", GetSettings().client_id},
+                       {"client_secret", GetSettings().client_secret},
+                       {"redirect_uri", "oob"},
+                       {"grant_type", "authorization_code"}});
   sender2.Send(base::Bind(&DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent,
                           weak_factory_.GetWeakPtr(), cloud_id, robot_account,
                           callback));
@@ -715,9 +713,8 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
   int status_code = response->GetStatusCode();
   if (status_code == http::kDenied) {
     cloud_backoff_entry_->InformOfRequest(true);
-    RefreshAccessToken(
-        base::Bind(&DeviceRegistrationInfo::OnAccessTokenRefreshed, AsWeakPtr(),
-                   data));
+    RefreshAccessToken(base::Bind(
+        &DeviceRegistrationInfo::OnAccessTokenRefreshed, AsWeakPtr(), data));
     return;
   }
 
@@ -813,7 +810,8 @@ void DeviceRegistrationInfo::OnConnectedToCloud(ErrorPtr error) {
   LOG(INFO) << "Device connected to cloud server";
   connected_to_cloud_ = true;
   FetchCommands(base::Bind(&DeviceRegistrationInfo::ProcessInitialCommandList,
-                           AsWeakPtr()), fetch_reason::kDeviceStart);
+                           AsWeakPtr()),
+                fetch_reason::kDeviceStart);
   // In case there are any pending state updates since we sent off the initial
   // UpdateDeviceResource() request, update the server with any state changes.
   PublishStateUpdates();
@@ -1065,8 +1063,8 @@ void DeviceRegistrationInfo::FetchCommands(
   fetch_commands_request_queued_ = false;
   DoCloudRequest(
       HttpClient::Method::kGet,
-      GetServiceURL("commands/queue", {{"deviceId", GetSettings().cloud_id},
-                                       {"reason", reason}}),
+      GetServiceURL("commands/queue",
+                    {{"deviceId", GetSettings().cloud_id}, {"reason", reason}}),
       nullptr, base::Bind(&DeviceRegistrationInfo::OnFetchCommandsDone,
                           AsWeakPtr(), callback));
 }
@@ -1155,9 +1153,9 @@ void DeviceRegistrationInfo::PublishCommand(
               << "' arrived, ID: " << command_instance->GetID();
     std::unique_ptr<BackoffEntry> backoff_entry{
         new BackoffEntry{cloud_backoff_policy_.get()}};
-    std::unique_ptr<CloudCommandProxy> cloud_proxy{new CloudCommandProxy{
-        command_instance.get(), this, component_manager_,
-        std::move(backoff_entry), task_runner_}};
+    std::unique_ptr<CloudCommandProxy> cloud_proxy{
+        new CloudCommandProxy{command_instance.get(), this, component_manager_,
+                              std::move(backoff_entry), task_runner_}};
     // CloudCommandProxy::CloudCommandProxy() subscribe itself to Command
     // notifications. When Command is being destroyed it sends
     // ::OnCommandDestroyed() and CloudCommandProxy deletes itself.
@@ -1309,8 +1307,8 @@ void DeviceRegistrationInfo::OnCommandCreated(
   // channel (XMPP) is active, we are doing a backup poll, so mark the request
   // appropriately.
   bool just_in_case =
-    (channel_name == kPullChannelName) &&
-    (current_notification_channel_ == primary_notification_channel_.get());
+      (channel_name == kPullChannelName) &&
+      (current_notification_channel_ == primary_notification_channel_.get());
 
   std::string reason =
       just_in_case ? fetch_reason::kJustInCase : fetch_reason::kNewCommand;

@@ -17,8 +17,10 @@ namespace examples {
 
 const char kSettingsDir[] = "/var/lib/weave/";
 
-FileConfigStore::FileConfigStore(bool disable_security, const std::string& model_id)
-    : disable_security_{disable_security}, model_id_{model_id},
+FileConfigStore::FileConfigStore(bool disable_security,
+                                 const std::string& model_id)
+    : disable_security_{disable_security},
+      model_id_{model_id},
       settings_path_{"/var/lib/weave/weave_settings_" + model_id + ".json"} {}
 
 bool FileConfigStore::LoadDefaults(Settings* settings) {

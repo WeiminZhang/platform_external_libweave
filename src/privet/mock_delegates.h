@@ -47,9 +47,10 @@ class MockDeviceDelegate : public DeviceDelegate {
   MOCK_CONST_METHOD0(GetHttpEnpoint, IntPair());
   MOCK_CONST_METHOD0(GetHttpsEnpoint, IntPair());
   MOCK_CONST_METHOD0(GetHttpRequestTimeout, base::TimeDelta());
-  MOCK_METHOD3(PostDelayedTask, void(const tracked_objects::Location&,
-                                     const base::Closure&,
-                                     base::TimeDelta));
+  MOCK_METHOD3(PostDelayedTask,
+               void(const tracked_objects::Location&,
+                    const base::Closure&,
+                    base::TimeDelta));
 
   MockDeviceDelegate() {
     EXPECT_CALL(*this, GetHttpEnpoint())
@@ -194,8 +195,8 @@ class MockCloudDelegate : public CloudDelegate {
     EXPECT_CALL(*this, GetCloudId()).WillRepeatedly(Return("TestCloudId"));
     test_dict_.Set("test", new base::DictionaryValue);
     EXPECT_CALL(*this, GetLegacyState()).WillRepeatedly(ReturnRef(test_dict_));
-    EXPECT_CALL(*this,
-                GetLegacyCommandDef()).WillRepeatedly(ReturnRef(test_dict_));
+    EXPECT_CALL(*this, GetLegacyCommandDef())
+        .WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, GetTraits()).WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, GetComponents()).WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, FindComponent(_, _)).Times(0);

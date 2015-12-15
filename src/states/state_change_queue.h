@@ -32,9 +32,8 @@ class StateChangeQueue {
  public:
   explicit StateChangeQueue(size_t max_queue_size);
 
-  bool NotifyPropertiesUpdated(
-      base::Time timestamp,
-      const base::DictionaryValue& changed_properties);
+  bool NotifyPropertiesUpdated(base::Time timestamp,
+                               const base::DictionaryValue& changed_properties);
   std::vector<StateChange> GetAndClearRecordedStateChanges();
 
  private:

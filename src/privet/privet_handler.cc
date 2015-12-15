@@ -392,7 +392,10 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
                              SecurityDelegate* security,
                              WifiDelegate* wifi,
                              base::Clock* clock)
-    : cloud_(cloud), device_(device), security_(security), wifi_(wifi),
+    : cloud_(cloud),
+      device_(device),
+      security_(security),
+      wifi_(wifi),
       clock_(clock ? clock : &default_clock_) {
   CHECK(cloud_);
   CHECK(device_);
@@ -1029,8 +1032,7 @@ void PrivetHandler::ReplyToUpdateRequest(
   output.SetString(kStateFingerprintKey, std::to_string(state_fingerprint_));
   output.SetString(kCommandsFingerprintKey,
                    std::to_string(traits_fingerprint_));
-  output.SetString(kTraitsFingerprintKey,
-                   std::to_string(traits_fingerprint_));
+  output.SetString(kTraitsFingerprintKey, std::to_string(traits_fingerprint_));
   output.SetString(kComponentsFingerprintKey,
                    std::to_string(components_fingerprint_));
   callback.Run(http::kOk, output);

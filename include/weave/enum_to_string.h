@@ -37,7 +37,7 @@ class EnumToStringMap final {
 
  private:
   template <size_t size>
-  explicit EnumToStringMap(const Map(&map)[size])
+  explicit EnumToStringMap(const Map (&map)[size])
       : begin_(map), end_(map + size) {}
 
   const Map* begin_;

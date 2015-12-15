@@ -25,8 +25,9 @@ class MockNotificationDelegate : public NotificationDelegate {
   MOCK_METHOD1(OnConnected, void(const std::string&));
   MOCK_METHOD0(OnDisconnected, void());
   MOCK_METHOD0(OnPermanentFailure, void());
-  MOCK_METHOD2(OnCommandCreated, void(const base::DictionaryValue& command,
-                                      const std::string& channel_name));
+  MOCK_METHOD2(OnCommandCreated,
+               void(const base::DictionaryValue& command,
+                    const std::string& channel_name));
   MOCK_METHOD1(OnDeviceDeleted, void(const std::string&));
 };
 

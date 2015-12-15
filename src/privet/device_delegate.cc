@@ -20,8 +20,10 @@ class DeviceDelegateImpl : public DeviceDelegate {
                      uint16_t http_port,
                      uint16_t https_port,
                      base::TimeDelta http_request_timeout)
-      : task_runner_{task_runner}, http_request_timeout_{http_request_timeout},
-        http_port_{http_port}, https_port_{https_port} {}
+      : task_runner_{task_runner},
+        http_request_timeout_{http_request_timeout},
+        http_port_{http_port},
+        https_port_{https_port} {}
   ~DeviceDelegateImpl() override = default;
 
   std::pair<uint16_t, uint16_t> GetHttpEnpoint() const override {
@@ -59,9 +61,8 @@ std::unique_ptr<DeviceDelegate> DeviceDelegate::CreateDefault(
     uint16_t http_port,
     uint16_t https_port,
     base::TimeDelta http_request_timeout) {
-  return std::unique_ptr<DeviceDelegate>(
-      new DeviceDelegateImpl(task_runner, http_port, https_port,
-                             http_request_timeout));
+  return std::unique_ptr<DeviceDelegate>(new DeviceDelegateImpl(
+      task_runner, http_port, https_port, http_request_timeout));
 }
 
 }  // namespace privet

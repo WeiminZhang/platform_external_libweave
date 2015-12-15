@@ -159,8 +159,8 @@ class LightHandler {
     device->AddTraitDefinitionsFromJson(kTraits);
     CHECK(device->AddComponent(kComponent, {"onOff", "brightness", "colorXY"},
                                nullptr));
-    CHECK(device->SetStatePropertiesFromJson(kComponent, kDefaultState,
-                                             nullptr));
+    CHECK(
+        device->SetStatePropertiesFromJson(kComponent, kDefaultState, nullptr));
     UpdateLightState();
 
     device->AddCommandHandler(kComponent, "onOff.setConfig",

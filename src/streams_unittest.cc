@@ -5,6 +5,7 @@
 #include "src/streams.h"
 
 #include <functional>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>

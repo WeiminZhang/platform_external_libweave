@@ -188,20 +188,20 @@ class WeaveTest : public ::testing::Test {
                      const UrlMatcher& url_matcher,
                      const std::string& json_response) {
     EXPECT_CALL(http_client_, SendRequest(method, url_matcher, _, _, _))
-        .WillOnce(WithArgs<4>(Invoke([json_response](
-            const HttpClient::SendRequestCallback& callback) {
-          std::unique_ptr<provider::test::MockHttpClientResponse> response{
-              new StrictMock<provider::test::MockHttpClientResponse>};
-          EXPECT_CALL(*response, GetStatusCode())
-              .Times(AtLeast(1))
-              .WillRepeatedly(Return(200));
-          EXPECT_CALL(*response, GetContentType())
-              .Times(AtLeast(1))
-              .WillRepeatedly(Return("application/json; charset=utf-8"));
-          EXPECT_CALL(*response, GetData())
-              .WillRepeatedly(Return(json_response));
-          callback.Run(std::move(response), nullptr);
-        })));
+        .WillOnce(WithArgs<4>(Invoke(
+            [json_response](const HttpClient::SendRequestCallback& callback) {
+              std::unique_ptr<provider::test::MockHttpClientResponse> response{
+                  new StrictMock<provider::test::MockHttpClientResponse>};
+              EXPECT_CALL(*response, GetStatusCode())
+                  .Times(AtLeast(1))
+                  .WillRepeatedly(Return(200));
+              EXPECT_CALL(*response, GetContentType())
+                  .Times(AtLeast(1))
+                  .WillRepeatedly(Return("application/json; charset=utf-8"));
+              EXPECT_CALL(*response, GetData())
+                  .WillRepeatedly(Return(json_response));
+              callback.Run(std::move(response), nullptr);
+            })));
   }
 
   void InitConfigStore() {
@@ -281,23 +281,39 @@ class WeaveTest : public ::testing::Test {
                                     &http_server_, &wifi_, &bluetooth_);
 
     EXPECT_EQ((std::set<std::string>{
-                  "/privet/info", "/privet/v3/pairing/cancel",
-                  "/privet/v3/pairing/confirm", "/privet/v3/pairing/start"}),
+                  // clang-format off
+                  "/privet/info",
+                  "/privet/v3/pairing/cancel",
+                  "/privet/v3/pairing/confirm",
+                  "/privet/v3/pairing/start",
+                  // clang-format on
+              }),
               GetKeys(http_handlers_));
     EXPECT_EQ((std::set<std::string>{
-                  "/privet/info", "/privet/v3/auth",
-                  "/privet/v3/checkForUpdates", "/privet/v3/commandDefs",
-                  "/privet/v3/commands/cancel", "/privet/v3/commands/execute",
-                  "/privet/v3/commands/list", "/privet/v3/commands/status",
-                  "/privet/v3/components", "/privet/v3/pairing/cancel",
-                  "/privet/v3/pairing/confirm", "/privet/v3/pairing/start",
-                  "/privet/v3/setup/start", "/privet/v3/setup/status",
-                  "/privet/v3/state", "/privet/v3/traits"}),
+                  // clang-format off
+                  "/privet/info",
+                  "/privet/v3/auth",
+                  "/privet/v3/checkForUpdates",
+                  "/privet/v3/commandDefs",
+                  "/privet/v3/commands/cancel",
+                  "/privet/v3/commands/execute",
+                  "/privet/v3/commands/list",
+                  "/privet/v3/commands/status",
+                  "/privet/v3/components",
+                  "/privet/v3/pairing/cancel",
+                  "/privet/v3/pairing/confirm",
+                  "/privet/v3/pairing/start",
+                  "/privet/v3/setup/start",
+                  "/privet/v3/setup/status",
+                  "/privet/v3/state",
+                  "/privet/v3/traits",
+                  // clang-format on
+              }),
               GetKeys(https_handlers_));
 
     device_->AddTraitDefinitionsFromJson(kTraitDefs);
-    EXPECT_TRUE(device_->AddComponent("myComponent", {"trait1", "trait2"},
-                                      nullptr));
+    EXPECT_TRUE(
+        device_->AddComponent("myComponent", {"trait1", "trait2"}, nullptr));
     EXPECT_TRUE(device_->SetStatePropertiesFromJson(
         "myComponent", R"({"trait2": {"battery_level":44}})", nullptr));
 
@@ -358,8 +374,8 @@ TEST_F(WeaveTest, StartNoWifi) {
                                   &network_, &dns_sd_, &http_server_, nullptr,
                                   &bluetooth_);
   device_->AddTraitDefinitionsFromJson(kTraitDefs);
-  EXPECT_TRUE(device_->AddComponent("myComponent", {"trait1", "trait2"},
-                                    nullptr));
+  EXPECT_TRUE(
+      device_->AddComponent("myComponent", {"trait1", "trait2"}, nullptr));
 
   task_runner_.Run();
 }

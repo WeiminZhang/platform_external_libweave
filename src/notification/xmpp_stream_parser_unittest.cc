@@ -4,9 +4,9 @@
 
 #include "src/notification/xmpp_stream_parser.h"
 
+#include <gtest/gtest.h>
 #include <memory>
 #include <vector>
-#include <gtest/gtest.h>
 
 #include "src/notification/xml_node.h"
 

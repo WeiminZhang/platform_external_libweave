@@ -71,8 +71,8 @@ bool IsEqualError(const CodeWithReason& expected,
 }
 
 // Some error sections in response JSON objects contained debugging information
-// which is of no interest for this test. So, remove the debug info from the JSON
-// before running validation logic on it.
+// which is of no interest for this test. So, remove the debug info from the
+// JSON before running validation logic on it.
 std::unique_ptr<base::DictionaryValue> StripDebugErrorDetails(
     const std::string& path_to_error_object,
     const base::DictionaryValue& value) {
@@ -97,8 +97,8 @@ class PrivetHandlerTest : public testing::Test {
         .WillRepeatedly(Return(base::Time::FromTimeT(1410000001)));
 
     auth_header_ = "Privet anonymous";
-    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, &wifi_,
-                                     &clock_));
+    handler_.reset(
+        new PrivetHandler(&cloud_, &device_, &security_, &wifi_, &clock_));
   }
 
   const base::DictionaryValue& HandleRequest(
@@ -129,8 +129,8 @@ class PrivetHandlerTest : public testing::Test {
   int GetResponseCount() const { return response_count_; }
 
   void SetNoWifiAndGcd() {
-    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, nullptr,
-                                     &clock_));
+    handler_.reset(
+        new PrivetHandler(&cloud_, &device_, &security_, nullptr, &clock_));
     EXPECT_CALL(cloud_, GetCloudId()).WillRepeatedly(Return(""));
     EXPECT_CALL(cloud_, GetConnectionState())
         .WillRepeatedly(ReturnRef(gcd_disabled_state_));
@@ -339,9 +339,8 @@ TEST_F(PrivetHandlerTest, PairingConfirm) {
 }
 
 TEST_F(PrivetHandlerTest, PairingCancel) {
-  EXPECT_JSON_EQ("{}",
-                 HandleRequest("/privet/v3/pairing/cancel",
-                               "{'sessionId': 'testSession'}"));
+  EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/pairing/cancel",
+                                     "{'sessionId': 'testSession'}"));
 }
 
 TEST_F(PrivetHandlerTest, AuthErrorNoType) {
@@ -459,9 +458,8 @@ TEST_F(PrivetHandlerSetupTest, StatusWifiError) {
      }
   })";
   EXPECT_JSON_EQ(kExpected,
-                 *StripDebugErrorDetails("wifi",
-                                         HandleRequest(
-                                            "/privet/v3/setup/status", "{}")));
+                 *StripDebugErrorDetails(
+                     "wifi", HandleRequest("/privet/v3/setup/status", "{}")));
 }
 
 TEST_F(PrivetHandlerSetupTest, StatusGcd) {
@@ -490,9 +488,8 @@ TEST_F(PrivetHandlerSetupTest, StatusGcdError) {
      }
   })";
   EXPECT_JSON_EQ(kExpected,
-                 *StripDebugErrorDetails("gcd",
-                                         HandleRequest(
-                                            "/privet/v3/setup/status", "{}")));
+                 *StripDebugErrorDetails(
+                     "gcd", HandleRequest("/privet/v3/setup/status", "{}")));
 }
 
 TEST_F(PrivetHandlerSetupTest, SetupNameDescriptionLocation) {
@@ -747,8 +744,7 @@ TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
 
   const base::DictionaryValue* comp2 = nullptr;
   ASSERT_TRUE(components.GetDictionary("comp1.components.comp2", &comp2));
-  EXPECT_CALL(cloud_, FindComponent("comp1.comp2", _))
-      .WillOnce(Return(comp2));
+  EXPECT_CALL(cloud_, FindComponent("comp1.comp2", _)).WillOnce(Return(comp2));
 
   const char kExpected5[] = R"({
     "components": {
@@ -763,9 +759,11 @@ TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
     },
     "fingerprint": "1"
   })";
-  EXPECT_JSON_EQ(kExpected5, HandleRequest(
-      "/privet/v3/components",
-      "{'path':'comp1.comp2', 'filter':['traits', 'components']}"));
+  EXPECT_JSON_EQ(
+      kExpected5,
+      HandleRequest(
+          "/privet/v3/components",
+          "{'path':'comp1.comp2', 'filter':['traits', 'components']}"));
 
   auto error_handler = [](ErrorPtr* error) -> const base::DictionaryValue* {
     Error::AddTo(error, FROM_HERE, errors::kDomain, "componentNotFound", "");
@@ -775,11 +773,9 @@ TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
       .WillOnce(WithArgs<1>(Invoke(error_handler)));
 
   EXPECT_PRED2(
-      IsEqualError,
-      CodeWithReason(500, "componentNotFound"),
-      HandleRequest(
-          "/privet/v3/components",
-          "{'path':'comp7', 'filter':['traits', 'components']}"));
+      IsEqualError, CodeWithReason(500, "componentNotFound"),
+      HandleRequest("/privet/v3/components",
+                    "{'path':'comp7', 'filter':['traits', 'components']}"));
 }
 
 TEST_F(PrivetHandlerSetupTest, CommandsExecute) {

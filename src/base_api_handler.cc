@@ -76,8 +76,7 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
                                   nullptr));
 
   device_->AddCommandHandler(
-      kBaseComponent,
-      "base.updateBaseConfiguration",
+      kBaseComponent, "base.updateBaseConfiguration",
       base::Bind(&BaseApiHandler::UpdateBaseConfiguration,
                  weak_ptr_factory_.GetWeakPtr()));
 
