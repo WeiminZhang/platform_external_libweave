@@ -70,7 +70,6 @@ const char kRobotAccountEmail[] =
 const char kAuthInfo[] = R"({
   "certFingerprint":
   "FQY6BEINDjw3FgsmYChRWgMzMhc4TC8uG0UUUFhdDz0=",
-  "clientToken": "UBPkqttkiWt5VWgICLP0eHuCQgECRgMaVm0+gA==",
   "localId": "f6885e46-b432-42d7-86a5-d759bfb61f62"
 })";
 
@@ -269,7 +268,10 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
       .WillOnce(WithArgs<3, 4>(
           Invoke([](const std::string& data,
                     const HttpClient::SendRequestCallback& callback) {
-            EXPECT_JSON_EQ(test_data::kAuthInfo, *CreateDictionaryValue(data));
+            auto dict = CreateDictionaryValue(data);
+            EXPECT_TRUE(dict->HasKey("clientToken"));
+            dict->Remove("clientToken", nullptr);
+            EXPECT_JSON_EQ(test_data::kAuthInfo, *dict);
             base::DictionaryValue json;
             callback.Run(ReplyWithJson(200, json), nullptr);
           })));
@@ -561,7 +563,10 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
       .WillOnce(WithArgs<3, 4>(
           Invoke([](const std::string& data,
                     const HttpClient::SendRequestCallback& callback) {
-            EXPECT_JSON_EQ(test_data::kAuthInfo, *CreateDictionaryValue(data));
+            auto dict = CreateDictionaryValue(data);
+            EXPECT_TRUE(dict->HasKey("clientToken"));
+            dict->Remove("clientToken", nullptr);
+            EXPECT_JSON_EQ(test_data::kAuthInfo, *dict);
             base::DictionaryValue json;
             callback.Run(ReplyWithJson(200, json), nullptr);
           })));

@@ -44,7 +44,6 @@ class MockDeviceDelegate : public DeviceDelegate {
  public:
   MOCK_CONST_METHOD0(GetHttpEnpoint, IntPair());
   MOCK_CONST_METHOD0(GetHttpsEnpoint, IntPair());
-  MOCK_CONST_METHOD0(GetUptime, base::TimeDelta());
   MOCK_CONST_METHOD0(GetHttpRequestTimeout, base::TimeDelta());
   MOCK_METHOD3(PostDelayedTask, void(const tracked_objects::Location&,
                                      const base::Closure&,
@@ -55,8 +54,6 @@ class MockDeviceDelegate : public DeviceDelegate {
         .WillRepeatedly(Return(std::make_pair(0, 0)));
     EXPECT_CALL(*this, GetHttpsEnpoint())
         .WillRepeatedly(Return(std::make_pair(0, 0)));
-    EXPECT_CALL(*this, GetUptime())
-        .WillRepeatedly(Return(base::TimeDelta::FromHours(1)));
   }
 };
 
@@ -67,6 +64,8 @@ class MockSecurityDelegate : public SecurityDelegate {
                      UserInfo(const std::string&, base::Time*));
   MOCK_CONST_METHOD0(GetPairingTypes, std::set<PairingType>());
   MOCK_CONST_METHOD0(GetCryptoTypes, std::set<CryptoType>());
+  MOCK_METHOD0(ClaimRootClientAuthToken, std::string());
+  MOCK_METHOD1(ConfirmAuthToken, bool(const std::string& token));
   MOCK_CONST_METHOD1(IsValidPairingCode, bool(const std::string&));
   MOCK_METHOD5(
       StartPairing,
@@ -82,6 +81,9 @@ class MockSecurityDelegate : public SecurityDelegate {
   MockSecurityDelegate() {
     EXPECT_CALL(*this, CreateAccessToken(_))
         .WillRepeatedly(Return("GuestAccessToken"));
+
+    EXPECT_CALL(*this, ClaimRootClientAuthToken())
+        .WillRepeatedly(Return("RootClientAuthToken"));
 
     EXPECT_CALL(*this, ParseAccessToken(_, _))
         .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
@@ -155,6 +157,9 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_CONST_METHOD0(GetLegacyState, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetLegacyCommandDef, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
+  MOCK_CONST_METHOD2(FindComponent,
+                     const base::DictionaryValue*(const std::string& path,
+                                                  ErrorPtr* error));
   MOCK_CONST_METHOD0(GetTraits, const base::DictionaryValue&());
   MOCK_METHOD3(AddCommand,
                void(const base::DictionaryValue&,
@@ -191,6 +196,7 @@ class MockCloudDelegate : public CloudDelegate {
                 GetLegacyCommandDef()).WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, GetTraits()).WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, GetComponents()).WillRepeatedly(ReturnRef(test_dict_));
+    EXPECT_CALL(*this, FindComponent(_, _)).Times(0);
   }
 
   ConnectionState connection_state_{ConnectionState::kOnline};

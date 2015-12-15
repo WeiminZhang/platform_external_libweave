@@ -14,11 +14,17 @@
 #include <weave/error.h>
 #include <weave/provider/config_store.h>
 
-#include "src/privet/security_delegate.h"
+#include "src/privet/privet_types.h"
 
 namespace weave {
 
 class StorageInterface;
+
+enum class RootClientTokenOwner {
+  kNone,
+  kClient,
+  kCloud,
+};
 
 // Handles reading buffet config and state files.
 class Config final {
@@ -28,7 +34,7 @@ class Config final {
     std::string robot_account;
     std::string last_configured_ssid;
     std::vector<uint8_t> secret;
-    bool local_auth_info_changed{true};
+    RootClientTokenOwner root_client_token_owner{RootClientTokenOwner::kNone};
   };
 
   using OnChangedCallback = base::Callback<void(const weave::Settings&)>;
@@ -92,8 +98,9 @@ class Config final {
     void set_secret(const std::vector<uint8_t>& secret) {
       settings_->secret = secret;
     }
-    void set_local_auth_info_changed(bool local_auth_info_changed) {
-      settings_->local_auth_info_changed = local_auth_info_changed;
+    void set_root_client_token_owner(
+        RootClientTokenOwner root_client_token_owner) {
+      settings_->root_client_token_owner = root_client_token_owner;
     }
 
     void Commit();
