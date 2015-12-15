@@ -421,9 +421,9 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
                    &PrivetHandler::HandleAccessControlConfirm,
                    AuthScope::kOwner);
   AddSecureHandler("/privet/v3/setup/start", &PrivetHandler::HandleSetupStart,
-                   AuthScope::kOwner);
+                   AuthScope::kManager);
   AddSecureHandler("/privet/v3/setup/status", &PrivetHandler::HandleSetupStatus,
-                   AuthScope::kOwner);
+                   AuthScope::kManager);
   AddSecureHandler("/privet/v3/state", &PrivetHandler::HandleState,
                    AuthScope::kViewer);
   AddSecureHandler("/privet/v3/commandDefs", &PrivetHandler::HandleCommandDefs,
@@ -821,6 +821,13 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
 
   const base::DictionaryValue* registration = nullptr;
   if (input.GetDictionary(kGcdKey, &registration)) {
+    if (user_info.scope() < AuthScope::kOwner) {
+      ErrorPtr error;
+      Error::AddTo(&error, FROM_HERE, errors::kDomain,
+                   errors::kInvalidAuthorizationScope,
+                   "Only owner can register device");
+      return ReturnError(*error, callback);
+    }
     registration->GetString(kSetupStartTicketIdKey, &ticket);
     if (ticket.empty()) {
       ErrorPtr error;

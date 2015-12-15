@@ -594,6 +594,21 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/setup/start", kInput));
 }
 
+TEST_F(PrivetHandlerSetupTest, GcdSetupAsMaster) {
+  EXPECT_CALL(security_, ParseAccessToken(_, _))
+      .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
+                            Return(UserInfo{AuthScope::kManager, 1})));
+  const char kInput[] = R"({
+    'gcd': {
+      'ticketId': 'testTicket',
+      'user': 'testUser'
+    }
+  })";
+
+  EXPECT_PRED2(IsEqualError, CodeWithReason(403, "invalidAuthorizationScope"),
+               HandleRequest("/privet/v3/setup/start", kInput));
+}
+
 TEST_F(PrivetHandlerTestWithAuth, ClaimAccessControl) {
   EXPECT_JSON_EQ("{'clientToken': 'RootClientAuthToken'}",
                  HandleRequest("/privet/v3/accessControl/claim", "{}"));

@@ -295,7 +295,7 @@ class CloudDelegateImpl : public CloudDelegate {
   CommandInstance* GetCommandInternal(const std::string& command_id,
                                       const UserInfo& user_info,
                                       ErrorPtr* error) const {
-    if (user_info.scope() != AuthScope::kOwner) {
+    if (user_info.scope() < AuthScope::kManager) {
       auto it = command_owners_.find(command_id);
       if (it == command_owners_.end())
         return ReturnNotFound(command_id, error);
@@ -316,7 +316,7 @@ class CloudDelegateImpl : public CloudDelegate {
     CHECK(user_info.scope() != AuthScope::kNone);
     CHECK_NE(user_info.user_id(), 0u);
 
-    if (user_info.scope() == AuthScope::kOwner ||
+    if (user_info.scope() == AuthScope::kManager ||
         owner_id == user_info.user_id()) {
       return true;
     }

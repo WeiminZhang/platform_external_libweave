@@ -64,8 +64,11 @@ TEST_F(AuthManagerTest, CreateAccessToken) {
   EXPECT_EQ(
       "iZx0qgEHFF5lq+Q503GtgU0d6gLQ9TlLsU+DcFbZb2QxOjIzNDoxNDEwMDAwMDAw",
       Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 234})));
+  EXPECT_EQ("cWkAHxSBYtTFV3Va/9mcynR8iFZo2qr+8+WewmumF74zOjI1NzoxNDEwMDAwMDAw",
+            Base64Encode(
+                auth_.CreateAccessToken(UserInfo{AuthScope::kManager, 257})));
   EXPECT_EQ(
-      "fTjecsbwtYj6i8/qPJz900B8EMAjRqU8jLT9kfMoz0czOjQ1NjoxNDEwMDAwMDAw",
+      "s3GnCThkQXIzGQoPDlJoiehQiJ5yy4SYUVQzMN2kY0o0OjQ1NjoxNDEwMDAwMDAw",
       Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456})));
   EXPECT_CALL(clock_, Now())
       .WillRepeatedly(Return(clock_.Now() + base::TimeDelta::FromDays(11)));
