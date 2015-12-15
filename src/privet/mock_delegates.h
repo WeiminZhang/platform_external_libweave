@@ -68,7 +68,7 @@ class MockSecurityDelegate : public SecurityDelegate {
   MOCK_CONST_METHOD0(GetPairingTypes, std::set<PairingType>());
   MOCK_CONST_METHOD0(GetCryptoTypes, std::set<CryptoType>());
   MOCK_METHOD1(ClaimRootClientAuthToken, std::string(ErrorPtr*));
-  MOCK_METHOD2(ConfirmAuthToken, bool(const std::string&, ErrorPtr*));
+  MOCK_METHOD2(ConfirmClientAuthToken, bool(const std::string&, ErrorPtr*));
   MOCK_CONST_METHOD1(IsValidPairingCode, bool(const std::string&));
   MOCK_METHOD5(
       StartPairing,
@@ -88,7 +88,7 @@ class MockSecurityDelegate : public SecurityDelegate {
     EXPECT_CALL(*this, ClaimRootClientAuthToken(_))
         .WillRepeatedly(Return("RootClientAuthToken"));
 
-    EXPECT_CALL(*this, ConfirmAuthToken("DerivedClientAuthToken", _))
+    EXPECT_CALL(*this, ConfirmClientAuthToken("DerivedClientAuthToken", _))
         .WillRepeatedly(Return(true));
 
     EXPECT_CALL(*this, ParseAccessToken(_, _))

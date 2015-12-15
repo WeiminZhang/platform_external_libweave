@@ -39,7 +39,8 @@ class SecurityDelegate {
 
   // Confirms pending pending token claim or checks that token is valid for the
   // active secret.
-  virtual bool ConfirmAuthToken(const std::string& token, ErrorPtr* error) = 0;
+  virtual bool ConfirmClientAuthToken(const std::string& token,
+                                      ErrorPtr* error) = 0;
 
   // Returns true if |auth_code| provided by client is valid. Client should
   // obtain |auth_code| during pairing process.

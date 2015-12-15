@@ -192,7 +192,7 @@ TEST_F(AuthManagerClaimTest, NormalClaim) {
   EXPECT_EQ(RootClientTokenOwner::kNone,
             config_.GetSettings().root_client_token_owner);
 
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token, nullptr));
+  EXPECT_TRUE(auth_.ConfirmClientAuthToken(token, nullptr));
   EXPECT_TRUE(auth_.IsValidAuthToken(token));
   EXPECT_EQ(RootClientTokenOwner::kCloud,
             config_.GetSettings().root_client_token_owner);
@@ -201,8 +201,8 @@ TEST_F(AuthManagerClaimTest, NormalClaim) {
 TEST_F(AuthManagerClaimTest, DoubleConfirm) {
   auto token =
       auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token, nullptr));
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token, nullptr));
+  EXPECT_TRUE(auth_.ConfirmClientAuthToken(token, nullptr));
+  EXPECT_TRUE(auth_.ConfirmClientAuthToken(token, nullptr));
 }
 
 TEST_F(AuthManagerClaimTest, DoubleClaim) {
@@ -210,8 +210,8 @@ TEST_F(AuthManagerClaimTest, DoubleClaim) {
       auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
   auto token2 =
       auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token1, nullptr));
-  EXPECT_FALSE(auth_.ConfirmAuthToken(token2, nullptr));
+  EXPECT_TRUE(auth_.ConfirmClientAuthToken(token1, nullptr));
+  EXPECT_FALSE(auth_.ConfirmClientAuthToken(token2, nullptr));
 }
 
 TEST_F(AuthManagerClaimTest, TokenOverflow) {
@@ -219,7 +219,7 @@ TEST_F(AuthManagerClaimTest, TokenOverflow) {
       auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
   for (size_t i = 0; i < 100; ++i)
     auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
-  EXPECT_FALSE(auth_.ConfirmAuthToken(token, nullptr));
+  EXPECT_FALSE(auth_.ConfirmClientAuthToken(token, nullptr));
 }
 
 }  // namespace privet

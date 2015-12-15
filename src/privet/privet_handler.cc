@@ -776,7 +776,7 @@ void PrivetHandler::HandleAccessControlConfirm(
     return ReturnError(*error, callback);
   }
 
-  if (!security_->ConfirmAuthToken(token, &error))
+  if (!security_->ConfirmClientAuthToken(token, &error))
     return ReturnError(*error, callback);
 
   base::DictionaryValue output;

@@ -969,7 +969,7 @@ void DeviceRegistrationInfo::OnSendAuthInfoDone(
   CHECK(auth_info_update_inprogress_);
   auth_info_update_inprogress_ = false;
 
-  if (!error && auth_manager_->ConfirmAuthToken(token, nullptr))
+  if (!error && auth_manager_->ConfirmClientAuthToken(token, nullptr))
     return;
 
   task_runner_->PostDelayedTask(

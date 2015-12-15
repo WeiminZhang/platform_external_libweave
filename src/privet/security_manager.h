@@ -66,7 +66,8 @@ class SecurityManager : public SecurityDelegate {
   std::set<PairingType> GetPairingTypes() const override;
   std::set<CryptoType> GetCryptoTypes() const override;
   std::string ClaimRootClientAuthToken(ErrorPtr* error) override;
-  bool ConfirmAuthToken(const std::string& token, ErrorPtr* error) override;
+  bool ConfirmClientAuthToken(const std::string& token,
+                              ErrorPtr* error) override;
   bool IsValidPairingCode(const std::string& auth_code) const override;
 
   bool StartPairing(PairingType mode,

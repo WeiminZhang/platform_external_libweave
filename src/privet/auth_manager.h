@@ -46,7 +46,8 @@ class AuthManager {
 
   std::vector<uint8_t> ClaimRootClientAuthToken(RootClientTokenOwner owner,
                                                 ErrorPtr* error);
-  bool ConfirmAuthToken(const std::vector<uint8_t>& token, ErrorPtr* error);
+  bool ConfirmClientAuthToken(const std::vector<uint8_t>& token,
+                              ErrorPtr* error);
 
   std::vector<uint8_t> GetRootClientAuthToken() const;
   bool IsValidAuthToken(const std::vector<uint8_t>& token) const;

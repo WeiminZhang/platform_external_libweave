@@ -171,8 +171,8 @@ std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
   return pending_claims_.back().first->GetRootClientAuthToken();
 }
 
-bool AuthManager::ConfirmAuthToken(const std::vector<uint8_t>& token,
-                                   ErrorPtr* error) {
+bool AuthManager::ConfirmClientAuthToken(const std::vector<uint8_t>& token,
+                                         ErrorPtr* error) {
   // Cover case when caller sent confirm twice.
   if (pending_claims_.empty() && IsValidAuthToken(token))
     return true;
