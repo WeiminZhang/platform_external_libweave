@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <weave/settings.h>
 
+#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/test/mock_clock.h"
 
@@ -108,6 +109,7 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 
     auto token = auth.CreateAccessToken(UserInfo{AuthScope::kUser, 5});
     base::Time time2;
+    EXPECT_EQ(AuthScope::kNone, auth_.ParseAccessToken(token, nullptr).scope());
     EXPECT_EQ(AuthScope::kUser, auth.ParseAccessToken(token, &time2).scope());
     EXPECT_EQ(5u, auth.ParseAccessToken(token, &time2).user_id());
     // Token timestamp resolution is one second.
@@ -115,22 +117,62 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
   }
 }
 
-TEST_F(AuthManagerTest, GetRootDeviceToken) {
+TEST_F(AuthManagerTest, GetRootClientAuthToken) {
   EXPECT_EQ("UFTBUcgd9d0HnPRnLeroN2mCQgECRgMaVArkgA==",
-            Base64Encode(auth_.GetRootDeviceToken()));
+            Base64Encode(auth_.GetRootClientAuthToken()));
 }
 
-TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentTime) {
+TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
   EXPECT_CALL(clock_, Now())
       .WillRepeatedly(Return(clock_.Now() + base::TimeDelta::FromDays(15)));
   EXPECT_EQ("UGKqwMYGQNOd8jeYFDOsM02CQgECRgMaVB6rAA==",
-            Base64Encode(auth_.GetRootDeviceToken()));
+            Base64Encode(auth_.GetRootClientAuthToken()));
 }
 
-TEST_F(AuthManagerTest, GetRootDeviceTokenDifferentSecret) {
+TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentSecret) {
   AuthManager auth{kSecret2, {}, &clock_};
   EXPECT_EQ("UK1ACOc3cWGjGBoTIX2bd3qCQgECRgMaVArkgA==",
-            Base64Encode(auth.GetRootDeviceToken()));
+            Base64Encode(auth.GetRootClientAuthToken()));
+}
+
+TEST_F(AuthManagerTest, IsValidAuthToken) {
+  EXPECT_TRUE(auth_.IsValidAuthToken(auth_.GetRootClientAuthToken()));
+  // Multiple attempts with random secrets.
+  for (size_t i = 0; i < 1000; ++i) {
+    AuthManager auth{{}, {}, &clock_};
+
+    auto token = auth.GetRootClientAuthToken();
+    EXPECT_FALSE(auth_.IsValidAuthToken(token));
+    EXPECT_TRUE(auth.IsValidAuthToken(token));
+  }
+}
+
+TEST_F(AuthManagerTest, ClaimRootClientAuthToken) {
+  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+  EXPECT_FALSE(auth_.IsValidAuthToken(token));
+
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
+  EXPECT_TRUE(auth_.IsValidAuthToken(token));
+}
+
+TEST_F(AuthManagerTest, ClaimRootClientAuthTokenDoubleConfirm) {
+  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
+}
+
+TEST_F(AuthManagerTest, DoubleClaimRootClientAuthToken) {
+  auto token1 = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+  auto token2 = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token1));
+  EXPECT_FALSE(auth_.ConfirmAuthToken(token2));
+}
+
+TEST_F(AuthManagerTest, ClaimRootClientAuthTokenOverflow) {
+  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+  for (size_t i = 0; i < 100; ++i)
+    auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+  EXPECT_FALSE(auth_.ConfirmAuthToken(token));
 }
 
 }  // namespace privet

@@ -104,6 +104,11 @@ class CloudDelegate {
   // Returns dictionary with component tree.
   virtual const base::DictionaryValue& GetComponents() const = 0;
 
+  // Finds a component at the given path. Return nullptr in case of an error.
+  virtual const base::DictionaryValue* FindComponent(
+      const std::string& path,
+      ErrorPtr* error) const = 0;
+
   // Returns dictionary with trait definitions.
   virtual const base::DictionaryValue& GetTraits() const = 0;
 

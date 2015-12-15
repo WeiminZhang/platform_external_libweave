@@ -19,6 +19,7 @@
 
 #include "src/privet/constants.h"
 #include "src/privet/mock_delegates.h"
+#include "src/test/mock_clock.h"
 
 using testing::_;
 using testing::DoAll;
@@ -92,8 +93,12 @@ class PrivetHandlerTest : public testing::Test {
 
  protected:
   void SetUp() override {
+    EXPECT_CALL(clock_, Now())
+        .WillRepeatedly(Return(base::Time::FromTimeT(1410000001)));
+
     auth_header_ = "Privet anonymous";
-    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, &wifi_));
+    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, &wifi_,
+                                     &clock_));
   }
 
   const base::DictionaryValue& HandleRequest(
@@ -124,7 +129,8 @@ class PrivetHandlerTest : public testing::Test {
   int GetResponseCount() const { return response_count_; }
 
   void SetNoWifiAndGcd() {
-    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, nullptr));
+    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, nullptr,
+                                     &clock_));
     EXPECT_CALL(cloud_, GetCloudId()).WillRepeatedly(Return(""));
     EXPECT_CALL(cloud_, GetConnectionState())
         .WillRepeatedly(ReturnRef(gcd_disabled_state_));
@@ -136,6 +142,7 @@ class PrivetHandlerTest : public testing::Test {
         .WillRepeatedly(DoAll(Invoke(set_error), Return(false)));
   }
 
+  test::MockClock clock_;
   testing::StrictMock<MockCloudDelegate> cloud_;
   testing::StrictMock<MockDeviceDelegate> device_;
   testing::StrictMock<MockSecurityDelegate> security_;
@@ -240,7 +247,7 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
       'id': '',
       'status': 'disabled'
     },
-    'uptime': 3600
+    'time': 1410000001000.0
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }
@@ -301,7 +308,7 @@ TEST_F(PrivetHandlerTest, Info) {
       'id': 'TestCloudId',
       'status': 'online'
     },
-    'uptime': 3600
+    'time': 1410000001000.0
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }
@@ -634,6 +641,145 @@ TEST_F(PrivetHandlerSetupTest, Components) {
 
   EXPECT_JSON_EQ("{'components': {'test': {}}, 'fingerprint': '3'}",
                  HandleRequest("/privet/v3/components", "{}"));
+}
+
+TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
+  const char kComponents[] = R"({
+    "comp1": {
+      "traits": ["a", "b"],
+      "state": {
+        "a" : {
+          "prop": 1
+        }
+      },
+      "components": {
+        "comp2": {
+          "traits": ["c"],
+          "components": {
+            "comp4": {
+              "traits": ["d"]
+            }
+          }
+        },
+        "comp3": {
+          "traits": ["e"]
+        }
+      }
+    }
+  })";
+  base::DictionaryValue components;
+  LoadTestJson(kComponents, &components);
+  EXPECT_CALL(cloud_, FindComponent(_, _)).WillRepeatedly(Return(nullptr));
+  EXPECT_CALL(cloud_, GetComponents()).WillRepeatedly(ReturnRef(components));
+  const char kExpected1[] = R"({
+    "components": {
+      "comp1": {
+        "state": {
+          "a" : {
+            "prop": 1
+          }
+        }
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected1, HandleRequest("/privet/v3/components",
+                                           "{'filter':['state']}"));
+
+  const char kExpected2[] = R"({
+    "components": {
+      "comp1": {
+        "traits": ["a", "b"]
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected2, HandleRequest("/privet/v3/components",
+                                           "{'filter':['traits']}"));
+
+  const char kExpected3[] = R"({
+    "components": {
+      "comp1": {
+        "components": {
+          "comp2": {
+            "components": {
+              "comp4": {}
+            }
+          },
+          "comp3": {}
+        }
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected3, HandleRequest("/privet/v3/components",
+                                           "{'filter':['components']}"));
+
+  const char kExpected4[] = R"({
+    "components": {
+      "comp1": {
+        "traits": ["a", "b"],
+        "state": {
+          "a" : {
+            "prop": 1
+          }
+        },
+        "components": {
+          "comp2": {
+            "traits": ["c"],
+            "components": {
+              "comp4": {
+                "traits": ["d"]
+              }
+            }
+          },
+          "comp3": {
+            "traits": ["e"]
+          }
+        }
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected4,
+                 HandleRequest("/privet/v3/components",
+                               "{'filter':['traits', 'components', 'state']}"));
+
+  const base::DictionaryValue* comp2 = nullptr;
+  ASSERT_TRUE(components.GetDictionary("comp1.components.comp2", &comp2));
+  EXPECT_CALL(cloud_, FindComponent("comp1.comp2", _))
+      .WillOnce(Return(comp2));
+
+  const char kExpected5[] = R"({
+    "components": {
+      "comp2": {
+        "traits": ["c"],
+        "components": {
+          "comp4": {
+            "traits": ["d"]
+          }
+        }
+      }
+    },
+    "fingerprint": "1"
+  })";
+  EXPECT_JSON_EQ(kExpected5, HandleRequest(
+      "/privet/v3/components",
+      "{'path':'comp1.comp2', 'filter':['traits', 'components']}"));
+
+  auto error_handler = [](ErrorPtr* error) -> const base::DictionaryValue* {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, "componentNotFound", "");
+    return nullptr;
+  };
+  EXPECT_CALL(cloud_, FindComponent("comp7", _))
+      .WillOnce(WithArgs<1>(Invoke(error_handler)));
+
+  EXPECT_PRED2(
+      IsEqualError,
+      CodeWithReason(500, "componentNotFound"),
+      HandleRequest(
+          "/privet/v3/components",
+          "{'path':'comp7', 'filter':['traits', 'components']}"));
 }
 
 TEST_F(PrivetHandlerSetupTest, CommandsExecute) {

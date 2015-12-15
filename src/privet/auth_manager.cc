@@ -7,6 +7,7 @@
 #include <base/rand_util.h>
 #include <base/strings/string_number_conversions.h>
 
+#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/openssl_utils.h"
 #include "src/string_utils.h"
@@ -23,6 +24,7 @@ namespace {
 const char kTokenDelimeter[] = ":";
 const size_t kCaveatBuffetSize = 32;
 const size_t kMaxMacaroonSize = 1024;
+const size_t kMaxPendingClaims = 10;
 
 // Returns "scope:id:time".
 std::string CreateTokenData(const UserInfo& user_info, const base::Time& time) {
@@ -51,7 +53,8 @@ UserInfo SplitTokenData(const std::string& token, base::Time* time) {
   int64_t timestamp{0};
   if (!base::StringToInt64(parts[2], &timestamp))
     return kNone;
-  *time = base::Time::FromTimeT(timestamp);
+  if (time)
+    *time = base::Time::FromTimeT(timestamp);
   return UserInfo{static_cast<AuthScope>(scope), id};
 }
 
@@ -71,18 +74,52 @@ class Caveat {
   DISALLOW_COPY_AND_ASSIGN(Caveat);
 };
 
+std::vector<uint8_t> CreateSecret() {
+  std::vector<uint8_t> secret(kSha256OutputSize);
+  base::RandBytes(secret.data(), secret.size());
+  return secret;
+}
+
 }  // namespace
+
+AuthManager::AuthManager(Config* config,
+                         const std::vector<uint8_t>& certificate_fingerprint)
+    : config_{config}, certificate_fingerprint_{certificate_fingerprint} {
+  if (config_) {
+    SetSecret(config_->GetSettings().secret,
+              config_->GetSettings().root_client_token_owner);
+  } else {
+    SetSecret({}, RootClientTokenOwner::kNone);
+  }
+}
 
 AuthManager::AuthManager(const std::vector<uint8_t>& secret,
                          const std::vector<uint8_t>& certificate_fingerprint,
                          base::Clock* clock)
-    : clock_{clock ? clock : &default_clock_},
-      secret_{secret},
-      certificate_fingerprint_{certificate_fingerprint} {
-  if (secret_.size() != kSha256OutputSize) {
-    secret_.resize(kSha256OutputSize);
-    base::RandBytes(secret_.data(), secret_.size());
+    : AuthManager(nullptr, certificate_fingerprint) {
+  SetSecret(secret, RootClientTokenOwner::kNone);
+  if (clock)
+    clock_ = clock;
+}
+
+void AuthManager::SetSecret(const std::vector<uint8_t>& secret,
+                            RootClientTokenOwner owner) {
+  secret_ = secret;
+
+  if (secret.size() != kSha256OutputSize) {
+    secret_ = CreateSecret();
+    owner = RootClientTokenOwner::kNone;
   }
+
+  if (!config_ || (config_->GetSettings().secret == secret_ &&
+                   config_->GetSettings().root_client_token_owner == owner)) {
+    return;
+  }
+
+  Config::Transaction change{config_};
+  change.set_secret(secret);
+  change.set_root_client_token_owner(owner);
+  change.Commit();
 }
 
 AuthManager::~AuthManager() {}
@@ -108,7 +145,34 @@ UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   return SplitTokenData(std::string(data.begin(), data.end()), time);
 }
 
-std::vector<uint8_t> AuthManager::GetRootDeviceToken() const {
+std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
+    RootClientTokenOwner owner) {
+  pending_claims_.push_back(std::make_pair(
+      std::unique_ptr<AuthManager>{new AuthManager{nullptr, {}}}, owner));
+  if (pending_claims_.size() > kMaxPendingClaims)
+    pending_claims_.pop_front();
+  return pending_claims_.back().first->GetRootClientAuthToken();
+}
+
+bool AuthManager::ConfirmAuthToken(const std::vector<uint8_t>& token) {
+  // Cover case when caller sent confirm twice.
+  if (pending_claims_.empty() && IsValidAuthToken(token))
+    return true;
+
+  auto claim =
+      std::find_if(pending_claims_.begin(), pending_claims_.end(),
+                   [&token](const decltype(pending_claims_)::value_type& auth) {
+                     return auth.first->IsValidAuthToken(token);
+                   });
+  if (claim == pending_claims_.end())
+    return false;
+
+  SetSecret(claim->first->GetSecret(), claim->second);
+  pending_claims_.clear();
+  return true;
+}
+
+std::vector<uint8_t> AuthManager::GetRootClientAuthToken() const {
   Caveat scope{kUwMacaroonCaveatTypeScope, kUwMacaroonCaveatScopeTypeOwner};
   Caveat issued{kUwMacaroonCaveatTypeIssued,
                 static_cast<uint32_t>(Now().ToTimeT())};
@@ -117,6 +181,7 @@ std::vector<uint8_t> AuthManager::GetRootDeviceToken() const {
       scope.GetCaveat(), issued.GetCaveat(),
   };
 
+  CHECK_EQ(kSha256OutputSize, secret_.size());
   UwMacaroon macaroon{};
   CHECK(uw_macaroon_new_from_root_key_(
       &macaroon, secret_.data(), secret_.size(), caveats, arraysize(caveats)));
@@ -130,6 +195,18 @@ std::vector<uint8_t> AuthManager::GetRootDeviceToken() const {
 
 base::Time AuthManager::Now() const {
   return clock_->Now();
+}
+
+bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token) const {
+  std::vector<uint8_t> buffer(kMaxMacaroonSize);
+  UwMacaroon macaroon{};
+  if (!uw_macaroon_load_(token.data(), token.size(), buffer.data(),
+                         buffer.size(), &macaroon)) {
+    return false;
+  }
+
+  CHECK_EQ(kSha256OutputSize, secret_.size());
+  return uw_macaroon_verify_(&macaroon, secret_.data(), secret_.size());
 }
 
 }  // namespace privet

@@ -12,6 +12,7 @@
 #include <base/macros.h>
 #include <base/memory/weak_ptr.h>
 #include <base/scoped_observer.h>
+#include <base/time/default_clock.h>
 
 #include "src/privet/cloud_delegate.h"
 
@@ -42,7 +43,8 @@ class PrivetHandler : public CloudDelegate::Observer {
   PrivetHandler(CloudDelegate* cloud,
                 DeviceDelegate* device,
                 SecurityDelegate* pairing,
-                WifiDelegate* wifi);
+                WifiDelegate* wifi,
+                base::Clock* clock = nullptr);
   ~PrivetHandler() override;
 
   void OnTraitDefsChanged() override;
@@ -134,6 +136,8 @@ class PrivetHandler : public CloudDelegate::Observer {
   DeviceDelegate* device_{nullptr};
   SecurityDelegate* security_{nullptr};
   WifiDelegate* wifi_{nullptr};
+  base::DefaultClock default_clock_;
+  base::Clock* clock_{nullptr};
 
   struct HandlerParameters {
     ApiHandler handler;

@@ -69,7 +69,7 @@ const char kInfoWifiCapabilitiesKey[] = "capabilities";
 const char kInfoWifiSsidKey[] = "ssid";
 const char kInfoWifiHostedSsidKey[] = "hostedSsid";
 
-const char kInfoUptimeKey[] = "uptime";
+const char kInfoTimeKey[] = "time";
 
 const char kPairingKey[] = "pairing";
 const char kPairingSessionIdKey[] = "sessionId";
@@ -106,6 +106,8 @@ const char kCommandsKey[] = "commands";
 const char kTraitsKey[] = "traits";
 const char kComponentsKey[] = "components";
 const char kCommandsIdKey[] = "id";
+const char kPathKey[] = "path";
+const char kFilterKey[] = "filter";
 
 const char kStateFingerprintKey[] = "stateFingerprint";
 const char kCommandsFingerprintKey[] = "commandsFingerprint";
@@ -319,6 +321,53 @@ AuthScope GetAnonymousMaxScope(const CloudDelegate& cloud,
   return cloud.GetAnonymousMaxScope();
 }
 
+// Forward-declaration.
+std::unique_ptr<base::DictionaryValue> CloneComponentTree(
+    const base::DictionaryValue& parent,
+    const std::set<std::string>& filter);
+
+// Clones a particular component JSON object in a manner similar to that of
+// DeepCopy(), except it includes only sub-objects specified in |filter| (if not
+// empty) and has special handling for "components" sub-dictionary.
+std::unique_ptr<base::DictionaryValue> CloneComponent(
+    const base::DictionaryValue& component,
+    const std::set<std::string>& filter) {
+  std::unique_ptr<base::DictionaryValue> clone{new base::DictionaryValue};
+  for (base::DictionaryValue::Iterator it(component); !it.IsAtEnd();
+       it.Advance()) {
+    if (filter.empty() || filter.find(it.key()) != filter.end()) {
+      if (it.key() == kComponentsKey) {
+        // Handle "components" separately as we need to recursively clone
+        // sub-components.
+        const base::DictionaryValue* sub_components = nullptr;
+        CHECK(it.value().GetAsDictionary(&sub_components));
+        clone->SetWithoutPathExpansion(
+            it.key(), CloneComponentTree(*sub_components, filter).release());
+      } else {
+        clone->SetWithoutPathExpansion(it.key(), it.value().DeepCopy());
+      }
+    }
+  }
+  return clone;
+}
+
+// Clones a dictionary containing a bunch of component JSON objects in a manner
+// similar to that of DeepCopy(). Calls CloneComponent() on each instance of
+// the component sub-object.
+std::unique_ptr<base::DictionaryValue> CloneComponentTree(
+    const base::DictionaryValue& parent,
+    const std::set<std::string>& filter) {
+  std::unique_ptr<base::DictionaryValue> clone{new base::DictionaryValue};
+  for (base::DictionaryValue::Iterator it(parent); !it.IsAtEnd();
+       it.Advance()) {
+    const base::DictionaryValue* component = nullptr;
+    CHECK(it.value().GetAsDictionary(&component));
+    clone->SetWithoutPathExpansion(
+        it.key(), CloneComponent(*component, filter).release());
+  }
+  return clone;
+}
+
 }  // namespace
 
 std::vector<std::string> PrivetHandler::GetHttpPaths() const {
@@ -340,11 +389,14 @@ std::vector<std::string> PrivetHandler::GetHttpsPaths() const {
 PrivetHandler::PrivetHandler(CloudDelegate* cloud,
                              DeviceDelegate* device,
                              SecurityDelegate* security,
-                             WifiDelegate* wifi)
-    : cloud_(cloud), device_(device), security_(security), wifi_(wifi) {
+                             WifiDelegate* wifi,
+                             base::Clock* clock)
+    : cloud_(cloud), device_(device), security_(security), wifi_(wifi),
+      clock_(clock ? clock : &default_clock_) {
   CHECK(cloud_);
   CHECK(device_);
   CHECK(security_);
+  CHECK(clock_);
   cloud_observer_.Add(cloud_);
 
   AddHandler("/privet/info", &PrivetHandler::HandleInfo, AuthScope::kNone);
@@ -466,7 +518,7 @@ void PrivetHandler::HandleRequest(const std::string& api,
     time += base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
     time +=
         base::TimeDelta::FromSeconds(kAccessTokenExpirationThresholdSeconds);
-    if (time < base::Time::Now()) {
+    if (time < clock_->Now()) {
       Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                          errors::kAuthorizationExpired, "Token expired: %s",
                          token.c_str());
@@ -543,7 +595,7 @@ void PrivetHandler::HandleInfo(const base::DictionaryValue&,
 
   output.Set(kGcdKey, CreateGcdSection(*cloud_).release());
 
-  output.SetInteger(kInfoUptimeKey, device_->GetUptime().InSeconds());
+  output.SetDouble(kInfoTimeKey, clock_->Now().ToJsTime());
 
   callback.Run(http::kOk, output);
 }
@@ -682,6 +734,7 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   output.SetString(kAuthTokenTypeKey, kAuthorizationHeaderPrefix);
   output.SetInteger(kAuthExpiresInKey, kAccessTokenExpirationSeconds);
   output.SetString(kAuthScopeKey, EnumToString(requested_auth_scope));
+
   callback.Run(http::kOk, output);
 }
 
@@ -802,8 +855,34 @@ void PrivetHandler::HandleTraits(const base::DictionaryValue& input,
 void PrivetHandler::HandleComponents(const base::DictionaryValue& input,
                                      const UserInfo& user_info,
                                      const RequestCallback& callback) {
+  std::string path;
+  std::set<std::string> filter;
+  std::unique_ptr<base::DictionaryValue> components;
+
+  input.GetString(kPathKey, &path);
+  const base::ListValue* filter_items = nullptr;
+  if (input.GetList(kFilterKey, &filter_items)) {
+    for (const base::Value* value : *filter_items) {
+      std::string filter_item;
+      if (value->GetAsString(&filter_item))
+        filter.insert(filter_item);
+    }
+  }
+  const base::DictionaryValue* component = nullptr;
+  if (!path.empty()) {
+    ErrorPtr error;
+    component = cloud_->FindComponent(path, &error);
+    if (!component)
+      return ReturnError(*error, callback);
+    components.reset(new base::DictionaryValue);
+    // Get the last element of the path and use it as a dictionary key here.
+    auto parts = Split(path, ".", true, false);
+    components->Set(parts.back(), CloneComponent(*component, filter).release());
+  } else {
+    components = CloneComponentTree(cloud_->GetComponents(), filter);
+  }
   base::DictionaryValue output;
-  output.Set(kComponentsKey, cloud_->GetComponents().DeepCopy());
+  output.Set(kComponentsKey, components.release());
   output.SetString(kFingerprintKey, std::to_string(components_fingerprint_));
 
   callback.Run(http::kOk, output);

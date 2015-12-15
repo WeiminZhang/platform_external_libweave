@@ -202,7 +202,9 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void OnUpdateDeviceResourceError(ErrorPtr error);
 
   void SendAuthInfo();
-  void OnSendAuthInfoDone(const base::DictionaryValue& body, ErrorPtr error);
+  void OnSendAuthInfoDone(const std::vector<uint8_t>& token,
+                          const base::DictionaryValue& body,
+                          ErrorPtr error);
 
   // Callback from GetDeviceInfo() to retrieve the device resource timestamp
   // and retry UpdateDeviceResource() call.

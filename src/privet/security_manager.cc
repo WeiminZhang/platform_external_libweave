@@ -18,6 +18,7 @@
 #include <base/time/time.h>
 #include <weave/provider/task_runner.h>
 
+#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/auth_manager.h"
 #include "src/privet/constants.h"
@@ -30,42 +31,10 @@ namespace privet {
 
 namespace {
 
-const char kTokenDelimeter[] = ":";
 const int kSessionExpirationTimeMinutes = 5;
 const int kPairingExpirationTimeMinutes = 5;
 const int kMaxAllowedPairingAttemts = 3;
 const int kPairingBlockingTimeMinutes = 1;
-
-// Returns "scope:id:time".
-std::string CreateTokenData(const UserInfo& user_info, const base::Time& time) {
-  return base::IntToString(static_cast<int>(user_info.scope())) +
-         kTokenDelimeter + base::Uint64ToString(user_info.user_id()) +
-         kTokenDelimeter + base::Int64ToString(time.ToTimeT());
-}
-
-// Splits string of "scope:id:time" format.
-UserInfo SplitTokenData(const std::string& token, base::Time* time) {
-  const UserInfo kNone;
-  auto parts = Split(token, kTokenDelimeter, false, false);
-  if (parts.size() != 3)
-    return kNone;
-  int scope = 0;
-  if (!base::StringToInt(parts[0], &scope) ||
-      scope < static_cast<int>(AuthScope::kNone) ||
-      scope > static_cast<int>(AuthScope::kOwner)) {
-    return kNone;
-  }
-
-  uint64_t id{0};
-  if (!base::StringToUint64(parts[1], &id))
-    return kNone;
-
-  int64_t timestamp{0};
-  if (!base::StringToInt64(parts[2], &timestamp))
-    return kNone;
-  *time = base::Time::FromTimeT(timestamp);
-  return UserInfo{static_cast<AuthScope>(scope), id};
-}
 
 class Spakep224Exchanger : public SecurityManager::KeyExchanger {
  public:
@@ -164,6 +133,18 @@ std::set<CryptoType> SecurityManager::GetCryptoTypes() const {
   if (is_security_disabled_)
     result.insert(CryptoType::kNone);
   return result;
+}
+
+std::string SecurityManager::ClaimRootClientAuthToken() {
+  return Base64Encode(
+      auth_manager_->ClaimRootClientAuthToken(RootClientTokenOwner::kClient));
+}
+
+bool SecurityManager::ConfirmAuthToken(const std::string& token) {
+  std::vector<uint8_t> token_decoded;
+  if (!Base64Decode(token, &token_decoded))
+    return false;
+  return auth_manager_->ConfirmAuthToken(token_decoded);
 }
 
 bool SecurityManager::IsValidPairingCode(const std::string& auth_code) const {

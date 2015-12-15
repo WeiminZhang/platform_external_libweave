@@ -5,6 +5,7 @@
 #ifndef LIBWEAVE_SRC_PRIVET_AUTH_MANAGER_H_
 #define LIBWEAVE_SRC_PRIVET_AUTH_MANAGER_H_
 
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -15,10 +16,18 @@
 #include "src/privet/privet_types.h"
 
 namespace weave {
+
+class Config;
+enum class RootClientTokenOwner;
+
 namespace privet {
 
 class AuthManager {
  public:
+  AuthManager(Config* config,
+              const std::vector<uint8_t>& certificate_fingerprint);
+
+  // Constructor for tests.
   AuthManager(const std::vector<uint8_t>& secret,
               const std::vector<uint8_t>& certificate_fingerprint,
               base::Clock* clock = nullptr);
@@ -32,16 +41,28 @@ class AuthManager {
   const std::vector<uint8_t>& GetCertificateFingerprint() const {
     return certificate_fingerprint_;
   }
-  std::vector<uint8_t> GetRootDeviceToken() const;
 
   base::Time Now() const;
 
+  std::vector<uint8_t> ClaimRootClientAuthToken(RootClientTokenOwner owner);
+  bool ConfirmAuthToken(const std::vector<uint8_t>& token);
+
+  std::vector<uint8_t> GetRootClientAuthToken() const;
+  bool IsValidAuthToken(const std::vector<uint8_t>& token) const;
+
  private:
+  void SetSecret(const std::vector<uint8_t>& secret,
+                 RootClientTokenOwner owner);
+
+  Config* config_{nullptr};
   base::DefaultClock default_clock_;
-  base::Clock* clock_{nullptr};
+  base::Clock* clock_{&default_clock_};
 
   std::vector<uint8_t> secret_;
   std::vector<uint8_t> certificate_fingerprint_;
+
+  std::deque<std::pair<std::unique_ptr<AuthManager>, RootClientTokenOwner>>
+      pending_claims_;
 
   DISALLOW_COPY_AND_ASSIGN(AuthManager);
 };

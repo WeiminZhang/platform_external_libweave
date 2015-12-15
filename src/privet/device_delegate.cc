@@ -30,10 +30,6 @@ class DeviceDelegateImpl : public DeviceDelegate {
   std::pair<uint16_t, uint16_t> GetHttpsEnpoint() const override {
     return std::make_pair(https_port_, https_port_);
   }
-  base::TimeDelta GetUptime() const override {
-    return base::Time::Now() - start_time_;
-  }
-
   base::TimeDelta GetHttpRequestTimeout() const override {
     return http_request_timeout_;
   }
@@ -49,7 +45,6 @@ class DeviceDelegateImpl : public DeviceDelegate {
   base::TimeDelta http_request_timeout_;
   uint16_t http_port_{0};
   uint16_t https_port_{0};
-  base::Time start_time_{base::Time::Now()};
 };
 
 }  // namespace
