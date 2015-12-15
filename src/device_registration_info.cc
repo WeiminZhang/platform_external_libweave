@@ -1164,9 +1164,7 @@ void DeviceRegistrationInfo::PublishStateUpdates() {
     std::unique_ptr<base::DictionaryValue> patch{new base::DictionaryValue};
     patch->SetString("timeMs",
                      std::to_string(state_change.timestamp.ToJavaTime()));
-    // TODO(avakulenko): Uncomment this once server supports "component"
-    // attribute on a state patch object.
-    // patch->SetString("component", state_change.component);
+    patch->SetString("component", state_change.component);
     patch->Set("patch", state_change.changed_properties.release());
     patches->Append(patch.release());
   }
