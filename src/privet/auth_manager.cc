@@ -146,7 +146,8 @@ UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
 }
 
 std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
-    RootClientTokenOwner owner) {
+    RootClientTokenOwner owner,
+    ErrorPtr* error) {
   pending_claims_.push_back(std::make_pair(
       std::unique_ptr<AuthManager>{new AuthManager{nullptr, {}}}, owner));
   if (pending_claims_.size() > kMaxPendingClaims)
@@ -154,7 +155,8 @@ std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
   return pending_claims_.back().first->GetRootClientAuthToken();
 }
 
-bool AuthManager::ConfirmAuthToken(const std::vector<uint8_t>& token) {
+bool AuthManager::ConfirmAuthToken(const std::vector<uint8_t>& token,
+                                   ErrorPtr* error) {
   // Cover case when caller sent confirm twice.
   if (pending_claims_.empty() && IsValidAuthToken(token))
     return true;

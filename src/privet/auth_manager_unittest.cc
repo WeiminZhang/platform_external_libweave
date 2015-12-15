@@ -148,31 +148,36 @@ TEST_F(AuthManagerTest, IsValidAuthToken) {
 }
 
 TEST_F(AuthManagerTest, ClaimRootClientAuthToken) {
-  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+  auto token =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
   EXPECT_FALSE(auth_.IsValidAuthToken(token));
 
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token, nullptr));
   EXPECT_TRUE(auth_.IsValidAuthToken(token));
 }
 
 TEST_F(AuthManagerTest, ClaimRootClientAuthTokenDoubleConfirm) {
-  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
+  auto token =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token, nullptr));
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token, nullptr));
 }
 
 TEST_F(AuthManagerTest, DoubleClaimRootClientAuthToken) {
-  auto token1 = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
-  auto token2 = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token1));
-  EXPECT_FALSE(auth_.ConfirmAuthToken(token2));
+  auto token1 =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
+  auto token2 =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
+  EXPECT_TRUE(auth_.ConfirmAuthToken(token1, nullptr));
+  EXPECT_FALSE(auth_.ConfirmAuthToken(token2, nullptr));
 }
 
 TEST_F(AuthManagerTest, ClaimRootClientAuthTokenOverflow) {
-  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+  auto token =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
   for (size_t i = 0; i < 100; ++i)
-    auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
-  EXPECT_FALSE(auth_.ConfirmAuthToken(token));
+    auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
+  EXPECT_FALSE(auth_.ConfirmAuthToken(token, nullptr));
 }
 
 }  // namespace privet

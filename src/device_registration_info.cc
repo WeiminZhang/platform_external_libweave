@@ -933,11 +933,20 @@ void DeviceRegistrationInfo::StartQueuedUpdateDeviceResource() {
 void DeviceRegistrationInfo::SendAuthInfo() {
   if (!auth_manager_ || auth_info_update_inprogress_)
     return;
+
+  if (GetSettings().root_client_token_owner == RootClientTokenOwner::kCloud) {
+    // Avoid re-claiming if device is already claimed by the Cloud. Cloud is
+    // allowed to re-claim device at any time. However this will invalidate all
+    // issued tokens.
+    return;
+  }
+
   auth_info_update_inprogress_ = true;
 
+  std::vector<uint8_t> token = auth_manager_->ClaimRootClientAuthToken(
+      RootClientTokenOwner::kCloud, nullptr);
+  CHECK(!token.empty());
   std::string id = GetSettings().device_id;
-  std::vector<uint8_t> token =
-      auth_manager_->ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
   std::string token_base64 = Base64Encode(token);
   std::string fingerprint =
       Base64Encode(auth_manager_->GetCertificateFingerprint());
@@ -962,7 +971,7 @@ void DeviceRegistrationInfo::OnSendAuthInfoDone(
   CHECK(auth_info_update_inprogress_);
   auth_info_update_inprogress_ = false;
 
-  if (!error && auth_manager_->ConfirmAuthToken(token))
+  if (!error && auth_manager_->ConfirmAuthToken(token, nullptr))
     return;
 
   task_runner_->PostDelayedTask(
@@ -1328,6 +1337,9 @@ void DeviceRegistrationInfo::RemoveCredentials() {
   connected_to_cloud_ = false;
 
   LOG(INFO) << "Device is unregistered from the cloud. Deleting credentials";
+  if (auth_manager_)
+    auth_manager_->SetSecret({}, RootClientTokenOwner::kNone);
+
   Config::Transaction change{config_};
   // Keep cloud_id to switch to detect kInvalidCredentials after restart.
   change.set_robot_account("");

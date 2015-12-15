@@ -13,6 +13,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/config.h"
 #include "src/privet/cloud_delegate.h"
 #include "src/privet/device_delegate.h"
 #include "src/privet/security_delegate.h"
@@ -24,6 +25,7 @@ using testing::ReturnRef;
 using testing::SetArgPointee;
 
 namespace weave {
+
 namespace privet {
 
 ACTION_TEMPLATE(RunCallback,
@@ -64,8 +66,8 @@ class MockSecurityDelegate : public SecurityDelegate {
                      UserInfo(const std::string&, base::Time*));
   MOCK_CONST_METHOD0(GetPairingTypes, std::set<PairingType>());
   MOCK_CONST_METHOD0(GetCryptoTypes, std::set<CryptoType>());
-  MOCK_METHOD0(ClaimRootClientAuthToken, std::string());
-  MOCK_METHOD1(ConfirmAuthToken, bool(const std::string& token));
+  MOCK_METHOD1(ClaimRootClientAuthToken, std::string(ErrorPtr*));
+  MOCK_METHOD2(ConfirmAuthToken, bool(const std::string&, ErrorPtr*));
   MOCK_CONST_METHOD1(IsValidPairingCode, bool(const std::string&));
   MOCK_METHOD5(
       StartPairing,
@@ -82,7 +84,7 @@ class MockSecurityDelegate : public SecurityDelegate {
     EXPECT_CALL(*this, CreateAccessToken(_))
         .WillRepeatedly(Return("GuestAccessToken"));
 
-    EXPECT_CALL(*this, ClaimRootClientAuthToken())
+    EXPECT_CALL(*this, ClaimRootClientAuthToken(_))
         .WillRepeatedly(Return("RootClientAuthToken"));
 
     EXPECT_CALL(*this, ParseAccessToken(_, _))

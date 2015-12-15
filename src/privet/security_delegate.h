@@ -35,11 +35,11 @@ class SecurityDelegate {
   virtual std::set<CryptoType> GetCryptoTypes() const = 0;
 
   // Returns Root Client Authorization Token.
-  virtual std::string ClaimRootClientAuthToken() = 0;
+  virtual std::string ClaimRootClientAuthToken(ErrorPtr* error) = 0;
 
   // Confirms pending pending token claim or checks that token is valid for the
   // active secret.
-  virtual bool ConfirmAuthToken(const std::string& token) = 0;
+  virtual bool ConfirmAuthToken(const std::string& token, ErrorPtr* error) = 0;
 
   // Returns true if |auth_code| provided by client is valid. Client should
   // obtain |auth_code| during pairing process.

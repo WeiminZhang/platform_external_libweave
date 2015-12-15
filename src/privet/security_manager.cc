@@ -135,16 +135,21 @@ std::set<CryptoType> SecurityManager::GetCryptoTypes() const {
   return result;
 }
 
-std::string SecurityManager::ClaimRootClientAuthToken() {
-  return Base64Encode(
-      auth_manager_->ClaimRootClientAuthToken(RootClientTokenOwner::kClient));
+std::string SecurityManager::ClaimRootClientAuthToken(ErrorPtr* error) {
+  return Base64Encode(auth_manager_->ClaimRootClientAuthToken(
+      RootClientTokenOwner::kClient, error));
 }
 
-bool SecurityManager::ConfirmAuthToken(const std::string& token) {
+bool SecurityManager::ConfirmAuthToken(const std::string& token,
+                                       ErrorPtr* error) {
   std::vector<uint8_t> token_decoded;
-  if (!Base64Decode(token, &token_decoded))
+  if (!Base64Decode(token, &token_decoded)) {
+    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
+                       errors::kInvalidFormat,
+                       "Invalid auth token string: '%s'", token.c_str());
     return false;
-  return auth_manager_->ConfirmAuthToken(token_decoded);
+  }
+  return auth_manager_->ConfirmAuthToken(token_decoded, error);
 }
 
 bool SecurityManager::IsValidPairingCode(const std::string& auth_code) const {
