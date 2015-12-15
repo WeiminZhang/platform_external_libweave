@@ -31,7 +31,6 @@ namespace privet {
 
 namespace {
 
-const char kTokenDelimeter[] = ":";
 const int kSessionExpirationTimeMinutes = 5;
 const int kPairingExpirationTimeMinutes = 5;
 const int kMaxAllowedPairingAttemts = 3;
