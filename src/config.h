@@ -21,6 +21,7 @@ namespace weave {
 class StorageInterface;
 
 enum class RootClientTokenOwner {
+  // Keep order as it's used with order comparison operators.
   kNone,
   kClient,
   kCloud,

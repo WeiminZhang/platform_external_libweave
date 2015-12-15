@@ -153,6 +153,7 @@ struct {
     {errors::kInvalidState, http::kInternalServerError},
     {errors::kNotFound, http::kNotFound},
     {errors::kNotImplemented, http::kNotSupported},
+    {errors::kAlreadyClaimed, http::kDenied},
 };
 
 AuthScope AuthScopeFromString(const std::string& scope, AuthScope auto_scope) {
