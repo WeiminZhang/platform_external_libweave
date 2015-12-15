@@ -936,7 +936,8 @@ void DeviceRegistrationInfo::SendAuthInfo() {
   auth_info_update_inprogress_ = true;
 
   std::string id = GetSettings().device_id;
-  std::vector<uint8_t> token = auth_manager_->ClaimRootClientAuthToken();
+  std::vector<uint8_t> token =
+      auth_manager_->ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
   std::string token_base64 = Base64Encode(token);
   std::string fingerprint =
       Base64Encode(auth_manager_->GetCertificateFingerprint());

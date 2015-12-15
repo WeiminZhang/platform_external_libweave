@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <weave/settings.h>
 
+#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/test/mock_clock.h"
 
@@ -147,7 +148,7 @@ TEST_F(AuthManagerTest, IsValidAuthToken) {
 }
 
 TEST_F(AuthManagerTest, ClaimRootClientAuthToken) {
-  auto token = auth_.ClaimRootClientAuthToken();
+  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
   EXPECT_FALSE(auth_.IsValidAuthToken(token));
 
   EXPECT_TRUE(auth_.ConfirmAuthToken(token));
@@ -155,22 +156,22 @@ TEST_F(AuthManagerTest, ClaimRootClientAuthToken) {
 }
 
 TEST_F(AuthManagerTest, ClaimRootClientAuthTokenDoubleConfirm) {
-  auto token = auth_.ClaimRootClientAuthToken();
+  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
   EXPECT_TRUE(auth_.ConfirmAuthToken(token));
   EXPECT_TRUE(auth_.ConfirmAuthToken(token));
 }
 
 TEST_F(AuthManagerTest, DoubleClaimRootClientAuthToken) {
-  auto token1 = auth_.ClaimRootClientAuthToken();
-  auto token2 = auth_.ClaimRootClientAuthToken();
+  auto token1 = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+  auto token2 = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
   EXPECT_TRUE(auth_.ConfirmAuthToken(token1));
   EXPECT_FALSE(auth_.ConfirmAuthToken(token2));
 }
 
 TEST_F(AuthManagerTest, ClaimRootClientAuthTokenOverflow) {
-  auto token = auth_.ClaimRootClientAuthToken();
+  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
   for (size_t i = 0; i < 100; ++i)
-    auth_.ClaimRootClientAuthToken();
+    auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
   EXPECT_FALSE(auth_.ConfirmAuthToken(token));
 }
 

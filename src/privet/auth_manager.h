@@ -18,6 +18,7 @@
 namespace weave {
 
 class Config;
+enum class RootClientTokenOwner;
 
 namespace privet {
 
@@ -43,14 +44,15 @@ class AuthManager {
 
   base::Time Now() const;
 
-  std::vector<uint8_t> ClaimRootClientAuthToken();
+  std::vector<uint8_t> ClaimRootClientAuthToken(RootClientTokenOwner owner);
   bool ConfirmAuthToken(const std::vector<uint8_t>& token);
 
   std::vector<uint8_t> GetRootClientAuthToken() const;
   bool IsValidAuthToken(const std::vector<uint8_t>& token) const;
 
  private:
-  void SetSecret(const std::vector<uint8_t>& secret);
+  void SetSecret(const std::vector<uint8_t>& secret,
+                 RootClientTokenOwner owner);
 
   Config* config_{nullptr};
   base::DefaultClock default_clock_;
@@ -59,7 +61,8 @@ class AuthManager {
   std::vector<uint8_t> secret_;
   std::vector<uint8_t> certificate_fingerprint_;
 
-  std::deque<std::unique_ptr<AuthManager>> pending_claims_;
+  std::deque<std::pair<std::unique_ptr<AuthManager>, RootClientTokenOwner>>
+      pending_claims_;
 
   DISALLOW_COPY_AND_ASSIGN(AuthManager);
 };

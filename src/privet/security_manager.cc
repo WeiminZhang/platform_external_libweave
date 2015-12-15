@@ -18,6 +18,7 @@
 #include <base/time/time.h>
 #include <weave/provider/task_runner.h>
 
+#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/auth_manager.h"
 #include "src/privet/constants.h"
@@ -136,7 +137,8 @@ std::set<CryptoType> SecurityManager::GetCryptoTypes() const {
 }
 
 std::string SecurityManager::ClaimRootClientAuthToken() {
-  return Base64Encode(auth_manager_->ClaimRootClientAuthToken());
+  return Base64Encode(
+      auth_manager_->ClaimRootClientAuthToken(RootClientTokenOwner::kClient));
 }
 
 bool SecurityManager::ConfirmAuthToken(const std::string& token) {

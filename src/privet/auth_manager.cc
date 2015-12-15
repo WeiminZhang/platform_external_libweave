@@ -85,26 +85,41 @@ std::vector<uint8_t> CreateSecret() {
 AuthManager::AuthManager(Config* config,
                          const std::vector<uint8_t>& certificate_fingerprint)
     : config_{config}, certificate_fingerprint_{certificate_fingerprint} {
-  SetSecret(config_ ? config_->GetSettings().secret : std::vector<uint8_t>{});
+  if (config_) {
+    SetSecret(config_->GetSettings().secret,
+              config_->GetSettings().root_client_token_owner);
+  } else {
+    SetSecret({}, RootClientTokenOwner::kNone);
+  }
 }
 
 AuthManager::AuthManager(const std::vector<uint8_t>& secret,
                          const std::vector<uint8_t>& certificate_fingerprint,
                          base::Clock* clock)
     : AuthManager(nullptr, certificate_fingerprint) {
-  SetSecret(secret);
+  SetSecret(secret, RootClientTokenOwner::kNone);
   if (clock)
     clock_ = clock;
 }
 
-void AuthManager::SetSecret(const std::vector<uint8_t>& secret) {
-  secret_ = secret.size() == kSha256OutputSize ? secret : CreateSecret();
-  if (config_ && config_->GetSettings().secret != secret_) {
-    Config::Transaction change{config_};
-    change.set_secret(secret);
-    change.set_root_client_token_owner(RootClientTokenOwner::kNone);
-    change.Commit();
+void AuthManager::SetSecret(const std::vector<uint8_t>& secret,
+                            RootClientTokenOwner owner) {
+  secret_ = secret;
+
+  if (secret.size() != kSha256OutputSize) {
+    secret_ = CreateSecret();
+    owner = RootClientTokenOwner::kNone;
   }
+
+  if (!config_ || (config_->GetSettings().secret == secret_ &&
+                   config_->GetSettings().root_client_token_owner == owner)) {
+    return;
+  }
+
+  Config::Transaction change{config_};
+  change.set_secret(secret);
+  change.set_root_client_token_owner(owner);
+  change.Commit();
 }
 
 AuthManager::~AuthManager() {}
@@ -130,12 +145,13 @@ UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   return SplitTokenData(std::string(data.begin(), data.end()), time);
 }
 
-std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken() {
-  pending_claims_.push_back(
-      std::unique_ptr<AuthManager>{new AuthManager{nullptr, {}}});
+std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
+    RootClientTokenOwner owner) {
+  pending_claims_.push_back(std::make_pair(
+      std::unique_ptr<AuthManager>{new AuthManager{nullptr, {}}}, owner));
   if (pending_claims_.size() > kMaxPendingClaims)
     pending_claims_.pop_front();
-  return pending_claims_.back()->GetRootClientAuthToken();
+  return pending_claims_.back().first->GetRootClientAuthToken();
 }
 
 bool AuthManager::ConfirmAuthToken(const std::vector<uint8_t>& token) {
@@ -143,14 +159,15 @@ bool AuthManager::ConfirmAuthToken(const std::vector<uint8_t>& token) {
   if (pending_claims_.empty() && IsValidAuthToken(token))
     return true;
 
-  auto claim = std::find_if(pending_claims_.begin(), pending_claims_.end(),
-                            [&token](const std::unique_ptr<AuthManager>& auth) {
-                              return auth->IsValidAuthToken(token);
-                            });
+  auto claim =
+      std::find_if(pending_claims_.begin(), pending_claims_.end(),
+                   [&token](const decltype(pending_claims_)::value_type& auth) {
+                     return auth.first->IsValidAuthToken(token);
+                   });
   if (claim == pending_claims_.end())
     return false;
 
-  secret_ = (*claim)->GetSecret();
+  SetSecret(claim->first->GetSecret(), claim->second);
   pending_claims_.clear();
   return true;
 }
