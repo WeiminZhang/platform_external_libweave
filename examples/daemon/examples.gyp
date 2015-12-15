@@ -8,7 +8,8 @@
         'light/daemon.gyp:weave_daemon_light',
         'lock/daemon.gyp:weave_daemon_lock',
         'ledflasher/daemon.gyp:weave_daemon_ledflasher',
-        'speaker/daemon.gyp:weave_daemon_speaker'
+        'speaker/daemon.gyp:weave_daemon_speaker',
+        'oven/daemon.gyp:weave_daemon_oven',
       ]
     }
   ]

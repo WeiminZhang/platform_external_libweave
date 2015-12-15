@@ -42,7 +42,7 @@ const char kDeviceId[] = "device_id";
 const char kRobotAccount[] = "robot_account";
 const char kLastConfiguredSsid[] = "last_configured_ssid";
 const char kSecret[] = "secret";
-const char kLocalAuthInfoChanged[] = "local_auth_info_changed";
+const char kRootClientTokenOwner[] = "root_client_token_owner";
 
 }  // namespace config_keys
 
@@ -72,7 +72,17 @@ Config::Settings CreateDefaultSettings() {
   return result;
 }
 
+const EnumToStringMap<RootClientTokenOwner>::Map kRootClientTokenOwnerMap[] = {
+    {RootClientTokenOwner::kNone, "none"},
+    {RootClientTokenOwner::kClient, "client"},
+    {RootClientTokenOwner::kCloud, "cloud"},
+};
+
 }  // namespace
+
+template <>
+LIBWEAVE_EXPORT EnumToStringMap<RootClientTokenOwner>::EnumToStringMap()
+    : EnumToStringMap(kRootClientTokenOwnerMap) {}
 
 Config::Config(provider::ConfigStore* config_store)
     : settings_{CreateDefaultSettings()}, config_store_{config_store} {
@@ -121,7 +131,7 @@ void Config::Load() {
   CHECK(settings_.robot_account.empty());
   CHECK(settings_.last_configured_ssid.empty());
   CHECK(settings_.secret.empty());
-  CHECK(settings_.local_auth_info_changed);
+  CHECK(settings_.root_client_token_owner == RootClientTokenOwner::kNone);
 
   change.LoadState();
 }
@@ -214,8 +224,11 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kSecret, &tmp) && Base64Decode(tmp, &secret))
     set_secret(secret);
 
-  if (dict->GetBoolean(config_keys::kLocalAuthInfoChanged, &tmp_bool))
-    set_local_auth_info_changed(tmp_bool);
+  RootClientTokenOwner token_owner{RootClientTokenOwner::kNone};
+  if (dict->GetString(config_keys::kRootClientTokenOwner, &tmp) &&
+      StringToEnum(tmp, &token_owner)) {
+    set_root_client_token_owner(token_owner);
+  }
 }
 
 void Config::Save() {
@@ -237,8 +250,8 @@ void Config::Save() {
   dict.SetString(config_keys::kLastConfiguredSsid,
                  settings_.last_configured_ssid);
   dict.SetString(config_keys::kSecret, Base64Encode(settings_.secret));
-  dict.SetBoolean(config_keys::kLocalAuthInfoChanged,
-                  settings_.local_auth_info_changed);
+  dict.SetString(config_keys::kRootClientTokenOwner,
+                 EnumToString(settings_.root_client_token_owner));
   dict.SetString(config_keys::kName, settings_.name);
   dict.SetString(config_keys::kDescription, settings_.description);
   dict.SetString(config_keys::kLocation, settings_.location);

@@ -104,11 +104,11 @@ class SecurityManagerTest : public testing::Test {
   test::MockClock clock_;
   AuthManager auth_manager_{
       {},
-      {{
+      {
           59, 47, 77, 247, 129, 187, 188, 158, 172, 105, 246, 93, 102, 83, 8,
           138, 176, 141, 37, 63, 223, 40, 153, 121, 134, 23, 120, 106, 24, 205,
           7, 135,
-      }},
+      },
       &clock_};
   SecurityManager security_{&auth_manager_,
                             {PairingType::kEmbeddedCode},
