@@ -9,6 +9,7 @@
 
 #include "src/config.h"
 #include "src/data_encoding.h"
+#include "src/privet/constants.h"
 #include "src/privet/openssl_utils.h"
 #include "src/string_utils.h"
 
@@ -80,6 +81,10 @@ std::vector<uint8_t> CreateSecret() {
   return secret;
 }
 
+bool IsClaimAllowed(RootClientTokenOwner curret, RootClientTokenOwner claimer) {
+  return claimer > curret || claimer == RootClientTokenOwner::kCloud;
+}
+
 }  // namespace
 
 AuthManager::AuthManager(Config* config,
@@ -146,7 +151,19 @@ UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
 }
 
 std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
-    RootClientTokenOwner owner) {
+    RootClientTokenOwner owner,
+    ErrorPtr* error) {
+  CHECK(RootClientTokenOwner::kNone != owner);
+  if (config_) {
+    auto current = config_->GetSettings().root_client_token_owner;
+    if (!IsClaimAllowed(current, owner)) {
+      Error::AddToPrintf(
+          error, FROM_HERE, errors::kDomain, errors::kAlreadyClaimed,
+          "Device already claimed by '%s'", EnumToString(current).c_str());
+      return {};
+    }
+  };
+
   pending_claims_.push_back(std::make_pair(
       std::unique_ptr<AuthManager>{new AuthManager{nullptr, {}}}, owner));
   if (pending_claims_.size() > kMaxPendingClaims)
@@ -154,7 +171,8 @@ std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
   return pending_claims_.back().first->GetRootClientAuthToken();
 }
 
-bool AuthManager::ConfirmAuthToken(const std::vector<uint8_t>& token) {
+bool AuthManager::ConfirmClientAuthToken(const std::vector<uint8_t>& token,
+                                         ErrorPtr* error) {
   // Cover case when caller sent confirm twice.
   if (pending_claims_.empty() && IsValidAuthToken(token))
     return true;
@@ -164,8 +182,11 @@ bool AuthManager::ConfirmAuthToken(const std::vector<uint8_t>& token) {
                    [&token](const decltype(pending_claims_)::value_type& auth) {
                      return auth.first->IsValidAuthToken(token);
                    });
-  if (claim == pending_claims_.end())
+  if (claim == pending_claims_.end()) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kNotFound,
+                 "Unknown claim");
     return false;
+  }
 
   SetSecret(claim->first->GetSecret(), claim->second);
   pending_claims_.clear();

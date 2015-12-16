@@ -12,8 +12,8 @@
 
 #include <base/macros.h>
 #include <base/observer_list.h>
-#include <weave/error.h>
 #include <weave/command.h>
+#include <weave/error.h>
 
 namespace base {
 class Value;
@@ -72,11 +72,10 @@ class CommandInstance final : public Command {
   // The command ID extracted (if present in the JSON object) even if other
   // parsing/validation error occurs and command instance is not constructed.
   // This is used to report parse failures back to the server.
-  static std::unique_ptr<CommandInstance> FromJson(
-      const base::Value* value,
-      Command::Origin origin,
-      std::string* command_id,
-      ErrorPtr* error);
+  static std::unique_ptr<CommandInstance> FromJson(const base::Value* value,
+                                                   Command::Origin origin,
+                                                   std::string* command_id,
+                                                   ErrorPtr* error);
 
   std::unique_ptr<base::DictionaryValue> ToJson() const;
 

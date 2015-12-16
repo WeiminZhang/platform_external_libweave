@@ -30,7 +30,50 @@ const char kTraits[] = R"({
           "tempSetting": {
             "type": "number"
           }
-        }
+        },
+        "errors": ["tempOutOfRange", "unsupportedUnits"]
+      }
+    },
+    "state": {
+      "supportedUnits": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [ "celsius", "fahrenheit", "kelvin" ]
+        },
+        "minItems": 1,
+        "uniqueItems": true,
+        "isRequired": true
+      },
+      "units": {
+        "type": "string",
+        "enum": [ "celsius", "fahrenheit", "kelvin" ],
+        "isRequired": true
+      },
+      "tempSetting": {
+        "type": "number",
+        "isRequired": true
+      },
+      "maxTempSetting": {
+        "type": "number",
+        "isRequired": true
+      },
+      "minTempSetting": {
+        "type": "number",
+        "isRequired": true
+      }
+    }
+  },
+  "temperatureSensor": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "units": {
+            "type": "string"
+          }
+        },
+        "errors": ["unsupportedUnits"]
       }
     },
     "state": {
@@ -43,40 +86,19 @@ const char kTraits[] = R"({
             "fahrenheit",
             "kelvin"
           ]
-        }
+        },
+        "minItems": 1,
+        "uniqueItems": true,
+        "isRequired": true
       },
       "units": {
-        "type": "string"
-      },
-      "tempSetting": {
-        "type": "number"
-      },
-      "maxTempSetting": {
-        "type": "number"
-      },
-      "minTempSetting": {
-        "type": "number"
-      }
-    }
-  },
-  "temperatureSensor": {
-    "state": {
-      "supportedUnits": {
-        "type": "array",
-        "items": {
-          "type": "string",
-          "enum": [
-            "celsius",
-            "fahrenheit",
-            "kelvin"
-          ]
-        }
-      },
-      "units": {
-        "type": "string"
+        "type": "string",
+        "enum": [ "celsius", "fahrenheit", "kelvin" ],
+        "isRequired": true
       },
       "value": {
-        "type": "number"
+        "type": "number",
+        "isRequired": true
       }
     }
   },
@@ -95,7 +117,10 @@ const char kTraits[] = R"({
     },
     "state": {
       "brightness": {
-        "type": "number"
+        "type": "integer",
+        "isRequired": true,
+        "minimum": 0,
+        "maximum": 100
       }
     }
   }
@@ -136,7 +161,7 @@ class OvenHandler {
                                          weak_ptr_factory_.GetWeakPtr()));
   }
 
-private:
+ private:
   void OnSetTempCommand(const std::weak_ptr<weave::Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
@@ -158,8 +183,8 @@ private:
       LOG(INFO) << cmd->GetName() << " updated oven, matching temp";
 
       if (target_temperature_ != current_temperature_ && !is_match_ticking_) {
-        double tickIncrement = ((target_temperature_ - current_temperature_) /
-            kWarmUpTime);
+        double tickIncrement =
+            ((target_temperature_ - current_temperature_) / kWarmUpTime);
         DoTick(tickIncrement);
       }
       return;

@@ -5,10 +5,9 @@
 #include "examples/provider/event_http_client.h"
 #include "examples/provider/event_task_runner.h"
 
-
 #include <base/bind.h>
-#include <event2/bufferevent.h>
 #include <event2/buffer.h>
+#include <event2/bufferevent.h>
 #include <event2/http.h>
 #include <weave/enum_to_string.h>
 

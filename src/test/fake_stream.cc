@@ -49,9 +49,8 @@ void FakeStream::Write(const void* buffer,
                        size_t size_to_write,
                        const WriteCallback& callback) {
   size_t size = std::min(size_to_write, write_data_.size());
-  EXPECT_EQ(
-      write_data_.substr(0, size),
-      std::string(reinterpret_cast<const char*>(buffer), size_to_write));
+  EXPECT_EQ(write_data_.substr(0, size),
+            std::string(reinterpret_cast<const char*>(buffer), size_to_write));
   write_data_ = write_data_.substr(size);
   task_runner_->PostDelayedTask(FROM_HERE, base::Bind(callback, nullptr),
                                 base::TimeDelta::FromSeconds(0));

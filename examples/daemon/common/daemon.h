@@ -70,7 +70,8 @@ class Daemon {
 
   Daemon(const Options& opts)
       : config_store_{new weave::examples::FileConfigStore(
-            opts.disable_security_, opts.model_id_)},
+            opts.disable_security_,
+            opts.model_id_)},
         task_runner_{new weave::examples::EventTaskRunner},
         http_client_{new weave::examples::CurlHttpClient(task_runner_.get())},
         network_{new weave::examples::EventNetworkImpl(task_runner_.get())},

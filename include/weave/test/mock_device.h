@@ -26,29 +26,34 @@ class MockDevice : public Device {
   MOCK_CONST_METHOD0(GetTraits, const base::DictionaryValue&());
   MOCK_METHOD1(AddTraitDefsChangedCallback,
                void(const base::Closure& callback));
-  MOCK_METHOD3(AddComponent, bool(const std::string& name,
-                                  const std::vector<std::string>& traits,
-                                  ErrorPtr* error));
+  MOCK_METHOD3(AddComponent,
+               bool(const std::string& name,
+                    const std::vector<std::string>& traits,
+                    ErrorPtr* error));
   MOCK_METHOD1(AddComponentTreeChangedCallback,
                void(const base::Closure& callback));
   MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
-  MOCK_METHOD3(SetStatePropertiesFromJson, bool(const std::string& component,
-                                                const std::string& json,
-                                                ErrorPtr* error));
-  MOCK_METHOD3(SetStateProperties, bool(const std::string& component,
-                                        const base::DictionaryValue& dict,
-                                        ErrorPtr* error));
+  MOCK_METHOD3(SetStatePropertiesFromJson,
+               bool(const std::string& component,
+                    const std::string& json,
+                    ErrorPtr* error));
+  MOCK_METHOD3(SetStateProperties,
+               bool(const std::string& component,
+                    const base::DictionaryValue& dict,
+                    ErrorPtr* error));
   MOCK_CONST_METHOD3(GetStateProperty,
                      const base::Value*(const std::string& component,
                                         const std::string& name,
                                         ErrorPtr* error));
-  MOCK_METHOD4(SetStateProperty, bool(const std::string& component,
-                                      const std::string& name,
-                                      const base::Value& value,
-                                      ErrorPtr* error));
-  MOCK_METHOD3(AddCommandHandler, void(const std::string& component,
-                                       const std::string& command_name,
-                                       const CommandHandlerCallback& callback));
+  MOCK_METHOD4(SetStateProperty,
+               bool(const std::string& component,
+                    const std::string& name,
+                    const base::Value& value,
+                    ErrorPtr* error));
+  MOCK_METHOD3(AddCommandHandler,
+               void(const std::string& component,
+                    const std::string& command_name,
+                    const CommandHandlerCallback& callback));
   MOCK_METHOD3(AddCommand,
                bool(const base::DictionaryValue&, std::string*, ErrorPtr*));
   MOCK_METHOD1(FindCommand, Command*(const std::string&));

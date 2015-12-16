@@ -53,6 +53,7 @@ const EnumToStringMap<AuthScope>::Map kAuthScopeMap[] = {
     {AuthScope::kNone, "none"},
     {AuthScope::kViewer, "viewer"},
     {AuthScope::kUser, "user"},
+    {AuthScope::kManager, "manager"},
     {AuthScope::kOwner, "owner"},
 };
 

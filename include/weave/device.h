@@ -54,8 +54,7 @@ class Device {
   virtual const base::DictionaryValue& GetTraits() const = 0;
 
   // Sets callback which is called when new trait definitions are added.
-  virtual void AddTraitDefsChangedCallback(
-      const base::Closure& callback) = 0;
+  virtual void AddTraitDefsChangedCallback(const base::Closure& callback) = 0;
 
   // Adds a new component instance to device. Traits used by this component
   // must be already defined.
@@ -77,29 +76,25 @@ class Device {
   //                                      "{'base':{'firmwareVersion':'123'}}")
   // Method completely replaces properties included |json| or |dict|.
   // Properties of the state not included |json| or |dict| will stay unchanged.
-  virtual bool SetStatePropertiesFromJson(
-      const std::string& component,
-      const std::string& json,
-      ErrorPtr* error) = 0;
-  virtual bool SetStateProperties(
-      const std::string& component,
-      const base::DictionaryValue& dict,
-      ErrorPtr* error) = 0;
+  virtual bool SetStatePropertiesFromJson(const std::string& component,
+                                          const std::string& json,
+                                          ErrorPtr* error) = 0;
+  virtual bool SetStateProperties(const std::string& component,
+                                  const base::DictionaryValue& dict,
+                                  ErrorPtr* error) = 0;
 
   // Returns value of the single property.
   // |name| is full property name, including trait name. e.g. "base.network".
-  virtual const base::Value* GetStateProperty(
-      const std::string& component,
-      const std::string& name,
-      ErrorPtr* error) const = 0;
+  virtual const base::Value* GetStateProperty(const std::string& component,
+                                              const std::string& name,
+                                              ErrorPtr* error) const = 0;
 
   // Sets value of the single property.
   // |name| is full property name, including trait name. e.g. "base.network".
-  virtual bool SetStateProperty(
-      const std::string& component,
-      const std::string& name,
-      const base::Value& value,
-      ErrorPtr* error) = 0;
+  virtual bool SetStateProperty(const std::string& component,
+                                const std::string& name,
+                                const base::Value& value,
+                                ErrorPtr* error) = 0;
 
   // Callback type for AddCommandHandler.
   using CommandHandlerCallback =
@@ -113,10 +108,9 @@ class Device {
   // Empty |component| and |command_name| sets default handler for all unhanded
   // commands.
   // No new command handlers can be set after default handler was set.
-  virtual void AddCommandHandler(
-      const std::string& component,
-      const std::string& command_name,
-      const CommandHandlerCallback& callback) = 0;
+  virtual void AddCommandHandler(const std::string& component,
+                                 const std::string& command_name,
+                                 const CommandHandlerCallback& callback) = 0;
 
   // Adds a new command to the command queue.
   virtual bool AddCommand(const base::DictionaryValue& command,
@@ -225,10 +219,9 @@ class Device {
   // Sets value of the single property.
   // |name| is full property name, including package name. e.g. "base.network".
   // DO NOT USE IN YOUR CODE: use SetStateProperty() with component parameter.
-  LIBWEAVE_DEPRECATED virtual bool SetStateProperty(
-      const std::string& name,
-      const base::Value& value,
-      ErrorPtr* error) = 0;
+  LIBWEAVE_DEPRECATED virtual bool SetStateProperty(const std::string& name,
+                                                    const base::Value& value,
+                                                    ErrorPtr* error) = 0;
 
   // Returns aggregated state properties across all registered packages.
   // DO NOT USE IN YOUR CODE: use GetComponents() instead.

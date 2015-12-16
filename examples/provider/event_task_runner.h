@@ -83,7 +83,8 @@ class EventTaskRunner : public provider::TaskRunner {
 
   std::priority_queue<QueueItem,
                       std::vector<QueueItem>,
-                      EventTaskRunner::Greater> queue_;
+                      EventTaskRunner::Greater>
+      queue_;
 
   EventPtr<event_base> base_{event_base_new()};
 

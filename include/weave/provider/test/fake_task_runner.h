@@ -53,7 +53,8 @@ class FakeTaskRunner : public TaskRunner {
 
   std::priority_queue<QueueItem,
                       std::vector<QueueItem>,
-                      FakeTaskRunner::Greater> queue_;
+                      FakeTaskRunner::Greater>
+      queue_;
 };
 
 }  // namespace test

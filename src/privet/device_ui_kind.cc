@@ -12,9 +12,9 @@ namespace weave {
 namespace privet {
 
 std::string GetDeviceUiKind(const std::string& manifest_id) {
-
   // Map of device short id to ui device kind
   static const std::unordered_map<std::string, std::string> device_kind_map = {
+    // clang-format off
     {"AC", "accessPoint"},
     {"AK", "aggregator"},
     {"AM", "camera"},
@@ -28,7 +28,8 @@ std::string GetDeviceUiKind(const std::string& manifest_id) {
     {"AL", "storage"},
     {"AJ", "toy"},
     {"AA", "vendor"},
-    {"AN", "video"}
+    {"AN", "video"},
+    // clang-format on
   };
 
   CHECK_EQ(5u, manifest_id.size());

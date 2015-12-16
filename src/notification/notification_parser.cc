@@ -45,8 +45,7 @@ bool ParseNotificationJson(const base::DictionaryValue& notification,
   CHECK(delegate);
 
   std::string kind;
-  if (!notification.GetString("kind", &kind) ||
-      kind != "weave#notification") {
+  if (!notification.GetString("kind", &kind) || kind != "weave#notification") {
     LOG(WARNING) << "Push notification should have 'kind' property set to "
                     "weave#notification";
     return false;

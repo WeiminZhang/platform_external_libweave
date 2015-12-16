@@ -30,6 +30,7 @@ const char kInvalidSsid[] = "invalidSsid";
 const char kInvalidPassphrase[] = "invalidPassphrase";
 const char kNotFound[] = "notFound";
 const char kNotImplemented[] = "notImplemented";
+const char kAlreadyClaimed[] = "alreadyClaimed";
 
 }  // namespace errors
 }  // namespace privet

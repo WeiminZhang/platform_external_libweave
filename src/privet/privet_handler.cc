@@ -17,6 +17,7 @@
 #include <weave/enum_to_string.h>
 #include <weave/provider/task_runner.h>
 
+#include "src/config.h"
 #include "src/http_constants.h"
 #include "src/privet/cloud_delegate.h"
 #include "src/privet/constants.h"
@@ -90,6 +91,7 @@ const char kAuthAccessTokenKey[] = "accessToken";
 const char kAuthTokenTypeKey[] = "tokenType";
 const char kAuthExpiresInKey[] = "expiresIn";
 const char kAuthScopeKey[] = "scope";
+const char kAuthClientTokenKey[] = "clientToken";
 
 const char kAuthorizationHeaderPrefix[] = "Privet";
 
@@ -153,6 +155,7 @@ struct {
     {errors::kInvalidState, http::kInternalServerError},
     {errors::kNotFound, http::kNotFound},
     {errors::kNotImplemented, http::kNotSupported},
+    {errors::kAlreadyClaimed, http::kDenied},
 };
 
 AuthScope AuthScopeFromString(const std::string& scope, AuthScope auto_scope) {
@@ -391,7 +394,10 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
                              SecurityDelegate* security,
                              WifiDelegate* wifi,
                              base::Clock* clock)
-    : cloud_(cloud), device_(device), security_(security), wifi_(wifi),
+    : cloud_(cloud),
+      device_(device),
+      security_(security),
+      wifi_(wifi),
       clock_(clock ? clock : &default_clock_) {
   CHECK(cloud_);
   CHECK(device_);
@@ -409,10 +415,15 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
 
   AddSecureHandler("/privet/v3/auth", &PrivetHandler::HandleAuth,
                    AuthScope::kNone);
+  AddSecureHandler("/privet/v3/accessControl/claim",
+                   &PrivetHandler::HandleAccessControlClaim, AuthScope::kOwner);
+  AddSecureHandler("/privet/v3/accessControl/confirm",
+                   &PrivetHandler::HandleAccessControlConfirm,
+                   AuthScope::kOwner);
   AddSecureHandler("/privet/v3/setup/start", &PrivetHandler::HandleSetupStart,
-                   AuthScope::kOwner);
+                   AuthScope::kManager);
   AddSecureHandler("/privet/v3/setup/status", &PrivetHandler::HandleSetupStatus,
-                   AuthScope::kOwner);
+                   AuthScope::kManager);
   AddSecureHandler("/privet/v3/state", &PrivetHandler::HandleState,
                    AuthScope::kViewer);
   AddSecureHandler("/privet/v3/commandDefs", &PrivetHandler::HandleCommandDefs,
@@ -738,6 +749,40 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   callback.Run(http::kOk, output);
 }
 
+void PrivetHandler::HandleAccessControlClaim(const base::DictionaryValue& input,
+                                             const UserInfo& user_info,
+                                             const RequestCallback& callback) {
+  ErrorPtr error;
+  auto token = security_->ClaimRootClientAuthToken(&error);
+  if (token.empty())
+    return ReturnError(*error, callback);
+
+  base::DictionaryValue output;
+  output.SetString(kAuthClientTokenKey, token);
+  callback.Run(http::kOk, output);
+}
+
+void PrivetHandler::HandleAccessControlConfirm(
+    const base::DictionaryValue& input,
+    const UserInfo& user_info,
+    const RequestCallback& callback) {
+  ErrorPtr error;
+
+  std::string token;
+  if (!input.GetString(kAuthClientTokenKey, &token)) {
+    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
+                       errors::kInvalidParams, kInvalidParamValueFormat,
+                       kAuthClientTokenKey, token.c_str());
+    return ReturnError(*error, callback);
+  }
+
+  if (!security_->ConfirmClientAuthToken(token, &error))
+    return ReturnError(*error, callback);
+
+  base::DictionaryValue output;
+  callback.Run(http::kOk, output);
+}
+
 void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
                                      const UserInfo& user_info,
                                      const RequestCallback& callback) {
@@ -776,6 +821,13 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
 
   const base::DictionaryValue* registration = nullptr;
   if (input.GetDictionary(kGcdKey, &registration)) {
+    if (user_info.scope() < AuthScope::kOwner) {
+      ErrorPtr error;
+      Error::AddTo(&error, FROM_HERE, errors::kDomain,
+                   errors::kInvalidAuthorizationScope,
+                   "Only owner can register device");
+      return ReturnError(*error, callback);
+    }
     registration->GetString(kSetupStartTicketIdKey, &ticket);
     if (ticket.empty()) {
       ErrorPtr error;
@@ -1028,8 +1080,7 @@ void PrivetHandler::ReplyToUpdateRequest(
   output.SetString(kStateFingerprintKey, std::to_string(state_fingerprint_));
   output.SetString(kCommandsFingerprintKey,
                    std::to_string(traits_fingerprint_));
-  output.SetString(kTraitsFingerprintKey,
-                   std::to_string(traits_fingerprint_));
+  output.SetString(kTraitsFingerprintKey, std::to_string(traits_fingerprint_));
   output.SetString(kComponentsFingerprintKey,
                    std::to_string(components_fingerprint_));
   callback.Run(http::kOk, output);

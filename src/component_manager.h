@@ -34,7 +34,8 @@ struct ComponentStateChange {
   ComponentStateChange(base::Time time,
                        const std::string& path,
                        std::unique_ptr<base::DictionaryValue> properties)
-      : timestamp{time}, component{path},
+      : timestamp{time},
+        component{path},
         changed_properties{std::move(properties)} {}
   base::Time timestamp;
   std::string component;
@@ -91,8 +92,8 @@ class ComponentManager {
   // Adds a new command instance to the command queue. The command specified in
   // |command_instance| must be fully initialized and have its name, component,
   // id populated.
-  virtual void AddCommand(
-      std::unique_ptr<CommandInstance> command_instance) = 0;
+  virtual void
+  AddCommand(std::unique_ptr<CommandInstance> command_instance) = 0;
 
   // Parses the command definition from a json dictionary. The resulting command
   // instance is populated with all the required fields and partially validated
@@ -125,9 +126,8 @@ class ComponentManager {
       const Device::CommandHandlerCallback& callback) = 0;
 
   // Finds a component instance by its full path.
-  virtual const base::DictionaryValue* FindComponent(
-      const std::string& path,
-      ErrorPtr* error) const = 0;
+  virtual const base::DictionaryValue* FindComponent(const std::string& path,
+                                                     ErrorPtr* error) const = 0;
   // Finds a definition of trait with the given |name|.
   virtual const base::DictionaryValue* FindTraitDefinition(
       const std::string& name) const = 0;

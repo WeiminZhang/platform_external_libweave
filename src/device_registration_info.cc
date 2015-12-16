@@ -235,17 +235,6 @@ bool IsSuccessful(const HttpClient::Response& response) {
   return code >= http::kContinue && code < http::kBadRequest;
 }
 
-std::unique_ptr<base::DictionaryValue> BuildDeviceLocalAuth(
-    const std::string& id,
-    const std::string& client_token,
-    const std::string& cert_fingerprint) {
-  std::unique_ptr<base::DictionaryValue> auth{new base::DictionaryValue};
-  auth->SetString("localId", id);
-  auth->SetString("clientToken", client_token);
-  auth->SetString("certFingerprint", cert_fingerprint);
-  return auth;
-}
-
 }  // anonymous namespace
 
 DeviceRegistrationInfo::DeviceRegistrationInfo(
@@ -277,12 +266,11 @@ DeviceRegistrationInfo::DeviceRegistrationInfo(
   gcd_state_ =
       revoked ? GcdState::kInvalidCredentials : GcdState::kUnconfigured;
 
-  component_manager_->AddTraitDefChangedCallback(
-      base::Bind(&DeviceRegistrationInfo::OnTraitDefsChanged,
+  component_manager_->AddTraitDefChangedCallback(base::Bind(
+      &DeviceRegistrationInfo::OnTraitDefsChanged, weak_factory_.GetWeakPtr()));
+  component_manager_->AddComponentTreeChangedCallback(
+      base::Bind(&DeviceRegistrationInfo::OnComponentTreeChanged,
                  weak_factory_.GetWeakPtr()));
-  component_manager_->AddComponentTreeChangedCallback(base::Bind(
-      &DeviceRegistrationInfo::OnComponentTreeChanged,
-      weak_factory_.GetWeakPtr()));
   component_manager_->AddStateChangedCallback(base::Bind(
       &DeviceRegistrationInfo::OnStateChanged, weak_factory_.GetWeakPtr()));
 }
@@ -513,9 +501,6 @@ DeviceRegistrationInfo::BuildDeviceResource() const {
     channel->SetString("supportedType", "pull");
   }
   resource->Set("channel", channel.release());
-  resource->Set("commandDefs",
-                component_manager_->GetLegacyCommandDefinitions().DeepCopy());
-  resource->Set("state", component_manager_->GetLegacyState().DeepCopy());
   resource->Set("traits", component_manager_->GetTraits().DeepCopy());
   resource->Set("components", component_manager_->GetComponents().DeepCopy());
 
@@ -611,12 +596,11 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
   // Now get access_token and refresh_token
   RequestSender sender2{HttpClient::Method::kPost, GetOAuthURL("token"),
                         http_client_};
-  sender2.SetFormData(
-      {{"code", auth_code},
-       {"client_id", GetSettings().client_id},
-       {"client_secret", GetSettings().client_secret},
-       {"redirect_uri", "oob"},
-       {"grant_type", "authorization_code"}});
+  sender2.SetFormData({{"code", auth_code},
+                       {"client_id", GetSettings().client_id},
+                       {"client_secret", GetSettings().client_secret},
+                       {"redirect_uri", "oob"},
+                       {"grant_type", "authorization_code"}});
   sender2.Send(base::Bind(&DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent,
                           weak_factory_.GetWeakPtr(), cloud_id, robot_account,
                           callback));
@@ -715,9 +699,8 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
   int status_code = response->GetStatusCode();
   if (status_code == http::kDenied) {
     cloud_backoff_entry_->InformOfRequest(true);
-    RefreshAccessToken(
-        base::Bind(&DeviceRegistrationInfo::OnAccessTokenRefreshed, AsWeakPtr(),
-                   data));
+    RefreshAccessToken(base::Bind(
+        &DeviceRegistrationInfo::OnAccessTokenRefreshed, AsWeakPtr(), data));
     return;
   }
 
@@ -738,7 +721,7 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
 
   auto json_resp = ParseJsonResponse(*response, &error);
   if (!json_resp) {
-    cloud_backoff_entry_->InformOfRequest(true);
+    cloud_backoff_entry_->InformOfRequest(false);
     return data->callback.Run({}, std::move(error));
   }
 
@@ -749,7 +732,8 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
       // If we exceeded server quota, retry the request later.
       return RetryCloudRequest(data);
     }
-    cloud_backoff_entry_->InformOfRequest(true);
+
+    cloud_backoff_entry_->InformOfRequest(false);
     return data->callback.Run({}, std::move(error));
   }
 
@@ -813,7 +797,8 @@ void DeviceRegistrationInfo::OnConnectedToCloud(ErrorPtr error) {
   LOG(INFO) << "Device connected to cloud server";
   connected_to_cloud_ = true;
   FetchCommands(base::Bind(&DeviceRegistrationInfo::ProcessInitialCommandList,
-                           AsWeakPtr()), fetch_reason::kDeviceStart);
+                           AsWeakPtr()),
+                fetch_reason::kDeviceStart);
   // In case there are any pending state updates since we sent off the initial
   // UpdateDeviceResource() request, update the server with any state changes.
   PublishStateUpdates();
@@ -933,24 +918,33 @@ void DeviceRegistrationInfo::StartQueuedUpdateDeviceResource() {
 void DeviceRegistrationInfo::SendAuthInfo() {
   if (!auth_manager_ || auth_info_update_inprogress_)
     return;
+
+  if (GetSettings().root_client_token_owner == RootClientTokenOwner::kCloud) {
+    // Avoid re-claiming if device is already claimed by the Cloud. Cloud is
+    // allowed to re-claim device at any time. However this will invalidate all
+    // issued tokens.
+    return;
+  }
+
   auth_info_update_inprogress_ = true;
 
+  std::vector<uint8_t> token = auth_manager_->ClaimRootClientAuthToken(
+      RootClientTokenOwner::kCloud, nullptr);
+  CHECK(!token.empty());
   std::string id = GetSettings().device_id;
-  std::vector<uint8_t> token =
-      auth_manager_->ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
   std::string token_base64 = Base64Encode(token);
   std::string fingerprint =
       Base64Encode(auth_manager_->GetCertificateFingerprint());
 
-  std::unique_ptr<base::DictionaryValue> auth =
-      BuildDeviceLocalAuth(id, token_base64, fingerprint);
+  std::unique_ptr<base::DictionaryValue> auth{new base::DictionaryValue};
+  auth->SetString("localId", id);
+  auth->SetString("clientToken", token_base64);
+  auth->SetString("certFingerprint", fingerprint);
+  std::unique_ptr<base::DictionaryValue> root{new base::DictionaryValue};
+  root->Set("localAuthInfo", auth.release());
 
-  // TODO(vitalybuka): Remove args from URL when server is ready.
-  std::string url =
-      GetDeviceURL("upsertLocalAuthInfo", {{"localid", id},
-                                           {"clienttoken", token_base64},
-                                           {"certfingerprint", fingerprint}});
-  DoCloudRequest(HttpClient::Method::kPost, url, auth.get(),
+  std::string url = GetDeviceURL("upsertLocalAuthInfo", {});
+  DoCloudRequest(HttpClient::Method::kPost, url, root.get(),
                  base::Bind(&DeviceRegistrationInfo::OnSendAuthInfoDone,
                             AsWeakPtr(), token));
 }
@@ -962,7 +956,7 @@ void DeviceRegistrationInfo::OnSendAuthInfoDone(
   CHECK(auth_info_update_inprogress_);
   auth_info_update_inprogress_ = false;
 
-  if (!error && auth_manager_->ConfirmAuthToken(token))
+  if (!error && auth_manager_->ConfirmClientAuthToken(token, nullptr))
     return;
 
   task_runner_->PostDelayedTask(
@@ -1056,8 +1050,8 @@ void DeviceRegistrationInfo::FetchCommands(
   fetch_commands_request_queued_ = false;
   DoCloudRequest(
       HttpClient::Method::kGet,
-      GetServiceURL("commands/queue", {{"deviceId", GetSettings().cloud_id},
-                                       {"reason", reason}}),
+      GetServiceURL("commands/queue",
+                    {{"deviceId", GetSettings().cloud_id}, {"reason", reason}}),
       nullptr, base::Bind(&DeviceRegistrationInfo::OnFetchCommandsDone,
                           AsWeakPtr(), callback));
 }
@@ -1146,9 +1140,9 @@ void DeviceRegistrationInfo::PublishCommand(
               << "' arrived, ID: " << command_instance->GetID();
     std::unique_ptr<BackoffEntry> backoff_entry{
         new BackoffEntry{cloud_backoff_policy_.get()}};
-    std::unique_ptr<CloudCommandProxy> cloud_proxy{new CloudCommandProxy{
-        command_instance.get(), this, component_manager_,
-        std::move(backoff_entry), task_runner_}};
+    std::unique_ptr<CloudCommandProxy> cloud_proxy{
+        new CloudCommandProxy{command_instance.get(), this, component_manager_,
+                              std::move(backoff_entry), task_runner_}};
     // CloudCommandProxy::CloudCommandProxy() subscribe itself to Command
     // notifications. When Command is being destroyed it sends
     // ::OnCommandDestroyed() and CloudCommandProxy deletes itself.
@@ -1171,9 +1165,7 @@ void DeviceRegistrationInfo::PublishStateUpdates() {
     std::unique_ptr<base::DictionaryValue> patch{new base::DictionaryValue};
     patch->SetString("timeMs",
                      std::to_string(state_change.timestamp.ToJavaTime()));
-    // TODO(avakulenko): Uncomment this once server supports "component"
-    // attribute on a state patch object.
-    // patch->SetString("component", state_change.component);
+    patch->SetString("component", state_change.component);
     patch->Set("patch", state_change.changed_properties.release());
     patches->Append(patch.release());
   }
@@ -1300,8 +1292,8 @@ void DeviceRegistrationInfo::OnCommandCreated(
   // channel (XMPP) is active, we are doing a backup poll, so mark the request
   // appropriately.
   bool just_in_case =
-    (channel_name == kPullChannelName) &&
-    (current_notification_channel_ == primary_notification_channel_.get());
+      (channel_name == kPullChannelName) &&
+      (current_notification_channel_ == primary_notification_channel_.get());
 
   std::string reason =
       just_in_case ? fetch_reason::kJustInCase : fetch_reason::kNewCommand;
@@ -1328,6 +1320,9 @@ void DeviceRegistrationInfo::RemoveCredentials() {
   connected_to_cloud_ = false;
 
   LOG(INFO) << "Device is unregistered from the cloud. Deleting credentials";
+  if (auth_manager_)
+    auth_manager_->SetSecret({}, RootClientTokenOwner::kNone);
+
   Config::Transaction change{config_};
   // Keep cloud_id to switch to detect kInvalidCredentials after restart.
   change.set_robot_account("");

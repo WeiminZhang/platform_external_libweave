@@ -29,8 +29,8 @@ struct ResponseImpl : public provider::HttpClient::Response {
 };
 
 size_t WriteFunction(void* contents, size_t size, size_t nmemb, void* userp) {
-  static_cast<std::string*>(userp)
-      ->append(static_cast<const char*>(contents), size * nmemb);
+  static_cast<std::string*>(userp)->append(static_cast<const char*>(contents),
+                                           size * nmemb);
   return size * nmemb;
 }
 
@@ -49,8 +49,8 @@ size_t HeaderFunction(void* contents, size_t size, size_t nmemb, void* userp) {
         header_pair.second = header.substr(pos, last_non_space - pos + 1);
     }
 
-    static_cast<provider::HttpClient::Headers*>(userp)
-        ->emplace_back(std::move(header_pair));
+    static_cast<provider::HttpClient::Headers*>(userp)->emplace_back(
+        std::move(header_pair));
   }
   return size * nmemb;
 }
