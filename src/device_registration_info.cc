@@ -235,17 +235,6 @@ bool IsSuccessful(const HttpClient::Response& response) {
   return code >= http::kContinue && code < http::kBadRequest;
 }
 
-std::unique_ptr<base::DictionaryValue> BuildDeviceLocalAuth(
-    const std::string& id,
-    const std::string& client_token,
-    const std::string& cert_fingerprint) {
-  std::unique_ptr<base::DictionaryValue> auth{new base::DictionaryValue};
-  auth->SetString("localId", id);
-  auth->SetString("clientToken", client_token);
-  auth->SetString("certFingerprint", cert_fingerprint);
-  return auth;
-}
-
 }  // anonymous namespace
 
 DeviceRegistrationInfo::DeviceRegistrationInfo(
@@ -946,15 +935,15 @@ void DeviceRegistrationInfo::SendAuthInfo() {
   std::string fingerprint =
       Base64Encode(auth_manager_->GetCertificateFingerprint());
 
-  std::unique_ptr<base::DictionaryValue> auth =
-      BuildDeviceLocalAuth(id, token_base64, fingerprint);
+  std::unique_ptr<base::DictionaryValue> auth{new base::DictionaryValue};
+  auth->SetString("localId", id);
+  auth->SetString("clientToken", token_base64);
+  auth->SetString("certFingerprint", fingerprint);
+  std::unique_ptr<base::DictionaryValue> root{new base::DictionaryValue};
+  root->Set("localAuthInfo", auth.release());
 
-  // TODO(vitalybuka): Remove args from URL when server is ready.
-  std::string url =
-      GetDeviceURL("upsertLocalAuthInfo", {{"localid", id},
-                                           {"clienttoken", token_base64},
-                                           {"certfingerprint", fingerprint}});
-  DoCloudRequest(HttpClient::Method::kPost, url, auth.get(),
+  std::string url = GetDeviceURL("upsertLocalAuthInfo", {});
+  DoCloudRequest(HttpClient::Method::kPost, url, root.get(),
                  base::Bind(&DeviceRegistrationInfo::OnSendAuthInfoDone,
                             AsWeakPtr(), token));
 }

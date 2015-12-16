@@ -68,9 +68,11 @@ const char kRobotAccountEmail[] =
     "6ed0b3f54f9bd619b942f4ad2441c252@"
     "clouddevices.gserviceaccount.com";
 const char kAuthInfo[] = R"({
-  "certFingerprint":
-  "FQY6BEINDjw3FgsmYChRWgMzMhc4TC8uG0UUUFhdDz0=",
-  "localId": "f6885e46-b432-42d7-86a5-d759bfb61f62"
+  "localAuthInfo": {
+    "certFingerprint":
+    "FQY6BEINDjw3FgsmYChRWgMzMhc4TC8uG0UUUFhdDz0=",
+    "localId": "f6885e46-b432-42d7-86a5-d759bfb61f62"
+  }
 })";
 
 }  // namespace test_data
@@ -269,8 +271,7 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
           Invoke([](const std::string& data,
                     const HttpClient::SendRequestCallback& callback) {
             auto dict = CreateDictionaryValue(data);
-            EXPECT_TRUE(dict->HasKey("clientToken"));
-            dict->Remove("clientToken", nullptr);
+            EXPECT_TRUE(dict->Remove("localAuthInfo.clientToken", nullptr));
             EXPECT_JSON_EQ(test_data::kAuthInfo, *dict);
             base::DictionaryValue json;
             callback.Run(ReplyWithJson(200, json), nullptr);
@@ -532,8 +533,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
           Invoke([](const std::string& data,
                     const HttpClient::SendRequestCallback& callback) {
             auto dict = CreateDictionaryValue(data);
-            EXPECT_TRUE(dict->HasKey("clientToken"));
-            dict->Remove("clientToken", nullptr);
+            EXPECT_TRUE(dict->Remove("localAuthInfo.clientToken", nullptr));
             EXPECT_JSON_EQ(test_data::kAuthInfo, *dict);
             base::DictionaryValue json;
             callback.Run(ReplyWithJson(200, json), nullptr);
