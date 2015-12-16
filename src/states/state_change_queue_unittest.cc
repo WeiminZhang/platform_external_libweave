@@ -43,10 +43,10 @@ TEST_F(StateChangeQueueTest, UpdateMany) {
   auto timestamp2 = timestamp1 + base::TimeDelta::FromSeconds(1);
   const std::string state2 =
       "{'prop': {'name1': 17, 'name2': 1.0, 'name3': false}}";
-  ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      timestamp1, *CreateDictionaryValue(state1)));
-  ASSERT_TRUE(queue_->NotifyPropertiesUpdated(
-      timestamp2, *CreateDictionaryValue(state2)));
+  ASSERT_TRUE(queue_->NotifyPropertiesUpdated(timestamp1,
+                                              *CreateDictionaryValue(state1)));
+  ASSERT_TRUE(queue_->NotifyPropertiesUpdated(timestamp2,
+                                              *CreateDictionaryValue(state2)));
 
   auto changes = queue_->GetAndClearRecordedStateChanges();
   ASSERT_EQ(2u, changes.size());
@@ -111,8 +111,7 @@ TEST_F(StateChangeQueueTest, MaxQueueSize) {
   EXPECT_EQ(start_time + time_delta1, changes[0].timestamp);
   EXPECT_JSON_EQ(expected1, *changes[0].changed_properties);
 
-  const std::string expected2 =
-      "{'prop': {'name10': 10, 'name11': 11}}";
+  const std::string expected2 = "{'prop': {'name10': 10, 'name11': 11}}";
   EXPECT_EQ(start_time + time_delta2, changes[1].timestamp);
   EXPECT_JSON_EQ(expected2, *changes[1].changed_properties);
 }

@@ -4,9 +4,9 @@
 
 #include "src/component_manager_impl.h"
 
-#include <base/strings/stringprintf.h>
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/string_util.h>
+#include <base/strings/stringprintf.h>
 
 #include "src/commands/schema_constants.h"
 #include "src/json_error_codes.h"
@@ -124,8 +124,7 @@ bool ComponentManagerImpl::LoadTraits(const base::DictionaryValue& dict,
       if (!existing_def->Equals(&it.value())) {
         Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                            errors::commands::kTypeMismatch,
-                           "Trait '%s' cannot be redefined",
-                           it.key().c_str());
+                           "Trait '%s' cannot be redefined", it.key().c_str());
         result = false;
         break;
       }
@@ -168,8 +167,8 @@ std::unique_ptr<CommandInstance> ComponentManagerImpl::ParseCommandInstance(
     std::string* id,
     ErrorPtr* error) {
   std::string command_id;
-  auto command_instance = CommandInstance::FromJson(&command, command_origin,
-                                                    &command_id, error);
+  auto command_instance =
+      CommandInstance::FromJson(&command, command_origin, &command_id, error);
   // If we fail to validate the command definition, but there was a command ID
   // specified there, return it to the caller when requested. This will be
   // used to abort cloud commands.
@@ -195,14 +194,15 @@ std::unique_ptr<CommandInstance> ComponentManagerImpl::ParseCommandInstance(
   if (component_path.empty()) {
     // Find the component to which to route this command. Get the trait name
     // from the command name and find the first component that has this trait.
-    auto trait_name = SplitAtFirst(command_instance->GetName(), ".", true).first;
+    auto trait_name =
+        SplitAtFirst(command_instance->GetName(), ".", true).first;
     component_path = FindComponentWithTrait(trait_name);
     if (component_path.empty()) {
       Error::AddToPrintf(
           error, FROM_HERE, errors::commands::kDomain, "unrouted_command",
           "Unable route command '%s' because there is no component supporting"
-          "trait '%s'", command_instance->GetName().c_str(),
-          trait_name.c_str());
+          "trait '%s'",
+          command_instance->GetName().c_str(), trait_name.c_str());
       return nullptr;
     }
     command_instance->SetComponent(component_path);
@@ -267,14 +267,15 @@ void ComponentManagerImpl::AddCommandHandler(
   // If both component_path and command_name are empty, we are adding the
   // default handler for all commands.
   if (!component_path.empty() || !command_name.empty()) {
-    CHECK(FindCommandDefinition(command_name))
-        << "Command undefined: " << command_name;
+    CHECK(FindCommandDefinition(command_name)) << "Command undefined: "
+                                               << command_name;
   }
   command_queue_.AddCommandHandler(component_path, command_name, callback);
 }
 
 const base::DictionaryValue* ComponentManagerImpl::FindComponent(
-    const std::string& path, ErrorPtr* error) const {
+    const std::string& path,
+    ErrorPtr* error) const {
   return FindComponentAt(&components_, path, error);
 }
 
@@ -488,8 +489,8 @@ bool ComponentManagerImpl::AddLegacyCommandDefinitions(
       if (traits_.GetDictionary(key, nullptr)) {
         Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                            errors::commands::kInvalidPropValue,
-                           "Redefining command '%s.%s'",
-                           it.key().c_str(), it_def.key().c_str());
+                           "Redefining command '%s.%s'", it.key().c_str(),
+                           it_def.key().c_str());
         result = false;
         continue;
       }
@@ -559,8 +560,8 @@ const base::DictionaryValue& ComponentManagerImpl::GetLegacyState() const {
   return legacy_state_;
 }
 
-const base::DictionaryValue&
-ComponentManagerImpl::GetLegacyCommandDefinitions() const {
+const base::DictionaryValue& ComponentManagerImpl::GetLegacyCommandDefinitions()
+    const {
   legacy_command_defs_.Clear();
   // Build commandDefs from traits.
   for (base::DictionaryValue::Iterator it(traits_); !it.IsAtEnd();
@@ -603,7 +604,8 @@ void ComponentManagerImpl::AddTraitToLegacyComponent(const std::string& trait) {
 }
 
 base::DictionaryValue* ComponentManagerImpl::FindComponentGraftNode(
-    const std::string& path, ErrorPtr* error) {
+    const std::string& path,
+    ErrorPtr* error) {
   base::DictionaryValue* root = nullptr;
   base::DictionaryValue* component = FindMutableComponent(path, error);
   if (component && !component->GetDictionary("components", &root)) {
@@ -680,15 +682,15 @@ const base::DictionaryValue* ComponentManagerImpl::FindComponentAt(
     if (value->GetType() == base::Value::TYPE_LIST && array_index < 0) {
       Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                          errors::commands::kTypeMismatch,
-                         "Element '%s.%s' is an array",
-                         root_path.c_str(), element.first.c_str());
+                         "Element '%s.%s' is an array", root_path.c_str(),
+                         element.first.c_str());
       return nullptr;
     }
     if (value->GetType() == base::Value::TYPE_DICTIONARY && array_index >= 0) {
       Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
                          errors::commands::kTypeMismatch,
-                         "Element '%s.%s' is not an array",
-                         root_path.c_str(), element.first.c_str());
+                         "Element '%s.%s' is not an array", root_path.c_str(),
+                         element.first.c_str());
       return nullptr;
     }
 

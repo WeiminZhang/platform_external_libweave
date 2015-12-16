@@ -64,11 +64,14 @@ TEST_F(AuthManagerTest, CreateAccessToken) {
   EXPECT_EQ(
       "iZx0qgEHFF5lq+Q503GtgU0d6gLQ9TlLsU+DcFbZb2QxOjIzNDoxNDEwMDAwMDAw",
       Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 234})));
+  EXPECT_EQ("cWkAHxSBYtTFV3Va/9mcynR8iFZo2qr+8+WewmumF74zOjI1NzoxNDEwMDAwMDAw",
+            Base64Encode(
+                auth_.CreateAccessToken(UserInfo{AuthScope::kManager, 257})));
   EXPECT_EQ(
-      "fTjecsbwtYj6i8/qPJz900B8EMAjRqU8jLT9kfMoz0czOjQ1NjoxNDEwMDAwMDAw",
+      "s3GnCThkQXIzGQoPDlJoiehQiJ5yy4SYUVQzMN2kY0o0OjQ1NjoxNDEwMDAwMDAw",
       Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456})));
-  EXPECT_CALL(clock_, Now())
-      .WillRepeatedly(Return(clock_.Now() + base::TimeDelta::FromDays(11)));
+  auto new_time = clock_.Now() + base::TimeDelta::FromDays(11);
+  EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
   EXPECT_EQ(
       "qAmlJykiPTnFljfOKSf3BUII9YZG8/ttzD76q+fII1YyOjM0NToxNDEwOTUwNDAw",
       Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kUser, 345})));
@@ -123,8 +126,8 @@ TEST_F(AuthManagerTest, GetRootClientAuthToken) {
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
-  EXPECT_CALL(clock_, Now())
-      .WillRepeatedly(Return(clock_.Now() + base::TimeDelta::FromDays(15)));
+  auto new_time = clock_.Now() + base::TimeDelta::FromDays(15);
+  EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
   EXPECT_EQ("UGKqwMYGQNOd8jeYFDOsM02CQgECRgMaVB6rAA==",
             Base64Encode(auth_.GetRootClientAuthToken()));
 }
@@ -147,32 +150,79 @@ TEST_F(AuthManagerTest, IsValidAuthToken) {
   }
 }
 
-TEST_F(AuthManagerTest, ClaimRootClientAuthToken) {
-  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+class AuthManagerClaimTest : public testing::Test {
+ public:
+  void SetUp() override { EXPECT_GE(auth_.GetSecret().size(), 32u); }
+
+  bool TestClaim(RootClientTokenOwner owner, RootClientTokenOwner claimer) {
+    Config::Transaction change{&config_};
+    change.set_root_client_token_owner(owner);
+    change.Commit();
+    return !auth_.ClaimRootClientAuthToken(claimer, nullptr).empty();
+  }
+
+ protected:
+  Config config_{nullptr};
+  AuthManager auth_{&config_, {}};
+};
+
+TEST_F(AuthManagerClaimTest, WithPreviosOwner) {
+  EXPECT_DEATH(
+      TestClaim(RootClientTokenOwner::kNone, RootClientTokenOwner::kNone), "");
+  EXPECT_DEATH(
+      TestClaim(RootClientTokenOwner::kClient, RootClientTokenOwner::kNone),
+      "");
+  EXPECT_DEATH(
+      TestClaim(RootClientTokenOwner::kCloud, RootClientTokenOwner::kNone), "");
+  EXPECT_TRUE(
+      TestClaim(RootClientTokenOwner::kNone, RootClientTokenOwner::kClient));
+  EXPECT_FALSE(
+      TestClaim(RootClientTokenOwner::kClient, RootClientTokenOwner::kClient));
+  EXPECT_FALSE(
+      TestClaim(RootClientTokenOwner::kCloud, RootClientTokenOwner::kClient));
+  EXPECT_TRUE(
+      TestClaim(RootClientTokenOwner::kNone, RootClientTokenOwner::kCloud));
+  EXPECT_TRUE(
+      TestClaim(RootClientTokenOwner::kClient, RootClientTokenOwner::kCloud));
+  EXPECT_TRUE(
+      TestClaim(RootClientTokenOwner::kCloud, RootClientTokenOwner::kCloud));
+}
+
+TEST_F(AuthManagerClaimTest, NormalClaim) {
+  auto token =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
   EXPECT_FALSE(auth_.IsValidAuthToken(token));
+  EXPECT_EQ(RootClientTokenOwner::kNone,
+            config_.GetSettings().root_client_token_owner);
 
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
+  EXPECT_TRUE(auth_.ConfirmClientAuthToken(token, nullptr));
   EXPECT_TRUE(auth_.IsValidAuthToken(token));
+  EXPECT_EQ(RootClientTokenOwner::kCloud,
+            config_.GetSettings().root_client_token_owner);
 }
 
-TEST_F(AuthManagerTest, ClaimRootClientAuthTokenDoubleConfirm) {
-  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token));
+TEST_F(AuthManagerClaimTest, DoubleConfirm) {
+  auto token =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
+  EXPECT_TRUE(auth_.ConfirmClientAuthToken(token, nullptr));
+  EXPECT_TRUE(auth_.ConfirmClientAuthToken(token, nullptr));
 }
 
-TEST_F(AuthManagerTest, DoubleClaimRootClientAuthToken) {
-  auto token1 = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
-  auto token2 = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
-  EXPECT_TRUE(auth_.ConfirmAuthToken(token1));
-  EXPECT_FALSE(auth_.ConfirmAuthToken(token2));
+TEST_F(AuthManagerClaimTest, DoubleClaim) {
+  auto token1 =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
+  auto token2 =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
+  EXPECT_TRUE(auth_.ConfirmClientAuthToken(token1, nullptr));
+  EXPECT_FALSE(auth_.ConfirmClientAuthToken(token2, nullptr));
 }
 
-TEST_F(AuthManagerTest, ClaimRootClientAuthTokenOverflow) {
-  auto token = auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
+TEST_F(AuthManagerClaimTest, TokenOverflow) {
+  auto token =
+      auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
   for (size_t i = 0; i < 100; ++i)
-    auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud);
-  EXPECT_FALSE(auth_.ConfirmAuthToken(token));
+    auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
+  EXPECT_FALSE(auth_.ConfirmClientAuthToken(token, nullptr));
 }
 
 }  // namespace privet

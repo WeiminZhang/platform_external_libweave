@@ -7,8 +7,8 @@
 #include <weave/enum_to_string.h>
 
 #include <base/bind.h>
-#include <event2/dns.h>
 #include <event2/bufferevent.h>
+#include <event2/dns.h>
 
 #include "examples/provider/event_task_runner.h"
 #include "examples/provider/ssl_stream.h"

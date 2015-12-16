@@ -37,15 +37,20 @@ const char kTraits[] = R"({
             "type": "string",
             "enum": [ "locked", "unlocked" ]
           }
-        }
+        },
+        "errors": ["batteryTooLow", "jammed", "lockingNotSupported"]
       }
     },
     "state": {
       "lockedState": {
         "type": "string",
-        "enum": [ "locked", "unlocked", "partiallyLocked" ]
+        "enum": [ "locked", "unlocked", "partiallyLocked" ],
+        "isRequired": true
       },
-      "isLockingSupported": { "type": "boolean" }
+      "isLockingSupported": {
+        "type": "boolean",
+        "isRequired": true
+      }
     }
   }
 })";
@@ -68,8 +73,8 @@ class LockHandler {
 
     device->AddTraitDefinitionsFromJson(kTraits);
     CHECK(device->AddComponent(kComponent, {"lock"}, nullptr));
-    CHECK(device->SetStatePropertiesFromJson(kComponent, kDefaultState,
-                                             nullptr));
+    CHECK(
+        device->SetStatePropertiesFromJson(kComponent, kDefaultState, nullptr));
     UpdateLockState();
 
     device->AddCommandHandler(kComponent, "lock.setConfig",

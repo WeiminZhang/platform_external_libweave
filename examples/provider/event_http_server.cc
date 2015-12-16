@@ -34,8 +34,7 @@ bufferevent* BuffetEventCallback(event_base* base, void* arg) {
 
 class HttpServerImpl::RequestImpl : public Request {
  public:
-  RequestImpl(evhttp_request* req, provider::TaskRunner* task_runner)
-      : task_runner_{task_runner} {
+  RequestImpl(evhttp_request* req) {
     req_.reset(req);
     uri_ = evhttp_request_get_evhttp_uri(req_.get());
 
@@ -70,7 +69,6 @@ class HttpServerImpl::RequestImpl : public Request {
  private:
   std::unique_ptr<evhttp_request, decltype(&evhttp_cancel_request)> req_{
       nullptr, &evhttp_cancel_request};
-  provider::TaskRunner* task_runner_{nullptr};
   std::string data_;
   const evhttp_uri* uri_{nullptr};
 };
@@ -147,7 +145,7 @@ void HttpServerImpl::NotFound(evhttp_request* req) {
 }
 
 void HttpServerImpl::ProcessRequest(evhttp_request* req) {
-  std::unique_ptr<RequestImpl> request{new RequestImpl{req, task_runner_}};
+  std::unique_ptr<RequestImpl> request{new RequestImpl{req}};
   std::string path = request->GetPath();
   auto it = handlers_.find(path);
   if (it != handlers_.end()) {

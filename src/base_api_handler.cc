@@ -13,7 +13,7 @@
 namespace weave {
 
 namespace {
-const char kBaseComponent[] = "weave";
+const char kBaseComponent[] = "base";
 const char kBaseTrait[] = "base";
 const char kBaseStateFirmwareVersion[] = "base.firmwareVersion";
 const char kBaseStateAnonymousAccessRole[] = "base.localAnonymousAccessMaxRole";
@@ -55,13 +55,45 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
               "type": "string"
             }
           }
+        },
+        "reboot": {
+          "minimalRole": "user",
+          "parameters": {},
+          "errors": ["notEnoughBattery"]
+        },
+        "identify": {
+          "minimalRole": "user",
+          "parameters": {}
         }
       },
       "state": {
-        "firmwareVersion": "string",
-        "localDiscoveryEnabled": "boolean",
-        "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
-        "localPairingEnabled": "boolean"
+        "firmwareVersion": {
+          "type": "string",
+          "isRequired": true
+        },
+        "localDiscoveryEnabled": {
+          "type": "boolean",
+          "isRequired": true
+        },
+        "localAnonymousAccessMaxRole": {
+          "type": "string",
+          "enum": [ "none", "viewer", "user" ],
+        "isRequired": true
+        },
+        "localPairingEnabled": {
+          "type": "boolean",
+          "isRequired": true
+        },
+        "connectionStatus": {
+          "type": "string"
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" }
+          }
+        }
       }
     }
   })");
@@ -76,8 +108,7 @@ BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
                                   nullptr));
 
   device_->AddCommandHandler(
-      kBaseComponent,
-      "base.updateBaseConfiguration",
+      kBaseComponent, "base.updateBaseConfiguration",
       base::Bind(&BaseApiHandler::UpdateBaseConfiguration,
                  weak_ptr_factory_.GetWeakPtr()));
 

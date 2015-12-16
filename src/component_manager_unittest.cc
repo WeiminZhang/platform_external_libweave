@@ -957,8 +957,8 @@ TEST_F(ComponentManagerTest, SetStatePropertiesFromJson) {
   CreateTestComponentTree(&manager_);
 
   ASSERT_TRUE(manager_.SetStatePropertiesFromJson(
-      "comp1.comp2[1].comp3.comp4", R"({"t5": {"p1": 3}, "t6": {"p2": 5}})",
-      nullptr));
+      "comp1.comp2[1].comp3.comp4",
+      R"({"t5": {"p1": 3}, "t6": {"p2": 5}})", nullptr));
 
   const char kExpected[] = R"({
     "comp1": {

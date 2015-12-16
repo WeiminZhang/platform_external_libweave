@@ -12,8 +12,8 @@
 #include <weave/provider/wifi.h>
 
 #include "src/bind_lambda.h"
-#include "src/privet/constants.h"
 #include "src/config.h"
+#include "src/privet/constants.h"
 
 namespace weave {
 namespace privet {

@@ -65,8 +65,9 @@ class SecurityManager : public SecurityDelegate {
                             base::Time* time) const override;
   std::set<PairingType> GetPairingTypes() const override;
   std::set<CryptoType> GetCryptoTypes() const override;
-  std::string ClaimRootClientAuthToken() override;
-  bool ConfirmAuthToken(const std::string& token) override;
+  std::string ClaimRootClientAuthToken(ErrorPtr* error) override;
+  bool ConfirmClientAuthToken(const std::string& token,
+                              ErrorPtr* error) override;
   bool IsValidPairingCode(const std::string& auth_code) const override;
 
   bool StartPairing(PairingType mode,
@@ -84,8 +85,6 @@ class SecurityManager : public SecurityDelegate {
 
   void RegisterPairingListeners(const PairingStartListener& on_start,
                                 const PairingEndListener& on_end);
-
-  const AuthManager* GetAuthManager() const { return auth_manager_; }
 
  private:
   FRIEND_TEST_ALL_PREFIXES(SecurityManagerTest, ThrottlePairing);

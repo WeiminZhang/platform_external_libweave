@@ -94,6 +94,12 @@ class PrivetHandler : public CloudDelegate::Observer {
   void HandleAuth(const base::DictionaryValue& input,
                   const UserInfo& user_info,
                   const RequestCallback& callback);
+  void HandleAccessControlClaim(const base::DictionaryValue& input,
+                                const UserInfo& user_info,
+                                const RequestCallback& callback);
+  void HandleAccessControlConfirm(const base::DictionaryValue& input,
+                                  const UserInfo& user_info,
+                                  const RequestCallback& callback);
   void HandleSetupStart(const base::DictionaryValue& input,
                         const UserInfo& user_info,
                         const RequestCallback& callback);
