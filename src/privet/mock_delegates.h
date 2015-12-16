@@ -80,6 +80,7 @@ class MockSecurityDelegate : public SecurityDelegate {
                     std::string*,
                     ErrorPtr*));
   MOCK_METHOD2(CancelPairing, bool(const std::string&, ErrorPtr*));
+  MOCK_METHOD0(CreateSessionId, std::string());
 
   MockSecurityDelegate() {
     EXPECT_CALL(*this, CreateAccessToken(_))
@@ -114,6 +115,7 @@ class MockSecurityDelegate : public SecurityDelegate {
         .WillRepeatedly(DoAll(SetArgPointee<2>("testFingerprint"),
                               SetArgPointee<3>("testSignature"), Return(true)));
     EXPECT_CALL(*this, CancelPairing(_, _)).WillRepeatedly(Return(true));
+    EXPECT_CALL(*this, CreateSessionId()).WillRepeatedly(Return("SessionId"));
   }
 };
 

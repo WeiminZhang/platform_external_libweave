@@ -55,10 +55,13 @@ class AuthManager {
   void SetSecret(const std::vector<uint8_t>& secret,
                  RootClientTokenOwner owner);
 
+  std::vector<uint8_t> CreateSessionId();
+
  private:
   Config* config_{nullptr};
   base::DefaultClock default_clock_;
   base::Clock* clock_{&default_clock_};
+  uint32_t session_counter_{0};
 
   std::vector<uint8_t> secret_;
   std::vector<uint8_t> certificate_fingerprint_;

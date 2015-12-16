@@ -69,8 +69,8 @@ const char kInfoAuthAnonymousMaxScopeKey[] = "anonymousMaxScope";
 const char kInfoWifiCapabilitiesKey[] = "capabilities";
 const char kInfoWifiSsidKey[] = "ssid";
 const char kInfoWifiHostedSsidKey[] = "hostedSsid";
-
 const char kInfoTimeKey[] = "time";
+const char kInfoSessionIdKey[] = "sessionId";
 
 const char kPairingKey[] = "pairing";
 const char kPairingSessionIdKey[] = "sessionId";
@@ -607,6 +607,7 @@ void PrivetHandler::HandleInfo(const base::DictionaryValue&,
   output.Set(kGcdKey, CreateGcdSection(*cloud_).release());
 
   output.SetDouble(kInfoTimeKey, clock_->Now().ToJsTime());
+  output.SetString(kInfoSessionIdKey, security_->CreateSessionId());
 
   callback.Run(http::kOk, output);
 }

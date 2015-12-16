@@ -60,6 +60,8 @@ class SecurityDelegate {
 
   virtual bool CancelPairing(const std::string& session_id,
                              ErrorPtr* error) = 0;
+
+  virtual std::string CreateSessionId() = 0;
 };
 
 }  // namespace privet

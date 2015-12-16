@@ -69,7 +69,6 @@ class SecurityManager : public SecurityDelegate {
   bool ConfirmClientAuthToken(const std::string& token,
                               ErrorPtr* error) override;
   bool IsValidPairingCode(const std::string& auth_code) const override;
-
   bool StartPairing(PairingType mode,
                     CryptoType crypto,
                     std::string* session_id,
@@ -82,6 +81,7 @@ class SecurityManager : public SecurityDelegate {
                       std::string* signature,
                       ErrorPtr* error) override;
   bool CancelPairing(const std::string& session_id, ErrorPtr* error) override;
+  std::string CreateSessionId() override;
 
   void RegisterPairingListeners(const PairingStartListener& on_start,
                                 const PairingEndListener& on_end);

@@ -27,6 +27,12 @@ const size_t kCaveatBuffetSize = 32;
 const size_t kMaxMacaroonSize = 1024;
 const size_t kMaxPendingClaims = 10;
 
+template <class T>
+void AppendToArray(T value, std::vector<uint8_t>* array) {
+  auto begin = reinterpret_cast<const uint8_t*>(&value);
+  array->insert(array->end(), begin, begin + sizeof(value));
+}
+
 // Returns "scope:id:time".
 std::string CreateTokenData(const UserInfo& user_info, const base::Time& time) {
   return base::IntToString(static_cast<int>(user_info.scope())) +
@@ -228,6 +234,13 @@ bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token) const {
 
   CHECK_EQ(kSha256OutputSize, secret_.size());
   return uw_macaroon_verify_(&macaroon, secret_.data(), secret_.size());
+}
+
+std::vector<uint8_t> AuthManager::CreateSessionId() {
+  std::vector<uint8_t> result;
+  AppendToArray(Now().ToTimeT(), &result);
+  AppendToArray(++session_counter_, &result);
+  return result;
 }
 
 }  // namespace privet
