@@ -721,7 +721,7 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
 
   auto json_resp = ParseJsonResponse(*response, &error);
   if (!json_resp) {
-    cloud_backoff_entry_->InformOfRequest(true);
+    cloud_backoff_entry_->InformOfRequest(false);
     return data->callback.Run({}, std::move(error));
   }
 
@@ -732,7 +732,8 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
       // If we exceeded server quota, retry the request later.
       return RetryCloudRequest(data);
     }
-    cloud_backoff_entry_->InformOfRequest(true);
+
+    cloud_backoff_entry_->InformOfRequest(false);
     return data->callback.Run({}, std::move(error));
   }
 
