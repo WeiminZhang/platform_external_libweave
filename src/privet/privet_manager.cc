@@ -58,8 +58,8 @@ void Manager::Start(Network* network,
   device_ = DeviceDelegate::CreateDefault(
       task_runner_, http_server->GetHttpPort(), http_server->GetHttpsPort(),
       http_server->GetRequestTimeout());
-  cloud_ = CloudDelegate::CreateDefault(task_runner_, device,
-                                        component_manager);
+  cloud_ =
+      CloudDelegate::CreateDefault(task_runner_, device, component_manager);
   cloud_observer_.Add(cloud_.get());
 
   security_.reset(new SecurityManager(

@@ -50,19 +50,18 @@ class CloudDelegateImpl : public CloudDelegate {
     device_->AddGcdStateChangedCallback(base::Bind(
         &CloudDelegateImpl::OnRegistrationChanged, weak_factory_.GetWeakPtr()));
 
-    component_manager_->AddTraitDefChangedCallback(base::Bind(
-        &CloudDelegateImpl::NotifyOnTraitDefsChanged,
-        weak_factory_.GetWeakPtr()));
+    component_manager_->AddTraitDefChangedCallback(
+        base::Bind(&CloudDelegateImpl::NotifyOnTraitDefsChanged,
+                   weak_factory_.GetWeakPtr()));
     component_manager_->AddCommandAddedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandAdded, weak_factory_.GetWeakPtr()));
     component_manager_->AddCommandRemovedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandRemoved, weak_factory_.GetWeakPtr()));
     component_manager_->AddStateChangedCallback(base::Bind(
-        &CloudDelegateImpl::NotifyOnStateChanged,
-        weak_factory_.GetWeakPtr()));
-    component_manager_->AddComponentTreeChangedCallback(base::Bind(
-        &CloudDelegateImpl::NotifyOnComponentTreeChanged,
-        weak_factory_.GetWeakPtr()));
+        &CloudDelegateImpl::NotifyOnStateChanged, weak_factory_.GetWeakPtr()));
+    component_manager_->AddComponentTreeChangedCallback(
+        base::Bind(&CloudDelegateImpl::NotifyOnComponentTreeChanged,
+                   weak_factory_.GetWeakPtr()));
   }
 
   ~CloudDelegateImpl() override = default;
@@ -128,9 +127,8 @@ class CloudDelegateImpl : public CloudDelegate {
     setup_weak_factory_.InvalidateWeakPtrs();
     backoff_entry_.Reset();
     task_runner_->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
-                   setup_weak_factory_.GetWeakPtr()),
+        FROM_HERE, base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
+                              setup_weak_factory_.GetWeakPtr()),
         {});
     // Return true because we initiated setup.
     return true;
@@ -276,9 +274,9 @@ class CloudDelegateImpl : public CloudDelegate {
       return;
     }
 
-    device_->RegisterDevice(
-        ticket_id_, base::Bind(&CloudDelegateImpl::RegisterDeviceDone,
-                               setup_weak_factory_.GetWeakPtr()));
+    device_->RegisterDevice(ticket_id_,
+                            base::Bind(&CloudDelegateImpl::RegisterDeviceDone,
+                                       setup_weak_factory_.GetWeakPtr()));
   }
 
   void RegisterDeviceDone(ErrorPtr error) {
@@ -286,9 +284,8 @@ class CloudDelegateImpl : public CloudDelegate {
       // Registration failed. Retry with backoff.
       backoff_entry_.InformOfRequest(false);
       return task_runner_->PostDelayedTask(
-          FROM_HERE,
-          base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
-                     setup_weak_factory_.GetWeakPtr()),
+          FROM_HERE, base::Bind(&CloudDelegateImpl::CallManagerRegisterDevice,
+                                setup_weak_factory_.GetWeakPtr()),
           backoff_entry_.GetTimeUntilRelease());
     }
     backoff_entry_.InformOfRequest(true);
@@ -298,7 +295,7 @@ class CloudDelegateImpl : public CloudDelegate {
   CommandInstance* GetCommandInternal(const std::string& command_id,
                                       const UserInfo& user_info,
                                       ErrorPtr* error) const {
-    if (user_info.scope() != AuthScope::kOwner) {
+    if (user_info.scope() < AuthScope::kManager) {
       auto it = command_owners_.find(command_id);
       if (it == command_owners_.end())
         return ReturnNotFound(command_id, error);
@@ -319,7 +316,7 @@ class CloudDelegateImpl : public CloudDelegate {
     CHECK(user_info.scope() != AuthScope::kNone);
     CHECK_NE(user_info.user_id(), 0u);
 
-    if (user_info.scope() == AuthScope::kOwner ||
+    if (user_info.scope() == AuthScope::kManager ||
         owner_id == user_info.user_id()) {
       return true;
     }
@@ -369,8 +366,8 @@ std::unique_ptr<CloudDelegate> CloudDelegate::CreateDefault(
     provider::TaskRunner* task_runner,
     DeviceRegistrationInfo* device,
     ComponentManager* component_manager) {
-  return std::unique_ptr<CloudDelegateImpl>{new CloudDelegateImpl{
-      task_runner, device, component_manager}};
+  return std::unique_ptr<CloudDelegateImpl>{
+      new CloudDelegateImpl{task_runner, device, component_manager}};
 }
 
 void CloudDelegate::NotifyOnDeviceInfoChanged() {

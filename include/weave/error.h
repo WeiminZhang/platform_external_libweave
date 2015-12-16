@@ -9,9 +9,9 @@
 #include <string>
 
 #include <base/callback.h>
-#include <base/macros.h>
-#include <base/location.h>
 #include <base/compiler_specific.h>
+#include <base/location.h>
+#include <base/macros.h>
 #include <weave/export.h>
 
 namespace weave {

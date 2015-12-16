@@ -25,8 +25,11 @@ const char kTraits[] = R"({
       }
     },
     "state": {
-      "type": "string",
-      "enum": [ "on", "standby" ]
+      "state": {
+        "type": "string",
+        "enum": [ "on", "standby" ],
+        "isRequired": true
+      }
     }
   },
   "volume": {
@@ -44,8 +47,16 @@ const char kTraits[] = R"({
       }
     },
     "state": {
-      "isMuted": { "type": "boolean" },
-      "volume": { "type": "integer" }
+      "isMuted": {
+        "type": "boolean",
+        "isRequired": true
+      },
+      "volume": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "isRequired": true
+      }
     }
   }
 })";

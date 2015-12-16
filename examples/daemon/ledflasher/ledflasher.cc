@@ -18,21 +18,21 @@ const size_t kLedCount = 3;
 const char kTraits[] = R"({
   "_ledflasher": {
     "commands": {
-      "_set": {
+      "set": {
         "minimalRole": "user",
         "parameters": {
-          "_led": {
+          "led": {
             "type": "integer",
             "minimum": 1,
             "maximum": 3
           },
-          "_on": { "type": "boolean" }
+          "on": { "type": "boolean" }
         }
       },
-      "_toggle": {
+      "toggle": {
         "minimalRole": "user",
         "parameters": {
-          "_led": {
+          "led": {
             "type": "integer",
             "minimum": 1,
             "maximum": 3
@@ -41,7 +41,7 @@ const char kTraits[] = R"({
       }
     },
     "state": {
-      "_leds": {
+      "leds": {
         "type": "array",
         "items": { "type": "boolean" }
       }
@@ -66,11 +66,11 @@ class LedFlasherHandler {
     UpdateLedState();
 
     device->AddCommandHandler(
-        kComponent, "_ledflasher._toggle",
+        kComponent, "_ledflasher.toggle",
         base::Bind(&LedFlasherHandler::OnFlasherToggleCommand,
                    weak_ptr_factory_.GetWeakPtr()));
     device->AddCommandHandler(
-        kComponent, "_ledflasher._set",
+        kComponent, "_ledflasher.set",
         base::Bind(&LedFlasherHandler::OnFlasherSetCommand,
                    weak_ptr_factory_.GetWeakPtr()));
   }
@@ -134,7 +134,7 @@ class LedFlasherHandler {
     for (uint32_t i = 0; i < led_status_.size(); i++)
       list.AppendBoolean(led_status_[i] ? true : false);
 
-    device_->SetStateProperty(kComponent, "_ledflasher._leds", list, nullptr);
+    device_->SetStateProperty(kComponent, "_ledflasher.leds", list, nullptr);
   }
 
   weave::Device* device_{nullptr};

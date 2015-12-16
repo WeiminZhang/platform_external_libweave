@@ -71,8 +71,8 @@ bool IsEqualError(const CodeWithReason& expected,
 }
 
 // Some error sections in response JSON objects contained debugging information
-// which is of no interest for this test. So, remove the debug info from the JSON
-// before running validation logic on it.
+// which is of no interest for this test. So, remove the debug info from the
+// JSON before running validation logic on it.
 std::unique_ptr<base::DictionaryValue> StripDebugErrorDetails(
     const std::string& path_to_error_object,
     const base::DictionaryValue& value) {
@@ -97,8 +97,8 @@ class PrivetHandlerTest : public testing::Test {
         .WillRepeatedly(Return(base::Time::FromTimeT(1410000001)));
 
     auth_header_ = "Privet anonymous";
-    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, &wifi_,
-                                     &clock_));
+    handler_.reset(
+        new PrivetHandler(&cloud_, &device_, &security_, &wifi_, &clock_));
   }
 
   const base::DictionaryValue& HandleRequest(
@@ -129,8 +129,8 @@ class PrivetHandlerTest : public testing::Test {
   int GetResponseCount() const { return response_count_; }
 
   void SetNoWifiAndGcd() {
-    handler_.reset(new PrivetHandler(&cloud_, &device_, &security_, nullptr,
-                                     &clock_));
+    handler_.reset(
+        new PrivetHandler(&cloud_, &device_, &security_, nullptr, &clock_));
     EXPECT_CALL(cloud_, GetCloudId()).WillRepeatedly(Return(""));
     EXPECT_CALL(cloud_, GetConnectionState())
         .WillRepeatedly(ReturnRef(gcd_disabled_state_));
@@ -339,9 +339,8 @@ TEST_F(PrivetHandlerTest, PairingConfirm) {
 }
 
 TEST_F(PrivetHandlerTest, PairingCancel) {
-  EXPECT_JSON_EQ("{}",
-                 HandleRequest("/privet/v3/pairing/cancel",
-                               "{'sessionId': 'testSession'}"));
+  EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/pairing/cancel",
+                                     "{'sessionId': 'testSession'}"));
 }
 
 TEST_F(PrivetHandlerTest, AuthErrorNoType) {
@@ -459,9 +458,8 @@ TEST_F(PrivetHandlerSetupTest, StatusWifiError) {
      }
   })";
   EXPECT_JSON_EQ(kExpected,
-                 *StripDebugErrorDetails("wifi",
-                                         HandleRequest(
-                                            "/privet/v3/setup/status", "{}")));
+                 *StripDebugErrorDetails(
+                     "wifi", HandleRequest("/privet/v3/setup/status", "{}")));
 }
 
 TEST_F(PrivetHandlerSetupTest, StatusGcd) {
@@ -490,9 +488,8 @@ TEST_F(PrivetHandlerSetupTest, StatusGcdError) {
      }
   })";
   EXPECT_JSON_EQ(kExpected,
-                 *StripDebugErrorDetails("gcd",
-                                         HandleRequest(
-                                            "/privet/v3/setup/status", "{}")));
+                 *StripDebugErrorDetails(
+                     "gcd", HandleRequest("/privet/v3/setup/status", "{}")));
 }
 
 TEST_F(PrivetHandlerSetupTest, SetupNameDescriptionLocation) {
@@ -597,7 +594,33 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/setup/start", kInput));
 }
 
-TEST_F(PrivetHandlerSetupTest, State) {
+TEST_F(PrivetHandlerSetupTest, GcdSetupAsMaster) {
+  EXPECT_CALL(security_, ParseAccessToken(_, _))
+      .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
+                            Return(UserInfo{AuthScope::kManager, 1})));
+  const char kInput[] = R"({
+    'gcd': {
+      'ticketId': 'testTicket',
+      'user': 'testUser'
+    }
+  })";
+
+  EXPECT_PRED2(IsEqualError, CodeWithReason(403, "invalidAuthorizationScope"),
+               HandleRequest("/privet/v3/setup/start", kInput));
+}
+
+TEST_F(PrivetHandlerTestWithAuth, ClaimAccessControl) {
+  EXPECT_JSON_EQ("{'clientToken': 'RootClientAuthToken'}",
+                 HandleRequest("/privet/v3/accessControl/claim", "{}"));
+}
+
+TEST_F(PrivetHandlerTestWithAuth, ConfirmAccessControl) {
+  EXPECT_JSON_EQ("{}",
+                 HandleRequest("/privet/v3/accessControl/confirm",
+                               "{'clientToken': 'DerivedClientAuthToken'}"));
+}
+
+TEST_F(PrivetHandlerTestWithAuth, State) {
   EXPECT_JSON_EQ("{'state': {'test': {}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/state", "{}"));
 
@@ -607,7 +630,7 @@ TEST_F(PrivetHandlerSetupTest, State) {
                  HandleRequest("/privet/v3/state", "{}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsDefs) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsDefs) {
   EXPECT_JSON_EQ("{'commands': {'test':{}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/commandDefs", "{}"));
 
@@ -617,7 +640,7 @@ TEST_F(PrivetHandlerSetupTest, CommandsDefs) {
                  HandleRequest("/privet/v3/commandDefs", "{}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, Traits) {
+TEST_F(PrivetHandlerTestWithAuth, Traits) {
   EXPECT_JSON_EQ("{'traits': {'test': {}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/traits", "{}"));
 
@@ -627,7 +650,7 @@ TEST_F(PrivetHandlerSetupTest, Traits) {
                  HandleRequest("/privet/v3/traits", "{}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, Components) {
+TEST_F(PrivetHandlerTestWithAuth, Components) {
   EXPECT_JSON_EQ("{'components': {'test': {}}, 'fingerprint': '1'}",
                  HandleRequest("/privet/v3/components", "{}"));
 
@@ -643,7 +666,7 @@ TEST_F(PrivetHandlerSetupTest, Components) {
                  HandleRequest("/privet/v3/components", "{}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
+TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
   const char kComponents[] = R"({
     "comp1": {
       "traits": ["a", "b"],
@@ -747,8 +770,7 @@ TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
 
   const base::DictionaryValue* comp2 = nullptr;
   ASSERT_TRUE(components.GetDictionary("comp1.components.comp2", &comp2));
-  EXPECT_CALL(cloud_, FindComponent("comp1.comp2", _))
-      .WillOnce(Return(comp2));
+  EXPECT_CALL(cloud_, FindComponent("comp1.comp2", _)).WillOnce(Return(comp2));
 
   const char kExpected5[] = R"({
     "components": {
@@ -763,9 +785,11 @@ TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
     },
     "fingerprint": "1"
   })";
-  EXPECT_JSON_EQ(kExpected5, HandleRequest(
-      "/privet/v3/components",
-      "{'path':'comp1.comp2', 'filter':['traits', 'components']}"));
+  EXPECT_JSON_EQ(
+      kExpected5,
+      HandleRequest(
+          "/privet/v3/components",
+          "{'path':'comp1.comp2', 'filter':['traits', 'components']}"));
 
   auto error_handler = [](ErrorPtr* error) -> const base::DictionaryValue* {
     Error::AddTo(error, FROM_HERE, errors::kDomain, "componentNotFound", "");
@@ -775,14 +799,12 @@ TEST_F(PrivetHandlerSetupTest, ComponentsWithFiltersAndPaths) {
       .WillOnce(WithArgs<1>(Invoke(error_handler)));
 
   EXPECT_PRED2(
-      IsEqualError,
-      CodeWithReason(500, "componentNotFound"),
-      HandleRequest(
-          "/privet/v3/components",
-          "{'path':'comp7', 'filter':['traits', 'components']}"));
+      IsEqualError, CodeWithReason(500, "componentNotFound"),
+      HandleRequest("/privet/v3/components",
+                    "{'path':'comp7', 'filter':['traits', 'components']}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsExecute) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsExecute) {
   const char kInput[] = "{'name': 'test'}";
   base::DictionaryValue command;
   LoadTestJson(kInput, &command);
@@ -797,7 +819,7 @@ TEST_F(PrivetHandlerSetupTest, CommandsExecute) {
                  HandleRequest("/privet/v3/commands/execute", kInput));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsStatus) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsStatus) {
   const char kInput[] = "{'id': '5'}";
   base::DictionaryValue command;
   LoadTestJson(kInput, &command);
@@ -823,7 +845,7 @@ TEST_F(PrivetHandlerSetupTest, CommandsStatus) {
                HandleRequest("/privet/v3/commands/status", "{'id': '15'}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsCancel) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsCancel) {
   const char kExpected[] = "{'id': '5', 'name':'test', 'state':'cancelled'}";
   base::DictionaryValue command;
   LoadTestJson(kExpected, &command);
@@ -848,7 +870,7 @@ TEST_F(PrivetHandlerSetupTest, CommandsCancel) {
                HandleRequest("/privet/v3/commands/cancel", "{'id': '11'}"));
 }
 
-TEST_F(PrivetHandlerSetupTest, CommandsList) {
+TEST_F(PrivetHandlerTestWithAuth, CommandsList) {
   const char kExpected[] = R"({
     'commands' : [
         {'id':'5', 'state':'cancelled'},

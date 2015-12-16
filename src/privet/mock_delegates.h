@@ -13,6 +13,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/config.h"
 #include "src/privet/cloud_delegate.h"
 #include "src/privet/device_delegate.h"
 #include "src/privet/security_delegate.h"
@@ -24,6 +25,7 @@ using testing::ReturnRef;
 using testing::SetArgPointee;
 
 namespace weave {
+
 namespace privet {
 
 ACTION_TEMPLATE(RunCallback,
@@ -45,9 +47,10 @@ class MockDeviceDelegate : public DeviceDelegate {
   MOCK_CONST_METHOD0(GetHttpEnpoint, IntPair());
   MOCK_CONST_METHOD0(GetHttpsEnpoint, IntPair());
   MOCK_CONST_METHOD0(GetHttpRequestTimeout, base::TimeDelta());
-  MOCK_METHOD3(PostDelayedTask, void(const tracked_objects::Location&,
-                                     const base::Closure&,
-                                     base::TimeDelta));
+  MOCK_METHOD3(PostDelayedTask,
+               void(const tracked_objects::Location&,
+                    const base::Closure&,
+                    base::TimeDelta));
 
   MockDeviceDelegate() {
     EXPECT_CALL(*this, GetHttpEnpoint())
@@ -64,8 +67,8 @@ class MockSecurityDelegate : public SecurityDelegate {
                      UserInfo(const std::string&, base::Time*));
   MOCK_CONST_METHOD0(GetPairingTypes, std::set<PairingType>());
   MOCK_CONST_METHOD0(GetCryptoTypes, std::set<CryptoType>());
-  MOCK_METHOD0(ClaimRootClientAuthToken, std::string());
-  MOCK_METHOD1(ConfirmAuthToken, bool(const std::string& token));
+  MOCK_METHOD1(ClaimRootClientAuthToken, std::string(ErrorPtr*));
+  MOCK_METHOD2(ConfirmClientAuthToken, bool(const std::string&, ErrorPtr*));
   MOCK_CONST_METHOD1(IsValidPairingCode, bool(const std::string&));
   MOCK_METHOD5(
       StartPairing,
@@ -82,8 +85,11 @@ class MockSecurityDelegate : public SecurityDelegate {
     EXPECT_CALL(*this, CreateAccessToken(_))
         .WillRepeatedly(Return("GuestAccessToken"));
 
-    EXPECT_CALL(*this, ClaimRootClientAuthToken())
+    EXPECT_CALL(*this, ClaimRootClientAuthToken(_))
         .WillRepeatedly(Return("RootClientAuthToken"));
+
+    EXPECT_CALL(*this, ConfirmClientAuthToken("DerivedClientAuthToken", _))
+        .WillRepeatedly(Return(true));
 
     EXPECT_CALL(*this, ParseAccessToken(_, _))
         .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
@@ -192,8 +198,8 @@ class MockCloudDelegate : public CloudDelegate {
     EXPECT_CALL(*this, GetCloudId()).WillRepeatedly(Return("TestCloudId"));
     test_dict_.Set("test", new base::DictionaryValue);
     EXPECT_CALL(*this, GetLegacyState()).WillRepeatedly(ReturnRef(test_dict_));
-    EXPECT_CALL(*this,
-                GetLegacyCommandDef()).WillRepeatedly(ReturnRef(test_dict_));
+    EXPECT_CALL(*this, GetLegacyCommandDef())
+        .WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, GetTraits()).WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, GetComponents()).WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, FindComponent(_, _)).Times(0);

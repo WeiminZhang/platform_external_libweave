@@ -68,9 +68,11 @@ const char kRobotAccountEmail[] =
     "6ed0b3f54f9bd619b942f4ad2441c252@"
     "clouddevices.gserviceaccount.com";
 const char kAuthInfo[] = R"({
-  "certFingerprint":
-  "FQY6BEINDjw3FgsmYChRWgMzMhc4TC8uG0UUUFhdDz0=",
-  "localId": "f6885e46-b432-42d7-86a5-d759bfb61f62"
+  "localAuthInfo": {
+    "certFingerprint":
+    "FQY6BEINDjw3FgsmYChRWgMzMhc4TC8uG0UUUFhdDz0=",
+    "localId": "f6885e46-b432-42d7-86a5-d759bfb61f62"
+  }
 })";
 
 }  // namespace test_data
@@ -244,22 +246,22 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
       http_client_,
       SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
                   HttpClient::Headers{GetFormHeader()}, _, _))
-      .WillOnce(WithArgs<3, 4>(Invoke([](
-          const std::string& data,
-          const HttpClient::SendRequestCallback& callback) {
-        EXPECT_EQ("refresh_token", GetFormField(data, "grant_type"));
-        EXPECT_EQ(test_data::kRefreshToken,
-                  GetFormField(data, "refresh_token"));
-        EXPECT_EQ(test_data::kClientId, GetFormField(data, "client_id"));
-        EXPECT_EQ(test_data::kClientSecret,
-                  GetFormField(data, "client_secret"));
+      .WillOnce(WithArgs<3, 4>(
+          Invoke([](const std::string& data,
+                    const HttpClient::SendRequestCallback& callback) {
+            EXPECT_EQ("refresh_token", GetFormField(data, "grant_type"));
+            EXPECT_EQ(test_data::kRefreshToken,
+                      GetFormField(data, "refresh_token"));
+            EXPECT_EQ(test_data::kClientId, GetFormField(data, "client_id"));
+            EXPECT_EQ(test_data::kClientSecret,
+                      GetFormField(data, "client_secret"));
 
-        base::DictionaryValue json;
-        json.SetString("access_token", test_data::kAccessToken);
-        json.SetInteger("expires_in", 3600);
+            base::DictionaryValue json;
+            json.SetString("access_token", test_data::kAccessToken);
+            json.SetInteger("expires_in", 3600);
 
-        callback.Run(ReplyWithJson(200, json), nullptr);
-      })));
+            callback.Run(ReplyWithJson(200, json), nullptr);
+          })));
 
   EXPECT_CALL(
       http_client_,
@@ -269,8 +271,7 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
           Invoke([](const std::string& data,
                     const HttpClient::SendRequestCallback& callback) {
             auto dict = CreateDictionaryValue(data);
-            EXPECT_TRUE(dict->HasKey("clientToken"));
-            dict->Remove("clientToken", nullptr);
+            EXPECT_TRUE(dict->Remove("localAuthInfo.clientToken", nullptr));
             EXPECT_JSON_EQ(test_data::kAuthInfo, *dict);
             base::DictionaryValue json;
             callback.Run(ReplyWithJson(200, json), nullptr);
@@ -288,20 +289,20 @@ TEST_F(DeviceRegistrationInfoTest, CheckAuthenticationFailure) {
       http_client_,
       SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
                   HttpClient::Headers{GetFormHeader()}, _, _))
-      .WillOnce(WithArgs<3, 4>(Invoke([](
-          const std::string& data,
-          const HttpClient::SendRequestCallback& callback) {
-        EXPECT_EQ("refresh_token", GetFormField(data, "grant_type"));
-        EXPECT_EQ(test_data::kRefreshToken,
-                  GetFormField(data, "refresh_token"));
-        EXPECT_EQ(test_data::kClientId, GetFormField(data, "client_id"));
-        EXPECT_EQ(test_data::kClientSecret,
-                  GetFormField(data, "client_secret"));
+      .WillOnce(WithArgs<3, 4>(
+          Invoke([](const std::string& data,
+                    const HttpClient::SendRequestCallback& callback) {
+            EXPECT_EQ("refresh_token", GetFormField(data, "grant_type"));
+            EXPECT_EQ(test_data::kRefreshToken,
+                      GetFormField(data, "refresh_token"));
+            EXPECT_EQ(test_data::kClientId, GetFormField(data, "client_id"));
+            EXPECT_EQ(test_data::kClientSecret,
+                      GetFormField(data, "client_secret"));
 
-        base::DictionaryValue json;
-        json.SetString("error", "unable_to_authenticate");
-        callback.Run(ReplyWithJson(400, json), nullptr);
-      })));
+            base::DictionaryValue json;
+            json.SetString("error", "unable_to_authenticate");
+            callback.Run(ReplyWithJson(400, json), nullptr);
+          })));
 
   ErrorPtr error;
   EXPECT_FALSE(RefreshAccessToken(&error));
@@ -317,20 +318,20 @@ TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
       http_client_,
       SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
                   HttpClient::Headers{GetFormHeader()}, _, _))
-      .WillOnce(WithArgs<3, 4>(Invoke([](
-          const std::string& data,
-          const HttpClient::SendRequestCallback& callback) {
-        EXPECT_EQ("refresh_token", GetFormField(data, "grant_type"));
-        EXPECT_EQ(test_data::kRefreshToken,
-                  GetFormField(data, "refresh_token"));
-        EXPECT_EQ(test_data::kClientId, GetFormField(data, "client_id"));
-        EXPECT_EQ(test_data::kClientSecret,
-                  GetFormField(data, "client_secret"));
+      .WillOnce(WithArgs<3, 4>(
+          Invoke([](const std::string& data,
+                    const HttpClient::SendRequestCallback& callback) {
+            EXPECT_EQ("refresh_token", GetFormField(data, "grant_type"));
+            EXPECT_EQ(test_data::kRefreshToken,
+                      GetFormField(data, "refresh_token"));
+            EXPECT_EQ(test_data::kClientId, GetFormField(data, "client_id"));
+            EXPECT_EQ(test_data::kClientSecret,
+                      GetFormField(data, "client_secret"));
 
-        base::DictionaryValue json;
-        json.SetString("error", "invalid_grant");
-        callback.Run(ReplyWithJson(400, json), nullptr);
-      })));
+            base::DictionaryValue json;
+            json.SetString("error", "invalid_grant");
+            callback.Run(ReplyWithJson(400, json), nullptr);
+          })));
 
   ErrorPtr error;
   EXPECT_FALSE(RefreshAccessToken(&error));
@@ -396,8 +397,8 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
     }
   })");
   EXPECT_TRUE(component_manager_.LoadTraits(*json_traits, nullptr));
-  EXPECT_TRUE(component_manager_.AddComponent("", "comp", {"base", "robot"},
-                                              nullptr));
+  EXPECT_TRUE(
+      component_manager_.AddComponent("", "comp", {"base", "robot"}, nullptr));
   base::StringValue ver{"1.0"};
   EXPECT_TRUE(component_manager_.SetStateProperty(
       "comp", "base.firmwareVersion", ver, nullptr));
@@ -408,110 +409,78 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
               SendRequest(HttpClient::Method::kPatch,
                           ticket_url + "?key=" + test_data::kApiKey,
                           HttpClient::Headers{GetJsonHeader()}, _, _))
-      .WillOnce(WithArgs<3, 4>(Invoke([](
-          const std::string& data,
-          const HttpClient::SendRequestCallback& callback) {
-        auto json = test::CreateDictionaryValue(data);
-        EXPECT_NE(nullptr, json.get());
-        std::string value;
-        EXPECT_TRUE(json->GetString("id", &value));
-        EXPECT_EQ(test_data::kClaimTicketId, value);
-        EXPECT_TRUE(
-            json->GetString("deviceDraft.channel.supportedType", &value));
-        EXPECT_EQ("pull", value);
-        EXPECT_TRUE(json->GetString("oauthClientId", &value));
-        EXPECT_EQ(test_data::kClientId, value);
-        EXPECT_TRUE(json->GetString("deviceDraft.description", &value));
-        EXPECT_EQ("Easy to clean", value);
-        EXPECT_TRUE(json->GetString("deviceDraft.location", &value));
-        EXPECT_EQ("Kitchen", value);
-        EXPECT_TRUE(json->GetString("deviceDraft.modelManifestId", &value));
-        EXPECT_EQ("AAAAA", value);
-        EXPECT_TRUE(json->GetString("deviceDraft.name", &value));
-        EXPECT_EQ("Coffee Pot", value);
-        base::DictionaryValue* dict = nullptr;
-        EXPECT_TRUE(json->GetDictionary("deviceDraft.commandDefs", &dict));
-        auto expectedCommandDefs = R"({
-            'base': {
-              'reboot': {
-                'parameters': {
-                  'delay': {
-                    'minimum': 10,
-                    'type': 'integer'
+      .WillOnce(WithArgs<3, 4>(
+          Invoke([](const std::string& data,
+                    const HttpClient::SendRequestCallback& callback) {
+            auto json = test::CreateDictionaryValue(data);
+            EXPECT_NE(nullptr, json.get());
+            std::string value;
+            EXPECT_TRUE(json->GetString("id", &value));
+            EXPECT_EQ(test_data::kClaimTicketId, value);
+            EXPECT_TRUE(
+                json->GetString("deviceDraft.channel.supportedType", &value));
+            EXPECT_EQ("pull", value);
+            EXPECT_TRUE(json->GetString("oauthClientId", &value));
+            EXPECT_EQ(test_data::kClientId, value);
+            EXPECT_TRUE(json->GetString("deviceDraft.description", &value));
+            EXPECT_EQ("Easy to clean", value);
+            EXPECT_TRUE(json->GetString("deviceDraft.location", &value));
+            EXPECT_EQ("Kitchen", value);
+            EXPECT_TRUE(json->GetString("deviceDraft.modelManifestId", &value));
+            EXPECT_EQ("AAAAA", value);
+            EXPECT_TRUE(json->GetString("deviceDraft.name", &value));
+            EXPECT_EQ("Coffee Pot", value);
+            base::DictionaryValue* dict = nullptr;
+            EXPECT_FALSE(json->GetDictionary("deviceDraft.commandDefs", &dict));
+            EXPECT_FALSE(json->GetDictionary("deviceDraft.state", &dict));
+            EXPECT_TRUE(json->GetDictionary("deviceDraft.traits", &dict));
+            auto expectedTraits = R"({
+              'base': {
+                'commands': {
+                  'reboot': {
+                    'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
+                    'minimalRole': 'user'
                   }
                 },
-                'minimalRole': 'user'
-              }
-            },
-            'robot': {
-              '_jump': {
-                'parameters': {
-                  '_height': {
-                    'type': 'integer'
-                  }
-                },
-                'minimalRole': 'user'
-              }
-            }
-          })";
-        EXPECT_JSON_EQ(expectedCommandDefs, *dict);
-
-        EXPECT_TRUE(json->GetDictionary("deviceDraft.state", &dict));
-        auto expectedState = R"({
-            'base': {
-              'firmwareVersion': '1.0'
-            }
-          })";
-        EXPECT_JSON_EQ(expectedState, *dict);
-
-        EXPECT_TRUE(json->GetDictionary("deviceDraft.traits", &dict));
-        auto expectedTraits = R"({
-            'base': {
-              'commands': {
-                'reboot': {
-                  'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
-                  'minimalRole': 'user'
+                'state': {
+                  'firmwareVersion': {'type': 'string'}
                 }
               },
-              'state': {
-                'firmwareVersion': {'type': 'string'}
-              }
-            },
-            'robot': {
-              'commands': {
-                '_jump': {
-                  'parameters': {'_height': {'type': 'integer'}},
-                  'minimalRole': 'user'
+              'robot': {
+                'commands': {
+                  '_jump': {
+                    'parameters': {'_height': {'type': 'integer'}},
+                    'minimalRole': 'user'
+                  }
                 }
               }
-            }
-          })";
-        EXPECT_JSON_EQ(expectedTraits, *dict);
+            })";
+            EXPECT_JSON_EQ(expectedTraits, *dict);
 
-        EXPECT_TRUE(json->GetDictionary("deviceDraft.components", &dict));
-        auto expectedComponents = R"({
-            'comp': {
-              'traits': ['base', 'robot'],
-              'state': {
-                'base': { 'firmwareVersion': '1.0' }
+            EXPECT_TRUE(json->GetDictionary("deviceDraft.components", &dict));
+            auto expectedComponents = R"({
+              'comp': {
+                'traits': ['base', 'robot'],
+                'state': {
+                  'base': { 'firmwareVersion': '1.0' }
+                }
               }
-            }
-          })";
-        EXPECT_JSON_EQ(expectedComponents, *dict);
+            })";
+            EXPECT_JSON_EQ(expectedComponents, *dict);
 
-        base::DictionaryValue json_resp;
-        json_resp.SetString("id", test_data::kClaimTicketId);
-        json_resp.SetString("kind", "weave#registrationTicket");
-        json_resp.SetString("oauthClientId", test_data::kClientId);
-        base::DictionaryValue* device_draft = nullptr;
-        EXPECT_TRUE(json->GetDictionary("deviceDraft", &device_draft));
-        device_draft = device_draft->DeepCopy();
-        device_draft->SetString("id", test_data::kCloudId);
-        device_draft->SetString("kind", "weave#device");
-        json_resp.Set("deviceDraft", device_draft);
+            base::DictionaryValue json_resp;
+            json_resp.SetString("id", test_data::kClaimTicketId);
+            json_resp.SetString("kind", "weave#registrationTicket");
+            json_resp.SetString("oauthClientId", test_data::kClientId);
+            base::DictionaryValue* device_draft = nullptr;
+            EXPECT_TRUE(json->GetDictionary("deviceDraft", &device_draft));
+            device_draft = device_draft->DeepCopy();
+            device_draft->SetString("id", test_data::kCloudId);
+            device_draft->SetString("kind", "weave#device");
+            json_resp.Set("deviceDraft", device_draft);
 
-        callback.Run(ReplyWithJson(200, json_resp), nullptr);
-      })));
+            callback.Run(ReplyWithJson(200, json_resp), nullptr);
+          })));
 
   EXPECT_CALL(http_client_,
               SendRequest(HttpClient::Method::kPost,
@@ -564,8 +533,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
           Invoke([](const std::string& data,
                     const HttpClient::SendRequestCallback& callback) {
             auto dict = CreateDictionaryValue(data);
-            EXPECT_TRUE(dict->HasKey("clientToken"));
-            dict->Remove("clientToken", nullptr);
+            EXPECT_TRUE(dict->Remove("localAuthInfo.clientToken", nullptr));
             EXPECT_JSON_EQ(test_data::kAuthInfo, *dict);
             base::DictionaryValue json;
             callback.Run(ReplyWithJson(200, json), nullptr);
@@ -621,8 +589,8 @@ class DeviceRegistrationInfoUpdateCommandTest
       }
     })");
     EXPECT_TRUE(component_manager_.LoadTraits(*json_traits, nullptr));
-    EXPECT_TRUE(component_manager_.AddComponent("", "comp", {"robot"},
-                                                nullptr));
+    EXPECT_TRUE(
+        component_manager_.AddComponent("", "comp", {"robot"}, nullptr));
 
     command_url_ = dev_reg_->GetServiceURL("commands/1234");
 
@@ -689,14 +657,14 @@ TEST_F(DeviceRegistrationInfoUpdateCommandTest, Cancel) {
       http_client_,
       SendRequest(HttpClient::Method::kPatch, command_url_,
                   HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
-      .WillOnce(WithArgs<3, 4>(Invoke([](
-          const std::string& data,
-          const HttpClient::SendRequestCallback& callback) {
-        EXPECT_JSON_EQ(R"({"state":"cancelled"})",
-                       *CreateDictionaryValue(data));
-        base::DictionaryValue json;
-        callback.Run(ReplyWithJson(200, json), nullptr);
-      })));
+      .WillOnce(WithArgs<3, 4>(
+          Invoke([](const std::string& data,
+                    const HttpClient::SendRequestCallback& callback) {
+            EXPECT_JSON_EQ(R"({"state":"cancelled"})",
+                           *CreateDictionaryValue(data));
+            base::DictionaryValue json;
+            callback.Run(ReplyWithJson(200, json), nullptr);
+          })));
   EXPECT_TRUE(command_->Cancel(nullptr));
 }
 

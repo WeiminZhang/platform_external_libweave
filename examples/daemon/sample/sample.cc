@@ -15,19 +15,20 @@ namespace {
 const char kTraits[] = R"({
   "_sample": {
     "commands": {
-      "_hello": {
+      "hello": {
         "minimalRole": "user",
         "parameters": {
-          "_name": { "type": "string" }
+          "name": { "type": "string" }
         }
       },
-      "_ping": {
-        "minimalRole": "user"
+      "ping": {
+        "minimalRole": "user",
+        "parameters": {}
       },
-      "_countdown": {
+      "countdown": {
         "minimalRole": "user",
         "parameters": {
-          "_seconds": {
+          "seconds": {
             "type": "integer",
             "minimum": 1,
             "maximum": 25
@@ -36,7 +37,7 @@ const char kTraits[] = R"({
       }
     },
     "state": {
-      "_ping_count": { "type": "integer" }
+      "pingCount": { "type": "integer" }
     }
   }
 })";
@@ -60,15 +61,15 @@ class SampleHandler {
     device->AddTraitDefinitionsFromJson(kTraits);
     CHECK(device->AddComponent(kComponent, {"_sample"}, nullptr));
     CHECK(device->SetStatePropertiesFromJson(
-        kComponent, R"({"_sample": {"_ping_count": 0}})", nullptr));
+        kComponent, R"({"_sample": {"pingCount": 0}})", nullptr));
 
-    device->AddCommandHandler(kComponent, "_sample._hello",
+    device->AddCommandHandler(kComponent, "_sample.hello",
                               base::Bind(&SampleHandler::OnHelloCommand,
                                          weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler(kComponent, "_sample._ping",
+    device->AddCommandHandler(kComponent, "_sample.ping",
                               base::Bind(&SampleHandler::OnPingCommand,
                                          weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler(kComponent, "_sample._countdown",
+    device->AddCommandHandler(kComponent, "_sample.countdown",
                               base::Bind(&SampleHandler::OnCountdownCommand,
                                          weak_ptr_factory_.GetWeakPtr()));
   }
@@ -82,7 +83,7 @@ class SampleHandler {
 
     const auto& params = cmd->GetParameters();
     std::string name;
-    if (!params.GetString("_name", &name)) {
+    if (!params.GetString("name", &name)) {
       weave::ErrorPtr error;
       weave::Error::AddTo(&error, FROM_HERE, "example",
                           "invalid_parameter_value", "Name is missing");
@@ -91,7 +92,7 @@ class SampleHandler {
     }
 
     base::DictionaryValue result;
-    result.SetString("_reply", "Hello " + name);
+    result.SetString("reply", "Hello " + name);
     cmd->Complete(result, nullptr);
     LOG(INFO) << cmd->GetName() << " command finished: " << result;
   }
@@ -102,7 +103,7 @@ class SampleHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
 
-    device_->SetStateProperty(kComponent, "_sample._ping_count",
+    device_->SetStateProperty(kComponent, "_sample.pingCount",
                               base::FundamentalValue{++ping_count_}, nullptr);
     LOG(INFO) << "New component state: " << device_->GetComponents();
 
@@ -120,7 +121,7 @@ class SampleHandler {
 
     const auto& params = cmd->GetParameters();
     int seconds;
-    if (!params.GetInteger("_seconds", &seconds))
+    if (!params.GetInteger("seconds", &seconds))
       seconds = 10;
 
     LOG(INFO) << "starting countdown";
@@ -133,13 +134,9 @@ class SampleHandler {
       return;
 
     if (seconds > 0) {
-      const auto& params = cmd->GetParameters();
-      std::string todo;
-      params.GetString("_todo", &todo);
       LOG(INFO) << "countdown tick: " << seconds << " seconds left";
-
       base::DictionaryValue progress;
-      progress.SetInteger("_seconds_left", seconds);
+      progress.SetInteger("seconds_left", seconds);
       cmd->SetProgress(progress, nullptr);
       task_runner_->PostDelayedTask(
           FROM_HERE,

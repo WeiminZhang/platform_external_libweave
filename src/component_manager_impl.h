@@ -53,8 +53,7 @@ class ComponentManagerImpl final : public ComponentManager {
   // Adds a new command instance to the command queue. The command specified in
   // |command_instance| must be fully initialized and have its name, component,
   // id populated.
-  void AddCommand(
-      std::unique_ptr<CommandInstance> command_instance) override;
+  void AddCommand(std::unique_ptr<CommandInstance> command_instance) override;
 
   // Parses the command definition from a json dictionary. The resulting command
   // instance is populated with all the required fields and partially validated
@@ -199,7 +198,7 @@ class ComponentManagerImpl final : public ComponentManager {
   // This member must be defined before |command_queue_|.
   base::CallbackList<void(UpdateID)> on_server_state_updated_;
 
-  base::DictionaryValue traits_;  // Trait definitions.
+  base::DictionaryValue traits_;      // Trait definitions.
   base::DictionaryValue components_;  // Component instances.
   CommandQueue command_queue_;  // Command queue containing command instances.
   std::vector<base::Closure> on_trait_changed_;
@@ -209,7 +208,7 @@ class ComponentManagerImpl final : public ComponentManager {
   std::map<std::string, std::unique_ptr<StateChangeQueue>> state_change_queues_;
 
   // Legacy API support.
-  mutable base::DictionaryValue legacy_state_;  // Device state.
+  mutable base::DictionaryValue legacy_state_;         // Device state.
   mutable base::DictionaryValue legacy_command_defs_;  // Command definitions.
 
   DISALLOW_COPY_AND_ASSIGN(ComponentManagerImpl);

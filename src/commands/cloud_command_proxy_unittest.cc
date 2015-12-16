@@ -66,8 +66,8 @@ class CloudCommandProxyTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // Set up the test ComponentManager.
-    auto callback =
-        [this](const base::Callback<void(ComponentManager::UpdateID)>& call) {
+    auto callback = [this](
+        const base::Callback<void(ComponentManager::UpdateID)>& call) {
       return callbacks_.Add(call).release();
     };
     EXPECT_CALL(component_manager_, MockAddServerStateUpdatedCallback(_))

@@ -17,6 +17,7 @@ enum class AuthScope {
   kNone,
   kViewer,
   kUser,
+  kManager,
   kOwner,
 };
 
