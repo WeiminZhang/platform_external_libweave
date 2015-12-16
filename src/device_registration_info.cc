@@ -512,9 +512,6 @@ DeviceRegistrationInfo::BuildDeviceResource() const {
     channel->SetString("supportedType", "pull");
   }
   resource->Set("channel", channel.release());
-  resource->Set("commandDefs",
-                component_manager_->GetLegacyCommandDefinitions().DeepCopy());
-  resource->Set("state", component_manager_->GetLegacyState().DeepCopy());
   resource->Set("traits", component_manager_->GetTraits().DeepCopy());
   resource->Set("components", component_manager_->GetComponents().DeepCopy());
 

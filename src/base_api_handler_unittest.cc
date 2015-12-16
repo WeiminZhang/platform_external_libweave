@@ -133,14 +133,46 @@ TEST_F(BaseApiHandlerTest, Initialization) {
             "type": "string"
           }
         }
+      },
+      "reboot": {
+        "minimalRole": "user",
+        "parameters": {},
+        "errors": ["notEnoughBattery"]
+      },
+      "identify": {
+        "minimalRole": "user",
+        "parameters": {}
       }
     },
-   "state": {
-      "firmwareVersion": "string",
-      "localAnonymousAccessMaxRole": [ "none", "viewer", "user" ],
-      "localDiscoveryEnabled": "boolean",
-      "localPairingEnabled": "boolean"
-   }
+    "state": {
+      "firmwareVersion": {
+        "type": "string",
+        "isRequired": true
+      },
+      "localDiscoveryEnabled": {
+        "type": "boolean",
+        "isRequired": true
+      },
+      "localAnonymousAccessMaxRole": {
+        "type": "string",
+        "enum": [ "none", "viewer", "user" ],
+        "isRequired": true
+      },
+      "localPairingEnabled": {
+        "type": "boolean",
+        "isRequired": true
+      },
+      "connectionStatus": {
+        "type": "string"
+      },
+      "network": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" }
+        }
+      }
+    }
   })";
   EXPECT_JSON_EQ(expected, *trait);
 }
@@ -150,7 +182,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
 
   AddCommand(R"({
     'name' : 'base.updateBaseConfiguration',
-    'component': 'weave',
+    'component': 'base',
     'parameters': {
       'localDiscoveryEnabled': false,
       'localAnonymousAccessMaxRole': 'none',
@@ -171,7 +203,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
 
   AddCommand(R"({
     'name' : 'base.updateBaseConfiguration',
-    'component': 'weave',
+    'component': 'base',
     'parameters': {
       'localDiscoveryEnabled': true,
       'localAnonymousAccessMaxRole': 'user',
@@ -205,7 +237,7 @@ TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
 TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
   AddCommand(R"({
     'name' : 'base.updateDeviceInfo',
-    'component': 'weave',
+    'component': 'base',
     'parameters': {
       'name': 'testName',
       'description': 'testDescription',
@@ -220,7 +252,7 @@ TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
 
   AddCommand(R"({
     'name' : 'base.updateDeviceInfo',
-    'component': 'weave',
+    'component': 'base',
     'parameters': {
       'location': 'newLocation'
     }

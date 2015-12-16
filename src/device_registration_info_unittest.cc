@@ -430,73 +430,41 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
             EXPECT_TRUE(json->GetString("deviceDraft.name", &value));
             EXPECT_EQ("Coffee Pot", value);
             base::DictionaryValue* dict = nullptr;
-            EXPECT_TRUE(json->GetDictionary("deviceDraft.commandDefs", &dict));
-            auto expectedCommandDefs = R"({
-            'base': {
-              'reboot': {
-                'parameters': {
-                  'delay': {
-                    'minimum': 10,
-                    'type': 'integer'
-                  }
-                },
-                'minimalRole': 'user'
-              }
-            },
-            'robot': {
-              '_jump': {
-                'parameters': {
-                  '_height': {
-                    'type': 'integer'
-                  }
-                },
-                'minimalRole': 'user'
-              }
-            }
-          })";
-            EXPECT_JSON_EQ(expectedCommandDefs, *dict);
-
-            EXPECT_TRUE(json->GetDictionary("deviceDraft.state", &dict));
-            auto expectedState = R"({
-            'base': {
-              'firmwareVersion': '1.0'
-            }
-          })";
-            EXPECT_JSON_EQ(expectedState, *dict);
-
+            EXPECT_FALSE(json->GetDictionary("deviceDraft.commandDefs", &dict));
+            EXPECT_FALSE(json->GetDictionary("deviceDraft.state", &dict));
             EXPECT_TRUE(json->GetDictionary("deviceDraft.traits", &dict));
             auto expectedTraits = R"({
-            'base': {
-              'commands': {
-                'reboot': {
-                  'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
-                  'minimalRole': 'user'
+              'base': {
+                'commands': {
+                  'reboot': {
+                    'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
+                    'minimalRole': 'user'
+                  }
+                },
+                'state': {
+                  'firmwareVersion': {'type': 'string'}
                 }
               },
-              'state': {
-                'firmwareVersion': {'type': 'string'}
-              }
-            },
-            'robot': {
-              'commands': {
-                '_jump': {
-                  'parameters': {'_height': {'type': 'integer'}},
-                  'minimalRole': 'user'
+              'robot': {
+                'commands': {
+                  '_jump': {
+                    'parameters': {'_height': {'type': 'integer'}},
+                    'minimalRole': 'user'
+                  }
                 }
               }
-            }
-          })";
+            })";
             EXPECT_JSON_EQ(expectedTraits, *dict);
 
             EXPECT_TRUE(json->GetDictionary("deviceDraft.components", &dict));
             auto expectedComponents = R"({
-            'comp': {
-              'traits': ['base', 'robot'],
-              'state': {
-                'base': { 'firmwareVersion': '1.0' }
+              'comp': {
+                'traits': ['base', 'robot'],
+                'state': {
+                  'base': { 'firmwareVersion': '1.0' }
+                }
               }
-            }
-          })";
+            })";
             EXPECT_JSON_EQ(expectedComponents, *dict);
 
             base::DictionaryValue json_resp;

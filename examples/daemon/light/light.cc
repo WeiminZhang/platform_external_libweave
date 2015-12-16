@@ -27,7 +27,8 @@ const char kTraits[] = R"({
     "state": {
       "state": {
         "type": "string",
-        "enum": [ "on", "standby" ]
+        "enum": [ "on", "standby" ],
+        "isRequired": true
       }
     }
   },
@@ -44,7 +45,14 @@ const char kTraits[] = R"({
         }
       }
     },
-    "state": { "brightness": { "type": "integer" } }
+    "state": {
+      "brightness": {
+        "type": "integer",
+        "isRequired": true,
+        "minimum": 0,
+        "maximum": 100
+      }
+    }
   },
   "colorXY": {
     "commands": {
@@ -71,11 +79,15 @@ const char kTraits[] = R"({
             },
             "additionalProperties": false
           }
-        }
+        },
+        "errors": ["colorOutOfRange"]
       }
     },
     "state": {
       "colorSetting": {
+        "type": "object",
+        "isRequired": true,
+        "required": [ "colorX", "colorY" ],
         "properties": {
           "colorX": {
             "type": "number",
@@ -90,6 +102,9 @@ const char kTraits[] = R"({
         }
       },
       "colorCapRed": {
+        "type": "object",
+        "isRequired": true,
+        "required": [ "colorX", "colorY" ],
         "properties": {
           "colorX": {
             "type": "number",
@@ -104,6 +119,9 @@ const char kTraits[] = R"({
         }
       },
       "colorCapGreen": {
+        "type": "object",
+        "isRequired": true,
+        "required": [ "colorX", "colorY" ],
         "properties": {
           "colorX": {
             "type": "number",
@@ -118,6 +136,9 @@ const char kTraits[] = R"({
         }
       },
       "colorCapBlue": {
+        "type": "object",
+        "isRequired": true,
+        "required": [ "colorX", "colorY" ],
         "properties": {
           "colorX": {
             "type": "number",

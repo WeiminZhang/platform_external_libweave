@@ -37,15 +37,20 @@ const char kTraits[] = R"({
             "type": "string",
             "enum": [ "locked", "unlocked" ]
           }
-        }
+        },
+        "errors": ["batteryTooLow", "jammed", "lockingNotSupported"]
       }
     },
     "state": {
       "lockedState": {
         "type": "string",
-        "enum": [ "locked", "unlocked", "partiallyLocked" ]
+        "enum": [ "locked", "unlocked", "partiallyLocked" ],
+        "isRequired": true
       },
-      "isLockingSupported": { "type": "boolean" }
+      "isLockingSupported": {
+        "type": "boolean",
+        "isRequired": true
+      }
     }
   }
 })";
