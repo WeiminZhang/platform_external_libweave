@@ -70,8 +70,8 @@ TEST_F(AuthManagerTest, CreateAccessToken) {
   EXPECT_EQ(
       "s3GnCThkQXIzGQoPDlJoiehQiJ5yy4SYUVQzMN2kY0o0OjQ1NjoxNDEwMDAwMDAw",
       Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456})));
-  EXPECT_CALL(clock_, Now())
-      .WillRepeatedly(Return(clock_.Now() + base::TimeDelta::FromDays(11)));
+  auto new_time = clock_.Now() + base::TimeDelta::FromDays(11);
+  EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
   EXPECT_EQ(
       "qAmlJykiPTnFljfOKSf3BUII9YZG8/ttzD76q+fII1YyOjM0NToxNDEwOTUwNDAw",
       Base64Encode(auth_.CreateAccessToken(UserInfo{AuthScope::kUser, 345})));
@@ -126,8 +126,8 @@ TEST_F(AuthManagerTest, GetRootClientAuthToken) {
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
-  EXPECT_CALL(clock_, Now())
-      .WillRepeatedly(Return(clock_.Now() + base::TimeDelta::FromDays(15)));
+  auto new_time = clock_.Now() + base::TimeDelta::FromDays(15);
+  EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
   EXPECT_EQ("UGKqwMYGQNOd8jeYFDOsM02CQgECRgMaVB6rAA==",
             Base64Encode(auth_.GetRootClientAuthToken()));
 }
