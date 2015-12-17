@@ -196,9 +196,12 @@ TEST_F(PrivetHandlerTest, InvalidAuth) {
 
 TEST_F(PrivetHandlerTest, ExpiredAuth) {
   auth_header_ = "Privet 123";
-  EXPECT_CALL(security_, ParseAccessToken(_, _))
-      .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time()),
-                            Return(UserInfo{AuthScope::kOwner, 1})));
+  EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+      .WillRepeatedly(DoAll(WithArgs<2>(Invoke([](ErrorPtr* error) {
+                              Error::AddTo(error, FROM_HERE, errors::kDomain,
+                                           "authorizationExpired", "");
+                            })),
+                            Return(false)));
   EXPECT_PRED2(IsEqualError, CodeWithReason(403, "authorizationExpired"),
                HandleRequest("/privet/info", "{}"));
 }
@@ -400,7 +403,7 @@ TEST_F(PrivetHandlerTest, AuthAnonymous) {
 TEST_F(PrivetHandlerTest, AuthPairing) {
   EXPECT_CALL(security_, IsValidPairingCode("testToken"))
       .WillRepeatedly(Return(true));
-  EXPECT_CALL(security_, CreateAccessToken(_))
+  EXPECT_CALL(security_, CreateAccessToken(_, _))
       .WillRepeatedly(Return("OwnerAccessToken"));
   const char kInput[] = R"({
     'mode': 'pairing',
@@ -421,9 +424,9 @@ class PrivetHandlerTestWithAuth : public PrivetHandlerTest {
   void SetUp() override {
     PrivetHandlerTest::SetUp();
     auth_header_ = "Privet 123";
-    EXPECT_CALL(security_, ParseAccessToken(_, _))
-        .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
-                              Return(UserInfo{AuthScope::kOwner, 1})));
+    EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+        .WillRepeatedly(DoAll(SetArgPointee<1>(UserInfo{AuthScope::kOwner, 1}),
+                              Return(true)));
   }
 };
 
@@ -597,9 +600,9 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
 }
 
 TEST_F(PrivetHandlerSetupTest, GcdSetupAsMaster) {
-  EXPECT_CALL(security_, ParseAccessToken(_, _))
-      .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
-                            Return(UserInfo{AuthScope::kManager, 1})));
+  EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+      .WillRepeatedly(DoAll(SetArgPointee<1>(UserInfo{AuthScope::kManager, 1}),
+                            Return(true)));
   const char kInput[] = R"({
     'gcd': {
       'ticketId': 'testTicket',

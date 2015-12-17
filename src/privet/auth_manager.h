@@ -33,9 +33,12 @@ class AuthManager {
               base::Clock* clock = nullptr);
   ~AuthManager();
 
-  std::vector<uint8_t> CreateAccessToken(const UserInfo& user_info);
-  UserInfo ParseAccessToken(const std::vector<uint8_t>& token,
-                            base::Time* time) const;
+  std::vector<uint8_t> CreateAccessToken(const UserInfo& user_info,
+                                         base::TimeDelta ttl) const;
+
+  bool ParseAccessToken(const std::vector<uint8_t>& token,
+                        UserInfo* user_info,
+                        ErrorPtr* error) const;
 
   const std::vector<uint8_t>& GetSecret() const { return secret_; }
   const std::vector<uint8_t>& GetCertificateFingerprint() const {

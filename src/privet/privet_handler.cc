@@ -121,10 +121,6 @@ const char kInvalidParamValueFormat[] = "Invalid parameter: '%s'='%s'";
 
 const int kAccessTokenExpirationSeconds = 3600;
 
-// Threshold to reduce probability of expiration because of clock difference
-// between device and client. Value is just a guess.
-const int kAccessTokenExpirationThresholdSeconds = 300;
-
 template <class Container>
 std::unique_ptr<base::ListValue> ToValue(const Container& list) {
   std::unique_ptr<base::ListValue> value_list(new base::ListValue());
@@ -518,23 +514,8 @@ void PrivetHandler::HandleRequest(const std::string& api,
   }
   UserInfo user_info;
   if (token != kAuthTypeAnonymousValue) {
-    base::Time time;
-    user_info = security_->ParseAccessToken(token, &time);
-    if (user_info.scope() == AuthScope::kNone) {
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidAuthorization,
-                         "Invalid access token: %s", token.c_str());
+    if (!security_->ParseAccessToken(token, &user_info, &error))
       return ReturnError(*error, callback);
-    }
-    time += base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
-    time +=
-        base::TimeDelta::FromSeconds(kAccessTokenExpirationThresholdSeconds);
-    if (time < clock_->Now()) {
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kAuthorizationExpired, "Token expired: %s",
-                         token.c_str());
-      return ReturnError(*error, callback);
-    }
   }
 
   if (handler->second.scope > user_info.scope()) {
@@ -740,9 +721,11 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   }
 
   base::DictionaryValue output;
-  output.SetString(kAuthAccessTokenKey,
-                   security_->CreateAccessToken(
-                       UserInfo{requested_auth_scope, ++last_user_id_}));
+  output.SetString(
+      kAuthAccessTokenKey,
+      security_->CreateAccessToken(
+          UserInfo{requested_auth_scope, ++last_user_id_},
+          base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds)));
   output.SetString(kAuthTokenTypeKey, kAuthorizationHeaderPrefix);
   output.SetInteger(kAuthExpiresInKey, kAccessTokenExpirationSeconds);
   output.SetString(kAuthScopeKey, EnumToString(requested_auth_scope));

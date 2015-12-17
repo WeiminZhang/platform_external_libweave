@@ -135,25 +135,53 @@ void AuthManager::SetSecret(const std::vector<uint8_t>& secret,
 
 AuthManager::~AuthManager() {}
 
-// Returns "[hmac]scope:id:time".
-std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info) {
-  std::string data_str{CreateTokenData(user_info, Now())};
+// Returns "[hmac]scope:id:expiration_time".
+std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
+                                                    base::TimeDelta ttl) const {
+  std::string data_str{CreateTokenData(user_info, Now() + ttl)};
   std::vector<uint8_t> data{data_str.begin(), data_str.end()};
   std::vector<uint8_t> hash{HmacSha256(secret_, data)};
   hash.insert(hash.end(), data.begin(), data.end());
   return hash;
 }
 
-// Parses "base64([hmac]scope:id:time)".
-UserInfo AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
-                                       base::Time* time) const {
-  if (token.size() <= kSha256OutputSize)
-    return UserInfo{};
+// TODO(vitalybuka): Switch to Macaroon?
+// Parses "base64([hmac]scope:id:expriration_time)".
+bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
+                                   UserInfo* user_info,
+                                   ErrorPtr* error) const {
+  if (token.size() <= kSha256OutputSize) {
+    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
+                       errors::kInvalidAuthorization, "Invalid token size: %zu",
+                       token.size());
+    return false;
+  }
   std::vector<uint8_t> hash(token.begin(), token.begin() + kSha256OutputSize);
   std::vector<uint8_t> data(token.begin() + kSha256OutputSize, token.end());
-  if (hash != HmacSha256(secret_, data))
-    return UserInfo{};
-  return SplitTokenData(std::string(data.begin(), data.end()), time);
+  if (hash != HmacSha256(secret_, data)) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain,
+                 errors::kInvalidAuthorization, "Invalid signature");
+    return false;
+  }
+
+  base::Time time;
+  UserInfo info = SplitTokenData(std::string(data.begin(), data.end()), &time);
+  if (info.scope() == AuthScope::kNone) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain,
+                 errors::kInvalidAuthorization, "Invalid token data");
+    return false;
+  }
+
+  if (time < clock_->Now()) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain,
+                 errors::kAuthorizationExpired, "Token is expired");
+    return false;
+  }
+
+  if (user_info)
+    *user_info = info;
+
+  return true;
 }
 
 std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(

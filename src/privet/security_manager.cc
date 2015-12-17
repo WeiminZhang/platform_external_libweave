@@ -109,19 +109,23 @@ SecurityManager::~SecurityManager() {
     ClosePendingSession(pending_sessions_.begin()->first);
 }
 
-// Returns "base64([hmac]scope:id:time)".
-std::string SecurityManager::CreateAccessToken(const UserInfo& user_info) {
-  return Base64Encode(auth_manager_->CreateAccessToken(user_info));
+std::string SecurityManager::CreateAccessToken(const UserInfo& user_info,
+                                               base::TimeDelta ttl) const {
+  return Base64Encode(auth_manager_->CreateAccessToken(user_info, ttl));
 }
 
-// Parses "base64([hmac]scope:id:time)".
-UserInfo SecurityManager::ParseAccessToken(const std::string& token,
-                                           base::Time* time) const {
+bool SecurityManager::ParseAccessToken(const std::string& token,
+                                       UserInfo* user_info,
+                                       ErrorPtr* error) const {
   std::vector<uint8_t> decoded;
-  if (!Base64Decode(token, &decoded))
-    return UserInfo{};
+  if (!Base64Decode(token, &decoded)) {
+    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
+                       errors::kInvalidAuthorization,
+                       "Invalid token encoding: %s", token.c_str());
+    return false;
+  }
 
-  return auth_manager_->ParseAccessToken(decoded, time);
+  return auth_manager_->ParseAccessToken(decoded, user_info, error);
 }
 
 std::set<PairingType> SecurityManager::GetPairingTypes() const {

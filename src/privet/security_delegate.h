@@ -22,11 +22,13 @@ class SecurityDelegate {
   virtual ~SecurityDelegate() {}
 
   // Creates access token for the given scope, user id and |time|.
-  virtual std::string CreateAccessToken(const UserInfo& user_info) = 0;
+  virtual std::string CreateAccessToken(const UserInfo& user_info,
+                                        base::TimeDelta ttl) const = 0;
 
-  // Validates |token| and returns scope and user id parsed from that.
-  virtual UserInfo ParseAccessToken(const std::string& token,
-                                    base::Time* time) const = 0;
+  // Validates |token| and returns scope, user id parsed from that.
+  virtual bool ParseAccessToken(const std::string& token,
+                                UserInfo* user_info,
+                                ErrorPtr* error) const = 0;
 
   // Returns list of pairing methods by device.
   virtual std::set<PairingType> GetPairingTypes() const = 0;

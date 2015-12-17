@@ -62,9 +62,10 @@ class MockDeviceDelegate : public DeviceDelegate {
 
 class MockSecurityDelegate : public SecurityDelegate {
  public:
-  MOCK_METHOD1(CreateAccessToken, std::string(const UserInfo&));
-  MOCK_CONST_METHOD2(ParseAccessToken,
-                     UserInfo(const std::string&, base::Time*));
+  MOCK_CONST_METHOD2(CreateAccessToken,
+                     std::string(const UserInfo&, base::TimeDelta));
+  MOCK_CONST_METHOD3(ParseAccessToken,
+                     bool(const std::string&, UserInfo*, ErrorPtr*));
   MOCK_CONST_METHOD0(GetPairingTypes, std::set<PairingType>());
   MOCK_CONST_METHOD0(GetCryptoTypes, std::set<CryptoType>());
   MOCK_METHOD1(ClaimRootClientAuthToken, std::string(ErrorPtr*));
@@ -83,7 +84,7 @@ class MockSecurityDelegate : public SecurityDelegate {
   MOCK_METHOD0(CreateSessionId, std::string());
 
   MockSecurityDelegate() {
-    EXPECT_CALL(*this, CreateAccessToken(_))
+    EXPECT_CALL(*this, CreateAccessToken(_, _))
         .WillRepeatedly(Return("GuestAccessToken"));
 
     EXPECT_CALL(*this, ClaimRootClientAuthToken(_))
@@ -92,9 +93,10 @@ class MockSecurityDelegate : public SecurityDelegate {
     EXPECT_CALL(*this, ConfirmClientAuthToken("DerivedClientAuthToken", _))
         .WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*this, ParseAccessToken(_, _))
-        .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
-                              Return(UserInfo{AuthScope::kViewer, 1234567})));
+    EXPECT_CALL(*this, ParseAccessToken(_, _, _))
+        .WillRepeatedly(
+            DoAll(SetArgPointee<1>(UserInfo{AuthScope::kViewer, 1234567}),
+                  Return(true)));
 
     EXPECT_CALL(*this, GetPairingTypes())
         .WillRepeatedly(Return(std::set<PairingType>{

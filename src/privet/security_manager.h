@@ -60,9 +60,11 @@ class SecurityManager : public SecurityDelegate {
   ~SecurityManager() override;
 
   // SecurityDelegate methods
-  std::string CreateAccessToken(const UserInfo& user_info) override;
-  UserInfo ParseAccessToken(const std::string& token,
-                            base::Time* time) const override;
+  std::string CreateAccessToken(const UserInfo& user_info,
+                                base::TimeDelta ttl) const override;
+  bool ParseAccessToken(const std::string& token,
+                        UserInfo* user_info,
+                        ErrorPtr* error) const override;
   std::set<PairingType> GetPairingTypes() const override;
   std::set<CryptoType> GetCryptoTypes() const override;
   std::string ClaimRootClientAuthToken(ErrorPtr* error) override;
