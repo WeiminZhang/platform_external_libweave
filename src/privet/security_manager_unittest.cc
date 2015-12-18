@@ -96,8 +96,6 @@ class SecurityManagerTest : public testing::Test {
 
     std::string auth_code_base64{Base64Encode(auth_code)};
 
-    EXPECT_TRUE(security_.IsValidPairingCode(auth_code_base64));
-
     std::string token;
     AuthScope scope;
     base::TimeDelta ttl;

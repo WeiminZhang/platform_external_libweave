@@ -49,10 +49,6 @@ class SecurityDelegate {
   virtual bool ConfirmClientAuthToken(const std::string& token,
                                       ErrorPtr* error) = 0;
 
-  // Returns true if |auth_code| provided by client is valid. Client should
-  // obtain |auth_code| during pairing process.
-  virtual bool IsValidPairingCode(const std::string& auth_code) const = 0;
-
   virtual bool StartPairing(PairingType mode,
                             CryptoType crypto,
                             std::string* session_id,

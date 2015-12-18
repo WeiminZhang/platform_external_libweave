@@ -76,7 +76,6 @@ class MockSecurityDelegate : public SecurityDelegate {
   MOCK_CONST_METHOD0(GetCryptoTypes, std::set<CryptoType>());
   MOCK_METHOD1(ClaimRootClientAuthToken, std::string(ErrorPtr*));
   MOCK_METHOD2(ConfirmClientAuthToken, bool(const std::string&, ErrorPtr*));
-  MOCK_CONST_METHOD1(IsValidPairingCode, bool(const std::string&));
   MOCK_METHOD5(
       StartPairing,
       bool(PairingType, CryptoType, std::string*, std::string*, ErrorPtr*));

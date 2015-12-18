@@ -404,8 +404,6 @@ TEST_F(PrivetHandlerTest, AuthAnonymous) {
 }
 
 TEST_F(PrivetHandlerTest, AuthPairing) {
-  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
-      .WillRepeatedly(Return(true));
   EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
       .WillRepeatedly(DoAll(SetArgPointee<3>("OwnerAccessToken"),
                             SetArgPointee<4>(AuthScope::kOwner),
@@ -426,8 +424,6 @@ TEST_F(PrivetHandlerTest, AuthPairing) {
 }
 
 TEST_F(PrivetHandlerTest, AuthLocalAuto) {
-  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
-      .WillRepeatedly(Return(true));
   EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
       .WillRepeatedly(DoAll(SetArgPointee<3>("UserAccessToken"),
                             SetArgPointee<4>(AuthScope::kUser),
@@ -448,8 +444,6 @@ TEST_F(PrivetHandlerTest, AuthLocalAuto) {
 }
 
 TEST_F(PrivetHandlerTest, AuthLocal) {
-  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
-      .WillRepeatedly(Return(true));
   EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
       .WillRepeatedly(DoAll(SetArgPointee<3>("ManagerAccessToken"),
                             SetArgPointee<4>(AuthScope::kManager),
@@ -470,8 +464,6 @@ TEST_F(PrivetHandlerTest, AuthLocal) {
 }
 
 TEST_F(PrivetHandlerTest, AuthLocalHighScope) {
-  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
-      .WillRepeatedly(Return(true));
   EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
       .WillRepeatedly(DoAll(SetArgPointee<3>("UserAccessToken"),
                             SetArgPointee<4>(AuthScope::kUser),

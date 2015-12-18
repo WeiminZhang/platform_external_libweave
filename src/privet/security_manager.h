@@ -75,7 +75,6 @@ class SecurityManager : public SecurityDelegate {
   std::string ClaimRootClientAuthToken(ErrorPtr* error) override;
   bool ConfirmClientAuthToken(const std::string& token,
                               ErrorPtr* error) override;
-  bool IsValidPairingCode(const std::string& auth_code) const override;
   bool StartPairing(PairingType mode,
                     CryptoType crypto,
                     std::string* session_id,
@@ -94,6 +93,7 @@ class SecurityManager : public SecurityDelegate {
                                 const PairingEndListener& on_end);
 
  private:
+  bool IsValidPairingCode(const std::string& auth_code) const;
   FRIEND_TEST_ALL_PREFIXES(SecurityManagerTest, ThrottlePairing);
   // Allows limited number of new sessions without successful authorization.
   bool CheckIfPairingAllowed(ErrorPtr* error);
