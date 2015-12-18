@@ -484,8 +484,8 @@ class PrivetHandlerTestWithAuth : public PrivetHandlerTest {
     PrivetHandlerTest::SetUp();
     auth_header_ = "Privet 123";
     EXPECT_CALL(security_, ParseAccessToken(_, _, _))
-        .WillRepeatedly(DoAll(SetArgPointee<1>(UserInfo{AuthScope::kOwner, 1}),
-                              Return(true)));
+        .WillRepeatedly(DoAll(
+            SetArgPointee<1>(UserInfo{AuthScope::kOwner, "1"}), Return(true)));
   }
 };
 
@@ -660,8 +660,8 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
 
 TEST_F(PrivetHandlerSetupTest, GcdSetupAsMaster) {
   EXPECT_CALL(security_, ParseAccessToken(_, _, _))
-      .WillRepeatedly(DoAll(SetArgPointee<1>(UserInfo{AuthScope::kManager, 1}),
-                            Return(true)));
+      .WillRepeatedly(DoAll(
+          SetArgPointee<1>(UserInfo{AuthScope::kManager, "1"}), Return(true)));
   const char kInput[] = R"({
     'gcd': {
       'ticketId': 'testTicket',

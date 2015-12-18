@@ -64,52 +64,52 @@ TEST_F(AuthManagerTest, Constructor) {
 }
 
 TEST_F(AuthManagerTest, CreateAccessToken) {
-  EXPECT_EQ("OUH2L2npY+Gzwjf9AnqigGSK3hxIVR+xX8/Cnu4DGf8wOjA6MTQxMDAwMDAwMA==",
-            Base64Encode(
-                auth_.CreateAccessToken(UserInfo{AuthScope::kNone, 123}, {})));
-  EXPECT_EQ("iZx0qgEHFF5lq+Q503GtgU0d6gLQ9TlLsU+DcFbZb2QxOjIzNDoxNDEwMDAwMDAw",
+  EXPECT_EQ("xy58xYHWQUp5VT2tDmYLNIgdRiJ5ZQbgyCQuOGyQa5AwOjE0MTAwMDAwMDA6",
             Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kViewer, 234}, {})));
-  EXPECT_EQ("cWkAHxSBYtTFV3Va/9mcynR8iFZo2qr+8+WewmumF74zOjI1NzoxNDEwMDAwMDAw",
+                UserInfo{AuthScope::kNone, "123"}, {})));
+  EXPECT_EQ("U0U8NQ4J0btA4kwPkG8deFkDLQOPPANbw53gGmcTUMUxOjE0MTAwMDAwMDA6MjM0",
             Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kManager, 257}, {})));
-  EXPECT_EQ("s3GnCThkQXIzGQoPDlJoiehQiJ5yy4SYUVQzMN2kY0o0OjQ1NjoxNDEwMDAwMDAw",
-            Base64Encode(
-                auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456}, {})));
+                UserInfo{AuthScope::kViewer, "234"}, {})));
+  EXPECT_EQ("BooVCAQZ+ectnq2RYrzL3qymLfGm5YLGp9NMCuXAM3EzOjE0MTAwMDAwMDA6MjU3",
+            Base64Encode(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kManager, "257"}, {})));
+  EXPECT_EQ("YjgJgNR2uDzfTxHokbuDfguwOB72/F9mbzDO2PehIS80OjE0MTAwMDAwMDA6NDU2",
+            Base64Encode(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kOwner, "456"}, {})));
   auto new_time = clock_.Now() + base::TimeDelta::FromDays(11);
   EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
-  EXPECT_EQ("qAmlJykiPTnFljfOKSf3BUII9YZG8/ttzD76q+fII1YyOjM0NToxNDEwOTUwNDAw",
-            Base64Encode(
-                auth_.CreateAccessToken(UserInfo{AuthScope::kUser, 345}, {})));
+  EXPECT_EQ("d3t7075JF0Vb/c/Ihunk+xn2gxzUkHotdaIS9vc+A6kyOjE0MTA5NTA0MDA6MzQ1",
+            Base64Encode(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kUser, "345"}, {})));
 }
 
 TEST_F(AuthManagerTest, CreateSameToken) {
-  EXPECT_EQ(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 555}, {}),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 555}, {}));
+  EXPECT_EQ(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, "555"}, {}),
+            auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, "555"}, {}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentScope) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, 456}, {}),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456}, {}));
+  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, "456"}, {}),
+            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "456"}, {}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentUser) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456}, {}),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 789}, {}));
+  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "456"}, {}),
+            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "789"}, {}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentTime) {
-  auto token = auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 567}, {});
+  auto token = auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "567"}, {});
   EXPECT_CALL(clock_, Now())
       .WillRepeatedly(Return(base::Time::FromTimeT(1400000000)));
   EXPECT_NE(token,
-            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, 567}, {}));
+            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "567"}, {}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentInstance) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kUser, 123}, {}),
+  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kUser, "123"}, {}),
             AuthManager({}, {}).CreateAccessToken(
-                UserInfo{AuthScope::kUser, 123}, {}));
+                UserInfo{AuthScope::kUser, "123"}, {}));
 }
 
 TEST_F(AuthManagerTest, ParseAccessToken) {
@@ -120,14 +120,14 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 
     AuthManager auth{{}, {}, {}, &clock_};
 
-    auto token = auth.CreateAccessToken(UserInfo{AuthScope::kUser, 5},
+    auto token = auth.CreateAccessToken(UserInfo{AuthScope::kUser, "5"},
                                         base::TimeDelta::FromSeconds(i));
     base::Time time2;
     UserInfo user_info;
     EXPECT_FALSE(auth_.ParseAccessToken(token, &user_info, nullptr));
     EXPECT_TRUE(auth.ParseAccessToken(token, &user_info, nullptr));
     EXPECT_EQ(AuthScope::kUser, user_info.scope());
-    EXPECT_EQ(5u, user_info.user_id());
+    EXPECT_EQ("5", user_info.user_id());
 
     EXPECT_CALL(clock_, Now())
         .WillRepeatedly(Return(kStartTime + base::TimeDelta::FromSeconds(i)));

@@ -134,7 +134,9 @@ bool SecurityManager::CreateAccessToken(AuthType auth_type,
       return false;
   }
 
-  UserInfo user_info{desired_scope, ++last_user_id_};
+  UserInfo user_info{desired_scope,
+                     std::to_string(static_cast<int>(auth_type)) + "/" +
+                         std::to_string(++last_user_id_)};
   base::TimeDelta ttl =
       base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
 

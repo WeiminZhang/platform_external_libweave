@@ -131,26 +131,27 @@ class SecurityManagerTest : public testing::Test {
                             &task_runner_};
 };
 
-TEST_F(SecurityManagerTest, CreateAccessToken) {
-  std::string token;
-  AuthScope scope;
-  base::TimeDelta ttl;
-  EXPECT_TRUE(security_.CreateAccessToken(AuthType::kAnonymous, "",
-                                          AuthScope::kUser, &token, &scope,
-                                          &ttl, nullptr));
-  EXPECT_EQ("Cfz+qcndz8/Mo3ytgYlD7zn8qImkkdPsJVUNBmSOiXwyOjE6MTQxMDAwMzYwMA==",
-            token);
-  EXPECT_EQ(AuthScope::kUser, scope);
-  EXPECT_EQ(base::TimeDelta::FromHours(1), ttl);
-}
+TEST_F(SecurityManagerTest, AccessToken) {
+  AuthScope scopes[] = {
+      AuthScope::kViewer, AuthScope::kUser, AuthScope::kManager,
+      AuthScope::kOwner,
+  };
+  for (size_t i = 1; i < 100; ++i) {
+    const AuthScope requested_scope = scopes[i % arraysize(scopes)];
+    std::string token;
+    AuthScope scope;
+    base::TimeDelta ttl;
+    EXPECT_TRUE(security_.CreateAccessToken(AuthType::kAnonymous, "",
+                                            requested_scope, &token, &scope,
+                                            &ttl, nullptr));
+    EXPECT_EQ(requested_scope, scope);
+    EXPECT_EQ(base::TimeDelta::FromHours(1), ttl);
 
-TEST_F(SecurityManagerTest, ParseAccessToken) {
-  UserInfo info;
-  EXPECT_TRUE(security_.ParseAccessToken(
-      "MMe7FE+EMyG4OnD2457dF5Nqh9Uiaq2iRWRzkSOW+SAzOjk6MTQxMDAwMDkwMA==", &info,
-      nullptr));
-  EXPECT_EQ(AuthScope::kManager, info.scope());
-  EXPECT_EQ(9u, info.user_id());
+    UserInfo info;
+    EXPECT_TRUE(security_.ParseAccessToken(token, &info, nullptr));
+    EXPECT_EQ(requested_scope, info.scope());
+    EXPECT_EQ("0/" + std::to_string(i), info.user_id());
+  }
 }
 
 TEST_F(SecurityManagerTest, PairingNoSession) {

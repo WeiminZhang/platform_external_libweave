@@ -103,7 +103,7 @@ class MockSecurityDelegate : public SecurityDelegate {
 
     EXPECT_CALL(*this, ParseAccessToken(_, _, _))
         .WillRepeatedly(
-            DoAll(SetArgPointee<1>(UserInfo{AuthScope::kViewer, 1234567}),
+            DoAll(SetArgPointee<1>(UserInfo{AuthScope::kViewer, "1234567"}),
                   Return(true)));
 
     EXPECT_CALL(*this, GetPairingTypes())

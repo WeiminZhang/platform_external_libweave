@@ -33,36 +33,34 @@ void AppendToArray(T value, std::vector<uint8_t>* array) {
   array->insert(array->end(), begin, begin + sizeof(value));
 }
 
-// Returns "scope:id:time".
+// Returns "scope:time:id".
 std::string CreateTokenData(const UserInfo& user_info, const base::Time& time) {
   return base::IntToString(static_cast<int>(user_info.scope())) +
-         kTokenDelimeter + base::Uint64ToString(user_info.user_id()) +
-         kTokenDelimeter + base::Int64ToString(time.ToTimeT());
+         kTokenDelimeter + std::to_string(time.ToTimeT()) + kTokenDelimeter +
+         user_info.user_id();
 }
 
-// Splits string of "scope:id:time" format.
+// Splits string of "scope:time:id" format.
 UserInfo SplitTokenData(const std::string& token, base::Time* time) {
   const UserInfo kNone;
-  auto parts = Split(token, kTokenDelimeter, false, false);
-  if (parts.size() != 3)
+  auto parts = SplitAtFirst(token, kTokenDelimeter, false);
+  if (parts.second.empty())
     return kNone;
   int scope = 0;
-  if (!base::StringToInt(parts[0], &scope) ||
+  if (!base::StringToInt(parts.first, &scope) ||
       scope < static_cast<int>(AuthScope::kNone) ||
       scope > static_cast<int>(AuthScope::kOwner)) {
     return kNone;
   }
 
-  uint64_t id{0};
-  if (!base::StringToUint64(parts[1], &id))
+  parts = SplitAtFirst(parts.second, kTokenDelimeter, false);
+  int64_t timestamp{0};
+  if (parts.second.empty() || !base::StringToInt64(parts.first, &timestamp))
     return kNone;
 
-  int64_t timestamp{0};
-  if (!base::StringToInt64(parts[2], &timestamp))
-    return kNone;
   if (time)
     *time = base::Time::FromTimeT(timestamp);
-  return UserInfo{static_cast<AuthScope>(scope), id};
+  return UserInfo{static_cast<AuthScope>(scope), parts.second};
 }
 
 class Caveat {
@@ -140,7 +138,7 @@ void AuthManager::SetAuthSecret(const std::vector<uint8_t>& secret,
 
 AuthManager::~AuthManager() {}
 
-// Returns "[hmac]scope:id:expiration_time".
+// Returns "[hmac]scope:expiration_time:id".
 std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
                                                     base::TimeDelta ttl) const {
   std::string data_str{CreateTokenData(user_info, Now() + ttl)};
