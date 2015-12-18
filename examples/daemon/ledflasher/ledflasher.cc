@@ -49,7 +49,7 @@ const char kTraits[] = R"({
   }
 })";
 
-const char kComponent[] = "lock";
+const char kComponent[] = "ledflasher";
 
 }  // namespace
 
