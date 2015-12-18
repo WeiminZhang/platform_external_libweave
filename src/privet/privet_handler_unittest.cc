@@ -425,6 +425,67 @@ TEST_F(PrivetHandlerTest, AuthPairing) {
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
 }
 
+TEST_F(PrivetHandlerTest, AuthLocalAuto) {
+  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
+      .WillRepeatedly(DoAll(SetArgPointee<3>("UserAccessToken"),
+                            SetArgPointee<4>(AuthScope::kUser),
+                            SetArgPointee<5>(base::TimeDelta::FromSeconds(15)),
+                            Return(true)));
+  const char kInput[] = R"({
+    'mode': 'local',
+    'requestedScope': 'auto',
+    'authCode': 'localAuthToken'
+  })";
+  const char kExpected[] = R"({
+    'accessToken': 'UserAccessToken',
+    'expiresIn': 15,
+    'scope': 'user',
+    'tokenType': 'Privet'
+  })";
+  EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
+}
+
+TEST_F(PrivetHandlerTest, AuthLocal) {
+  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
+      .WillRepeatedly(DoAll(SetArgPointee<3>("ManagerAccessToken"),
+                            SetArgPointee<4>(AuthScope::kManager),
+                            SetArgPointee<5>(base::TimeDelta::FromSeconds(15)),
+                            Return(true)));
+  const char kInput[] = R"({
+    'mode': 'local',
+    'requestedScope': 'manager',
+    'authCode': 'localAuthToken'
+  })";
+  const char kExpected[] = R"({
+    'accessToken': 'ManagerAccessToken',
+    'expiresIn': 15,
+    'scope': 'manager',
+    'tokenType': 'Privet'
+  })";
+  EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
+}
+
+TEST_F(PrivetHandlerTest, AuthLocalHighScope) {
+  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
+      .WillRepeatedly(DoAll(SetArgPointee<3>("UserAccessToken"),
+                            SetArgPointee<4>(AuthScope::kUser),
+                            SetArgPointee<5>(base::TimeDelta::FromSeconds(1)),
+                            Return(true)));
+  const char kInput[] = R"({
+    'mode': 'local',
+    'requestedScope': 'manager',
+    'authCode': 'localAuthToken'
+  })";
+  EXPECT_PRED2(IsEqualError, CodeWithReason(403, "accessDenied"),
+               HandleRequest("/privet/v3/auth", kInput));
+}
+
 class PrivetHandlerTestWithAuth : public PrivetHandlerTest {
  public:
   void SetUp() override {
