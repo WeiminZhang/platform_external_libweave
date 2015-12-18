@@ -28,8 +28,9 @@ class AuthManager {
               const std::vector<uint8_t>& certificate_fingerprint);
 
   // Constructor for tests.
-  AuthManager(const std::vector<uint8_t>& secret,
+  AuthManager(const std::vector<uint8_t>& auth_secret,
               const std::vector<uint8_t>& certificate_fingerprint,
+              const std::vector<uint8_t>& access_secret,
               base::Clock* clock = nullptr);
   ~AuthManager();
 
@@ -40,7 +41,8 @@ class AuthManager {
                         UserInfo* user_info,
                         ErrorPtr* error) const;
 
-  const std::vector<uint8_t>& GetSecret() const { return secret_; }
+  const std::vector<uint8_t>& GetAuthSecret() const { return auth_secret_; }
+  const std::vector<uint8_t>& GetAccessSecret() const { return access_secret_; }
   const std::vector<uint8_t>& GetCertificateFingerprint() const {
     return certificate_fingerprint_;
   }
@@ -55,8 +57,8 @@ class AuthManager {
   std::vector<uint8_t> GetRootClientAuthToken() const;
   bool IsValidAuthToken(const std::vector<uint8_t>& token) const;
 
-  void SetSecret(const std::vector<uint8_t>& secret,
-                 RootClientTokenOwner owner);
+  void SetAuthSecret(const std::vector<uint8_t>& secret,
+                     RootClientTokenOwner owner);
 
   std::vector<uint8_t> CreateSessionId();
 
@@ -66,8 +68,9 @@ class AuthManager {
   base::Clock* clock_{&default_clock_};
   uint32_t session_counter_{0};
 
-  std::vector<uint8_t> secret_;
+  std::vector<uint8_t> auth_secret_;  // Persistent.
   std::vector<uint8_t> certificate_fingerprint_;
+  std::vector<uint8_t> access_secret_;  // New on every reboot.
 
   std::deque<std::pair<std::unique_ptr<AuthManager>, RootClientTokenOwner>>
       pending_claims_;

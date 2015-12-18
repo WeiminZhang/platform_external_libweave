@@ -203,6 +203,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
        16, 33, 82, 71, 10, 72, 62, 45, 1, 77, 97, 70, 24},
       {21, 6, 58, 4, 66, 13, 14, 60, 55, 22, 11, 38, 96, 40, 81, 90, 3, 51, 50,
        23, 56, 76, 47, 46, 27, 69, 20, 80, 88, 93, 15, 61},
+      {},
       &clock_};
   std::unique_ptr<DeviceRegistrationInfo> dev_reg_;
   ComponentManagerImpl component_manager_;

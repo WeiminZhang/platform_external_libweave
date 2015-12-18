@@ -95,34 +95,39 @@ bool IsClaimAllowed(RootClientTokenOwner curret, RootClientTokenOwner claimer) {
 
 AuthManager::AuthManager(Config* config,
                          const std::vector<uint8_t>& certificate_fingerprint)
-    : config_{config}, certificate_fingerprint_{certificate_fingerprint} {
+    : config_{config},
+      certificate_fingerprint_{certificate_fingerprint},
+      access_secret_{CreateSecret()} {
   if (config_) {
-    SetSecret(config_->GetSettings().secret,
-              config_->GetSettings().root_client_token_owner);
+    SetAuthSecret(config_->GetSettings().secret,
+                  config_->GetSettings().root_client_token_owner);
   } else {
-    SetSecret({}, RootClientTokenOwner::kNone);
+    SetAuthSecret({}, RootClientTokenOwner::kNone);
   }
 }
 
-AuthManager::AuthManager(const std::vector<uint8_t>& secret,
+AuthManager::AuthManager(const std::vector<uint8_t>& auth_secret,
                          const std::vector<uint8_t>& certificate_fingerprint,
+                         const std::vector<uint8_t>& access_secret,
                          base::Clock* clock)
     : AuthManager(nullptr, certificate_fingerprint) {
-  SetSecret(secret, RootClientTokenOwner::kNone);
+  access_secret_ = access_secret.size() == kSha256OutputSize ? access_secret
+                                                             : CreateSecret();
+  SetAuthSecret(auth_secret, RootClientTokenOwner::kNone);
   if (clock)
     clock_ = clock;
 }
 
-void AuthManager::SetSecret(const std::vector<uint8_t>& secret,
-                            RootClientTokenOwner owner) {
-  secret_ = secret;
+void AuthManager::SetAuthSecret(const std::vector<uint8_t>& secret,
+                                RootClientTokenOwner owner) {
+  auth_secret_ = secret;
 
-  if (secret.size() != kSha256OutputSize) {
-    secret_ = CreateSecret();
+  if (auth_secret_.size() != kSha256OutputSize) {
+    auth_secret_ = CreateSecret();
     owner = RootClientTokenOwner::kNone;
   }
 
-  if (!config_ || (config_->GetSettings().secret == secret_ &&
+  if (!config_ || (config_->GetSettings().secret == auth_secret_ &&
                    config_->GetSettings().root_client_token_owner == owner)) {
     return;
   }
@@ -140,7 +145,7 @@ std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
                                                     base::TimeDelta ttl) const {
   std::string data_str{CreateTokenData(user_info, Now() + ttl)};
   std::vector<uint8_t> data{data_str.begin(), data_str.end()};
-  std::vector<uint8_t> hash{HmacSha256(secret_, data)};
+  std::vector<uint8_t> hash{HmacSha256(access_secret_, data)};
   hash.insert(hash.end(), data.begin(), data.end());
   return hash;
 }
@@ -158,7 +163,7 @@ bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   }
   std::vector<uint8_t> hash(token.begin(), token.begin() + kSha256OutputSize);
   std::vector<uint8_t> data(token.begin() + kSha256OutputSize, token.end());
-  if (hash != HmacSha256(secret_, data)) {
+  if (hash != HmacSha256(access_secret_, data)) {
     Error::AddTo(error, FROM_HERE, errors::kDomain,
                  errors::kInvalidAuthorization, "Invalid signature");
     return false;
@@ -222,7 +227,7 @@ bool AuthManager::ConfirmClientAuthToken(const std::vector<uint8_t>& token,
     return false;
   }
 
-  SetSecret(claim->first->GetSecret(), claim->second);
+  SetAuthSecret(claim->first->GetAuthSecret(), claim->second);
   pending_claims_.clear();
   return true;
 }
@@ -236,10 +241,11 @@ std::vector<uint8_t> AuthManager::GetRootClientAuthToken() const {
       scope.GetCaveat(), issued.GetCaveat(),
   };
 
-  CHECK_EQ(kSha256OutputSize, secret_.size());
+  CHECK_EQ(kSha256OutputSize, auth_secret_.size());
   UwMacaroon macaroon{};
-  CHECK(uw_macaroon_new_from_root_key_(
-      &macaroon, secret_.data(), secret_.size(), caveats, arraysize(caveats)));
+  CHECK(uw_macaroon_new_from_root_key_(&macaroon, auth_secret_.data(),
+                                       auth_secret_.size(), caveats,
+                                       arraysize(caveats)));
 
   std::vector<uint8_t> token(kMaxMacaroonSize);
   size_t len = 0;
@@ -260,8 +266,9 @@ bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token) const {
     return false;
   }
 
-  CHECK_EQ(kSha256OutputSize, secret_.size());
-  return uw_macaroon_verify_(&macaroon, secret_.data(), secret_.size());
+  CHECK_EQ(kSha256OutputSize, auth_secret_.size());
+  return uw_macaroon_verify_(&macaroon, auth_secret_.data(),
+                             auth_secret_.size());
 }
 
 std::vector<uint8_t> AuthManager::CreateSessionId() {

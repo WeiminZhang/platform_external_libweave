@@ -1321,7 +1321,7 @@ void DeviceRegistrationInfo::RemoveCredentials() {
 
   LOG(INFO) << "Device is unregistered from the cloud. Deleting credentials";
   if (auth_manager_)
-    auth_manager_->SetSecret({}, RootClientTokenOwner::kNone);
+    auth_manager_->SetAuthSecret({}, RootClientTokenOwner::kNone);
 
   Config::Transaction change{config_};
   // Keep cloud_id to switch to detect kInvalidCredentials after restart.

@@ -121,6 +121,8 @@ class SecurityManagerTest : public testing::Test {
           138, 176, 141, 37, 63, 223, 40, 153, 121, 134, 23, 120, 106, 24, 205,
           7, 135,
       },
+      {22, 47, 23, 77, 42, 98, 96, 25, 83, 16, 9, 14, 91, 44, 15, 75, 60, 62,
+       10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85},
       &clock_};
   SecurityManager security_{&auth_manager_,
                             {PairingType::kEmbeddedCode},

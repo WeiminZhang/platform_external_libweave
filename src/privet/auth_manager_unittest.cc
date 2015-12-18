@@ -20,7 +20,8 @@ namespace privet {
 class AuthManagerTest : public testing::Test {
  public:
   void SetUp() override {
-    EXPECT_GE(auth_.GetSecret().size(), 32u);
+    EXPECT_GE(auth_.GetAuthSecret().size(), 32u);
+    EXPECT_GE(auth_.GetAccessSecret().size(), 32u);
     EXPECT_GE(auth_.GetCertificateFingerprint().size(), 32u);
 
     EXPECT_CALL(clock_, Now())
@@ -28,32 +29,37 @@ class AuthManagerTest : public testing::Test {
   }
 
  protected:
-  const std::vector<uint8_t> kSecret{69, 53, 17, 37, 80, 73, 2,  5,  79, 64, 41,
-                                     57, 12, 54, 65, 63, 72, 74, 93, 81, 20, 95,
-                                     89, 3,  94, 92, 27, 21, 49, 90, 36, 6};
-  const std::vector<uint8_t> kSecret2{
+  const std::vector<uint8_t> kSecret1{
       78, 40, 39, 68, 29, 19, 70, 86, 38, 61, 13, 55, 33, 32, 51, 52,
       34, 43, 97, 48, 8,  56, 11, 99, 50, 59, 24, 26, 31, 71, 76, 28};
+  const std::vector<uint8_t> kSecret2{
+      69, 53, 17, 37, 80, 73, 2,  5, 79, 64, 41, 57, 12, 54, 65, 63,
+      72, 74, 93, 81, 20, 95, 89, 3, 94, 92, 27, 21, 49, 90, 36, 6};
   const std::vector<uint8_t> kFingerprint{
       22, 47, 23, 77, 42, 98, 96, 25,  83, 16, 9, 14, 91, 44, 15, 75,
       60, 62, 10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85};
 
   test::MockClock clock_;
-  AuthManager auth_{kSecret, kFingerprint, &clock_};
+  AuthManager auth_{kSecret1, kFingerprint, kSecret2, &clock_};
 };
 
 TEST_F(AuthManagerTest, RandomSecret) {
-  EXPECT_GE(auth_.GetSecret().size(), 32u);
+  AuthManager auth{{}, {}, {}, &clock_};
+  EXPECT_EQ(auth.GetAuthSecret().size(), 32u);
+  EXPECT_EQ(auth.GetAccessSecret().size(), 32u);
 }
 
 TEST_F(AuthManagerTest, DifferentSecret) {
-  AuthManager auth{kSecret2, {}};
-  EXPECT_GE(auth.GetSecret().size(), 32u);
-  EXPECT_NE(auth_.GetSecret(), auth.GetSecret());
+  AuthManager auth{kSecret2, {}, kSecret1};
+  EXPECT_EQ(auth.GetAuthSecret().size(), 32u);
+  EXPECT_EQ(auth.GetAccessSecret().size(), 32u);
+  EXPECT_NE(auth_.GetAccessSecret(), auth.GetAccessSecret());
+  EXPECT_NE(auth_.GetAuthSecret(), auth.GetAuthSecret());
 }
 
 TEST_F(AuthManagerTest, Constructor) {
-  EXPECT_EQ(kSecret, auth_.GetSecret());
+  EXPECT_EQ(kSecret1, auth_.GetAuthSecret());
+  EXPECT_EQ(kSecret2, auth_.GetAccessSecret());
   EXPECT_EQ(kFingerprint, auth_.GetCertificateFingerprint());
 }
 
@@ -112,7 +118,7 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
   for (size_t i = 0; i < 1000; ++i) {
     EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(kStartTime));
 
-    AuthManager auth{{}, {}, &clock_};
+    AuthManager auth{{}, {}, {}, &clock_};
 
     auto token = auth.CreateAccessToken(UserInfo{AuthScope::kUser, 5},
                                         base::TimeDelta::FromSeconds(i));
@@ -135,20 +141,20 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthToken) {
-  EXPECT_EQ("UFTBUcgd9d0HnPRnLeroN2mCQgECRgMaVArkgA==",
+  EXPECT_EQ("UK1ACOc3cWGjGBoTIX2bd3qCQgECRgMaVArkgA==",
             Base64Encode(auth_.GetRootClientAuthToken()));
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
   auto new_time = clock_.Now() + base::TimeDelta::FromDays(15);
   EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
-  EXPECT_EQ("UGKqwMYGQNOd8jeYFDOsM02CQgECRgMaVB6rAA==",
+  EXPECT_EQ("UBpNF8g/GbNUmAyHg1qqJr+CQgECRgMaVB6rAA==",
             Base64Encode(auth_.GetRootClientAuthToken()));
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentSecret) {
-  AuthManager auth{kSecret2, {}, &clock_};
-  EXPECT_EQ("UK1ACOc3cWGjGBoTIX2bd3qCQgECRgMaVArkgA==",
+  AuthManager auth{kSecret2, {}, kSecret1, &clock_};
+  EXPECT_EQ("UFTBUcgd9d0HnPRnLeroN2mCQgECRgMaVArkgA==",
             Base64Encode(auth.GetRootClientAuthToken()));
 }
 
@@ -156,7 +162,7 @@ TEST_F(AuthManagerTest, IsValidAuthToken) {
   EXPECT_TRUE(auth_.IsValidAuthToken(auth_.GetRootClientAuthToken()));
   // Multiple attempts with random secrets.
   for (size_t i = 0; i < 1000; ++i) {
-    AuthManager auth{{}, {}, &clock_};
+    AuthManager auth{{}, {}, {}, &clock_};
 
     auto token = auth.GetRootClientAuthToken();
     EXPECT_FALSE(auth_.IsValidAuthToken(token));
@@ -166,7 +172,7 @@ TEST_F(AuthManagerTest, IsValidAuthToken) {
 
 class AuthManagerClaimTest : public testing::Test {
  public:
-  void SetUp() override { EXPECT_GE(auth_.GetSecret().size(), 32u); }
+  void SetUp() override { EXPECT_EQ(auth_.GetAuthSecret().size(), 32u); }
 
   bool TestClaim(RootClientTokenOwner owner, RootClientTokenOwner claimer) {
     Config::Transaction change{&config_};
