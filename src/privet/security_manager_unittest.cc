@@ -97,6 +97,19 @@ class SecurityManagerTest : public testing::Test {
     std::string auth_code_base64{Base64Encode(auth_code)};
 
     EXPECT_TRUE(security_.IsValidPairingCode(auth_code_base64));
+
+    std::string token;
+    AuthScope scope;
+    base::TimeDelta ttl;
+    EXPECT_TRUE(security_.CreateAccessToken(AuthType::kPairing,
+                                            auth_code_base64, AuthScope::kOwner,
+                                            &token, &scope, &ttl, nullptr));
+    EXPECT_EQ(AuthScope::kOwner, scope);
+    EXPECT_EQ(base::TimeDelta::FromHours(1), ttl);
+
+    UserInfo info;
+    EXPECT_TRUE(security_.ParseAccessToken(token, &info, nullptr));
+    EXPECT_EQ(AuthScope::kOwner, info.scope());
   }
 
   const base::Time time_ = base::Time::FromTimeT(1410000000);
@@ -119,9 +132,16 @@ class SecurityManagerTest : public testing::Test {
 };
 
 TEST_F(SecurityManagerTest, CreateAccessToken) {
-  EXPECT_EQ("TV18I+N7cDPah7Nq6o7pl5H7DjDu5nCDf/cbdE4FZFEyOjc6MTQxMDAwMDA2MA==",
-            security_.CreateAccessToken(UserInfo{AuthScope::kUser, 7},
-                                        base::TimeDelta::FromMinutes(1)));
+  std::string token;
+  AuthScope scope;
+  base::TimeDelta ttl;
+  EXPECT_TRUE(security_.CreateAccessToken(AuthType::kAnonymous, "",
+                                          AuthScope::kUser, &token, &scope,
+                                          &ttl, nullptr));
+  EXPECT_EQ("Cfz+qcndz8/Mo3ytgYlD7zn8qImkkdPsJVUNBmSOiXwyOjE6MTQxMDAwMzYwMA==",
+            token);
+  EXPECT_EQ(AuthScope::kUser, scope);
+  EXPECT_EQ(base::TimeDelta::FromHours(1), ttl);
 }
 
 TEST_F(SecurityManagerTest, ParseAccessToken) {

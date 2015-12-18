@@ -36,6 +36,8 @@ const int kPairingExpirationTimeMinutes = 5;
 const int kMaxAllowedPairingAttemts = 3;
 const int kPairingBlockingTimeMinutes = 1;
 
+const int kAccessTokenExpirationSeconds = 3600;
+
 class Spakep224Exchanger : public SecurityManager::KeyExchanger {
  public:
   explicit Spakep224Exchanger(const std::string& password)
@@ -109,9 +111,45 @@ SecurityManager::~SecurityManager() {
     ClosePendingSession(pending_sessions_.begin()->first);
 }
 
-std::string SecurityManager::CreateAccessToken(const UserInfo& user_info,
-                                               base::TimeDelta ttl) const {
-  return Base64Encode(auth_manager_->CreateAccessToken(user_info, ttl));
+bool SecurityManager::CreateAccessToken(AuthType auth_type,
+                                        const std::string& auth_code,
+                                        AuthScope desired_scope,
+                                        std::string* access_token,
+                                        AuthScope* access_token_scope,
+                                        base::TimeDelta* access_token_ttl,
+                                        ErrorPtr* error) {
+  switch (auth_type) {
+    case AuthType::kAnonymous:
+      break;
+    case AuthType::kPairing:
+      if (!IsValidPairingCode(auth_code)) {
+        Error::AddTo(error, FROM_HERE, errors::kDomain,
+                     errors::kInvalidAuthCode, "Invalid authCode");
+        return false;
+      }
+      break;
+    default:
+      Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
+                         errors::kInvalidAuthMode, "Unsupported auth mode");
+      return false;
+  }
+
+  UserInfo user_info{desired_scope, ++last_user_id_};
+  base::TimeDelta ttl =
+      base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
+
+  if (access_token) {
+    *access_token =
+        Base64Encode(auth_manager_->CreateAccessToken(user_info, ttl));
+  }
+
+  if (access_token_scope)
+    *access_token_scope = user_info.scope();
+
+  if (access_token_ttl)
+    *access_token_ttl = ttl;
+
+  return true;
 }
 
 bool SecurityManager::ParseAccessToken(const std::string& token,

@@ -62,8 +62,14 @@ class MockDeviceDelegate : public DeviceDelegate {
 
 class MockSecurityDelegate : public SecurityDelegate {
  public:
-  MOCK_CONST_METHOD2(CreateAccessToken,
-                     std::string(const UserInfo&, base::TimeDelta));
+  MOCK_METHOD7(CreateAccessToken,
+               bool(AuthType,
+                    const std::string&,
+                    AuthScope,
+                    std::string*,
+                    AuthScope*,
+                    base::TimeDelta*,
+                    ErrorPtr*));
   MOCK_CONST_METHOD3(ParseAccessToken,
                      bool(const std::string&, UserInfo*, ErrorPtr*));
   MOCK_CONST_METHOD0(GetPairingTypes, std::set<PairingType>());
@@ -84,8 +90,11 @@ class MockSecurityDelegate : public SecurityDelegate {
   MOCK_METHOD0(CreateSessionId, std::string());
 
   MockSecurityDelegate() {
-    EXPECT_CALL(*this, CreateAccessToken(_, _))
-        .WillRepeatedly(Return("GuestAccessToken"));
+    EXPECT_CALL(*this, CreateAccessToken(_, _, _, _, _, _, _))
+        .WillRepeatedly(DoAll(
+            SetArgPointee<3>("GuestAccessToken"),
+            SetArgPointee<4>(AuthScope::kViewer),
+            SetArgPointee<5>(base::TimeDelta::FromSeconds(15)), Return(true)));
 
     EXPECT_CALL(*this, ClaimRootClientAuthToken(_))
         .WillRepeatedly(Return("RootClientAuthToken"));

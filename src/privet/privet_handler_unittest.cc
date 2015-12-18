@@ -377,8 +377,11 @@ TEST_F(PrivetHandlerTest, AuthErrorAccessDenied) {
 }
 
 TEST_F(PrivetHandlerTest, AuthErrorInvalidAuthCode) {
-  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
-      .WillRepeatedly(Return(false));
+  auto set_error = [](ErrorPtr* error) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, "invalidAuthCode", "");
+  };
+  EXPECT_CALL(security_, CreateAccessToken(_, "testToken", _, _, _, _, _))
+      .WillRepeatedly(DoAll(WithArgs<6>(Invoke(set_error)), Return(false)));
   const char kInput[] = R"({
     'mode': 'pairing',
     'requestedScope': 'user',
@@ -391,8 +394,8 @@ TEST_F(PrivetHandlerTest, AuthErrorInvalidAuthCode) {
 TEST_F(PrivetHandlerTest, AuthAnonymous) {
   const char kExpected[] = R"({
     'accessToken': 'GuestAccessToken',
-    'expiresIn': 3600,
-    'scope': 'user',
+    'expiresIn': 15,
+    'scope': 'viewer',
     'tokenType': 'Privet'
   })";
   EXPECT_JSON_EQ(kExpected,
@@ -403,8 +406,11 @@ TEST_F(PrivetHandlerTest, AuthAnonymous) {
 TEST_F(PrivetHandlerTest, AuthPairing) {
   EXPECT_CALL(security_, IsValidPairingCode("testToken"))
       .WillRepeatedly(Return(true));
-  EXPECT_CALL(security_, CreateAccessToken(_, _))
-      .WillRepeatedly(Return("OwnerAccessToken"));
+  EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
+      .WillRepeatedly(DoAll(SetArgPointee<3>("OwnerAccessToken"),
+                            SetArgPointee<4>(AuthScope::kOwner),
+                            SetArgPointee<5>(base::TimeDelta::FromSeconds(15)),
+                            Return(true)));
   const char kInput[] = R"({
     'mode': 'pairing',
     'requestedScope': 'owner',
@@ -412,7 +418,7 @@ TEST_F(PrivetHandlerTest, AuthPairing) {
   })";
   const char kExpected[] = R"({
     'accessToken': 'OwnerAccessToken',
-    'expiresIn': 3600,
+    'expiresIn': 15,
     'scope': 'owner',
     'tokenType': 'Privet'
   })";

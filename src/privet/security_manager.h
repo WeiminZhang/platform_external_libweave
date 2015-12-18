@@ -60,8 +60,13 @@ class SecurityManager : public SecurityDelegate {
   ~SecurityManager() override;
 
   // SecurityDelegate methods
-  std::string CreateAccessToken(const UserInfo& user_info,
-                                base::TimeDelta ttl) const override;
+  bool CreateAccessToken(AuthType auth_type,
+                         const std::string& auth_code,
+                         AuthScope desired_scope,
+                         std::string* access_token,
+                         AuthScope* granted_scope,
+                         base::TimeDelta* ttl,
+                         ErrorPtr* error) override;
   bool ParseAccessToken(const std::string& token,
                         UserInfo* user_info,
                         ErrorPtr* error) const override;
@@ -109,6 +114,7 @@ class SecurityManager : public SecurityDelegate {
   mutable base::Time block_pairing_until_;
   PairingStartListener on_start_;
   PairingEndListener on_end_;
+  uint64_t last_user_id_{0};
 
   base::WeakPtrFactory<SecurityManager> weak_ptr_factory_{this};
 

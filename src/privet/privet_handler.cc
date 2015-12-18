@@ -116,8 +116,6 @@ const char kWaitTimeoutKey[] = "waitTimeout";
 
 const char kInvalidParamValueFormat[] = "Invalid parameter: '%s'='%s'";
 
-const int kAccessTokenExpirationSeconds = 3600;
-
 template <class Container>
 std::unique_ptr<base::ListValue> ToValue(const Container& list) {
   std::unique_ptr<base::ListValue> value_list(new base::ListValue());
@@ -150,14 +148,6 @@ struct {
     {errors::kNotImplemented, http::kNotSupported},
     {errors::kAlreadyClaimed, http::kDenied},
 };
-
-AuthScope AuthScopeFromString(const std::string& scope, AuthScope auto_scope) {
-  if (scope == kAuthScopeAutoValue)
-    return auto_scope;
-  AuthScope scope_id = AuthScope::kNone;
-  StringToEnum(scope, &scope_id);
-  return scope_id;
-}
 
 std::string GetAuthTokenFromAuthHeader(const std::string& auth_header) {
   return SplitAtFirst(auth_header, " ", true).second;
@@ -684,58 +674,49 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
     return ReturnError(*error, callback);
   }
 
-  std::string auth_code;
-  input.GetString(kAuthCodeKey, &auth_code);
-
-  AuthScope max_auth_scope = AuthScope::kNone;
-  switch (auth_type) {
-    case AuthType::kAnonymous:
-      max_auth_scope = GetAnonymousMaxScope(*cloud_, wifi_);
-      break;
-    case AuthType::kPairing:
-      if (!security_->IsValidPairingCode(auth_code)) {
-        Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                           errors::kInvalidAuthCode, kInvalidParamValueFormat,
-                           kAuthCodeKey, auth_code.c_str());
-        return ReturnError(*error, callback);
-      }
-      max_auth_scope = AuthScope::kOwner;
-      break;
-    default:
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidAuthMode, kInvalidParamValueFormat,
-                         kAuthModeKey, auth_code_type.c_str());
-      return ReturnError(*error, callback);
-  }
+  AuthScope desired_scope = AuthScope::kOwner;
+  AuthScope acceptable_scope = AuthScope::kViewer;
 
   std::string requested_scope;
   input.GetString(kAuthRequestedScopeKey, &requested_scope);
+  if (requested_scope != kAuthScopeAutoValue) {
+    if (!StringToEnum(requested_scope, &desired_scope)) {
+      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
+                         errors::kInvalidRequestedScope,
+                         kInvalidParamValueFormat, kAuthRequestedScopeKey,
+                         requested_scope.c_str());
+      return ReturnError(*error, callback);
+    }
+    acceptable_scope = std::max(desired_scope, acceptable_scope);
+  }
 
-  AuthScope requested_auth_scope =
-      AuthScopeFromString(requested_scope, max_auth_scope);
-  if (requested_auth_scope == AuthScope::kNone) {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidRequestedScope, kInvalidParamValueFormat,
-                       kAuthRequestedScopeKey, requested_scope.c_str());
+  if (auth_type == AuthType::kAnonymous)
+    desired_scope = GetAnonymousMaxScope(*cloud_, wifi_);
+
+  std::string auth_code;
+  input.GetString(kAuthCodeKey, &auth_code);
+
+  std::string access_token;
+  base::TimeDelta access_token_ttl;
+  AuthScope access_token_scope = AuthScope::kNone;
+  if (!security_->CreateAccessToken(auth_type, auth_code, desired_scope,
+                                    &access_token, &access_token_scope,
+                                    &access_token_ttl, &error)) {
     return ReturnError(*error, callback);
   }
 
-  if (requested_auth_scope > max_auth_scope) {
+  if (access_token_scope < acceptable_scope) {
     Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                        errors::kAccessDenied, "Scope '%s' is not allowed",
-                       EnumToString(requested_auth_scope).c_str());
+                       EnumToString(access_token_scope).c_str());
     return ReturnError(*error, callback);
   }
 
   base::DictionaryValue output;
-  output.SetString(
-      kAuthAccessTokenKey,
-      security_->CreateAccessToken(
-          UserInfo{requested_auth_scope, ++last_user_id_},
-          base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds)));
+  output.SetString(kAuthAccessTokenKey, access_token);
   output.SetString(kAuthTokenTypeKey, kAuthorizationHeaderPrefix);
-  output.SetInteger(kAuthExpiresInKey, kAccessTokenExpirationSeconds);
-  output.SetString(kAuthScopeKey, EnumToString(requested_auth_scope));
+  output.SetInteger(kAuthExpiresInKey, access_token_ttl.InSeconds());
+  output.SetString(kAuthScopeKey, EnumToString(access_token_scope));
 
   callback.Run(http::kOk, output);
 }
