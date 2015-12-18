@@ -79,9 +79,6 @@ const char kPairingClientCommitmentKey[] = "clientCommitment";
 const char kPairingFingerprintKey[] = "certFingerprint";
 const char kPairingSignatureKey[] = "certSignature";
 
-const char kAuthTypeAnonymousValue[] = "anonymous";
-const char kAuthTypePairingValue[] = "pairing";
-
 const char kAuthModeKey[] = "mode";
 const char kAuthCodeKey[] = "authCode";
 const char kAuthRequestedScopeKey[] = "requestedScope";
@@ -266,8 +263,8 @@ std::unique_ptr<base::DictionaryValue> CreateInfoAuthSection(
   auth->Set(kPairingKey, pairing_types.release());
 
   std::unique_ptr<base::ListValue> auth_types(new base::ListValue());
-  auth_types->AppendString(kAuthTypeAnonymousValue);
-  auth_types->AppendString(kAuthTypePairingValue);
+  auth_types->AppendString(EnumToString(AuthType::kAnonymous));
+  auth_types->AppendString(EnumToString(AuthType::kPairing));
 
   // TODO(vitalybuka): Implement cloud auth.
   // if (cloud.GetConnectionState().IsStatusEqual(ConnectionState::kOnline)) {
@@ -513,7 +510,7 @@ void PrivetHandler::HandleRequest(const std::string& api,
     return ReturnError(*error, callback);
   }
   UserInfo user_info;
-  if (token != kAuthTypeAnonymousValue) {
+  if (token != EnumToString(AuthType::kAnonymous)) {
     if (!security_->ParseAccessToken(token, &user_info, &error))
       return ReturnError(*error, callback);
   }
@@ -678,27 +675,37 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   ErrorPtr error;
 
   std::string auth_code_type;
-  input.GetString(kAuthModeKey, &auth_code_type);
+  AuthType auth_type{};
+  if (!input.GetString(kAuthModeKey, &auth_code_type) ||
+      !StringToEnum(auth_code_type, &auth_type)) {
+    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
+                       errors::kInvalidAuthMode, kInvalidParamValueFormat,
+                       kAuthModeKey, auth_code_type.c_str());
+    return ReturnError(*error, callback);
+  }
 
   std::string auth_code;
   input.GetString(kAuthCodeKey, &auth_code);
 
   AuthScope max_auth_scope = AuthScope::kNone;
-  if (auth_code_type == kAuthTypeAnonymousValue) {
-    max_auth_scope = GetAnonymousMaxScope(*cloud_, wifi_);
-  } else if (auth_code_type == kAuthTypePairingValue) {
-    if (!security_->IsValidPairingCode(auth_code)) {
+  switch (auth_type) {
+    case AuthType::kAnonymous:
+      max_auth_scope = GetAnonymousMaxScope(*cloud_, wifi_);
+      break;
+    case AuthType::kPairing:
+      if (!security_->IsValidPairingCode(auth_code)) {
+        Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
+                           errors::kInvalidAuthCode, kInvalidParamValueFormat,
+                           kAuthCodeKey, auth_code.c_str());
+        return ReturnError(*error, callback);
+      }
+      max_auth_scope = AuthScope::kOwner;
+      break;
+    default:
       Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidAuthCode, kInvalidParamValueFormat,
-                         kAuthCodeKey, auth_code.c_str());
+                         errors::kInvalidAuthMode, kInvalidParamValueFormat,
+                         kAuthModeKey, auth_code_type.c_str());
       return ReturnError(*error, callback);
-    }
-    max_auth_scope = AuthScope::kOwner;
-  } else {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidAuthMode, kInvalidParamValueFormat,
-                       kAuthModeKey, auth_code_type.c_str());
-    return ReturnError(*error, callback);
   }
 
   std::string requested_scope;

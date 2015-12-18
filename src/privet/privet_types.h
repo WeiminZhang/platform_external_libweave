@@ -19,6 +19,12 @@ enum class CryptoType {
   kSpake_p224,
 };
 
+enum class AuthType {
+  kAnonymous,
+  kPairing,
+  kLocal,
+};
+
 enum class WifiType {
   kWifi24,
   kWifi50,
