@@ -74,6 +74,7 @@ class MockSecurityDelegate : public SecurityDelegate {
                      bool(const std::string&, UserInfo*, ErrorPtr*));
   MOCK_CONST_METHOD0(GetPairingTypes, std::set<PairingType>());
   MOCK_CONST_METHOD0(GetCryptoTypes, std::set<CryptoType>());
+  MOCK_CONST_METHOD0(GetAuthTypes, std::set<AuthType>());
   MOCK_METHOD1(ClaimRootClientAuthToken, std::string(ErrorPtr*));
   MOCK_METHOD2(ConfirmClientAuthToken, bool(const std::string&, ErrorPtr*));
   MOCK_METHOD5(
@@ -114,6 +115,10 @@ class MockSecurityDelegate : public SecurityDelegate {
     EXPECT_CALL(*this, GetCryptoTypes())
         .WillRepeatedly(Return(std::set<CryptoType>{
             CryptoType::kSpake_p224,
+        }));
+    EXPECT_CALL(*this, GetAuthTypes())
+        .WillRepeatedly(Return(std::set<AuthType>{
+            AuthType::kAnonymous, AuthType::kPairing, AuthType::kLocal,
         }));
 
     EXPECT_CALL(*this, StartPairing(_, _, _, _, _))

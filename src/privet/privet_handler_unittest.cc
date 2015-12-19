@@ -217,6 +217,8 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
       .WillRepeatedly(Return(std::set<PairingType>{}));
   EXPECT_CALL(security_, GetCryptoTypes())
       .WillRepeatedly(Return(std::set<CryptoType>{}));
+  EXPECT_CALL(security_, GetAuthTypes())
+      .WillRepeatedly(Return(std::set<AuthType>{}));
 
   const char kExpected[] = R"({
     'version': '3.0',
@@ -238,8 +240,6 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
     'authentication': {
       'anonymousMaxScope': 'user',
       'mode': [
-        'anonymous',
-        'pairing'
       ],
       'pairing': [
       ],
@@ -290,7 +290,8 @@ TEST_F(PrivetHandlerTest, Info) {
       'anonymousMaxScope': 'none',
       'mode': [
         'anonymous',
-        'pairing'
+        'pairing',
+        'local'
       ],
       'pairing': [
         'pinCode',

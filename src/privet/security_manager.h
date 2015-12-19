@@ -72,6 +72,7 @@ class SecurityManager : public SecurityDelegate {
                         ErrorPtr* error) const override;
   std::set<PairingType> GetPairingTypes() const override;
   std::set<CryptoType> GetCryptoTypes() const override;
+  std::set<AuthType> GetAuthTypes() const override;
   std::string ClaimRootClientAuthToken(ErrorPtr* error) override;
   bool ConfirmClientAuthToken(const std::string& token,
                               ErrorPtr* error) override;
@@ -103,9 +104,9 @@ class SecurityManager : public SecurityDelegate {
   AuthManager* auth_manager_{nullptr};
 
   // If true allows unencrypted pairing and accepts any access code.
-  bool is_security_disabled_{false};
-  std::set<PairingType> pairing_modes_;
-  std::string embedded_code_;
+  const bool is_security_disabled_{false};
+  const std::set<PairingType> pairing_modes_;
+  const std::string embedded_code_;
   // TODO(vitalybuka): Session cleanup can be done without posting tasks.
   provider::TaskRunner* task_runner_{nullptr};
   std::map<std::string, std::unique_ptr<KeyExchanger>> pending_sessions_;

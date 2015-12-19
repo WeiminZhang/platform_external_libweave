@@ -253,13 +253,8 @@ std::unique_ptr<base::DictionaryValue> CreateInfoAuthSection(
   auth->Set(kPairingKey, pairing_types.release());
 
   std::unique_ptr<base::ListValue> auth_types(new base::ListValue());
-  auth_types->AppendString(EnumToString(AuthType::kAnonymous));
-  auth_types->AppendString(EnumToString(AuthType::kPairing));
-
-  // TODO(vitalybuka): Implement cloud auth.
-  // if (cloud.GetConnectionState().IsStatusEqual(ConnectionState::kOnline)) {
-  //   auth_types->AppendString(kAuthTypeCloudValue);
-  // }
+  for (AuthType type : security.GetAuthTypes())
+    auth_types->AppendString(EnumToString(type));
   auth->Set(kAuthModeKey, auth_types.release());
 
   std::unique_ptr<base::ListValue> crypto_types(new base::ListValue());

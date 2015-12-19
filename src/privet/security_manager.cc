@@ -118,19 +118,33 @@ bool SecurityManager::CreateAccessToken(AuthType auth_type,
                                         AuthScope* access_token_scope,
                                         base::TimeDelta* access_token_ttl,
                                         ErrorPtr* error) {
+  auto disabled_mode = [](ErrorPtr* error) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthMode,
+                 "Mode is not available");
+    return false;
+  };
   switch (auth_type) {
     case AuthType::kAnonymous:
+      if (!auth_manager_->IsAnonymousAuthSupported())
+        return disabled_mode(error);
       break;
     case AuthType::kPairing:
+      if (!auth_manager_->IsPairingAuthSupported())
+        return disabled_mode(error);
       if (!IsValidPairingCode(auth_code)) {
         Error::AddTo(error, FROM_HERE, errors::kDomain,
                      errors::kInvalidAuthCode, "Invalid authCode");
         return false;
       }
       break;
+    case AuthType::kLocal:
+      if (!auth_manager_->IsLocalAuthSupported())
+        return disabled_mode(error);
+      NOTIMPLEMENTED();
+      // no break to fall back to default.
     default:
-      Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidAuthMode, "Unsupported auth mode");
+      Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthMode,
+                   "Unsupported auth mode");
       return false;
   }
 
@@ -176,6 +190,20 @@ std::set<CryptoType> SecurityManager::GetCryptoTypes() const {
   std::set<CryptoType> result{CryptoType::kSpake_p224};
   if (is_security_disabled_)
     result.insert(CryptoType::kNone);
+  return result;
+}
+
+std::set<AuthType> SecurityManager::GetAuthTypes() const {
+  std::set<AuthType> result;
+  if (auth_manager_->IsAnonymousAuthSupported())
+    result.insert(AuthType::kAnonymous);
+
+  if (auth_manager_->IsPairingAuthSupported())
+    result.insert(AuthType::kPairing);
+
+  if (auth_manager_->IsLocalAuthSupported())
+    result.insert(AuthType::kLocal);
+
   return result;
 }
 

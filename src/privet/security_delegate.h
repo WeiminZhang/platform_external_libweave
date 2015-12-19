@@ -41,6 +41,9 @@ class SecurityDelegate {
   // Returns list of crypto methods supported by devices.
   virtual std::set<CryptoType> GetCryptoTypes() const = 0;
 
+  // Returns list of auth methods supported by devices.
+  virtual std::set<AuthType> GetAuthTypes() const = 0;
+
   // Returns Root Client Authorization Token.
   virtual std::string ClaimRootClientAuthToken(ErrorPtr* error) = 0;
 
