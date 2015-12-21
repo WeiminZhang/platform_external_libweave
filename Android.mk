@@ -50,7 +50,6 @@ LOCAL_CPPFLAGS := $(libweaveCommonCppFlags)
 LOCAL_C_INCLUDES := $(libweaveCommonCIncludes)
 LOCAL_SHARED_LIBRARIES := $(libweaveSharedLibraries)
 LOCAL_STATIC_LIBRARIES :=
-LOCAL_RTTI_FLAG := -frtti
 LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/external
 
@@ -78,7 +77,6 @@ LOCAL_CPPFLAGS := $(libweaveCommonCppFlags)
 LOCAL_C_INCLUDES := $(libweaveCommonCIncludes)
 LOCAL_SHARED_LIBRARIES := $(libweaveSharedLibraries)
 LOCAL_STATIC_LIBRARIES := libweave-external
-LOCAL_RTTI_FLAG := -frtti
 LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 
@@ -137,7 +135,6 @@ LOCAL_C_INCLUDES := \
 LOCAL_SHARED_LIBRARIES := $(libweaveSharedLibraries)
 LOCAL_STATIC_LIBRARIES := libgtest libgmock
 LOCAL_CLANG := true
-LOCAL_RTTI_FLAG := -frtti
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 LOCAL_SRC_FILES := \
@@ -158,7 +155,6 @@ LOCAL_C_INCLUDES := $(libweaveCommonCIncludes)
 LOCAL_SHARED_LIBRARIES := $(libweaveSharedLibraries)
 LOCAL_WHOLE_STATIC_LIBRARIES := libweave-common libweave-external
 LOCAL_CLANG := true
-LOCAL_RTTI_FLAG := -frtti
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 LOCAL_SRC_FILES := \
