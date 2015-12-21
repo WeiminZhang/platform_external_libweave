@@ -64,8 +64,8 @@ class SecurityManager : public SecurityDelegate {
                          const std::string& auth_code,
                          AuthScope desired_scope,
                          std::string* access_token,
-                         AuthScope* granted_scope,
-                         base::TimeDelta* ttl,
+                         AuthScope* access_token_scope,
+                         base::TimeDelta* access_token_ttl,
                          ErrorPtr* error) override;
   bool ParseAccessToken(const std::string& token,
                         UserInfo* user_info,
@@ -94,12 +94,24 @@ class SecurityManager : public SecurityDelegate {
                                 const PairingEndListener& on_end);
 
  private:
-  bool IsValidPairingCode(const std::string& auth_code) const;
+  bool IsValidPairingCode(const std::vector<uint8_t>& auth_code) const;
   FRIEND_TEST_ALL_PREFIXES(SecurityManagerTest, ThrottlePairing);
   // Allows limited number of new sessions without successful authorization.
   bool CheckIfPairingAllowed(ErrorPtr* error);
   bool ClosePendingSession(const std::string& session_id);
   bool CloseConfirmedSession(const std::string& session_id);
+  bool CreateAccessTokenImpl(AuthType auth_type,
+                             const std::vector<uint8_t>& auth_code,
+                             AuthScope desired_scope,
+                             std::vector<uint8_t>* access_token,
+                             AuthScope* access_token_scope,
+                             base::TimeDelta* access_token_ttl,
+                             ErrorPtr* error);
+  bool CreateAccessTokenImpl(AuthType auth_type,
+                             AuthScope desired_scope,
+                             std::vector<uint8_t>* access_token,
+                             AuthScope* access_token_scope,
+                             base::TimeDelta* access_token_ttl);
 
   AuthManager* auth_manager_{nullptr};
 

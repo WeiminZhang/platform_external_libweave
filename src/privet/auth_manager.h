@@ -55,7 +55,14 @@ class AuthManager {
                               ErrorPtr* error);
 
   std::vector<uint8_t> GetRootClientAuthToken() const;
-  bool IsValidAuthToken(const std::vector<uint8_t>& token) const;
+  bool IsValidAuthToken(const std::vector<uint8_t>& token,
+                        ErrorPtr* error) const;
+  bool CreateAccessTokenFromAuth(const std::vector<uint8_t>& auth_token,
+                                 base::TimeDelta ttl,
+                                 std::vector<uint8_t>* access_token,
+                                 AuthScope* access_token_scope,
+                                 base::TimeDelta* access_token_ttl,
+                                 ErrorPtr* error) const;
 
   void SetAuthSecret(const std::vector<uint8_t>& secret,
                      RootClientTokenOwner owner);

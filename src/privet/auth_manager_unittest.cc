@@ -122,7 +122,6 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 
     auto token = auth.CreateAccessToken(UserInfo{AuthScope::kUser, "5"},
                                         base::TimeDelta::FromSeconds(i));
-    base::Time time2;
     UserInfo user_info;
     EXPECT_FALSE(auth_.ParseAccessToken(token, &user_info, nullptr));
     EXPECT_TRUE(auth.ParseAccessToken(token, &user_info, nullptr));
@@ -159,14 +158,14 @@ TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentSecret) {
 }
 
 TEST_F(AuthManagerTest, IsValidAuthToken) {
-  EXPECT_TRUE(auth_.IsValidAuthToken(auth_.GetRootClientAuthToken()));
+  EXPECT_TRUE(auth_.IsValidAuthToken(auth_.GetRootClientAuthToken(), nullptr));
   // Multiple attempts with random secrets.
   for (size_t i = 0; i < 1000; ++i) {
     AuthManager auth{{}, {}, {}, &clock_};
 
     auto token = auth.GetRootClientAuthToken();
-    EXPECT_FALSE(auth_.IsValidAuthToken(token));
-    EXPECT_TRUE(auth.IsValidAuthToken(token));
+    EXPECT_FALSE(auth_.IsValidAuthToken(token, nullptr));
+    EXPECT_TRUE(auth.IsValidAuthToken(token, nullptr));
   }
 }
 
@@ -211,12 +210,12 @@ TEST_F(AuthManagerClaimTest, WithPreviosOwner) {
 TEST_F(AuthManagerClaimTest, NormalClaim) {
   auto token =
       auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
-  EXPECT_FALSE(auth_.IsValidAuthToken(token));
+  EXPECT_FALSE(auth_.IsValidAuthToken(token, nullptr));
   EXPECT_EQ(RootClientTokenOwner::kNone,
             config_.GetSettings().root_client_token_owner);
 
   EXPECT_TRUE(auth_.ConfirmClientAuthToken(token, nullptr));
-  EXPECT_TRUE(auth_.IsValidAuthToken(token));
+  EXPECT_TRUE(auth_.IsValidAuthToken(token, nullptr));
   EXPECT_EQ(RootClientTokenOwner::kCloud,
             config_.GetSettings().root_client_token_owner);
 }
@@ -243,6 +242,19 @@ TEST_F(AuthManagerClaimTest, TokenOverflow) {
   for (size_t i = 0; i < 100; ++i)
     auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
   EXPECT_FALSE(auth_.ConfirmClientAuthToken(token, nullptr));
+}
+
+TEST_F(AuthManagerClaimTest, CreateAccessTokenFromAuth) {
+  std::vector<uint8_t> access_token;
+  AuthScope scope;
+  base::TimeDelta ttl;
+  EXPECT_TRUE(auth_.CreateAccessTokenFromAuth(
+      auth_.GetRootClientAuthToken(), base::TimeDelta::FromDays(1),
+      &access_token, &scope, &ttl, nullptr));
+  UserInfo user_info;
+  EXPECT_TRUE(auth_.ParseAccessToken(access_token, &user_info, nullptr));
+  EXPECT_EQ(scope, user_info.scope());
+  EXPECT_FALSE(user_info.user_id().empty());
 }
 
 }  // namespace privet

@@ -4,6 +4,7 @@
 
 #include "src/privet/auth_manager.h"
 
+#include <base/guid.h>
 #include <base/rand_util.h>
 #include <base/strings/string_number_conversions.h>
 
@@ -211,13 +212,13 @@ std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
 bool AuthManager::ConfirmClientAuthToken(const std::vector<uint8_t>& token,
                                          ErrorPtr* error) {
   // Cover case when caller sent confirm twice.
-  if (pending_claims_.empty() && IsValidAuthToken(token))
-    return true;
+  if (pending_claims_.empty())
+    return IsValidAuthToken(token, error);
 
   auto claim =
       std::find_if(pending_claims_.begin(), pending_claims_.end(),
                    [&token](const decltype(pending_claims_)::value_type& auth) {
-                     return auth.first->IsValidAuthToken(token);
+                     return auth.first->IsValidAuthToken(token, nullptr);
                    });
   if (claim == pending_claims_.end()) {
     Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kNotFound,
@@ -256,17 +257,55 @@ base::Time AuthManager::Now() const {
   return clock_->Now();
 }
 
-bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token) const {
+bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token,
+                                   ErrorPtr* error) const {
   std::vector<uint8_t> buffer(kMaxMacaroonSize);
   UwMacaroon macaroon{};
   if (!uw_macaroon_load_(token.data(), token.size(), buffer.data(),
                          buffer.size(), &macaroon)) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthCode,
+                 "Invalid token format");
     return false;
   }
 
   CHECK_EQ(kSha256OutputSize, auth_secret_.size());
-  return uw_macaroon_verify_(&macaroon, auth_secret_.data(),
-                             auth_secret_.size());
+  if (!uw_macaroon_verify_(&macaroon, auth_secret_.data(),
+                           auth_secret_.size())) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthCode,
+                 "Invalid token signature");
+    return false;
+  }
+  return true;
+}
+
+bool AuthManager::CreateAccessTokenFromAuth(
+    const std::vector<uint8_t>& auth_token,
+    base::TimeDelta ttl,
+    std::vector<uint8_t>* access_token,
+    AuthScope* access_token_scope,
+    base::TimeDelta* access_token_ttl,
+    ErrorPtr* error) const {
+  // TODO(vitalybuka): implement token validation.
+  if (!IsValidAuthToken(auth_token, error))
+    return false;
+
+  if (!access_token)
+    return true;
+
+  // TODO(vitalybuka): User and scope must be parsed from auth_token.
+  UserInfo info{config_ ? config_->GetSettings().local_anonymous_access_role
+                        : AuthScope::kViewer,
+                base::GenerateGUID()};
+
+  // TODO(vitalybuka): TTL also should be reduced in accordance with auth_token.
+  *access_token = CreateAccessToken(info, ttl);
+
+  if (access_token_scope)
+    *access_token_scope = info.scope();
+
+  if (access_token_ttl)
+    *access_token_ttl = ttl;
+  return true;
 }
 
 std::vector<uint8_t> AuthManager::CreateSessionId() {

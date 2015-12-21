@@ -111,23 +111,50 @@ SecurityManager::~SecurityManager() {
     ClosePendingSession(pending_sessions_.begin()->first);
 }
 
-bool SecurityManager::CreateAccessToken(AuthType auth_type,
-                                        const std::string& auth_code,
-                                        AuthScope desired_scope,
-                                        std::string* access_token,
-                                        AuthScope* access_token_scope,
-                                        base::TimeDelta* access_token_ttl,
-                                        ErrorPtr* error) {
+bool SecurityManager::CreateAccessTokenImpl(AuthType auth_type,
+                                            AuthScope desired_scope,
+                                            std::vector<uint8_t>* access_token,
+                                            AuthScope* access_token_scope,
+                                            base::TimeDelta* access_token_ttl) {
+  UserInfo user_info{desired_scope,
+                     std::to_string(static_cast<int>(auth_type)) + "/" +
+                         std::to_string(++last_user_id_)};
+
+  const base::TimeDelta kTtl =
+      base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
+
+  if (access_token)
+    *access_token = auth_manager_->CreateAccessToken(user_info, kTtl);
+
+  if (access_token_scope)
+    *access_token_scope = user_info.scope();
+
+  if (access_token_ttl)
+    *access_token_ttl = kTtl;
+
+  return true;
+}
+
+bool SecurityManager::CreateAccessTokenImpl(
+    AuthType auth_type,
+    const std::vector<uint8_t>& auth_code,
+    AuthScope desired_scope,
+    std::vector<uint8_t>* access_token,
+    AuthScope* access_token_scope,
+    base::TimeDelta* access_token_ttl,
+    ErrorPtr* error) {
   auto disabled_mode = [](ErrorPtr* error) {
     Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthMode,
                  "Mode is not available");
     return false;
   };
+
   switch (auth_type) {
     case AuthType::kAnonymous:
       if (!auth_manager_->IsAnonymousAuthSupported())
         return disabled_mode(error);
-      break;
+      return CreateAccessTokenImpl(auth_type, desired_scope, access_token,
+                                   access_token_scope, access_token_ttl);
     case AuthType::kPairing:
       if (!auth_manager_->IsPairingAuthSupported())
         return disabled_mode(error);
@@ -136,34 +163,45 @@ bool SecurityManager::CreateAccessToken(AuthType auth_type,
                      errors::kInvalidAuthCode, "Invalid authCode");
         return false;
       }
-      break;
+      return CreateAccessTokenImpl(auth_type, desired_scope, access_token,
+                                   access_token_scope, access_token_ttl);
     case AuthType::kLocal:
       if (!auth_manager_->IsLocalAuthSupported())
         return disabled_mode(error);
-      NOTIMPLEMENTED();
-      // no break to fall back to default.
-    default:
-      Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthMode,
-                   "Unsupported auth mode");
-      return false;
+      const base::TimeDelta kTtl =
+          base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
+      return auth_manager_->CreateAccessTokenFromAuth(
+          auth_code, kTtl, access_token, access_token_scope, access_token_ttl,
+          error);
   }
 
-  UserInfo user_info{desired_scope,
-                     std::to_string(static_cast<int>(auth_type)) + "/" +
-                         std::to_string(++last_user_id_)};
-  base::TimeDelta ttl =
-      base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
+  Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthMode,
+               "Unsupported auth mode");
+  return false;
+}
 
-  if (access_token) {
-    *access_token =
-        Base64Encode(auth_manager_->CreateAccessToken(user_info, ttl));
+bool SecurityManager::CreateAccessToken(AuthType auth_type,
+                                        const std::string& auth_code,
+                                        AuthScope desired_scope,
+                                        std::string* access_token,
+                                        AuthScope* access_token_scope,
+                                        base::TimeDelta* access_token_ttl,
+                                        ErrorPtr* error) {
+  std::vector<uint8_t> auth_decoded;
+  if (auth_type != AuthType::kAnonymous &&
+      !Base64Decode(auth_code, &auth_decoded)) {
+    return false;
   }
 
-  if (access_token_scope)
-    *access_token_scope = user_info.scope();
+  std::vector<uint8_t> access_token_decoded;
+  if (!CreateAccessTokenImpl(auth_type, auth_decoded, desired_scope,
+                             &access_token_decoded, access_token_scope,
+                             access_token_ttl, error)) {
+    return false;
+  }
 
-  if (access_token_ttl)
-    *access_token_ttl = ttl;
+  if (access_token)
+    *access_token = Base64Encode(access_token_decoded);
 
   return true;
 }
@@ -224,18 +262,15 @@ bool SecurityManager::ConfirmClientAuthToken(const std::string& token,
   return auth_manager_->ConfirmClientAuthToken(token_decoded, error);
 }
 
-bool SecurityManager::IsValidPairingCode(const std::string& auth_code) const {
+bool SecurityManager::IsValidPairingCode(
+    const std::vector<uint8_t>& auth_code) const {
   if (is_security_disabled_)
     return true;
-  std::vector<uint8_t> auth_decoded;
-  if (!Base64Decode(auth_code, &auth_decoded))
-    return false;
   for (const auto& session : confirmed_sessions_) {
     const std::string& key = session.second->GetKey();
     const std::string& id = session.first;
-    if (auth_decoded ==
-        HmacSha256(std::vector<uint8_t>(key.begin(), key.end()),
-                   std::vector<uint8_t>(id.begin(), id.end()))) {
+    if (auth_code == HmacSha256(std::vector<uint8_t>(key.begin(), key.end()),
+                                std::vector<uint8_t>(id.begin(), id.end()))) {
       pairing_attemts_ = 0;
       block_pairing_until_ = base::Time{};
       return true;
