@@ -126,10 +126,6 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   void SetUp() override {
     EXPECT_CALL(clock_, Now())
         .WillRepeatedly(Return(base::Time::FromTimeT(1450000000)));
-    dev_reg_.reset(new DeviceRegistrationInfo{&config_, &component_manager_,
-                                              &task_runner_, &http_client_,
-                                              nullptr, &auth_});
-
     ReloadDefaults();
   }
 
@@ -150,7 +146,10 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
           settings->service_url = test_data::kServiceURL;
           return true;
         }));
-    config_.Load();
+    config_.reset(new Config{&config_store_});
+    dev_reg_.reset(new DeviceRegistrationInfo{
+        config_.get(), &component_manager_, &task_runner_, &http_client_,
+        nullptr, &auth_});
     dev_reg_->Start();
   }
 
@@ -196,7 +195,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   provider::test::MockConfigStore config_store_;
   StrictMock<MockHttpClient> http_client_;
   base::DictionaryValue data_;
-  Config config_{&config_store_};
+  std::unique_ptr<Config> config_;
   test::MockClock clock_;
   privet::AuthManager auth_{
       {68, 52, 36, 95, 74, 89, 25, 2, 31, 5, 65, 87, 64, 32, 17, 26, 8, 73, 57,

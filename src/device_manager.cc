@@ -30,8 +30,6 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::Bluetooth* bluetooth)
     : config_{new Config{config_store}},
       component_manager_{new ComponentManagerImpl} {
-  config_->Load();
-
   if (http_server) {
     auth_manager_.reset(new privet::AuthManager(
         config_.get(), http_server->GetHttpsCertificateFingerprint()));
