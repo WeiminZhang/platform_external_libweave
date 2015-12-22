@@ -18,7 +18,6 @@
 #include <base/time/time.h>
 #include <weave/provider/task_runner.h>
 
-#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/auth_manager.h"
 #include "src/privet/constants.h"
@@ -90,20 +89,16 @@ class UnsecureKeyExchanger : public SecurityManager::KeyExchanger {
 
 }  // namespace
 
-SecurityManager::SecurityManager(AuthManager* auth_manager,
-                                 const std::set<PairingType>& pairing_modes,
-                                 const std::string& embedded_code,
-                                 bool disable_security,
+SecurityManager::SecurityManager(const Config* config,
+                                 AuthManager* auth_manager,
                                  provider::TaskRunner* task_runner)
-    : auth_manager_{auth_manager},
-      is_security_disabled_(disable_security),
-      pairing_modes_(pairing_modes),
-      embedded_code_(embedded_code),
-      task_runner_{task_runner} {
+    : config_{config}, auth_manager_{auth_manager}, task_runner_{task_runner} {
   CHECK(auth_manager_);
-  CHECK_EQ(embedded_code_.empty(),
-           std::find(pairing_modes_.begin(), pairing_modes_.end(),
-                     PairingType::kEmbeddedCode) == pairing_modes_.end());
+  CHECK_EQ(GetSettings().embedded_code.empty(),
+           std::find(GetSettings().pairing_modes.begin(),
+                     GetSettings().pairing_modes.end(),
+                     PairingType::kEmbeddedCode) ==
+               GetSettings().pairing_modes.end());
 }
 
 SecurityManager::~SecurityManager() {
@@ -151,12 +146,12 @@ bool SecurityManager::CreateAccessTokenImpl(
 
   switch (auth_type) {
     case AuthType::kAnonymous:
-      if (!auth_manager_->IsAnonymousAuthSupported())
+      if (!IsAnonymousAuthSupported())
         return disabled_mode(error);
       return CreateAccessTokenImpl(auth_type, desired_scope, access_token,
                                    access_token_scope, access_token_ttl);
     case AuthType::kPairing:
-      if (!auth_manager_->IsPairingAuthSupported())
+      if (!IsPairingAuthSupported())
         return disabled_mode(error);
       if (!IsValidPairingCode(auth_code)) {
         Error::AddTo(error, FROM_HERE, errors::kDomain,
@@ -166,7 +161,7 @@ bool SecurityManager::CreateAccessTokenImpl(
       return CreateAccessTokenImpl(auth_type, desired_scope, access_token,
                                    access_token_scope, access_token_ttl);
     case AuthType::kLocal:
-      if (!auth_manager_->IsLocalAuthSupported())
+      if (!IsLocalAuthSupported())
         return disabled_mode(error);
       const base::TimeDelta kTtl =
           base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
@@ -221,25 +216,25 @@ bool SecurityManager::ParseAccessToken(const std::string& token,
 }
 
 std::set<PairingType> SecurityManager::GetPairingTypes() const {
-  return pairing_modes_;
+  return GetSettings().pairing_modes;
 }
 
 std::set<CryptoType> SecurityManager::GetCryptoTypes() const {
   std::set<CryptoType> result{CryptoType::kSpake_p224};
-  if (is_security_disabled_)
+  if (GetSettings().disable_security)
     result.insert(CryptoType::kNone);
   return result;
 }
 
 std::set<AuthType> SecurityManager::GetAuthTypes() const {
   std::set<AuthType> result;
-  if (auth_manager_->IsAnonymousAuthSupported())
+  if (IsAnonymousAuthSupported())
     result.insert(AuthType::kAnonymous);
 
-  if (auth_manager_->IsPairingAuthSupported())
+  if (IsPairingAuthSupported())
     result.insert(AuthType::kPairing);
 
-  if (auth_manager_->IsLocalAuthSupported())
+  if (IsLocalAuthSupported())
     result.insert(AuthType::kLocal);
 
   return result;
@@ -262,9 +257,13 @@ bool SecurityManager::ConfirmClientAuthToken(const std::string& token,
   return auth_manager_->ConfirmClientAuthToken(token_decoded, error);
 }
 
+const Config::Settings& SecurityManager::GetSettings() const {
+  return config_->GetSettings();
+}
+
 bool SecurityManager::IsValidPairingCode(
     const std::vector<uint8_t>& auth_code) const {
-  if (is_security_disabled_)
+  if (GetSettings().disable_security)
     return true;
   for (const auto& session : confirmed_sessions_) {
     const std::string& key = session.second->GetKey();
@@ -288,8 +287,9 @@ bool SecurityManager::StartPairing(PairingType mode,
   if (!CheckIfPairingAllowed(error))
     return false;
 
-  if (std::find(pairing_modes_.begin(), pairing_modes_.end(), mode) ==
-      pairing_modes_.end()) {
+  const auto& pairing_modes = GetSettings().pairing_modes;
+  if (std::find(pairing_modes.begin(), pairing_modes.end(), mode) ==
+      pairing_modes.end()) {
     Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidParams,
                  "Pairing mode is not enabled");
     return false;
@@ -298,8 +298,8 @@ bool SecurityManager::StartPairing(PairingType mode,
   std::string code;
   switch (mode) {
     case PairingType::kEmbeddedCode:
-      CHECK(!embedded_code_.empty());
-      code = embedded_code_;
+      CHECK(!GetSettings().embedded_code.empty());
+      code = GetSettings().embedded_code;
       break;
     case PairingType::kPinCode:
       code = base::StringPrintf("%04i", base::RandInt(0, 9999));
@@ -316,7 +316,7 @@ bool SecurityManager::StartPairing(PairingType mode,
       spake.reset(new Spakep224Exchanger(code));
       break;
     case CryptoType::kNone:
-      if (is_security_disabled_) {
+      if (GetSettings().disable_security) {
         spake.reset(new UnsecureKeyExchanger(code));
         break;
       }
@@ -437,7 +437,7 @@ void SecurityManager::RegisterPairingListeners(
 }
 
 bool SecurityManager::CheckIfPairingAllowed(ErrorPtr* error) {
-  if (is_security_disabled_)
+  if (GetSettings().disable_security)
     return true;
 
   if (block_pairing_until_ > auth_manager_->Now()) {
@@ -469,6 +469,18 @@ bool SecurityManager::ClosePendingSession(const std::string& session_id) {
 
 bool SecurityManager::CloseConfirmedSession(const std::string& session_id) {
   return confirmed_sessions_.erase(session_id) != 0;
+}
+
+bool SecurityManager::IsAnonymousAuthSupported() const {
+  return GetSettings().local_anonymous_access_role != AuthScope::kNone;
+}
+
+bool SecurityManager::IsPairingAuthSupported() const {
+  return GetSettings().local_pairing_enabled;
+}
+
+bool SecurityManager::IsLocalAuthSupported() const {
+  return GetSettings().root_client_token_owner != RootClientTokenOwner::kNone;
 }
 
 }  // namespace privet

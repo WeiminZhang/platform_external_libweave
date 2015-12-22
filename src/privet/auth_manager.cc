@@ -315,20 +315,5 @@ std::vector<uint8_t> AuthManager::CreateSessionId() {
   return result;
 }
 
-bool AuthManager::IsAnonymousAuthSupported() const {
-  return !config_ ||
-         config_->GetSettings().local_anonymous_access_role != AuthScope::kNone;
-}
-
-bool AuthManager::IsPairingAuthSupported() const {
-  return !config_ || config_->GetSettings().local_pairing_enabled;
-}
-
-bool AuthManager::IsLocalAuthSupported() const {
-  return !config_ ||
-         config_->GetSettings().root_client_token_owner !=
-             RootClientTokenOwner::kNone;
-}
-
 }  // namespace privet
 }  // namespace weave

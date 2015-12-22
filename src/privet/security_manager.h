@@ -16,6 +16,7 @@
 #include <base/memory/weak_ptr.h>
 #include <weave/error.h>
 
+#include "src/config.h"
 #include "src/privet/security_delegate.h"
 
 namespace crypto {
@@ -51,10 +52,8 @@ class SecurityManager : public SecurityDelegate {
     virtual const std::string& GetKey() const = 0;
   };
 
-  SecurityManager(AuthManager* auth_manager,
-                  const std::set<PairingType>& pairing_modes,
-                  const std::string& embedded_code,
-                  bool disable_security,
+  SecurityManager(const Config* config,
+                  AuthManager* auth_manager,
                   // TODO(vitalybuka): Remove task_runner.
                   provider::TaskRunner* task_runner);
   ~SecurityManager() override;
@@ -94,6 +93,7 @@ class SecurityManager : public SecurityDelegate {
                                 const PairingEndListener& on_end);
 
  private:
+  const Config::Settings& GetSettings() const;
   bool IsValidPairingCode(const std::vector<uint8_t>& auth_code) const;
   FRIEND_TEST_ALL_PREFIXES(SecurityManagerTest, ThrottlePairing);
   // Allows limited number of new sessions without successful authorization.
@@ -112,13 +112,13 @@ class SecurityManager : public SecurityDelegate {
                              std::vector<uint8_t>* access_token,
                              AuthScope* access_token_scope,
                              base::TimeDelta* access_token_ttl);
+  bool IsAnonymousAuthSupported() const;
+  bool IsPairingAuthSupported() const;
+  bool IsLocalAuthSupported() const;
 
+  const Config* config_{nullptr};
   AuthManager* auth_manager_{nullptr};
 
-  // If true allows unencrypted pairing and accepts any access code.
-  const bool is_security_disabled_{false};
-  const std::set<PairingType> pairing_modes_;
-  const std::string embedded_code_;
   // TODO(vitalybuka): Session cleanup can be done without posting tasks.
   provider::TaskRunner* task_runner_{nullptr};
   std::map<std::string, std::unique_ptr<KeyExchanger>> pending_sessions_;

@@ -20,7 +20,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>
+#include <weave/provider/test/mock_config_store.h>
 
+#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/auth_manager.h"
 #include "src/privet/openssl_utils.h"
@@ -56,6 +58,25 @@ class MockPairingCallbacks {
 };
 
 }  // namespace
+
+class SecurityManagerConfigStore : public provider::test::MockConfigStore {
+ public:
+  SecurityManagerConfigStore() {
+    EXPECT_CALL(*this, LoadDefaults(_))
+        .WillRepeatedly(testing::Invoke([](Settings* settings) {
+          settings->embedded_code = "1234";
+          settings->pairing_modes = {PairingType::kEmbeddedCode};
+          settings->client_id = "TEST_CLIENT_ID";
+          settings->client_secret = "TEST_CLIENT_SECRET";
+          settings->api_key = "TEST_API_KEY";
+          settings->oem_name = "TEST_OEM";
+          settings->model_name = "TEST_MODEL";
+          settings->model_id = "ABCDE";
+          settings->name = "TEST_NAME";
+          return true;
+        }));
+  }
+};
 
 class SecurityManagerTest : public testing::Test {
  protected:
@@ -113,6 +134,8 @@ class SecurityManagerTest : public testing::Test {
   const base::Time time_ = base::Time::FromTimeT(1410000000);
   provider::test::FakeTaskRunner task_runner_;
   test::MockClock clock_;
+  SecurityManagerConfigStore config_store_;
+  Config config_{&config_store_};
   AuthManager auth_manager_{
       {22, 47, 23, 77, 42, 98, 96, 25, 83, 16, 9, 14, 91, 44, 15, 75, 60, 62,
        10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85},
@@ -124,11 +147,8 @@ class SecurityManagerTest : public testing::Test {
       {22, 47, 23, 77, 42, 98, 96, 25, 83, 16, 9, 14, 91, 44, 15, 75, 60, 62,
        10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85},
       &clock_};
-  SecurityManager security_{&auth_manager_,
-                            {PairingType::kEmbeddedCode},
-                            "1234",
-                            false,
-                            &task_runner_};
+
+  SecurityManager security_{&config_, &auth_manager_, &task_runner_};
 };
 
 TEST_F(SecurityManagerTest, AccessToken) {

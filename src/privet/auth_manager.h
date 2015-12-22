@@ -69,10 +69,6 @@ class AuthManager {
 
   std::vector<uint8_t> CreateSessionId();
 
-  bool IsAnonymousAuthSupported() const;
-  bool IsPairingAuthSupported() const;
-  bool IsLocalAuthSupported() const;
-
  private:
   Config* config_{nullptr};  // Can be nullptr for tests.
   base::DefaultClock default_clock_;
