@@ -90,6 +90,22 @@ bool IsClaimAllowed(RootClientTokenOwner curret, RootClientTokenOwner claimer) {
   return claimer > curret || claimer == RootClientTokenOwner::kCloud;
 }
 
+std::vector<uint8_t> CreateMacaroonToken(
+    const std::vector<uint8_t>& secret,
+    const std::vector<UwMacaroonCaveat>& caveats) {
+  CHECK_EQ(kSha256OutputSize, secret.size());
+  UwMacaroon macaroon{};
+  CHECK(uw_macaroon_new_from_root_key_(&macaroon, secret.data(), secret.size(),
+                                       caveats.data(), caveats.size()));
+
+  std::vector<uint8_t> token(kMaxMacaroonSize);
+  size_t len = 0;
+  CHECK(uw_macaroon_dump_(&macaroon, token.data(), token.size(), &len));
+  token.resize(len);
+
+  return token;
+}
+
 }  // namespace
 
 AuthManager::AuthManager(Config* config,
@@ -146,6 +162,7 @@ std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
   std::vector<uint8_t> data{data_str.begin(), data_str.end()};
   std::vector<uint8_t> hash{HmacSha256(access_secret_, data)};
   hash.insert(hash.end(), data.begin(), data.end());
+
   return hash;
 }
 
@@ -235,22 +252,10 @@ std::vector<uint8_t> AuthManager::GetRootClientAuthToken() const {
   Caveat scope{kUwMacaroonCaveatTypeScope, kUwMacaroonCaveatScopeTypeOwner};
   Caveat issued{kUwMacaroonCaveatTypeIssued,
                 static_cast<uint32_t>(Now().ToTimeT())};
-
-  UwMacaroonCaveat caveats[] = {
-      scope.GetCaveat(), issued.GetCaveat(),
-  };
-
-  CHECK_EQ(kSha256OutputSize, auth_secret_.size());
-  UwMacaroon macaroon{};
-  CHECK(uw_macaroon_new_from_root_key_(&macaroon, auth_secret_.data(),
-                                       auth_secret_.size(), caveats,
-                                       arraysize(caveats)));
-
-  std::vector<uint8_t> token(kMaxMacaroonSize);
-  size_t len = 0;
-  CHECK(uw_macaroon_dump_(&macaroon, token.data(), token.size(), &len));
-  token.resize(len);
-  return token;
+  return CreateMacaroonToken(auth_secret_,
+                             {
+                                 scope.GetCaveat(), issued.GetCaveat(),
+                             });
 }
 
 base::Time AuthManager::Now() const {
