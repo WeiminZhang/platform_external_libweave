@@ -25,7 +25,6 @@ namespace privet {
 
 namespace {
 
-const char kTokenDelimeter[] = ":";
 const size_t kMaxMacaroonSize = 1024;
 const size_t kMaxPendingClaims = 10;
 const char kInvalidTokenError[] = "invalid_token";
@@ -34,36 +33,6 @@ template <class T>
 void AppendToArray(T value, std::vector<uint8_t>* array) {
   auto begin = reinterpret_cast<const uint8_t*>(&value);
   array->insert(array->end(), begin, begin + sizeof(value));
-}
-
-// Returns "scope:time:id".
-std::string CreateTokenData(const UserInfo& user_info, const base::Time& time) {
-  return base::IntToString(static_cast<int>(user_info.scope())) +
-         kTokenDelimeter + std::to_string(time.ToTimeT()) + kTokenDelimeter +
-         user_info.user_id();
-}
-
-// Splits string of "scope:time:id" format.
-UserInfo SplitTokenData(const std::string& token, base::Time* time) {
-  const UserInfo kNone;
-  auto parts = SplitAtFirst(token, kTokenDelimeter, false);
-  if (parts.second.empty())
-    return kNone;
-  int scope = 0;
-  if (!base::StringToInt(parts.first, &scope) ||
-      scope < static_cast<int>(AuthScope::kNone) ||
-      scope > static_cast<int>(AuthScope::kOwner)) {
-    return kNone;
-  }
-
-  parts = SplitAtFirst(parts.second, kTokenDelimeter, false);
-  int64_t timestamp{0};
-  if (parts.second.empty() || !base::StringToInt64(parts.first, &timestamp))
-    return kNone;
-
-  if (time)
-    *time = base::Time::FromTimeT(timestamp);
-  return UserInfo{static_cast<AuthScope>(scope), parts.second};
 }
 
 class Caveat {
@@ -90,6 +59,60 @@ class Caveat {
 
   DISALLOW_COPY_AND_ASSIGN(Caveat);
 };
+
+bool CheckCaveatType(const UwMacaroonCaveat& caveat,
+                     UwMacaroonCaveatType type,
+                     ErrorPtr* error) {
+  UwMacaroonCaveatType caveat_type{};
+  if (!uw_macaroon_caveat_get_type_(&caveat, &caveat_type)) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
+                 "Unable to get type");
+    return false;
+  }
+
+  if (caveat_type != type) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
+                 "Unexpected caveat type");
+    return false;
+  }
+
+  return true;
+}
+
+bool ReadCaveat(const UwMacaroonCaveat& caveat,
+                UwMacaroonCaveatType type,
+                uint32_t* value,
+                ErrorPtr* error) {
+  if (!CheckCaveatType(caveat, type, error))
+    return false;
+
+  if (!uw_macaroon_caveat_get_value_uint_(&caveat, value)) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
+                 "Unable to read caveat");
+    return false;
+  }
+
+  return true;
+}
+
+bool ReadCaveat(const UwMacaroonCaveat& caveat,
+                UwMacaroonCaveatType type,
+                std::string* value,
+                ErrorPtr* error) {
+  if (!CheckCaveatType(caveat, type, error))
+    return false;
+
+  const uint8_t* start{nullptr};
+  size_t size{0};
+  if (!uw_macaroon_caveat_get_value_str_(&caveat, &start, &size)) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
+                 "Unable to read caveat");
+    return false;
+  }
+
+  value->assign(reinterpret_cast<const char*>(start), size);
+  return true;
+}
 
 std::vector<uint8_t> CreateSecret() {
   std::vector<uint8_t> secret(kSha256OutputSize);
@@ -143,6 +166,34 @@ bool VerifyMacaroon(const std::vector<uint8_t>& secret,
   return true;
 }
 
+UwMacaroonCaveatScopeType ToMacaroonScope(AuthScope scope) {
+  switch (scope) {
+    case AuthScope::kViewer:
+      return kUwMacaroonCaveatScopeTypeViewer;
+    case AuthScope::kUser:
+      return kUwMacaroonCaveatScopeTypeUser;
+    case AuthScope::kManager:
+      return kUwMacaroonCaveatScopeTypeManager;
+    case AuthScope::kOwner:
+      return kUwMacaroonCaveatScopeTypeOwner;
+    default:
+      NOTREACHED() << EnumToString(scope);
+  }
+  return kUwMacaroonCaveatScopeTypeViewer;
+}
+
+AuthScope FromMacaroonScope(uint32_t scope) {
+  if (scope <= kUwMacaroonCaveatScopeTypeOwner)
+    return AuthScope::kOwner;
+  if (scope <= kUwMacaroonCaveatScopeTypeManager)
+    return AuthScope::kManager;
+  if (scope <= kUwMacaroonCaveatScopeTypeUser)
+    return AuthScope::kUser;
+  if (scope <= kUwMacaroonCaveatScopeTypeViewer)
+    return AuthScope::kViewer;
+  return AuthScope::kNone;
+}
+
 }  // namespace
 
 AuthManager::AuthManager(Config* config,
@@ -192,44 +243,51 @@ void AuthManager::SetAuthSecret(const std::vector<uint8_t>& secret,
 
 AuthManager::~AuthManager() {}
 
-// Returns "[hmac]scope:expiration_time:id".
 std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
                                                     base::TimeDelta ttl) const {
-  std::string data_str{CreateTokenData(user_info, Now() + ttl)};
-  std::vector<uint8_t> data{data_str.begin(), data_str.end()};
-  std::vector<uint8_t> hash{HmacSha256(access_secret_, data)};
-  hash.insert(hash.end(), data.begin(), data.end());
-
-  return hash;
+  Caveat scope{kUwMacaroonCaveatTypeScope, ToMacaroonScope(user_info.scope())};
+  Caveat user{kUwMacaroonCaveatTypeIdentifier, user_info.user_id()};
+  Caveat issued{kUwMacaroonCaveatTypeExpiration,
+                static_cast<uint32_t>((Now() + ttl).ToTimeT())};
+  return CreateMacaroonToken(
+      access_secret_,
+      {
+          scope.GetCaveat(), user.GetCaveat(), issued.GetCaveat(),
+      });
 }
 
-// TODO(vitalybuka): Switch to Macaroon?
-// Parses "base64([hmac]scope:id:expriration_time)".
 bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
                                    UserInfo* user_info,
                                    ErrorPtr* error) const {
-  if (token.size() <= kSha256OutputSize) {
-    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidAuthorization, "Invalid token size: %zu",
-                       token.size());
-    return false;
-  }
-  std::vector<uint8_t> hash(token.begin(), token.begin() + kSha256OutputSize);
-  std::vector<uint8_t> data(token.begin() + kSha256OutputSize, token.end());
-  if (hash != HmacSha256(access_secret_, data)) {
+  std::vector<uint8_t> buffer;
+  UwMacaroon macaroon{};
+
+  uint32_t scope{0};
+  std::string user_id;
+  uint32_t expiration{0};
+
+  if (!LoadMacaroon(token, &buffer, &macaroon, error) ||
+      !VerifyMacaroon(access_secret_, macaroon, error) ||
+      macaroon.num_caveats != 3 ||
+      !ReadCaveat(macaroon.caveats[0], kUwMacaroonCaveatTypeScope, &scope,
+                  error) ||
+      !ReadCaveat(macaroon.caveats[1], kUwMacaroonCaveatTypeIdentifier,
+                  &user_id, error) ||
+      !ReadCaveat(macaroon.caveats[2], kUwMacaroonCaveatTypeExpiration,
+                  &expiration, error)) {
     Error::AddTo(error, FROM_HERE, errors::kDomain,
-                 errors::kInvalidAuthorization, "Invalid signature");
+                 errors::kInvalidAuthorization, "Invalid token");
     return false;
   }
 
-  base::Time time;
-  UserInfo info = SplitTokenData(std::string(data.begin(), data.end()), &time);
-  if (info.scope() == AuthScope::kNone) {
+  AuthScope auth_scope{FromMacaroonScope(scope)};
+  if (auth_scope == AuthScope::kNone) {
     Error::AddTo(error, FROM_HERE, errors::kDomain,
                  errors::kInvalidAuthorization, "Invalid token data");
     return false;
   }
 
+  base::Time time{base::Time::FromTimeT(expiration)};
   if (time < clock_->Now()) {
     Error::AddTo(error, FROM_HERE, errors::kDomain,
                  errors::kAuthorizationExpired, "Token is expired");
@@ -237,7 +295,7 @@ bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   }
 
   if (user_info)
-    *user_info = info;
+    *user_info = UserInfo{auth_scope, user_id};
 
   return true;
 }

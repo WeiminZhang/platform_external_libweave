@@ -64,21 +64,18 @@ TEST_F(AuthManagerTest, Constructor) {
 }
 
 TEST_F(AuthManagerTest, CreateAccessToken) {
-  EXPECT_EQ("xy58xYHWQUp5VT2tDmYLNIgdRiJ5ZQbgyCQuOGyQa5AwOjE0MTAwMDAwMDA6",
-            Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kNone, "123"}, {})));
-  EXPECT_EQ("U0U8NQ4J0btA4kwPkG8deFkDLQOPPANbw53gGmcTUMUxOjE0MTAwMDAwMDA6MjM0",
+  EXPECT_EQ("UABRUHgcSZDry0bvIsoJv+WDQgEURQJjMjM0RgUaVArkgA==",
             Base64Encode(auth_.CreateAccessToken(
                 UserInfo{AuthScope::kViewer, "234"}, {})));
-  EXPECT_EQ("BooVCAQZ+ectnq2RYrzL3qymLfGm5YLGp9NMCuXAM3EzOjE0MTAwMDAwMDA6MjU3",
+  EXPECT_EQ("UL7YEruLg5QQRDIp2+u1cqCDQgEIRQJjMjU3RgUaVArkgA==",
             Base64Encode(auth_.CreateAccessToken(
                 UserInfo{AuthScope::kManager, "257"}, {})));
-  EXPECT_EQ("YjgJgNR2uDzfTxHokbuDfguwOB72/F9mbzDO2PehIS80OjE0MTAwMDAwMDA6NDU2",
+  EXPECT_EQ("UPFGeZRanR1wLGYLP5ZDkXiDQgECRQJjNDU2RgUaVArkgA==",
             Base64Encode(auth_.CreateAccessToken(
                 UserInfo{AuthScope::kOwner, "456"}, {})));
   auto new_time = clock_.Now() + base::TimeDelta::FromDays(11);
   EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
-  EXPECT_EQ("d3t7075JF0Vb/c/Ihunk+xn2gxzUkHotdaIS9vc+A6kyOjE0MTA5NTA0MDA6MzQ1",
+  EXPECT_EQ("UMm9KlF3OEtZFBmhScJpl4uDQgEORQJjMzQ1RgUaVBllAA==",
             Base64Encode(auth_.CreateAccessToken(
                 UserInfo{AuthScope::kUser, "345"}, {})));
 }
