@@ -4,6 +4,8 @@
 
 #include "src/privet/auth_manager.h"
 
+#include <algorithm>
+
 #include <base/guid.h>
 #include <base/rand_util.h>
 #include <base/strings/string_number_conversions.h>
@@ -24,9 +26,9 @@ namespace privet {
 namespace {
 
 const char kTokenDelimeter[] = ":";
-const size_t kCaveatBuffetSize = 32;
 const size_t kMaxMacaroonSize = 1024;
 const size_t kMaxPendingClaims = 10;
+const char kInvalidTokenError[] = "invalid_token";
 
 template <class T>
 void AppendToArray(T value, std::vector<uint8_t>* array) {
@@ -66,16 +68,25 @@ UserInfo SplitTokenData(const std::string& token, base::Time* time) {
 
 class Caveat {
  public:
-  Caveat(UwMacaroonCaveatType type, uint32_t value) {
-    CHECK(uw_macaroon_caveat_create_with_uint_(type, value, buffer,
-                                               sizeof(buffer), &caveat));
+  // TODO(vitalybuka): Use _get_buffer_size_ when available.
+  Caveat(UwMacaroonCaveatType type, uint32_t value) : buffer(8) {
+    CHECK(uw_macaroon_caveat_create_with_uint_(type, value, buffer.data(),
+                                               buffer.size(), &caveat));
+  }
+
+  // TODO(vitalybuka): Use _get_buffer_size_ when available.
+  Caveat(UwMacaroonCaveatType type, const std::string& value)
+      : buffer(std::max<size_t>(value.size(), 32u) * 2) {
+    CHECK(uw_macaroon_caveat_create_with_str_(
+        type, reinterpret_cast<const uint8_t*>(value.data()), value.size(),
+        buffer.data(), buffer.size(), &caveat));
   }
 
   const UwMacaroonCaveat& GetCaveat() const { return caveat; }
 
  private:
   UwMacaroonCaveat caveat;
-  uint8_t buffer[kCaveatBuffetSize];
+  std::vector<uint8_t> buffer;
 
   DISALLOW_COPY_AND_ASSIGN(Caveat);
 };
@@ -104,6 +115,32 @@ std::vector<uint8_t> CreateMacaroonToken(
   token.resize(len);
 
   return token;
+}
+
+bool LoadMacaroon(const std::vector<uint8_t>& token,
+                  std::vector<uint8_t>* buffer,
+                  UwMacaroon* macaroon,
+                  ErrorPtr* error) {
+  buffer->resize(kMaxMacaroonSize);
+  if (!uw_macaroon_load_(token.data(), token.size(), buffer->data(),
+                         buffer->size(), macaroon)) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
+                 "Invalid token format");
+    return false;
+  }
+  return true;
+}
+
+bool VerifyMacaroon(const std::vector<uint8_t>& secret,
+                    const UwMacaroon& macaroon,
+                    ErrorPtr* error) {
+  CHECK_EQ(kSha256OutputSize, secret.size());
+  if (!uw_macaroon_verify_(&macaroon, secret.data(), secret.size())) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, "invalid_signature",
+                 "Invalid token signature");
+    return false;
+  }
+  return true;
 }
 
 }  // namespace
@@ -264,20 +301,12 @@ base::Time AuthManager::Now() const {
 
 bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token,
                                    ErrorPtr* error) const {
-  std::vector<uint8_t> buffer(kMaxMacaroonSize);
+  std::vector<uint8_t> buffer;
   UwMacaroon macaroon{};
-  if (!uw_macaroon_load_(token.data(), token.size(), buffer.data(),
-                         buffer.size(), &macaroon)) {
+  if (!LoadMacaroon(token, &buffer, &macaroon, error) ||
+      !VerifyMacaroon(auth_secret_, macaroon, error)) {
     Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthCode,
-                 "Invalid token format");
-    return false;
-  }
-
-  CHECK_EQ(kSha256OutputSize, auth_secret_.size());
-  if (!uw_macaroon_verify_(&macaroon, auth_secret_.data(),
-                           auth_secret_.size())) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthCode,
-                 "Invalid token signature");
+                 "Invalid token");
     return false;
   }
   return true;
