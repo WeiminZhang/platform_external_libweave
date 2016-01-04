@@ -18,7 +18,6 @@
 #include <base/time/time.h>
 #include <weave/provider/task_runner.h>
 
-#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/auth_manager.h"
 #include "src/privet/constants.h"
@@ -35,6 +34,8 @@ const int kSessionExpirationTimeMinutes = 5;
 const int kPairingExpirationTimeMinutes = 5;
 const int kMaxAllowedPairingAttemts = 3;
 const int kPairingBlockingTimeMinutes = 1;
+
+const int kAccessTokenExpirationSeconds = 3600;
 
 class Spakep224Exchanger : public SecurityManager::KeyExchanger {
  public:
@@ -88,20 +89,16 @@ class UnsecureKeyExchanger : public SecurityManager::KeyExchanger {
 
 }  // namespace
 
-SecurityManager::SecurityManager(AuthManager* auth_manager,
-                                 const std::set<PairingType>& pairing_modes,
-                                 const std::string& embedded_code,
-                                 bool disable_security,
+SecurityManager::SecurityManager(const Config* config,
+                                 AuthManager* auth_manager,
                                  provider::TaskRunner* task_runner)
-    : auth_manager_{auth_manager},
-      is_security_disabled_(disable_security),
-      pairing_modes_(pairing_modes),
-      embedded_code_(embedded_code),
-      task_runner_{task_runner} {
+    : config_{config}, auth_manager_{auth_manager}, task_runner_{task_runner} {
   CHECK(auth_manager_);
-  CHECK_EQ(embedded_code_.empty(),
-           std::find(pairing_modes_.begin(), pairing_modes_.end(),
-                     PairingType::kEmbeddedCode) == pairing_modes_.end());
+  CHECK_EQ(GetSettings().embedded_code.empty(),
+           std::find(GetSettings().pairing_modes.begin(),
+                     GetSettings().pairing_modes.end(),
+                     PairingType::kEmbeddedCode) ==
+               GetSettings().pairing_modes.end());
 }
 
 SecurityManager::~SecurityManager() {
@@ -109,29 +106,137 @@ SecurityManager::~SecurityManager() {
     ClosePendingSession(pending_sessions_.begin()->first);
 }
 
-// Returns "base64([hmac]scope:id:time)".
-std::string SecurityManager::CreateAccessToken(const UserInfo& user_info) {
-  return Base64Encode(auth_manager_->CreateAccessToken(user_info));
+bool SecurityManager::CreateAccessTokenImpl(AuthType auth_type,
+                                            AuthScope desired_scope,
+                                            std::vector<uint8_t>* access_token,
+                                            AuthScope* access_token_scope,
+                                            base::TimeDelta* access_token_ttl) {
+  UserInfo user_info{desired_scope,
+                     std::to_string(static_cast<int>(auth_type)) + "/" +
+                         std::to_string(++last_user_id_)};
+
+  const base::TimeDelta kTtl =
+      base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
+
+  if (access_token)
+    *access_token = auth_manager_->CreateAccessToken(user_info, kTtl);
+
+  if (access_token_scope)
+    *access_token_scope = user_info.scope();
+
+  if (access_token_ttl)
+    *access_token_ttl = kTtl;
+
+  return true;
 }
 
-// Parses "base64([hmac]scope:id:time)".
-UserInfo SecurityManager::ParseAccessToken(const std::string& token,
-                                           base::Time* time) const {
-  std::vector<uint8_t> decoded;
-  if (!Base64Decode(token, &decoded))
-    return UserInfo{};
+bool SecurityManager::CreateAccessTokenImpl(
+    AuthType auth_type,
+    const std::vector<uint8_t>& auth_code,
+    AuthScope desired_scope,
+    std::vector<uint8_t>* access_token,
+    AuthScope* access_token_scope,
+    base::TimeDelta* access_token_ttl,
+    ErrorPtr* error) {
+  auto disabled_mode = [](ErrorPtr* error) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthMode,
+                 "Mode is not available");
+    return false;
+  };
 
-  return auth_manager_->ParseAccessToken(decoded, time);
+  switch (auth_type) {
+    case AuthType::kAnonymous:
+      if (!IsAnonymousAuthSupported())
+        return disabled_mode(error);
+      return CreateAccessTokenImpl(auth_type, desired_scope, access_token,
+                                   access_token_scope, access_token_ttl);
+    case AuthType::kPairing:
+      if (!IsPairingAuthSupported())
+        return disabled_mode(error);
+      if (!IsValidPairingCode(auth_code)) {
+        Error::AddTo(error, FROM_HERE, errors::kDomain,
+                     errors::kInvalidAuthCode, "Invalid authCode");
+        return false;
+      }
+      return CreateAccessTokenImpl(auth_type, desired_scope, access_token,
+                                   access_token_scope, access_token_ttl);
+    case AuthType::kLocal:
+      if (!IsLocalAuthSupported())
+        return disabled_mode(error);
+      const base::TimeDelta kTtl =
+          base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
+      return auth_manager_->CreateAccessTokenFromAuth(
+          auth_code, kTtl, access_token, access_token_scope, access_token_ttl,
+          error);
+  }
+
+  Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthMode,
+               "Unsupported auth mode");
+  return false;
+}
+
+bool SecurityManager::CreateAccessToken(AuthType auth_type,
+                                        const std::string& auth_code,
+                                        AuthScope desired_scope,
+                                        std::string* access_token,
+                                        AuthScope* access_token_scope,
+                                        base::TimeDelta* access_token_ttl,
+                                        ErrorPtr* error) {
+  std::vector<uint8_t> auth_decoded;
+  if (auth_type != AuthType::kAnonymous &&
+      !Base64Decode(auth_code, &auth_decoded)) {
+    return false;
+  }
+
+  std::vector<uint8_t> access_token_decoded;
+  if (!CreateAccessTokenImpl(auth_type, auth_decoded, desired_scope,
+                             &access_token_decoded, access_token_scope,
+                             access_token_ttl, error)) {
+    return false;
+  }
+
+  if (access_token)
+    *access_token = Base64Encode(access_token_decoded);
+
+  return true;
+}
+
+bool SecurityManager::ParseAccessToken(const std::string& token,
+                                       UserInfo* user_info,
+                                       ErrorPtr* error) const {
+  std::vector<uint8_t> decoded;
+  if (!Base64Decode(token, &decoded)) {
+    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
+                       errors::kInvalidAuthorization,
+                       "Invalid token encoding: %s", token.c_str());
+    return false;
+  }
+
+  return auth_manager_->ParseAccessToken(decoded, user_info, error);
 }
 
 std::set<PairingType> SecurityManager::GetPairingTypes() const {
-  return pairing_modes_;
+  return GetSettings().pairing_modes;
 }
 
 std::set<CryptoType> SecurityManager::GetCryptoTypes() const {
   std::set<CryptoType> result{CryptoType::kSpake_p224};
-  if (is_security_disabled_)
+  if (GetSettings().disable_security)
     result.insert(CryptoType::kNone);
+  return result;
+}
+
+std::set<AuthType> SecurityManager::GetAuthTypes() const {
+  std::set<AuthType> result;
+  if (IsAnonymousAuthSupported())
+    result.insert(AuthType::kAnonymous);
+
+  if (IsPairingAuthSupported())
+    result.insert(AuthType::kPairing);
+
+  if (IsLocalAuthSupported())
+    result.insert(AuthType::kLocal);
+
   return result;
 }
 
@@ -152,18 +257,19 @@ bool SecurityManager::ConfirmClientAuthToken(const std::string& token,
   return auth_manager_->ConfirmClientAuthToken(token_decoded, error);
 }
 
-bool SecurityManager::IsValidPairingCode(const std::string& auth_code) const {
-  if (is_security_disabled_)
+const Config::Settings& SecurityManager::GetSettings() const {
+  return config_->GetSettings();
+}
+
+bool SecurityManager::IsValidPairingCode(
+    const std::vector<uint8_t>& auth_code) const {
+  if (GetSettings().disable_security)
     return true;
-  std::vector<uint8_t> auth_decoded;
-  if (!Base64Decode(auth_code, &auth_decoded))
-    return false;
   for (const auto& session : confirmed_sessions_) {
     const std::string& key = session.second->GetKey();
     const std::string& id = session.first;
-    if (auth_decoded ==
-        HmacSha256(std::vector<uint8_t>(key.begin(), key.end()),
-                   std::vector<uint8_t>(id.begin(), id.end()))) {
+    if (auth_code == HmacSha256(std::vector<uint8_t>(key.begin(), key.end()),
+                                std::vector<uint8_t>(id.begin(), id.end()))) {
       pairing_attemts_ = 0;
       block_pairing_until_ = base::Time{};
       return true;
@@ -181,8 +287,9 @@ bool SecurityManager::StartPairing(PairingType mode,
   if (!CheckIfPairingAllowed(error))
     return false;
 
-  if (std::find(pairing_modes_.begin(), pairing_modes_.end(), mode) ==
-      pairing_modes_.end()) {
+  const auto& pairing_modes = GetSettings().pairing_modes;
+  if (std::find(pairing_modes.begin(), pairing_modes.end(), mode) ==
+      pairing_modes.end()) {
     Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidParams,
                  "Pairing mode is not enabled");
     return false;
@@ -191,8 +298,8 @@ bool SecurityManager::StartPairing(PairingType mode,
   std::string code;
   switch (mode) {
     case PairingType::kEmbeddedCode:
-      CHECK(!embedded_code_.empty());
-      code = embedded_code_;
+      CHECK(!GetSettings().embedded_code.empty());
+      code = GetSettings().embedded_code;
       break;
     case PairingType::kPinCode:
       code = base::StringPrintf("%04i", base::RandInt(0, 9999));
@@ -209,7 +316,7 @@ bool SecurityManager::StartPairing(PairingType mode,
       spake.reset(new Spakep224Exchanger(code));
       break;
     case CryptoType::kNone:
-      if (is_security_disabled_) {
+      if (GetSettings().disable_security) {
         spake.reset(new UnsecureKeyExchanger(code));
         break;
       }
@@ -317,6 +424,10 @@ bool SecurityManager::CancelPairing(const std::string& session_id,
   return false;
 }
 
+std::string SecurityManager::CreateSessionId() {
+  return Base64Encode(auth_manager_->CreateSessionId());
+}
+
 void SecurityManager::RegisterPairingListeners(
     const PairingStartListener& on_start,
     const PairingEndListener& on_end) {
@@ -326,7 +437,7 @@ void SecurityManager::RegisterPairingListeners(
 }
 
 bool SecurityManager::CheckIfPairingAllowed(ErrorPtr* error) {
-  if (is_security_disabled_)
+  if (GetSettings().disable_security)
     return true;
 
   if (block_pairing_until_ > auth_manager_->Now()) {
@@ -358,6 +469,18 @@ bool SecurityManager::ClosePendingSession(const std::string& session_id) {
 
 bool SecurityManager::CloseConfirmedSession(const std::string& session_id) {
   return confirmed_sessions_.erase(session_id) != 0;
+}
+
+bool SecurityManager::IsAnonymousAuthSupported() const {
+  return GetSettings().local_anonymous_access_role != AuthScope::kNone;
+}
+
+bool SecurityManager::IsPairingAuthSupported() const {
+  return GetSettings().local_pairing_enabled;
+}
+
+bool SecurityManager::IsLocalAuthSupported() const {
+  return GetSettings().root_client_token_owner != RootClientTokenOwner::kNone;
 }
 
 }  // namespace privet

@@ -85,6 +85,22 @@ class ComponentManager {
                                      const std::vector<std::string>& traits,
                                      ErrorPtr* error) = 0;
 
+  // Removes an existing component instance from device.
+  // |path| is a path to the parent component (or empty string if a root-level
+  // component is being removed).
+  // |name| is a name of the component to be removed.
+  virtual bool RemoveComponent(const std::string& path,
+                               const std::string& name,
+                               ErrorPtr* error) = 0;
+
+  // Removes an element from component array.
+  // |path| is a path to the parent component.
+  // |index| is a zero-based element index in the component array.
+  virtual bool RemoveComponentArrayItem(const std::string& path,
+                                        const std::string& name,
+                                        size_t index,
+                                        ErrorPtr* error) = 0;
+
   // Sets callback which is called when new components are added.
   virtual void AddComponentTreeChangedCallback(
       const base::Closure& callback) = 0;

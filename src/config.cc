@@ -85,7 +85,9 @@ LIBWEAVE_EXPORT EnumToStringMap<RootClientTokenOwner>::EnumToStringMap()
     : EnumToStringMap(kRootClientTokenOwnerMap) {}
 
 Config::Config(provider::ConfigStore* config_store)
-    : settings_{CreateDefaultSettings()}, config_store_{config_store} {}
+    : settings_{CreateDefaultSettings()}, config_store_{config_store} {
+  Load();
+}
 
 void Config::AddOnChangedCallback(const OnChangedCallback& callback) {
   on_changed_.push_back(callback);

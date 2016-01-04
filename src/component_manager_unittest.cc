@@ -519,6 +519,48 @@ TEST_F(ComponentManagerTest, AddComponentArrayItem) {
   EXPECT_JSON_EQ(kExpected, manager_.GetComponents());
 }
 
+TEST_F(ComponentManagerTest, RemoveComponent) {
+  CreateTestComponentTree(&manager_);
+  EXPECT_TRUE(manager_.RemoveComponent("comp1.comp2[1].comp3", "comp4",
+                                       nullptr));
+  const char kExpected1[] = R"({
+    "comp1": {
+      "traits": [ "t1" ],
+      "components": {
+        "comp2": [
+          {
+            "traits": [ "t2" ]
+          },
+          {
+            "traits": [ "t3" ],
+            "components": {
+              "comp3": {
+                "traits": [ "t4" ],
+                "components": {}
+              }
+            }
+          }
+        ]
+      }
+    }
+  })";
+  EXPECT_JSON_EQ(kExpected1, manager_.GetComponents());
+  EXPECT_TRUE(manager_.RemoveComponentArrayItem("comp1", "comp2", 1, nullptr));
+  const char kExpected2[] = R"({
+    "comp1": {
+      "traits": [ "t1" ],
+      "components": {
+        "comp2": [
+          {
+            "traits": [ "t2" ]
+          }
+        ]
+      }
+    }
+  })";
+  EXPECT_JSON_EQ(kExpected2, manager_.GetComponents());
+}
+
 TEST_F(ComponentManagerTest, AddComponentExist) {
   EXPECT_TRUE(manager_.AddComponent("", "comp1", {}, nullptr));
   EXPECT_FALSE(manager_.AddComponent("", "comp1", {}, nullptr));
@@ -548,6 +590,10 @@ TEST_F(ComponentManagerTest, AddComponentTreeChangedCallback) {
   EXPECT_EQ(5, count);
   EXPECT_TRUE(manager_.AddComponentArrayItem("comp1", "comp3", {}, nullptr));
   EXPECT_EQ(6, count);
+  EXPECT_TRUE(manager_.RemoveComponentArrayItem("comp1", "comp3", 1, nullptr));
+  EXPECT_EQ(7, count);
+  EXPECT_TRUE(manager_.RemoveComponent("", "comp1", nullptr));
+  EXPECT_EQ(8, count);
   // Make sure both callbacks were called the same number of times.
   EXPECT_EQ(count2, count);
 }

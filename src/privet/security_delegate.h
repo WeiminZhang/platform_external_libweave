@@ -22,17 +22,27 @@ class SecurityDelegate {
   virtual ~SecurityDelegate() {}
 
   // Creates access token for the given scope, user id and |time|.
-  virtual std::string CreateAccessToken(const UserInfo& user_info) = 0;
+  virtual bool CreateAccessToken(AuthType auth_type,
+                                 const std::string& auth_code,
+                                 AuthScope desired_scope,
+                                 std::string* access_token,
+                                 AuthScope* granted_scope,
+                                 base::TimeDelta* ttl,
+                                 ErrorPtr* error) = 0;
 
-  // Validates |token| and returns scope and user id parsed from that.
-  virtual UserInfo ParseAccessToken(const std::string& token,
-                                    base::Time* time) const = 0;
+  // Validates |token| and returns scope, user id parsed from that.
+  virtual bool ParseAccessToken(const std::string& token,
+                                UserInfo* user_info,
+                                ErrorPtr* error) const = 0;
 
   // Returns list of pairing methods by device.
   virtual std::set<PairingType> GetPairingTypes() const = 0;
 
   // Returns list of crypto methods supported by devices.
   virtual std::set<CryptoType> GetCryptoTypes() const = 0;
+
+  // Returns list of auth methods supported by devices.
+  virtual std::set<AuthType> GetAuthTypes() const = 0;
 
   // Returns Root Client Authorization Token.
   virtual std::string ClaimRootClientAuthToken(ErrorPtr* error) = 0;
@@ -41,10 +51,6 @@ class SecurityDelegate {
   // active secret.
   virtual bool ConfirmClientAuthToken(const std::string& token,
                                       ErrorPtr* error) = 0;
-
-  // Returns true if |auth_code| provided by client is valid. Client should
-  // obtain |auth_code| during pairing process.
-  virtual bool IsValidPairingCode(const std::string& auth_code) const = 0;
 
   virtual bool StartPairing(PairingType mode,
                             CryptoType crypto,
@@ -60,6 +66,8 @@ class SecurityDelegate {
 
   virtual bool CancelPairing(const std::string& session_id,
                              ErrorPtr* error) = 0;
+
+  virtual std::string CreateSessionId() = 0;
 };
 
 }  // namespace privet

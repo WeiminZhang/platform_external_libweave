@@ -25,12 +25,16 @@ class ConfigTest : public ::testing::Test {
   void SetUp() override {
     EXPECT_CALL(*this, OnConfigChanged(_))
         .Times(1);  // Called from AddOnChangedCallback
-    config_.AddOnChangedCallback(
-        base::Bind(&ConfigTest::OnConfigChanged, base::Unretained(this)));
-    default_.Load();
+    Reload();
   }
 
-  const Config::Settings& GetSettings() const { return config_.GetSettings(); }
+  void Reload() {
+    config_.reset(new Config{&config_store_});
+    config_->AddOnChangedCallback(
+        base::Bind(&ConfigTest::OnConfigChanged, base::Unretained(this)));
+  }
+
+  const Config::Settings& GetSettings() const { return config_->GetSettings(); }
 
   const Config::Settings& GetDefaultSettings() const {
     return default_.GetSettings();
@@ -39,7 +43,7 @@ class ConfigTest : public ::testing::Test {
   MOCK_METHOD1(OnConfigChanged, void(const Settings&));
 
   provider::test::MockConfigStore config_store_;
-  Config config_{&config_store_};
+  std::unique_ptr<Config> config_{new Config{nullptr}};
   Config default_{&config_store_};
 };
 
@@ -50,6 +54,7 @@ TEST_F(ConfigTest, NoStorage) {
 }
 
 TEST_F(ConfigTest, Defaults) {
+  config_.reset(new Config{nullptr});
   EXPECT_EQ("", GetSettings().client_id);
   EXPECT_EQ("", GetSettings().client_secret);
   EXPECT_EQ("", GetSettings().api_key);
@@ -87,7 +92,7 @@ TEST_F(ConfigTest, LoadStateV0) {
   })"));
 
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
-  config_.Load();
+  Reload();
 
   EXPECT_EQ("state_device_id", GetSettings().cloud_id);
   EXPECT_FALSE(GetSettings().device_id.empty());
@@ -100,7 +105,7 @@ TEST_F(ConfigTest, LoadStateV0) {
   })"));
 
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
-  config_.Load();
+  Reload();
 
   EXPECT_EQ("state_cloud_id", GetSettings().cloud_id);
   EXPECT_EQ("state_device_id", GetSettings().device_id);
@@ -131,7 +136,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_CALL(config_store_, LoadSettings()).WillOnce(Return(state));
 
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
-  config_.Load();
+  Reload();
 
   EXPECT_EQ("state_client_id", GetSettings().client_id);
   EXPECT_EQ("state_client_secret", GetSettings().client_secret);
@@ -166,7 +171,7 @@ TEST_F(ConfigTest, LoadState) {
 }
 
 TEST_F(ConfigTest, Setters) {
-  Config::Transaction change{&config_};
+  Config::Transaction change{config_.get()};
 
   change.set_client_id("set_client_id");
   EXPECT_EQ("set_client_id", GetSettings().client_id);

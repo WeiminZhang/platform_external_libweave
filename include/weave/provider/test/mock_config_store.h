@@ -35,7 +35,10 @@ class MockConfigStore : public ConfigStore {
           return true;
         }));
     EXPECT_CALL(*this, LoadSettings())
-        .WillRepeatedly(Return(R"({"device_id": "TEST_DEVICE_ID"})"));
+        .WillRepeatedly(Return(R"({
+          "version": 1,
+          "device_id": "TEST_DEVICE_ID"
+        })"));
     EXPECT_CALL(*this, SaveSettings(_)).WillRepeatedly(Return());
   }
   MOCK_METHOD1(LoadDefaults, bool(Settings*));

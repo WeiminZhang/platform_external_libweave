@@ -162,7 +162,6 @@ class PrivetHandler : public CloudDelegate::Observer {
   std::vector<UpdateRequestParameters> update_requests_;
   int last_update_request_id_{0};
 
-  uint64_t last_user_id_{0};
   uint64_t state_fingerprint_{1};
   uint64_t traits_fingerprint_{1};
   uint64_t components_fingerprint_{1};

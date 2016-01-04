@@ -30,8 +30,6 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::Bluetooth* bluetooth)
     : config_{new Config{config_store}},
       component_manager_{new ComponentManagerImpl} {
-  config_->Load();
-
   if (http_server) {
     auth_manager_.reset(new privet::AuthManager(
         config_.get(), http_server->GetHttpsCertificateFingerprint()));
@@ -106,6 +104,10 @@ bool DeviceManager::AddComponent(const std::string& name,
                                  const std::vector<std::string>& traits,
                                  ErrorPtr* error) {
   return component_manager_->AddComponent("", name, traits, error);
+}
+
+bool DeviceManager::RemoveComponent(const std::string& name, ErrorPtr* error) {
+  return component_manager_->RemoveComponent("", name, error);
 }
 
 void DeviceManager::AddComponentTreeChangedCallback(

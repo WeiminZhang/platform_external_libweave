@@ -20,7 +20,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>
+#include <weave/provider/test/mock_config_store.h>
 
+#include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/auth_manager.h"
 #include "src/privet/openssl_utils.h"
@@ -56,6 +58,25 @@ class MockPairingCallbacks {
 };
 
 }  // namespace
+
+class SecurityManagerConfigStore : public provider::test::MockConfigStore {
+ public:
+  SecurityManagerConfigStore() {
+    EXPECT_CALL(*this, LoadDefaults(_))
+        .WillRepeatedly(testing::Invoke([](Settings* settings) {
+          settings->embedded_code = "1234";
+          settings->pairing_modes = {PairingType::kEmbeddedCode};
+          settings->client_id = "TEST_CLIENT_ID";
+          settings->client_secret = "TEST_CLIENT_SECRET";
+          settings->api_key = "TEST_API_KEY";
+          settings->oem_name = "TEST_OEM";
+          settings->model_name = "TEST_MODEL";
+          settings->model_id = "ABCDE";
+          settings->name = "TEST_NAME";
+          return true;
+        }));
+  }
+};
 
 class SecurityManagerTest : public testing::Test {
  protected:
@@ -96,76 +117,60 @@ class SecurityManagerTest : public testing::Test {
 
     std::string auth_code_base64{Base64Encode(auth_code)};
 
-    EXPECT_TRUE(security_.IsValidPairingCode(auth_code_base64));
+    std::string token;
+    AuthScope scope;
+    base::TimeDelta ttl;
+    EXPECT_TRUE(security_.CreateAccessToken(AuthType::kPairing,
+                                            auth_code_base64, AuthScope::kOwner,
+                                            &token, &scope, &ttl, nullptr));
+    EXPECT_EQ(AuthScope::kOwner, scope);
+    EXPECT_EQ(base::TimeDelta::FromHours(1), ttl);
+
+    UserInfo info;
+    EXPECT_TRUE(security_.ParseAccessToken(token, &info, nullptr));
+    EXPECT_EQ(AuthScope::kOwner, info.scope());
   }
 
   const base::Time time_ = base::Time::FromTimeT(1410000000);
   provider::test::FakeTaskRunner task_runner_;
   test::MockClock clock_;
+  SecurityManagerConfigStore config_store_;
+  Config config_{&config_store_};
   AuthManager auth_manager_{
-      {},
+      {22, 47, 23, 77, 42, 98, 96, 25, 83, 16, 9, 14, 91, 44, 15, 75, 60, 62,
+       10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85},
       {
           59, 47, 77, 247, 129, 187, 188, 158, 172, 105, 246, 93, 102, 83, 8,
           138, 176, 141, 37, 63, 223, 40, 153, 121, 134, 23, 120, 106, 24, 205,
           7, 135,
       },
+      {22, 47, 23, 77, 42, 98, 96, 25, 83, 16, 9, 14, 91, 44, 15, 75, 60, 62,
+       10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85},
       &clock_};
-  SecurityManager security_{&auth_manager_,
-                            {PairingType::kEmbeddedCode},
-                            "1234",
-                            false,
-                            &task_runner_};
+
+  SecurityManager security_{&config_, &auth_manager_, &task_runner_};
 };
 
-TEST_F(SecurityManagerTest, IsBase64) {
-  EXPECT_TRUE(
-      IsBase64(security_.CreateAccessToken(UserInfo{AuthScope::kUser, 7})));
-}
+TEST_F(SecurityManagerTest, AccessToken) {
+  AuthScope scopes[] = {
+      AuthScope::kViewer, AuthScope::kUser, AuthScope::kManager,
+      AuthScope::kOwner,
+  };
+  for (size_t i = 1; i < 100; ++i) {
+    const AuthScope requested_scope = scopes[i % arraysize(scopes)];
+    std::string token;
+    AuthScope scope;
+    base::TimeDelta ttl;
+    EXPECT_TRUE(security_.CreateAccessToken(AuthType::kAnonymous, "",
+                                            requested_scope, &token, &scope,
+                                            &ttl, nullptr));
+    EXPECT_EQ(requested_scope, scope);
+    EXPECT_EQ(base::TimeDelta::FromHours(1), ttl);
 
-TEST_F(SecurityManagerTest, CreateSameToken) {
-  EXPECT_EQ(security_.CreateAccessToken(UserInfo{AuthScope::kViewer, 555}),
-            security_.CreateAccessToken(UserInfo{AuthScope::kViewer, 555}));
-}
-
-TEST_F(SecurityManagerTest, CreateTokenDifferentScope) {
-  EXPECT_NE(security_.CreateAccessToken(UserInfo{AuthScope::kViewer, 456}),
-            security_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456}));
-}
-
-TEST_F(SecurityManagerTest, CreateTokenDifferentUser) {
-  EXPECT_NE(security_.CreateAccessToken(UserInfo{AuthScope::kOwner, 456}),
-            security_.CreateAccessToken(UserInfo{AuthScope::kOwner, 789}));
-}
-
-TEST_F(SecurityManagerTest, CreateTokenDifferentTime) {
-  auto token = security_.CreateAccessToken(UserInfo{AuthScope::kOwner, 567});
-  EXPECT_CALL(clock_, Now())
-      .WillRepeatedly(Return(base::Time::FromTimeT(1400000000)));
-  EXPECT_NE(token,
-            security_.CreateAccessToken(UserInfo{AuthScope::kOwner, 567}));
-}
-
-TEST_F(SecurityManagerTest, CreateTokenDifferentInstance) {
-  AuthManager auth{{}, {}, &clock_};
-  EXPECT_NE(security_.CreateAccessToken(UserInfo{AuthScope::kUser, 123}),
-            SecurityManager(&auth, {}, "", false, &task_runner_)
-                .CreateAccessToken(UserInfo{AuthScope::kUser, 123}));
-}
-
-TEST_F(SecurityManagerTest, ParseAccessToken) {
-  // Multiple attempts with random secrets.
-  for (size_t i = 0; i < 1000; ++i) {
-    AuthManager auth{{}, {}, &clock_};
-    SecurityManager security{&auth, {}, "", false, &task_runner_};
-
-    std::string token =
-        security.CreateAccessToken(UserInfo{AuthScope::kUser, 5});
-    base::Time time2;
-    EXPECT_EQ(AuthScope::kUser,
-              security.ParseAccessToken(token, &time2).scope());
-    EXPECT_EQ(5u, security.ParseAccessToken(token, &time2).user_id());
-    // Token timestamp resolution is one second.
-    EXPECT_GE(1, std::abs((clock_.Now() - time2).InSeconds()));
+    UserInfo info;
+    EXPECT_TRUE(security_.ParseAccessToken(token, &info, nullptr));
+    EXPECT_EQ(requested_scope, info.scope());
+    EXPECT_EQ("0/" + std::to_string(i), info.user_id());
   }
 }
 

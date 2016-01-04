@@ -47,6 +47,23 @@ class ComponentManagerImpl final : public ComponentManager {
                              const std::vector<std::string>& traits,
                              ErrorPtr* error) override;
 
+  // Removes an existing component instance from device.
+  // |path| is a path to the parent component (or empty string if a root-level
+  // component is being removed).
+  // |name| is a name of the component to be removed.
+  bool RemoveComponent(const std::string& path,
+                       const std::string& name,
+                       ErrorPtr* error) override;
+
+  // Removes an element from component array.
+  // |path| is a path to the parent component.
+  // |name| is an array root element inside the child components.
+  // |index| is a zero-based element index in the component array.
+  bool RemoveComponentArrayItem(const std::string& path,
+                                const std::string& name,
+                                size_t index,
+                                ErrorPtr* error) override;
+
   // Sets callback which is called when new components are added.
   void AddComponentTreeChangedCallback(const base::Closure& callback) override;
 

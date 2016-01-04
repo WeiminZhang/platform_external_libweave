@@ -28,6 +28,15 @@ class MockComponentManager : public ComponentManager {
                     const std::string& name,
                     const std::vector<std::string>& traits,
                     ErrorPtr* error));
+  MOCK_METHOD3(RemoveComponent,
+               bool(const std::string& path,
+                    const std::string& name,
+                    ErrorPtr* error));
+  MOCK_METHOD4(RemoveComponentArrayItem,
+               bool(const std::string& path,
+                    const std::string& name,
+                    size_t index,
+                    ErrorPtr* error));
   MOCK_METHOD1(AddComponentTreeChangedCallback,
                void(const base::Closure& callback));
   MOCK_METHOD1(MockAddCommand, void(CommandInstance* command_instance));

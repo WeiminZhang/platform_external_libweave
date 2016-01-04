@@ -14,6 +14,7 @@ namespace weave {
 
 namespace {
 
+using privet::AuthType;
 using privet::ConnectionState;
 using privet::CryptoType;
 using privet::SetupState;
@@ -23,6 +24,12 @@ using provider::Network;
 const EnumToStringMap<PairingType>::Map kPairingTypeMap[] = {
     {PairingType::kPinCode, "pinCode"},
     {PairingType::kEmbeddedCode, "embeddedCode"},
+};
+
+const EnumToStringMap<AuthType>::Map kAuthTypeMap[] = {
+    {AuthType::kAnonymous, "anonymous"},
+    {AuthType::kPairing, "pairing"},
+    {AuthType::kLocal, "local"},
 };
 
 const EnumToStringMap<ConnectionState::Status>::Map kConnectionStateMap[] = {
@@ -69,6 +76,10 @@ const EnumToStringMap<Network::State>::Map kNetworkStateMap[] = {
 template <>
 LIBWEAVE_EXPORT EnumToStringMap<PairingType>::EnumToStringMap()
     : EnumToStringMap(kPairingTypeMap) {}
+
+template <>
+LIBWEAVE_EXPORT EnumToStringMap<AuthType>::EnumToStringMap()
+    : EnumToStringMap(kAuthTypeMap) {}
 
 template <>
 LIBWEAVE_EXPORT EnumToStringMap<ConnectionState::Status>::EnumToStringMap()
