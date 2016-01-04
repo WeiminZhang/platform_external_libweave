@@ -165,7 +165,7 @@ class CloudDelegateImpl : public CloudDelegate {
                   const UserInfo& user_info,
                   const CommandDoneCallback& callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
-    CHECK_NE(user_info.user_id(), 0u);
+    CHECK(!user_info.user_id().empty());
 
     ErrorPtr error;
     UserRole role;
@@ -230,8 +230,8 @@ class CloudDelegateImpl : public CloudDelegate {
 
  private:
   void OnCommandAdded(Command* command) {
-    // Set to 0 for any new unknown command.
-    command_owners_.insert(std::make_pair(command->GetID(), 0));
+    // Set to "" for any new unknown command.
+    command_owners_.insert(std::make_pair(command->GetID(), ""));
   }
 
   void OnCommandRemoved(Command* command) {
@@ -310,11 +310,11 @@ class CloudDelegateImpl : public CloudDelegate {
     return command;
   }
 
-  bool CanAccessCommand(uint64_t owner_id,
+  bool CanAccessCommand(const std::string& owner_id,
                         const UserInfo& user_info,
                         ErrorPtr* error) const {
     CHECK(user_info.scope() != AuthScope::kNone);
-    CHECK_NE(user_info.user_id(), 0u);
+    CHECK(!user_info.user_id().empty());
 
     if (user_info.scope() == AuthScope::kManager ||
         owner_id == user_info.user_id()) {
@@ -343,7 +343,7 @@ class CloudDelegateImpl : public CloudDelegate {
   int registation_retry_count_{0};
 
   // Map of command IDs to user IDs.
-  std::map<std::string, uint64_t> command_owners_;
+  std::map<std::string, std::string> command_owners_;
 
   // Backoff entry for retrying device registration.
   BackoffEntry backoff_entry_{&register_backoff_policy};

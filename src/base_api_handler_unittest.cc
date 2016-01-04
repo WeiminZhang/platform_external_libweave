@@ -54,7 +54,6 @@ class BaseApiHandlerTest : public ::testing::Test {
         .WillRepeatedly(
             Invoke(&component_manager_, &ComponentManager::AddCommandHandler));
 
-    config_.Load();
     dev_reg_.reset(new DeviceRegistrationInfo(&config_, &component_manager_,
                                               nullptr, &http_client_, nullptr,
                                               nullptr));

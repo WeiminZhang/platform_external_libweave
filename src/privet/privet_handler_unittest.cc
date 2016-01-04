@@ -196,9 +196,12 @@ TEST_F(PrivetHandlerTest, InvalidAuth) {
 
 TEST_F(PrivetHandlerTest, ExpiredAuth) {
   auth_header_ = "Privet 123";
-  EXPECT_CALL(security_, ParseAccessToken(_, _))
-      .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time()),
-                            Return(UserInfo{AuthScope::kOwner, 1})));
+  EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+      .WillRepeatedly(DoAll(WithArgs<2>(Invoke([](ErrorPtr* error) {
+                              Error::AddTo(error, FROM_HERE, errors::kDomain,
+                                           "authorizationExpired", "");
+                            })),
+                            Return(false)));
   EXPECT_PRED2(IsEqualError, CodeWithReason(403, "authorizationExpired"),
                HandleRequest("/privet/info", "{}"));
 }
@@ -214,6 +217,8 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
       .WillRepeatedly(Return(std::set<PairingType>{}));
   EXPECT_CALL(security_, GetCryptoTypes())
       .WillRepeatedly(Return(std::set<CryptoType>{}));
+  EXPECT_CALL(security_, GetAuthTypes())
+      .WillRepeatedly(Return(std::set<AuthType>{}));
 
   const char kExpected[] = R"({
     'version': '3.0',
@@ -235,8 +240,6 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
     'authentication': {
       'anonymousMaxScope': 'user',
       'mode': [
-        'anonymous',
-        'pairing'
       ],
       'pairing': [
       ],
@@ -247,7 +250,8 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
       'id': '',
       'status': 'disabled'
     },
-    'time': 1410000001000.0
+    'time': 1410000001000.0,
+    'sessionId': 'SessionId'
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }
@@ -286,7 +290,8 @@ TEST_F(PrivetHandlerTest, Info) {
       'anonymousMaxScope': 'none',
       'mode': [
         'anonymous',
-        'pairing'
+        'pairing',
+        'local'
       ],
       'pairing': [
         'pinCode',
@@ -308,7 +313,8 @@ TEST_F(PrivetHandlerTest, Info) {
       'id': 'TestCloudId',
       'status': 'online'
     },
-    'time': 1410000001000.0
+    'time': 1410000001000.0,
+    'sessionId': 'SessionId'
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }
@@ -372,8 +378,11 @@ TEST_F(PrivetHandlerTest, AuthErrorAccessDenied) {
 }
 
 TEST_F(PrivetHandlerTest, AuthErrorInvalidAuthCode) {
-  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
-      .WillRepeatedly(Return(false));
+  auto set_error = [](ErrorPtr* error) {
+    Error::AddTo(error, FROM_HERE, errors::kDomain, "invalidAuthCode", "");
+  };
+  EXPECT_CALL(security_, CreateAccessToken(_, "testToken", _, _, _, _, _))
+      .WillRepeatedly(DoAll(WithArgs<6>(Invoke(set_error)), Return(false)));
   const char kInput[] = R"({
     'mode': 'pairing',
     'requestedScope': 'user',
@@ -386,8 +395,8 @@ TEST_F(PrivetHandlerTest, AuthErrorInvalidAuthCode) {
 TEST_F(PrivetHandlerTest, AuthAnonymous) {
   const char kExpected[] = R"({
     'accessToken': 'GuestAccessToken',
-    'expiresIn': 3600,
-    'scope': 'user',
+    'expiresIn': 15,
+    'scope': 'viewer',
     'tokenType': 'Privet'
   })";
   EXPECT_JSON_EQ(kExpected,
@@ -396,10 +405,11 @@ TEST_F(PrivetHandlerTest, AuthAnonymous) {
 }
 
 TEST_F(PrivetHandlerTest, AuthPairing) {
-  EXPECT_CALL(security_, IsValidPairingCode("testToken"))
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(security_, CreateAccessToken(_))
-      .WillRepeatedly(Return("OwnerAccessToken"));
+  EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
+      .WillRepeatedly(DoAll(SetArgPointee<3>("OwnerAccessToken"),
+                            SetArgPointee<4>(AuthScope::kOwner),
+                            SetArgPointee<5>(base::TimeDelta::FromSeconds(15)),
+                            Return(true)));
   const char kInput[] = R"({
     'mode': 'pairing',
     'requestedScope': 'owner',
@@ -407,11 +417,66 @@ TEST_F(PrivetHandlerTest, AuthPairing) {
   })";
   const char kExpected[] = R"({
     'accessToken': 'OwnerAccessToken',
-    'expiresIn': 3600,
+    'expiresIn': 15,
     'scope': 'owner',
     'tokenType': 'Privet'
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
+}
+
+TEST_F(PrivetHandlerTest, AuthLocalAuto) {
+  EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
+      .WillRepeatedly(DoAll(SetArgPointee<3>("UserAccessToken"),
+                            SetArgPointee<4>(AuthScope::kUser),
+                            SetArgPointee<5>(base::TimeDelta::FromSeconds(15)),
+                            Return(true)));
+  const char kInput[] = R"({
+    'mode': 'local',
+    'requestedScope': 'auto',
+    'authCode': 'localAuthToken'
+  })";
+  const char kExpected[] = R"({
+    'accessToken': 'UserAccessToken',
+    'expiresIn': 15,
+    'scope': 'user',
+    'tokenType': 'Privet'
+  })";
+  EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
+}
+
+TEST_F(PrivetHandlerTest, AuthLocal) {
+  EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
+      .WillRepeatedly(DoAll(SetArgPointee<3>("ManagerAccessToken"),
+                            SetArgPointee<4>(AuthScope::kManager),
+                            SetArgPointee<5>(base::TimeDelta::FromSeconds(15)),
+                            Return(true)));
+  const char kInput[] = R"({
+    'mode': 'local',
+    'requestedScope': 'manager',
+    'authCode': 'localAuthToken'
+  })";
+  const char kExpected[] = R"({
+    'accessToken': 'ManagerAccessToken',
+    'expiresIn': 15,
+    'scope': 'manager',
+    'tokenType': 'Privet'
+  })";
+  EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
+}
+
+TEST_F(PrivetHandlerTest, AuthLocalHighScope) {
+  EXPECT_CALL(security_, CreateAccessToken(_, _, _, _, _, _, _))
+      .WillRepeatedly(DoAll(SetArgPointee<3>("UserAccessToken"),
+                            SetArgPointee<4>(AuthScope::kUser),
+                            SetArgPointee<5>(base::TimeDelta::FromSeconds(1)),
+                            Return(true)));
+  const char kInput[] = R"({
+    'mode': 'local',
+    'requestedScope': 'manager',
+    'authCode': 'localAuthToken'
+  })";
+  EXPECT_PRED2(IsEqualError, CodeWithReason(403, "accessDenied"),
+               HandleRequest("/privet/v3/auth", kInput));
 }
 
 class PrivetHandlerTestWithAuth : public PrivetHandlerTest {
@@ -419,9 +484,9 @@ class PrivetHandlerTestWithAuth : public PrivetHandlerTest {
   void SetUp() override {
     PrivetHandlerTest::SetUp();
     auth_header_ = "Privet 123";
-    EXPECT_CALL(security_, ParseAccessToken(_, _))
-        .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
-                              Return(UserInfo{AuthScope::kOwner, 1})));
+    EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+        .WillRepeatedly(DoAll(
+            SetArgPointee<1>(UserInfo{AuthScope::kOwner, "1"}), Return(true)));
   }
 };
 
@@ -595,9 +660,9 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
 }
 
 TEST_F(PrivetHandlerSetupTest, GcdSetupAsMaster) {
-  EXPECT_CALL(security_, ParseAccessToken(_, _))
-      .WillRepeatedly(DoAll(SetArgPointee<1>(base::Time::Now()),
-                            Return(UserInfo{AuthScope::kManager, 1})));
+  EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+      .WillRepeatedly(DoAll(
+          SetArgPointee<1>(UserInfo{AuthScope::kManager, "1"}), Return(true)));
   const char kInput[] = R"({
     'gcd': {
       'ticketId': 'testTicket',

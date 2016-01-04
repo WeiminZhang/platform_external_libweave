@@ -19,6 +19,12 @@ enum class CryptoType {
   kSpake_p224,
 };
 
+enum class AuthType {
+  kAnonymous,
+  kPairing,
+  kLocal,
+};
+
 enum class WifiType {
   kWifi24,
   kWifi50,
@@ -26,14 +32,15 @@ enum class WifiType {
 
 class UserInfo {
  public:
-  explicit UserInfo(AuthScope scope = AuthScope::kNone, uint64_t user_id = 0)
-      : scope_{scope}, user_id_{scope == AuthScope::kNone ? 0 : user_id} {}
+  explicit UserInfo(AuthScope scope = AuthScope::kNone,
+                    const std::string& user_id = {})
+      : scope_{scope}, user_id_{scope == AuthScope::kNone ? "" : user_id} {}
   AuthScope scope() const { return scope_; }
-  uint64_t user_id() const { return user_id_; }
+  const std::string& user_id() const { return user_id_; }
 
  private:
   AuthScope scope_;
-  uint64_t user_id_;
+  std::string user_id_;
 };
 
 class ConnectionState final {

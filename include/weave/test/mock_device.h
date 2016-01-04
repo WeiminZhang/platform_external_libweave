@@ -30,6 +30,7 @@ class MockDevice : public Device {
                bool(const std::string& name,
                     const std::vector<std::string>& traits,
                     ErrorPtr* error));
+  MOCK_METHOD2(RemoveComponent, bool(const std::string& name, ErrorPtr* error));
   MOCK_METHOD1(AddComponentTreeChangedCallback,
                void(const base::Closure& callback));
   MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
