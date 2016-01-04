@@ -106,6 +106,10 @@ bool DeviceManager::AddComponent(const std::string& name,
   return component_manager_->AddComponent("", name, traits, error);
 }
 
+bool DeviceManager::RemoveComponent(const std::string& name, ErrorPtr* error) {
+  return component_manager_->RemoveComponent("", name, error);
+}
+
 void DeviceManager::AddComponentTreeChangedCallback(
     const base::Closure& callback) {
   component_manager_->AddComponentTreeChangedCallback(callback);
