@@ -99,6 +99,63 @@ bool ComponentManagerImpl::AddComponentArrayItem(
   return true;
 }
 
+bool ComponentManagerImpl::RemoveComponent(const std::string& path,
+                                           const std::string& name,
+                                           ErrorPtr* error) {
+  base::DictionaryValue* root = &components_;
+  if (!path.empty()) {
+    root = FindComponentGraftNode(path, error);
+    if (!root)
+      return false;
+  }
+
+  if (!root->RemoveWithoutPathExpansion(name, nullptr)) {
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                       errors::commands::kInvalidState,
+                       "Component '%s' does not exist at path '%s'",
+                       name.c_str(), path.c_str());
+    return false;
+  }
+
+  for (const auto& cb : on_componet_tree_changed_)
+    cb.Run();
+  return true;
+}
+
+bool ComponentManagerImpl::RemoveComponentArrayItem(const std::string& path,
+                                                    const std::string& name,
+                                                    size_t index,
+                                                    ErrorPtr* error) {
+  base::DictionaryValue* root = &components_;
+  if (!path.empty()) {
+    root = FindComponentGraftNode(path, error);
+    if (!root)
+      return false;
+  }
+
+  base::ListValue* array_value = nullptr;
+  if (!root->GetListWithoutPathExpansion(name, &array_value)) {
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
+                       errors::commands::kInvalidState,
+                       "There is no component array named '%s' at path '%s'",
+                       name.c_str(), path.c_str());
+    return false;
+  }
+
+  if (!array_value->Remove(index, nullptr)) {
+    Error::AddToPrintf(
+        error, FROM_HERE, errors::commands::kDomain,
+        errors::commands::kInvalidState,
+        "Component array '%s' at path '%s' does not have an element %zu",
+        name.c_str(), path.c_str(), index);
+    return false;
+  }
+
+  for (const auto& cb : on_componet_tree_changed_)
+    cb.Run();
+  return true;
+}
+
 void ComponentManagerImpl::AddComponentTreeChangedCallback(
     const base::Closure& callback) {
   on_componet_tree_changed_.push_back(callback);

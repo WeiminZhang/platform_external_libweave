@@ -62,6 +62,10 @@ class Device {
                             const std::vector<std::string>& traits,
                             ErrorPtr* error) = 0;
 
+  // Removes an existing component instance from device.
+  virtual bool RemoveComponent(const std::string& name,
+                               ErrorPtr* error) = 0;
+
   // Sets callback which is called when new components are added.
   virtual void AddComponentTreeChangedCallback(
       const base::Closure& callback) = 0;

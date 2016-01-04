@@ -43,6 +43,7 @@ class DeviceManager final : public Device {
   bool AddComponent(const std::string& name,
                     const std::vector<std::string>& traits,
                     ErrorPtr* error) override;
+  bool RemoveComponent(const std::string& name, ErrorPtr* error) override;
   void AddComponentTreeChangedCallback(const base::Closure& callback) override;
   const base::DictionaryValue& GetComponents() const override;
   bool SetStatePropertiesFromJson(const std::string& component,

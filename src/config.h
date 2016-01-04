@@ -46,8 +46,6 @@ class Config final {
   void AddOnChangedCallback(const OnChangedCallback& callback);
   const Config::Settings& GetSettings() const;
 
-  void Load();
-
   // Allows editing of config. Makes sure that callbacks were called and changes
   // were saved.
   // User can commit changes by calling Commit method or by destroying the
@@ -120,6 +118,7 @@ class Config final {
   };
 
  private:
+  void Load();
   void Save();
 
   Settings settings_;

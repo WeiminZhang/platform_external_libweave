@@ -69,8 +69,8 @@ const char kInfoAuthAnonymousMaxScopeKey[] = "anonymousMaxScope";
 const char kInfoWifiCapabilitiesKey[] = "capabilities";
 const char kInfoWifiSsidKey[] = "ssid";
 const char kInfoWifiHostedSsidKey[] = "hostedSsid";
-
 const char kInfoTimeKey[] = "time";
+const char kInfoSessionIdKey[] = "sessionId";
 
 const char kPairingKey[] = "pairing";
 const char kPairingSessionIdKey[] = "sessionId";
@@ -78,9 +78,6 @@ const char kPairingDeviceCommitmentKey[] = "deviceCommitment";
 const char kPairingClientCommitmentKey[] = "clientCommitment";
 const char kPairingFingerprintKey[] = "certFingerprint";
 const char kPairingSignatureKey[] = "certSignature";
-
-const char kAuthTypeAnonymousValue[] = "anonymous";
-const char kAuthTypePairingValue[] = "pairing";
 
 const char kAuthModeKey[] = "mode";
 const char kAuthCodeKey[] = "authCode";
@@ -119,12 +116,6 @@ const char kWaitTimeoutKey[] = "waitTimeout";
 
 const char kInvalidParamValueFormat[] = "Invalid parameter: '%s'='%s'";
 
-const int kAccessTokenExpirationSeconds = 3600;
-
-// Threshold to reduce probability of expiration because of clock difference
-// between device and client. Value is just a guess.
-const int kAccessTokenExpirationThresholdSeconds = 300;
-
 template <class Container>
 std::unique_ptr<base::ListValue> ToValue(const Container& list) {
   std::unique_ptr<base::ListValue> value_list(new base::ListValue());
@@ -157,14 +148,6 @@ struct {
     {errors::kNotImplemented, http::kNotSupported},
     {errors::kAlreadyClaimed, http::kDenied},
 };
-
-AuthScope AuthScopeFromString(const std::string& scope, AuthScope auto_scope) {
-  if (scope == kAuthScopeAutoValue)
-    return auto_scope;
-  AuthScope scope_id = AuthScope::kNone;
-  StringToEnum(scope, &scope_id);
-  return scope_id;
-}
 
 std::string GetAuthTokenFromAuthHeader(const std::string& auth_header) {
   return SplitAtFirst(auth_header, " ", true).second;
@@ -270,13 +253,8 @@ std::unique_ptr<base::DictionaryValue> CreateInfoAuthSection(
   auth->Set(kPairingKey, pairing_types.release());
 
   std::unique_ptr<base::ListValue> auth_types(new base::ListValue());
-  auth_types->AppendString(kAuthTypeAnonymousValue);
-  auth_types->AppendString(kAuthTypePairingValue);
-
-  // TODO(vitalybuka): Implement cloud auth.
-  // if (cloud.GetConnectionState().IsStatusEqual(ConnectionState::kOnline)) {
-  //   auth_types->AppendString(kAuthTypeCloudValue);
-  // }
+  for (AuthType type : security.GetAuthTypes())
+    auth_types->AppendString(EnumToString(type));
   auth->Set(kAuthModeKey, auth_types.release());
 
   std::unique_ptr<base::ListValue> crypto_types(new base::ListValue());
@@ -517,24 +495,9 @@ void PrivetHandler::HandleRequest(const std::string& api,
     return ReturnError(*error, callback);
   }
   UserInfo user_info;
-  if (token != kAuthTypeAnonymousValue) {
-    base::Time time;
-    user_info = security_->ParseAccessToken(token, &time);
-    if (user_info.scope() == AuthScope::kNone) {
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidAuthorization,
-                         "Invalid access token: %s", token.c_str());
+  if (token != EnumToString(AuthType::kAnonymous)) {
+    if (!security_->ParseAccessToken(token, &user_info, &error))
       return ReturnError(*error, callback);
-    }
-    time += base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
-    time +=
-        base::TimeDelta::FromSeconds(kAccessTokenExpirationThresholdSeconds);
-    if (time < clock_->Now()) {
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kAuthorizationExpired, "Token expired: %s",
-                         token.c_str());
-      return ReturnError(*error, callback);
-    }
   }
 
   if (handler->second.scope > user_info.scope()) {
@@ -607,6 +570,7 @@ void PrivetHandler::HandleInfo(const base::DictionaryValue&,
   output.Set(kGcdKey, CreateGcdSection(*cloud_).release());
 
   output.SetDouble(kInfoTimeKey, clock_->Now().ToJsTime());
+  output.SetString(kInfoSessionIdKey, security_->CreateSessionId());
 
   callback.Run(http::kOk, output);
 }
@@ -696,55 +660,58 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   ErrorPtr error;
 
   std::string auth_code_type;
-  input.GetString(kAuthModeKey, &auth_code_type);
-
-  std::string auth_code;
-  input.GetString(kAuthCodeKey, &auth_code);
-
-  AuthScope max_auth_scope = AuthScope::kNone;
-  if (auth_code_type == kAuthTypeAnonymousValue) {
-    max_auth_scope = GetAnonymousMaxScope(*cloud_, wifi_);
-  } else if (auth_code_type == kAuthTypePairingValue) {
-    if (!security_->IsValidPairingCode(auth_code)) {
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidAuthCode, kInvalidParamValueFormat,
-                         kAuthCodeKey, auth_code.c_str());
-      return ReturnError(*error, callback);
-    }
-    max_auth_scope = AuthScope::kOwner;
-  } else {
+  AuthType auth_type{};
+  if (!input.GetString(kAuthModeKey, &auth_code_type) ||
+      !StringToEnum(auth_code_type, &auth_type)) {
     Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                        errors::kInvalidAuthMode, kInvalidParamValueFormat,
                        kAuthModeKey, auth_code_type.c_str());
     return ReturnError(*error, callback);
   }
 
+  AuthScope desired_scope = AuthScope::kOwner;
+  AuthScope acceptable_scope = AuthScope::kViewer;
+
   std::string requested_scope;
   input.GetString(kAuthRequestedScopeKey, &requested_scope);
+  if (requested_scope != kAuthScopeAutoValue) {
+    if (!StringToEnum(requested_scope, &desired_scope)) {
+      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
+                         errors::kInvalidRequestedScope,
+                         kInvalidParamValueFormat, kAuthRequestedScopeKey,
+                         requested_scope.c_str());
+      return ReturnError(*error, callback);
+    }
+    acceptable_scope = std::max(desired_scope, acceptable_scope);
+  }
 
-  AuthScope requested_auth_scope =
-      AuthScopeFromString(requested_scope, max_auth_scope);
-  if (requested_auth_scope == AuthScope::kNone) {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidRequestedScope, kInvalidParamValueFormat,
-                       kAuthRequestedScopeKey, requested_scope.c_str());
+  if (auth_type == AuthType::kAnonymous)
+    desired_scope = GetAnonymousMaxScope(*cloud_, wifi_);
+
+  std::string auth_code;
+  input.GetString(kAuthCodeKey, &auth_code);
+
+  std::string access_token;
+  base::TimeDelta access_token_ttl;
+  AuthScope access_token_scope = AuthScope::kNone;
+  if (!security_->CreateAccessToken(auth_type, auth_code, desired_scope,
+                                    &access_token, &access_token_scope,
+                                    &access_token_ttl, &error)) {
     return ReturnError(*error, callback);
   }
 
-  if (requested_auth_scope > max_auth_scope) {
+  if (access_token_scope < acceptable_scope) {
     Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
                        errors::kAccessDenied, "Scope '%s' is not allowed",
-                       EnumToString(requested_auth_scope).c_str());
+                       EnumToString(access_token_scope).c_str());
     return ReturnError(*error, callback);
   }
 
   base::DictionaryValue output;
-  output.SetString(kAuthAccessTokenKey,
-                   security_->CreateAccessToken(
-                       UserInfo{requested_auth_scope, ++last_user_id_}));
+  output.SetString(kAuthAccessTokenKey, access_token);
   output.SetString(kAuthTokenTypeKey, kAuthorizationHeaderPrefix);
-  output.SetInteger(kAuthExpiresInKey, kAccessTokenExpirationSeconds);
-  output.SetString(kAuthScopeKey, EnumToString(requested_auth_scope));
+  output.SetInteger(kAuthExpiresInKey, access_token_ttl.InSeconds());
+  output.SetString(kAuthScopeKey, EnumToString(access_token_scope));
 
   callback.Run(http::kOk, output);
 }

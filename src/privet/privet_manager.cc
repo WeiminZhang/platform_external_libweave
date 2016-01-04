@@ -62,9 +62,8 @@ void Manager::Start(Network* network,
       CloudDelegate::CreateDefault(task_runner_, device, component_manager);
   cloud_observer_.Add(cloud_.get());
 
-  security_.reset(new SecurityManager(
-      auth_manager, device->GetSettings().pairing_modes,
-      device->GetSettings().embedded_code, disable_security_, task_runner_));
+  security_.reset(new SecurityManager(device->GetMutableConfig(), auth_manager,
+                                      task_runner_));
   network->AddConnectionChangedCallback(
       base::Bind(&Manager::OnConnectivityChanged, base::Unretained(this)));
 
