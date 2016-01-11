@@ -19,6 +19,9 @@ const char kTraits[] = R"({
         "minimalRole": "user",
         "parameters": {
           "name": { "type": "string" }
+        },
+        "results": {
+          "reply": { "type": "string" }
         }
       },
       "ping": {
@@ -107,10 +110,9 @@ class SampleHandler {
                               base::FundamentalValue{++ping_count_}, nullptr);
     LOG(INFO) << "New component state: " << device_->GetComponents();
 
-    base::DictionaryValue result;
-    cmd->Complete(result, nullptr);
+    cmd->Complete({}, nullptr);
 
-    LOG(INFO) << cmd->GetName() << " command finished: " << result;
+    LOG(INFO) << cmd->GetName() << " command finished";
   }
 
   void OnCountdownCommand(const std::weak_ptr<weave::Command>& command) {
@@ -146,10 +148,9 @@ class SampleHandler {
       return;
     }
 
-    base::DictionaryValue result;
-    cmd->Complete(result, nullptr);
+    cmd->Complete({}, nullptr);
     LOG(INFO) << "countdown finished";
-    LOG(INFO) << cmd->GetName() << " command finished: " << result;
+    LOG(INFO) << cmd->GetName() << " command finished";
   }
 
   weave::Device* device_{nullptr};
