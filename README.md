@@ -57,7 +57,7 @@ examples/prerequisites.sh
 examples/build.sh
 ```
 
-### Execute example (see this [README](examples/daemon/README.md) for details):
+### Execute example (see this [README](/examples/daemon/README.md) for details):
 
 ```
 sudo out/Debug/weave_daemon
