@@ -1,131 +1,150 @@
-Overview
---------
-libWeave is the library with device side implementation of Weave
-protocol.
+# Overview
 
-Sources
--------
+libWeave is the library with device side implementation of Weave protocol.
+
+# Sources
+
 Sources are located in git repository at
 https://weave.googlesource.com/weave/libweave/
 
 
-Install Repo
--------
-1. Make sure you have a bin/ directory in your home directory
+# Install Repo
+
+Make sure you have a bin/ directory in your home directory
 and that it is included in your path:
 
-    mkdir ~/bin
-    PATH=~/bin:$PATH
+```
+mkdir ~/bin
+PATH=~/bin:$PATH
+```
 
-2. Download the Repo tool and ensure that it is executable:
+Download the Repo tool and ensure that it is executable:
 
-    curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-    chmod a+x ~/bin/repo
+```
+curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+chmod a+x ~/bin/repo
+```
 
-Checkout code
--------
-    repo init -u https://weave.googlesource.com/weave/manifest
-    repo sync
+# Checkout code
 
-Directory structure
--------------------
-Includes to be used by device code:
-  include/
+```
+repo init -u https://weave.googlesource.com/weave/manifest
+repo sync
+```
 
-Implementation sources:
-  src/
+# Directory structure
 
-Example of device code:
-  examples/
-
-Dependencies:
-  third_party/
-
-Build files:
-  libweave_standalone.gyp
-  libweave_common.gypi
-
-Quick start on Debian/Ubuntu
-----------------------------
-
-Install prerequisites:
-
-  examples/prerequisites.sh
-
-Build library, tests, run tests, build example:
-
-  examples/build.sh
-
-Execute example (check examples/daemon/README for details):
-
-  sudo out/Debug/weave_daemon
+| Path           | Description                        |
+|----------------|------------------------------------|
+| include/       | Includes to be used by device code |
+| src/           | Implementation sources             |
+| examples/      | Example of device code             |
+| third_party/   | Dependencies                       |
+| \*.gyp\* files | Build files                        |
 
 
-Prerequisites
--------------
-Common:
+# Quick start on Debian/Ubuntu
 
-  autoconf
-  automake
-  binutils
-  libtool
-  gyp
-  libexpat1-dev
+### Install prerequisites
 
-For tests:
+```
+examples/prerequisites.sh
+```
 
-  gtest
-  gmock
+### Build library, tests, run tests, build example
 
-For examples:
+```
+examples/build.sh
+```
 
-  hostapd
-  libavahi-client-dev
-  libcurl4-openssl-dev
-  libevent 2.1.x-alpha
+### Execute example (see this [README](examples/daemon/README.md) for details):
+
+```
+sudo out/Debug/weave_daemon
+```
+
+# Prerequisites
+
+### Common
+
+  - autoconf
+  - automake
+  - binutils
+  - libtool
+  - gyp
+  - libexpat1-dev
+
+### For tests
+
+  - gtest
+  - gmock
+
+### For examples
+
+  - hostapd
+  - libavahi-client-dev
+  - libcurl4-openssl-dev
+  - libevent 2.1.x-alpha
 
 
-Compiling
----------
-Everywhere below Debug can be replaced with Release.
+# Compiling
 
-Generate build files:
+### Generate build files
 
-  gyp -I libweave_common.gypi --toplevel-dir=. --depth=. \
-      -f make libweave_standalone.gyp
+```
+gyp -I libweave_common.gypi --toplevel-dir=. --depth=. \
+    -f make libweave_standalone.gyp
+```
 
-Build library with tests:
+### Build library with tests
 
-  make
+```
+make
+```
 
-Build library only:
+### Build library only
 
-  make libweave
+```
+make libweave
+```
 
-Testing
--------
-Run unittests tests:
+# Testing
 
-  out/Debug/libweave_testrunner
-  out/Debug/libweave_exports_testrunner
+### Run unittests tests
 
-Making changes
---------------
+```
+out/Debug/libweave_testrunner
+out/Debug/libweave_exports_testrunner
+```
+
+# Making changes
+
+### Configure git
 Make sure to have correct user in local or global config e.g.:
 
-  git config --local user.name "John Doe"
-  git config --local user.email johndoe@example.com
+```
+git config --local user.name "User Name"
+git config --local user.email user.name@example.com
+```
 
-Start local branch
+### Start local branch
 
-  repo start <branch name> .
+```
+repo start <branch name> .
+```
 
-Edit code and commit locally e.g.:
+### Edit code and commit locally e.g.
 
-  git commit -a -v
+```
+git commit -a -v
+```
 
-Upload CL:
+### Upload CL
 
-  repo upload .
+```
+repo upload .
+```
+
+### Request code review
 
 Go to the url from the output of "repo upload" and add reviewers.
