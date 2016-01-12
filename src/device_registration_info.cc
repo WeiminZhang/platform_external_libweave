@@ -36,6 +36,7 @@ namespace weave {
 const char kErrorDomainOAuth2[] = "oauth2";
 const char kErrorDomainGCD[] = "gcd";
 const char kErrorDomainGCDServer[] = "gcd_server";
+const char kErrorAlreayRegistered[] = "already_registered";
 
 namespace {
 
@@ -523,6 +524,14 @@ void DeviceRegistrationInfo::RegisterDeviceError(const DoneCallback& callback,
 
 void DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
                                             const DoneCallback& callback) {
+  if (HaveRegistrationCredentials()) {
+    ErrorPtr error;
+    Error::AddTo(&error, FROM_HERE, errors::kErrorDomain,
+                 kErrorAlreayRegistered,
+                 "Unable to register already registered device");
+    return RegisterDeviceError(callback, std::move(error));
+  }
+
   std::unique_ptr<base::DictionaryValue> device_draft = BuildDeviceResource();
   CHECK(device_draft);
 
@@ -835,7 +844,7 @@ bool DeviceRegistrationInfo::UpdateServiceConfig(
     const std::string& service_url,
     ErrorPtr* error) {
   if (HaveRegistrationCredentials()) {
-    Error::AddTo(error, FROM_HERE, errors::kErrorDomain, "already_registered",
+    Error::AddTo(error, FROM_HERE, errors::kErrorDomain, kErrorAlreayRegistered,
                  "Unable to change config for registered device");
     return false;
   }
