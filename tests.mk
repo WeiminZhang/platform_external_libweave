@@ -5,6 +5,14 @@
 ###
 # tests
 
+TEST_FLAGS ?= \
+	--gtest_break_on_failure
+
+TEST_ENV ?=
+ifeq (1, $(CLANG))
+  TEST_ENV += ASAN_SYMBOLIZER_PATH=$(shell which llvm-symbolizer-3.6)
+endif
+
 weave_test_obj_files := $(WEAVE_TEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
 # We don't need libgtest.a, but the headers files in third_party/include.
@@ -26,7 +34,7 @@ out/$(BUILD_MODE)/libweave_testrunner : $(weave_unittest_obj_files) $(third_part
 	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lgmock -lgtest -lpthread -lrt -Lthird_party/lib
 
 test : out/$(BUILD_MODE)/libweave_testrunner
-	$<
+	$(TEST_ENV) $< $(TEST_FLAGS)
 
 ###
 # export tests
@@ -42,7 +50,9 @@ out/$(BUILD_MODE)/libweave_exports_testrunner : $(weave_exports_unittest_obj_fil
 	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lgmock -lgtest -lpthread -lrt -Lthird_party/lib -Wl,-rpath=out/$(BUILD_MODE)/
 
 export-test : out/$(BUILD_MODE)/libweave_exports_testrunner
-	$<
+	$(TEST_ENV) $< $(TEST_FLAGS)
 
-.PHONY : test export-test
+testall : test export-test
+
+.PHONY : test export-test testall
 

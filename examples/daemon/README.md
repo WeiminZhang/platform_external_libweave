@@ -4,16 +4,19 @@ The wrapper implements OS dependent services for libweave
 
 # Building
 
-### prepare environment
+### Build daemon examples
+
+The example binaries land in the out/Debug/ directory build all of them at once:
+
 ```
-examples/prerequisites.sh
+make all-examples
 ```
 
-### build daemon
+...or one at a time.
+
 ```
-examples/build.sh
+make out/Debug/weave_daemon_light
 ```
-Binaries for daemon are in the out/ directory.
 
 # Prepare Host OS
 

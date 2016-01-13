@@ -34,13 +34,13 @@ repo sync
 
 # Directory structure
 
-| Path           | Description                        |
-|----------------|------------------------------------|
-| include/       | Includes to be used by device code |
-| src/           | Implementation sources             |
-| examples/      | Example of device code             |
-| third_party/   | Dependencies                       |
-| \*.gyp\* files | Build files                        |
+| Path                     | Description                        |
+|--------------------------|------------------------------------|
+| include/                 | Includes to be used by device code |
+| src/                     | Implementation sources             |
+| examples/                | Example of device code             |
+| third_party/             | Dependencies                       |
+| Makefile, \*.mk files    | Build files                        |
 
 
 # Quick start on Debian/Ubuntu
@@ -48,19 +48,8 @@ repo sync
 ### Install prerequisites
 
 ```
-examples/prerequisites.sh
-```
-
-### Build library, tests, run tests, build example
-
-```
-examples/build.sh
-```
-
-### Execute example (see this [README](/examples/daemon/README.md) for details):
-
-```
-sudo out/Debug/weave_daemon
+sudo apt-get update
+sudo apt-get install autoconf automake binutils g++ hostapd libavahi-client-dev libcurl4-openssl-dev libexpat1-dev libnl-3-dev libnl-route-3-dev libssl-dev libtool
 ```
 
 # Prerequisites
@@ -71,50 +60,63 @@ sudo out/Debug/weave_daemon
   - automake
   - binutils
   - libtool
-  - gyp
   - libexpat1-dev
 
 ### For tests
 
-  - gtest
-  - gmock
+  - gtest (included; see third_party/get_gtest.sh)
+  - gmock (included; see third_party/get_gtest.sh)
 
 ### For examples
 
   - hostapd
   - libavahi-client-dev
   - libcurl4-openssl-dev
-  - libevent 2.1.x-alpha
+  - libevent 2.1.x-alpha (included; see third_party/get_libevent.sh)
 
 
 # Compiling
 
-### Generate build files
+The `make --jobs/-j` flag is encouraged, to speed up build time. For example
 
 ```
-gyp -I libweave_common.gypi --toplevel-dir=. --depth=. \
-    -f make libweave_standalone.gyp
+make all -j
 ```
 
-### Build library with tests
+### Build library
 
 ```
 make
-```
-
-### Build library only
 
 ```
-make libweave
+
+or
+
 ```
+make out/Debug/libweave.so
+```
+
+### Build examples
+
+```
+make examples-all
+```
+
+See [the examples README](/examples/daemon/README.md) for details.
 
 # Testing
 
-### Run unittests tests
+### Run tests
 
 ```
-out/Debug/libweave_testrunner
-out/Debug/libweave_exports_testrunner
+make test
+make export-test
+```
+
+or
+
+```
+make testall
 ```
 
 # Making changes
