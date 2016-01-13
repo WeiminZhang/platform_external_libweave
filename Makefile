@@ -49,6 +49,23 @@ CFLAGS_C := \
 CFLAGS_CC := \
 	-std=c++11
 
+comma := ,
+ifeq (1, $(CLANG))
+  CC = $(shell which clang-3.6)
+  CXX = $(shell which clang++-3.6)
+  CFLAGS := $(filter-out -Wl$(comma)--exclude-libs$(comma)ALL,$(CFLAGS))
+  CFLAGS += \
+    -fno-omit-frame-pointer \
+    -Wno-deprecated-register \
+    -Wno-inconsistent-missing-override
+  ifeq (Debug, $(BUILD_MODE))
+    CFLAGS += \
+      -fsanitize=address
+    LDFLAGS += \
+      -fsanitize=address
+  endif
+endif
+
 include file_lists.mk third_party.mk examples.mk tests.mk
 
 ###
