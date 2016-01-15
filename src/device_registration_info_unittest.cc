@@ -153,11 +153,14 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
     dev_reg_->Start();
   }
 
-  void ReloadSettings() {
+  void ReloadSettings(bool registered = true) {
     base::DictionaryValue dict;
-    dict.SetString("refresh_token", test_data::kRefreshToken);
-    dict.SetString("cloud_id", test_data::kCloudId);
-    dict.SetString("robot_account", test_data::kRobotAccountEmail);
+    dict.SetInteger("version", 1);
+    if (registered) {
+      dict.SetString("refresh_token", test_data::kRefreshToken);
+      dict.SetString("cloud_id", test_data::kCloudId);
+      dict.SetString("robot_account", test_data::kRobotAccountEmail);
+    }
     dict.SetString("device_id", test_data::kDeviceId);
     std::string json_string;
     base::JSONWriter::WriteWithOptions(
@@ -373,7 +376,7 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
 }
 
 TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
-  ReloadSettings();
+  ReloadSettings(false);
 
   auto json_traits = CreateDictionaryValue(R"({
     'base': {
@@ -543,6 +546,28 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
   dev_reg_->RegisterDevice(
       test_data::kClaimTicketId, base::Bind([this, &done](ErrorPtr error) {
         EXPECT_FALSE(error);
+        done = true;
+        task_runner_.Break();
+        EXPECT_EQ(GcdState::kConnecting, GetGcdState());
+
+        // Validate the device info saved to storage...
+        EXPECT_EQ(test_data::kCloudId, dev_reg_->GetSettings().cloud_id);
+        EXPECT_EQ(test_data::kRefreshToken,
+                  dev_reg_->GetSettings().refresh_token);
+        EXPECT_EQ(test_data::kRobotAccountEmail,
+                  dev_reg_->GetSettings().robot_account);
+      }));
+  task_runner_.Run();
+  EXPECT_TRUE(done);
+}
+
+TEST_F(DeviceRegistrationInfoTest, ReRegisterDevice) {
+  ReloadSettings();
+
+  bool done = false;
+  dev_reg_->RegisterDevice(
+      test_data::kClaimTicketId, base::Bind([this, &done](ErrorPtr error) {
+        EXPECT_TRUE(error->HasError("weave", "already_registered"));
         done = true;
         task_runner_.Break();
         EXPECT_EQ(GcdState::kConnecting, GetGcdState());
