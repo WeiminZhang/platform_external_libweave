@@ -13,6 +13,7 @@
 #include <base/callback.h>
 #include <base/time/time.h>
 #include <weave/enum_to_string.h>
+#include <weave/error.h>
 #include <weave/settings.h>
 
 namespace weave {
@@ -48,9 +49,13 @@ namespace provider {
 // persistent storage (file, flash, etc).
 // For example:
 //   void FileConfigStore::SaveSettings(const std::string& name,
-//                                      const std::string& settings) {
+//                                      const std::string& settings,
+//                                      const DoneCallback& callback) {
 //     std::ofstream str("/var/lib/weave/weave_" + name + ".json");
 //     str << settings;
+//     if (!callback.is_null())
+//       task_runner_->PostDelayedTask(FROM_HERE, base::Bind(callback, nullptr),
+//                                     {});
 //   }
 // It is highly recommended to protected data using encryption with
 // hardware backed key.
@@ -75,8 +80,10 @@ class ConfigStore {
   // modifications. Data stored in settings can be sensitive, so it's highly
   // recommended to protect data, e.g. using encryption.
   // |name| is the name of settings blob. Could be used as filename.
+  // Implementation must call or post callback
   virtual void SaveSettings(const std::string& name,
-                            const std::string& settings) = 0;
+                            const std::string& settings,
+                            const DoneCallback& callback) = 0;
 
   // Deprecated: only for migration of old configs to version with |name|.
   virtual std::string LoadSettings() = 0;

@@ -18,6 +18,7 @@
 #include "src/data_encoding.h"
 #include "src/privet/privet_types.h"
 #include "src/string_utils.h"
+#include "src/bind_lambda.h"
 
 namespace weave {
 
@@ -271,7 +272,9 @@ void Config::Save() {
   base::JSONWriter::WriteWithOptions(
       dict, base::JSONWriter::OPTIONS_PRETTY_PRINT, &json_string);
 
-  config_store_->SaveSettings(kConfigName, json_string);
+  config_store_->SaveSettings(
+      kConfigName, json_string,
+      base::Bind([](ErrorPtr error) { CHECK(!error); }));
 }
 
 Config::Transaction::~Transaction() {
