@@ -36,8 +36,8 @@ namespace provider {
 // Implementation of LoadSettings() method should load previously
 // stored settings from the persistent storage (file, flash, etc).
 // For example:
-//   std::string FileConfigStore::LoadSettings() {
-//     std::ifstream str("/var/lib/weave/weave_settings.json");
+//   std::string FileConfigStore::LoadSettings(const std::string& name) {
+//     std::ifstream str("/var/lib/weave/weave_" + name + ".json");
 //     return std::string(std::istreambuf_iterator<char>(str),
 //                        std::istreambuf_iterator<char>());
 //   }
@@ -47,8 +47,9 @@ namespace provider {
 // Implementation of SaveSettings(...) method should store data in the
 // persistent storage (file, flash, etc).
 // For example:
-//   void FileConfigStore::SaveSettings(const std::string& settings) {
-//     std::ofstream str(kSettingsPath);
+//   void FileConfigStore::SaveSettings(const std::string& name,
+//                                      const std::string& settings) {
+//     std::ofstream str("/var/lib/weave/weave_" + name + ".json");
 //     str << settings;
 //   }
 // It is highly recommended to protected data using encryption with
@@ -67,12 +68,18 @@ class ConfigStore {
 
   // Returns settings saved by SaveSettings during last run of libweave.
   // Implementation should return data as-is without parsing or modifications.
-  virtual std::string LoadSettings() = 0;
+  // |name| is the name of settings blob. Could be used as filename.
+  virtual std::string LoadSettings(const std::string& name) = 0;
 
   // Saves settings. Implementation should save data as-is without parsing or
   // modifications. Data stored in settings can be sensitive, so it's highly
   // recommended to protect data, e.g. using encryption.
-  virtual void SaveSettings(const std::string& settings) = 0;
+  // |name| is the name of settings blob. Could be used as filename.
+  virtual void SaveSettings(const std::string& name,
+                            const std::string& settings) = 0;
+
+  // Deprecated: only for migration of old configs to version with |name|.
+  virtual std::string LoadSettings() = 0;
 
  protected:
   virtual ~ConfigStore() {}

@@ -205,7 +205,8 @@ class WeaveTest : public ::testing::Test {
   }
 
   void InitConfigStore() {
-    EXPECT_CALL(config_store_, SaveSettings("")).WillRepeatedly(Return());
+    EXPECT_CALL(config_store_, SaveSettings("config", _))
+        .WillRepeatedly(Return());
   }
 
   void InitNetwork() {
