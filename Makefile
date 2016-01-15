@@ -66,6 +66,11 @@ ifeq (1, $(CLANG))
   endif
 endif
 
+# Headers dependencies.
+CFLAGS += -MMD
+OBJFILES = $(shell find out/$(BUILD_MODE)/ -type f -name '*.o')
+-include $(OBJFILES:.o=.d)
+
 ###
 # libweave.so
 
