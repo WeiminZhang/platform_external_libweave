@@ -10,18 +10,22 @@
 #include <vector>
 
 #include <weave/provider/config_store.h>
+#include <weave/provider/task_runner.h>
 
 namespace weave {
 namespace examples {
 
 class FileConfigStore : public provider::ConfigStore {
  public:
-  FileConfigStore(bool disable_security, const std::string& model_id);
+  FileConfigStore(bool disable_security,
+                  const std::string& model_id,
+                  provider::TaskRunner* task_runner);
 
   bool LoadDefaults(Settings* settings) override;
   std::string LoadSettings(const std::string& name) override;
   void SaveSettings(const std::string& name,
-                    const std::string& settings) override;
+                    const std::string& settings,
+                    const DoneCallback& callback) override;
 
   std::string LoadSettings() override;
 
@@ -29,6 +33,7 @@ class FileConfigStore : public provider::ConfigStore {
   std::string GetPath(const std::string& name) const;
   const bool disable_security_;
   const std::string model_id_;
+  provider::TaskRunner* task_runner_{nullptr};
 };
 
 }  // namespace examples

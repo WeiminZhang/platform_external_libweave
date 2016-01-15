@@ -258,9 +258,10 @@ TEST_F(ConfigTest, Setters) {
 
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
 
-  EXPECT_CALL(config_store_, SaveSettings(kConfigName, _))
-      .WillOnce(WithArgs<1>(Invoke([](const std::string& json) {
-        auto expected = R"({
+  EXPECT_CALL(config_store_, SaveSettings(kConfigName, _, _))
+      .WillOnce(WithArgs<1, 2>(
+          Invoke([](const std::string& json, const DoneCallback& callback) {
+            auto expected = R"({
           'version': 1,
           'api_key': 'set_api_key',
           'client_id': 'set_client_id',
@@ -281,8 +282,9 @@ TEST_F(ConfigTest, Setters) {
           'secret': 'AQIDBAU=',
           'service_url': 'set_service_url'
         })";
-        EXPECT_JSON_EQ(expected, *test::CreateValue(json));
-      })));
+            EXPECT_JSON_EQ(expected, *test::CreateValue(json));
+            callback.Run(nullptr);
+          })));
 
   change.Commit();
 }

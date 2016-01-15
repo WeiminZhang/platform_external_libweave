@@ -12,14 +12,19 @@
 #include <string>
 #include <vector>
 
+#include <base/bind.h>
+
 namespace weave {
 namespace examples {
 
 const char kSettingsDir[] = "/var/lib/weave/";
 
 FileConfigStore::FileConfigStore(bool disable_security,
-                                 const std::string& model_id)
-    : disable_security_{disable_security}, model_id_{model_id} {}
+                                 const std::string& model_id,
+                                 provider::TaskRunner* task_runner)
+    : disable_security_{disable_security},
+      model_id_{model_id},
+      task_runner_{task_runner} {}
 
 std::string FileConfigStore::GetPath(const std::string& name) const {
   std::string path{kSettingsDir};
@@ -72,11 +77,14 @@ std::string FileConfigStore::LoadSettings(const std::string& name) {
 }
 
 void FileConfigStore::SaveSettings(const std::string& name,
-                                   const std::string& settings) {
+                                   const std::string& settings,
+                                   const DoneCallback& callback) {
   CHECK(mkdir(kSettingsDir, S_IRWXU) == 0 || errno == EEXIST);
   LOG(INFO) << "Saving settings to " << GetPath(name);
   std::ofstream str(GetPath(name));
   str << settings;
+  if (!callback.is_null())
+    task_runner_->PostDelayedTask(FROM_HERE, base::Bind(callback, nullptr), {});
 }
 
 }  // namespace examples
