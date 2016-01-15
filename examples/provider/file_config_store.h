@@ -19,13 +19,16 @@ class FileConfigStore : public provider::ConfigStore {
   FileConfigStore(bool disable_security, const std::string& model_id);
 
   bool LoadDefaults(Settings* settings) override;
+  std::string LoadSettings(const std::string& name) override;
+  void SaveSettings(const std::string& name,
+                    const std::string& settings) override;
+
   std::string LoadSettings() override;
-  void SaveSettings(const std::string& settings) override;
 
  private:
+  std::string GetPath(const std::string& name) const;
   const bool disable_security_;
   const std::string model_id_;
-  const std::string settings_path_;
 };
 
 }  // namespace examples

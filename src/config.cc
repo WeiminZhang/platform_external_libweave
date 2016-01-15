@@ -21,6 +21,8 @@
 
 namespace weave {
 
+const char kConfigName[] = "config";
+
 namespace config_keys {
 
 const char kVersion[] = "version";
@@ -139,9 +141,12 @@ void Config::Load() {
 void Config::Transaction::LoadState() {
   if (!config_->config_store_)
     return;
-  std::string json_string = config_->config_store_->LoadSettings();
-  if (json_string.empty())
-    return;
+  std::string json_string = config_->config_store_->LoadSettings(kConfigName);
+  if (json_string.empty()) {
+    json_string = config_->config_store_->LoadSettings();
+    if (json_string.empty())
+      return;
+  }
 
   auto value = base::JSONReader::Read(json_string);
   base::DictionaryValue* dict = nullptr;
@@ -266,7 +271,7 @@ void Config::Save() {
   base::JSONWriter::WriteWithOptions(
       dict, base::JSONWriter::OPTIONS_PRETTY_PRINT, &json_string);
 
-  config_store_->SaveSettings(json_string);
+  config_store_->SaveSettings(kConfigName, json_string);
 }
 
 Config::Transaction::~Transaction() {

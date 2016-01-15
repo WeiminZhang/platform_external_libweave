@@ -17,18 +17,20 @@
 using testing::_;
 using testing::Invoke;
 using testing::Return;
+using testing::WithArgs;
 
 namespace weave {
+
+const char kConfigName[] = "config";
 
 class ConfigTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    EXPECT_CALL(*this, OnConfigChanged(_))
-        .Times(1);  // Called from AddOnChangedCallback
     Reload();
   }
 
   void Reload() {
+    EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
     config_.reset(new Config{&config_store_});
     config_->AddOnChangedCallback(
         base::Bind(&ConfigTest::OnConfigChanged, base::Unretained(this)));
@@ -86,29 +88,43 @@ TEST_F(ConfigTest, Defaults) {
 }
 
 TEST_F(ConfigTest, LoadStateV0) {
-  EXPECT_CALL(config_store_, LoadSettings())
+  EXPECT_CALL(config_store_, LoadSettings(kConfigName))
       .WillOnce(Return(R"({
     "device_id": "state_device_id"
   })"));
 
-  EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
   Reload();
 
   EXPECT_EQ("state_device_id", GetSettings().cloud_id);
   EXPECT_FALSE(GetSettings().device_id.empty());
   EXPECT_NE(GetSettings().cloud_id, GetSettings().device_id);
 
-  EXPECT_CALL(config_store_, LoadSettings())
+  EXPECT_CALL(config_store_, LoadSettings(kConfigName))
       .WillOnce(Return(R"({
     "device_id": "state_device_id",
     "cloud_id": "state_cloud_id"
   })"));
 
-  EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
   Reload();
 
   EXPECT_EQ("state_cloud_id", GetSettings().cloud_id);
   EXPECT_EQ("state_device_id", GetSettings().device_id);
+}
+
+TEST_F(ConfigTest, LoadStateUnnamed) {
+  EXPECT_CALL(config_store_, LoadSettings(kConfigName)).WillOnce(Return(""));
+
+  EXPECT_CALL(config_store_, LoadSettings()).Times(1);
+
+  Reload();
+}
+
+TEST_F(ConfigTest, LoadStateNamed) {
+  EXPECT_CALL(config_store_, LoadSettings(kConfigName)).WillOnce(Return("{}"));
+
+  EXPECT_CALL(config_store_, LoadSettings()).Times(0);
+
+  Reload();
 }
 
 TEST_F(ConfigTest, LoadState) {
@@ -133,9 +149,8 @@ TEST_F(ConfigTest, LoadState) {
     "secret": "c3RhdGVfc2VjcmV0",
     "service_url": "state_service_url"
   })";
-  EXPECT_CALL(config_store_, LoadSettings()).WillOnce(Return(state));
+  EXPECT_CALL(config_store_, LoadSettings(kConfigName)).WillOnce(Return(state));
 
-  EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
   Reload();
 
   EXPECT_EQ("state_client_id", GetSettings().client_id);
@@ -243,8 +258,8 @@ TEST_F(ConfigTest, Setters) {
 
   EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);
 
-  EXPECT_CALL(config_store_, SaveSettings(_))
-      .WillOnce(Invoke([](const std::string& json) {
+  EXPECT_CALL(config_store_, SaveSettings(kConfigName, _))
+      .WillOnce(WithArgs<1>(Invoke([](const std::string& json) {
         auto expected = R"({
           'version': 1,
           'api_key': 'set_api_key',
@@ -267,7 +282,7 @@ TEST_F(ConfigTest, Setters) {
           'service_url': 'set_service_url'
         })";
         EXPECT_JSON_EQ(expected, *test::CreateValue(json));
-      }));
+      })));
 
   change.Commit();
 }
