@@ -7,7 +7,8 @@
 
 third_party_chromium_base_obj_files := $(THIRD_PARTY_CHROMIUM_BASE_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-$(third_party_chromium_base_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
+# We don't need libgtest.a, but the headers files in third_party/include.
+$(third_party_chromium_base_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -20,7 +21,8 @@ $(third_party_chromium_base_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc t
 
 third_party_chromium_crypto_obj_files := $(THIRD_PARTY_CHROMIUM_CRYPTO_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-$(third_party_chromium_crypto_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
+# We don't need libgtest.a, but the headers files in third_party/include.
+$(third_party_chromium_crypto_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
