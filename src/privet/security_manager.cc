@@ -185,6 +185,9 @@ bool SecurityManager::CreateAccessToken(AuthType auth_type,
   std::vector<uint8_t> auth_decoded;
   if (auth_type != AuthType::kAnonymous &&
       !Base64Decode(auth_code, &auth_decoded)) {
+    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
+                       errors::kInvalidAuthorization,
+                       "Invalid auth_code encoding: %s", auth_code.c_str());
     return false;
   }
 
