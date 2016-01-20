@@ -18,6 +18,7 @@ namespace weave {
 
 using test::CreateDictionaryValue;
 using testing::Return;
+using testing::StrictMock;
 
 namespace {
 
@@ -69,6 +70,10 @@ bool HasTrait(const base::DictionaryValue& comp, const std::string& trait) {
 // }
 class ComponentManagerTest : public ::testing::Test {
  protected:
+  void SetUp() override {
+    EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(base::Time::Now()));
+  }
+
   void CreateTestComponentTree(ComponentManager* manager) {
     const char kTraits[] =
         R"({"t1":{},"t2":{},"t3":{},"t4":{},"t5":{},"t6":{}})";
@@ -85,7 +90,7 @@ class ComponentManagerTest : public ::testing::Test {
                                       {"t5", "t6"}, nullptr));
   }
 
-  test::MockClock clock_;
+  StrictMock<test::MockClock> clock_;
   ComponentManagerImpl manager_{&clock_};
 };
 

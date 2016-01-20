@@ -3,26 +3,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Instead of this script, try running "make all -j" and "make testall".
+# TODO: Delete this file after 15-feb-2016.
+
 DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 ROOT_DIR=$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)
 
 cd $ROOT_DIR
 
-gyp -Ilibweave_common.gypi --toplevel-dir=. --depth=. -f make $DIR/daemon/examples.gyp
-
-if [ -z "$BUILD_CONFIG" ]; then
-   export BUILD_CONFIG=Debug
-fi
-
-export BUILD_TARGET=$*
-if [ -z "$BUILD_TARGET" ]; then
-   export BUILD_TARGET="weave_daemon_examples libweave_testrunner libweave_exports_testrunner"
-fi
-
-export CORES=`cat /proc/cpuinfo | grep processor | wc -l`
-BUILDTYPE=$BUILD_CONFIG make -j $CORES $BUILD_TARGET || exit 1
-
-if [[ $BUILD_TARGET == *"libweave_testrunner"* ]]; then
-  out/${BUILD_CONFIG}/libweave_testrunner --gtest_break_on_failure || exit 1
-  out/${BUILD_CONFIG}/libweave_exports_testrunner --gtest_break_on_failure || exit 1
-fi
+make all -j
