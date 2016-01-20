@@ -11,6 +11,7 @@
 #include <sstream>
 
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/strings/stringprintf.h"
 
 namespace base {
@@ -19,7 +20,7 @@ namespace base {
 
 // static
 TimeDelta TimeDelta::Max() {
-  return TimeDelta(std::numeric_limits<int64>::max());
+  return TimeDelta(std::numeric_limits<int64_t>::max());
 }
 
 int TimeDelta::InDays() const {
@@ -54,10 +55,10 @@ double TimeDelta::InSecondsF() const {
   return static_cast<double>(delta_) / Time::kMicrosecondsPerSecond;
 }
 
-int64 TimeDelta::InSeconds() const {
+int64_t TimeDelta::InSeconds() const {
   if (is_max()) {
     // Preserve max to prevent overflow.
-    return std::numeric_limits<int64>::max();
+    return std::numeric_limits<int64_t>::max();
   }
   return delta_ / Time::kMicrosecondsPerSecond;
 }
@@ -70,46 +71,46 @@ double TimeDelta::InMillisecondsF() const {
   return static_cast<double>(delta_) / Time::kMicrosecondsPerMillisecond;
 }
 
-int64 TimeDelta::InMilliseconds() const {
+int64_t TimeDelta::InMilliseconds() const {
   if (is_max()) {
     // Preserve max to prevent overflow.
-    return std::numeric_limits<int64>::max();
+    return std::numeric_limits<int64_t>::max();
   }
   return delta_ / Time::kMicrosecondsPerMillisecond;
 }
 
-int64 TimeDelta::InMillisecondsRoundedUp() const {
+int64_t TimeDelta::InMillisecondsRoundedUp() const {
   if (is_max()) {
     // Preserve max to prevent overflow.
-    return std::numeric_limits<int64>::max();
+    return std::numeric_limits<int64_t>::max();
   }
   return (delta_ + Time::kMicrosecondsPerMillisecond - 1) /
       Time::kMicrosecondsPerMillisecond;
 }
 
-int64 TimeDelta::InMicroseconds() const {
+int64_t TimeDelta::InMicroseconds() const {
   if (is_max()) {
     // Preserve max to prevent overflow.
-    return std::numeric_limits<int64>::max();
+    return std::numeric_limits<int64_t>::max();
   }
   return delta_;
 }
 
 namespace time_internal {
 
-int64 SaturatedAdd(TimeDelta delta, int64 value) {
-  CheckedNumeric<int64> rv(delta.delta_);
+int64_t SaturatedAdd(TimeDelta delta, int64_t value) {
+  CheckedNumeric<int64_t> rv(delta.delta_);
   rv += value;
   return FromCheckedNumeric(rv);
 }
 
-int64 SaturatedSub(TimeDelta delta, int64 value) {
-  CheckedNumeric<int64> rv(delta.delta_);
+int64_t SaturatedSub(TimeDelta delta, int64_t value) {
+  CheckedNumeric<int64_t> rv(delta.delta_);
   rv -= value;
   return FromCheckedNumeric(rv);
 }
 
-int64 FromCheckedNumeric(const CheckedNumeric<int64> value) {
+int64_t FromCheckedNumeric(const CheckedNumeric<int64_t> value) {
   if (value.IsValid())
     return value.ValueUnsafe();
 
@@ -117,7 +118,7 @@ int64 FromCheckedNumeric(const CheckedNumeric<int64> value) {
   // is. Instead, return max/(-max), which is something that clients can reason
   // about.
   // TODO(rvargas) crbug.com/332611: don't use internal values.
-  int64 limit = std::numeric_limits<int64>::max();
+  int64_t limit = std::numeric_limits<int64_t>::max();
   if (value.validity() == internal::RANGE_UNDERFLOW)
     limit = -limit;
   return value.ValueOrDefault(limit);
@@ -133,7 +134,7 @@ std::ostream& operator<<(std::ostream& os, TimeDelta time_delta) {
 
 // static
 Time Time::Max() {
-  return Time(std::numeric_limits<int64>::max());
+  return Time(std::numeric_limits<int64_t>::max());
 }
 
 // static
@@ -142,7 +143,7 @@ Time Time::FromTimeT(time_t tt) {
     return Time();  // Preserve 0 so we can tell it doesn't exist.
   if (tt == std::numeric_limits<time_t>::max())
     return Max();
-  return Time((tt * kMicrosecondsPerSecond) + kTimeTToMicrosecondsOffset);
+  return Time(kTimeTToMicrosecondsOffset) + TimeDelta::FromSeconds(tt);
 }
 
 time_t Time::ToTimeT() const {
@@ -152,7 +153,7 @@ time_t Time::ToTimeT() const {
     // Preserve max without offset to prevent overflow.
     return std::numeric_limits<time_t>::max();
   }
-  if (std::numeric_limits<int64>::max() - kTimeTToMicrosecondsOffset <= us_) {
+  if (std::numeric_limits<int64_t>::max() - kTimeTToMicrosecondsOffset <= us_) {
     DLOG(WARNING) << "Overflow when converting base::Time with internal " <<
                      "value " << us_ << " to time_t.";
     return std::numeric_limits<time_t>::max();
@@ -164,11 +165,7 @@ time_t Time::ToTimeT() const {
 Time Time::FromDoubleT(double dt) {
   if (dt == 0 || std::isnan(dt))
     return Time();  // Preserve 0 so we can tell it doesn't exist.
-  if (dt == std::numeric_limits<double>::infinity())
-    return Max();
-  return Time(static_cast<int64>((dt *
-                                  static_cast<double>(kMicrosecondsPerSecond)) +
-                                 kTimeTToMicrosecondsOffset));
+  return Time(kTimeTToMicrosecondsOffset) + TimeDelta::FromSecondsD(dt);
 }
 
 double Time::ToDoubleT() const {
@@ -195,10 +192,8 @@ Time Time::FromTimeSpec(const timespec& ts) {
 Time Time::FromJsTime(double ms_since_epoch) {
   // The epoch is a valid time, so this constructor doesn't interpret
   // 0 as the null time.
-  if (ms_since_epoch == std::numeric_limits<double>::infinity())
-    return Max();
-  return Time(static_cast<int64>(ms_since_epoch * kMicrosecondsPerMillisecond) +
-              kTimeTToMicrosecondsOffset);
+  return Time(kTimeTToMicrosecondsOffset) +
+         TimeDelta::FromMillisecondsD(ms_since_epoch);
 }
 
 double Time::ToJsTime() const {
@@ -214,14 +209,14 @@ double Time::ToJsTime() const {
           kMicrosecondsPerMillisecond);
 }
 
-int64 Time::ToJavaTime() const {
+int64_t Time::ToJavaTime() const {
   if (is_null()) {
     // Preserve 0 so the invalid result doesn't depend on the platform.
     return 0;
   }
   if (is_max()) {
     // Preserve max without offset to prevent overflow.
-    return std::numeric_limits<int64>::max();
+    return std::numeric_limits<int64_t>::max();
   }
   return ((us_ - kTimeTToMicrosecondsOffset) /
           kMicrosecondsPerMillisecond);
@@ -299,11 +294,6 @@ std::ostream& operator<<(std::ostream& os, TimeTicks time_ticks) {
 std::ostream& operator<<(std::ostream& os, ThreadTicks thread_ticks) {
   const TimeDelta as_time_delta = thread_ticks - ThreadTicks();
   return os << as_time_delta.InMicroseconds() << " bogo-thread-microseconds";
-}
-
-std::ostream& operator<<(std::ostream& os, TraceTicks trace_ticks) {
-  const TimeDelta as_time_delta = trace_ticks - TraceTicks();
-  return os << as_time_delta.InMicroseconds() << " bogo-trace-microseconds";
 }
 
 // Time::Exploded -------------------------------------------------------------

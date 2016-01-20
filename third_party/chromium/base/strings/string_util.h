@@ -9,14 +9,15 @@
 
 #include <ctype.h>
 #include <stdarg.h>   // va_list
+#include <stddef.h>
+#include <stdint.h>
 
 #include <string>
 #include <vector>
 
-#include "base/base_export.h"
-#include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "base/strings/string_piece.h"  // For implicit conversions.
+#include "build/build_config.h"
 
 // On Android, bionic's stdio.h defines an snprintf macro when being built with
 // clang. Undefine it here so it won't collide with base::snprintf().
@@ -24,10 +25,10 @@
 
 namespace base {
 
-// C standard-library functions like "strncasecmp" and "snprintf" that aren't
-// cross-platform are provided as "base::strncasecmp", and their prototypes
-// are listed below.  These functions are then implemented as inline calls
-// to the platform-specific equivalents in the platform-specific headers.
+// C standard-library functions that aren't cross-platform are provided as
+// "base::...", and their prototypes are listed below. These functions are
+// then implemented as inline calls to the platform-specific equivalents in the
+// platform-specific headers.
 
 // Wrapper for vsnprintf that always null-terminates and always returns the
 // number of characters that would be in an untruncated formatted
@@ -39,15 +40,73 @@ int vsnprintf(char* buffer, size_t size, const char* format, va_list arguments)
 
 // We separate the declaration from the implementation of this inline
 // function just so the PRINTF_FORMAT works.
-inline int snprintf(char* buffer, size_t size, const char* format, ...)
-    PRINTF_FORMAT(3, 4);
-inline int snprintf(char* buffer, size_t size, const char* format, ...) {
+inline int snprintf(char* buffer,
+                    size_t size,
+                    _Printf_format_string_ const char* format,
+                    ...) PRINTF_FORMAT(3, 4);
+inline int snprintf(char* buffer,
+                    size_t size,
+                    _Printf_format_string_ const char* format,
+                    ...) {
   va_list arguments;
   va_start(arguments, format);
   int result = vsnprintf(buffer, size, format, arguments);
   va_end(arguments);
   return result;
 }
+
+// BSD-style safe and consistent string copy functions.
+// Copies |src| to |dst|, where |dst_size| is the total allocated size of |dst|.
+// Copies at most |dst_size|-1 characters, and always NULL terminates |dst|, as
+// long as |dst_size| is not 0.  Returns the length of |src| in characters.
+// If the return value is >= dst_size, then the output was truncated.
+// NOTE: All sizes are in number of characters, NOT in bytes.
+size_t strlcpy(char* dst, const char* src, size_t dst_size);
+
+// ASCII-specific tolower.  The standard library's tolower is locale sensitive,
+// so we don't want to use it here.
+inline char ToLowerASCII(char c) {
+  return (c >= 'A' && c <= 'Z') ? (c + ('a' - 'A')) : c;
+}
+
+// ASCII-specific toupper.  The standard library's toupper is locale sensitive,
+// so we don't want to use it here.
+inline char ToUpperASCII(char c) {
+  return (c >= 'a' && c <= 'z') ? (c + ('A' - 'a')) : c;
+}
+// Converts the given string to it's ASCII-lowercase equivalent.
+std::string ToLowerASCII(StringPiece str);
+// Converts the given string to it's ASCII-uppercase equivalent.
+std::string ToUpperASCII(StringPiece str);
+
+// Functor for case-insensitive ASCII comparisons for STL algorithms like
+// std::search.
+//
+// Note that a full Unicode version of this functor is not possible to write
+// because case mappings might change the number of characters, depend on
+// context (combining accents), and require handling UTF-16. If you need
+// proper Unicode support, use base::i18n::ToLower/FoldCase and then just
+// use a normal operator== on the result.
+template<typename Char> struct CaseInsensitiveCompareASCII {
+ public:
+  bool operator()(Char x, Char y) const {
+    return ToLowerASCII(x) == ToLowerASCII(y);
+  }
+};
+
+// Like strcasecmp for case-insensitive ASCII characters only. Returns:
+//   -1  (a < b)
+//    0  (a == b)
+//    1  (a > b)
+// (unlike strcasecmp which can return values greater or less than 1/-1). For
+// full Unicode support, use base::i18n::ToLower or base::i18h::FoldCase
+// and then just call the normal string operators on the result.
+int CompareCaseInsensitiveASCII(StringPiece a, StringPiece b);
+
+// Equality for ASCII case-insensitive comparisons. For full Unicode support,
+// use base::i18n::ToLower or base::i18h::FoldCase and then compare with either
+// == or !=.
+bool EqualsCaseInsensitiveASCII(StringPiece a, StringPiece b);
 
 // Contains the set of characters representing whitespace in the corresponding
 // encoding. Null-terminated. The ASCII versions are the whitespaces as defined
@@ -60,7 +119,7 @@ extern const char kWhitespaceASCII[];
 // |replace_chars| must be null-terminated.
 // NOTE: Safe to use the same variable for both |input| and |output|.
 bool ReplaceChars(const std::string& input,
-                  const base::StringPiece& replace_chars,
+                  const StringPiece& replace_chars,
                   const std::string& replace_with,
                   std::string* output);
 
@@ -77,31 +136,25 @@ enum TrimPositions {
 // It is safe to use the same variable for both |input| and |output| (this is
 // the normal usage to trim in-place).
 bool TrimString(const std::string& input,
-                base::StringPiece trim_chars,
+                StringPiece trim_chars,
                 std::string* output);
 
 // StringPiece versions of the above. The returned pieces refer to the original
 // buffer.
 StringPiece TrimString(StringPiece input,
-                       const base::StringPiece& trim_chars,
+                       const StringPiece& trim_chars,
                        TrimPositions positions);
 
-// Trims any whitespace from either end of the input string.  Returns where
-// whitespace was found.
-// The non-wide version has two functions:
-// * TrimWhitespaceASCII()
-//   This function is for ASCII strings and only looks for ASCII whitespace;
-// Please choose the best one according to your usage.
+// Trims any whitespace from either end of the input string.
+//
+// The StringPiece versions return a substring referencing the input buffer.
+// The ASCII versions look only for ASCII whitespace.
+//
+// The std::string versions return where whitespace was found.
 // NOTE: Safe to use the same variable for both input and output.
 TrimPositions TrimWhitespaceASCII(const std::string& input,
                                   TrimPositions positions,
                                   std::string* output);
-
-// Deprecated. This function is only for backward compatibility and calls
-// TrimWhitespaceASCII().
-TrimPositions TrimWhitespace(const std::string& input,
-                             TrimPositions positions,
-                             std::string* output);
 
 // Returns true if the specified string matches the criteria. How can a wide
 // string be 8-bit or UTF8? It contains only characters that are < 256 (in the

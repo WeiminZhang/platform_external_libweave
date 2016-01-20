@@ -5,15 +5,18 @@
 #ifndef BASE_RAND_UTIL_H_
 #define BASE_RAND_UTIL_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <string>
 
 #include "base/base_export.h"
-#include "base/basictypes.h"
+#include "build/build_config.h"
 
 namespace base {
 
-// Returns a random number in range [0, kuint64max]. Thread-safe.
-uint64 RandUint64();
+// Returns a random number in range [0, UINT64_MAX]. Thread-safe.
+uint64_t RandUint64();
 
 // Returns a random number between min and max (inclusive). Thread-safe.
 int RandInt(int min, int max);
@@ -23,14 +26,14 @@ int RandInt(int min, int max);
 // Note that this can be used as an adapter for std::random_shuffle():
 // Given a pre-populated |std::vector<int> myvector|, shuffle it as
 //   std::random_shuffle(myvector.begin(), myvector.end(), base::RandGenerator);
-uint64 RandGenerator(uint64 range);
+uint64_t RandGenerator(uint64_t range);
 
 // Returns a random double in range [0, 1). Thread-safe.
 double RandDouble();
 
 // Given input |bits|, convert with maximum precision to a double in
 // the range [0, 1). Thread-safe.
-double BitsToOpenEndedUnitInterval(uint64 bits);
+double BitsToOpenEndedUnitInterval(uint64_t bits);
 
 // Fills |output_length| bytes of |output| with random data.
 //

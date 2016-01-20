@@ -5,13 +5,16 @@
 #ifndef BASE_LOGGING_H_
 #define BASE_LOGGING_H_
 
+#include <stddef.h>
+
 #include <cassert>
-#include <string>
 #include <cstring>
 #include <sstream>
+#include <string>
+#include <typeinfo>
 
 #include "base/base_export.h"
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 
 //
@@ -122,6 +125,34 @@
 // There is the special severity of DFATAL, which logs FATAL in debug mode,
 // ERROR in normal mode.
 
+// Note that "The behavior of a C++ program is undefined if it adds declarations
+// or definitions to namespace std or to a namespace within namespace std unless
+// otherwise specified." --C++11[namespace.std]
+//
+// We've checked that this particular definition has the intended behavior on
+// our implementations, but it's prone to breaking in the future, and please
+// don't imitate this in your own definitions without checking with some
+// standard library experts.
+namespace std {
+// These functions are provided as a convenience for logging, which is where we
+// use streams (it is against Google style to use streams in other places). It
+// is designed to allow you to emit non-ASCII Unicode strings to the log file,
+// which is normally ASCII. It is relatively slow, so try not to use it for
+// common cases. Non-ASCII characters will be converted to UTF-8 by these
+// operators.
+BASE_EXPORT std::ostream& operator<<(std::ostream& out, const wchar_t* wstr);
+inline std::ostream& operator<<(std::ostream& out, const std::wstring& wstr) {
+  return out << wstr.c_str();
+}
+
+template<typename T>
+typename std::enable_if<std::is_enum<T>::value, std::ostream&>::type operator<<(
+    std::ostream& out, T value) {
+  return out << static_cast<typename std::underlying_type<T>::type>(value);
+}
+
+}  // namespace std
+
 namespace logging {
 
 // Where to record logging output? A flat file and/or system debug log
@@ -187,6 +218,9 @@ BASE_EXPORT void SetMinLogLevel(int level);
 
 // Gets the current log level.
 BASE_EXPORT int GetMinLogLevel();
+
+// Used by LOG_IS_ON to lazy-evaluate stream arguments.
+BASE_EXPORT bool ShouldCreateLogMessage(int severity);
 
 // Gets the VLOG default verbosity level.
 BASE_EXPORT int GetVlogVerbosity();
@@ -280,7 +314,7 @@ const LogSeverity LOG_DFATAL = LOG_FATAL;
 // LOG_IS_ON(DFATAL) always holds in debug mode. In particular, CHECK()s will
 // always fire if they fail.
 #define LOG_IS_ON(severity) \
-  ((::logging::LOG_ ## severity) >= ::logging::GetMinLogLevel())
+  (::logging::ShouldCreateLogMessage(::logging::LOG_##severity))
 
 // We can't do any caching tricks with VLOG_IS_ON() like the
 // google-glog version since it requires GCC extensions.  This means
@@ -331,6 +365,21 @@ const LogSeverity LOG_DFATAL = LOG_FATAL;
 #define EAT_STREAM_PARAMETERS                                           \
   true ? (void) 0 : ::logging::LogMessageVoidify() & LOG_STREAM(FATAL)
 
+// Captures the result of a CHECK_EQ (for example) and facilitates testing as a
+// boolean.
+class CheckOpResult {
+ public:
+  // |message| must be null if and only if the check failed.
+  CheckOpResult(std::string* message) : message_(message) {}
+  // Returns true if the check succeeded.
+  operator bool() const { return !message_; }
+  // Returns the message.
+  std::string* message() { return message_; }
+
+ private:
+  std::string* message_;
+};
+
 // CHECK dies with a fatal error if condition is not true.  It is *not*
 // controlled by NDEBUG, so the check will be executed regardless of
 // compilation mode.
@@ -341,7 +390,7 @@ const LogSeverity LOG_DFATAL = LOG_FATAL;
 #if defined(OFFICIAL_BUILD) && defined(NDEBUG) && !defined(OS_ANDROID)
 
 // Make all CHECK functions discard their log strings to reduce code
-// bloat for official release builds.
+// bloat for official release builds (except Android).
 
 // TODO(akalin): This would be more valuable if there were some way to
 // remove BreakDebugger() from the backtrace, perhaps by turning it
@@ -355,20 +404,25 @@ const LogSeverity LOG_DFATAL = LOG_FATAL;
 
 #else
 
-#define CHECK(condition)                       \
-  LAZY_STREAM(LOG_STREAM(FATAL), !(condition)) \
-  << "Check failed: " #condition ". "
+// Do as much work as possible out of line to reduce inline code size.
+#define CHECK(condition)                                                    \
+  LAZY_STREAM(logging::LogMessage(__FILE__, __LINE__, #condition).stream(), \
+              !(condition))
 
 // Helper macro for binary operators.
 // Don't use this macro directly in your code, use CHECK_EQ et al below.
-//
-// TODO(akalin): Rewrite this so that constructs like if (...)
-// CHECK_EQ(...) else { ... } work properly.
-#define CHECK_OP(name, op, val1, val2)                          \
-  if (std::string* _result =                                    \
-      logging::Check##name##Impl((val1), (val2),                \
-                                 #val1 " " #op " " #val2))      \
-    logging::LogMessage(__FILE__, __LINE__, _result).stream()
+// The 'switch' is used to prevent the 'else' from being ambiguous when the
+// macro is used in an 'if' clause such as:
+// if (a == 1)
+//   CHECK_EQ(2, a);
+#define CHECK_OP(name, op, val1, val2)                                         \
+  switch (0) case 0: default:                                                  \
+  if (logging::CheckOpResult true_if_passed =                                  \
+      logging::Check##name##Impl((val1), (val2),                               \
+                                 #val1 " " #op " " #val2))                     \
+   ;                                                                           \
+  else                                                                         \
+    logging::LogMessage(__FILE__, __LINE__, true_if_passed.message()).stream()
 
 #endif
 
@@ -430,7 +484,6 @@ DEFINE_CHECK_OP_IMPL(GT, > )
 #define CHECK_LT(val1, val2) CHECK_OP(LT, < , val1, val2)
 #define CHECK_GE(val1, val2) CHECK_OP(GE, >=, val1, val2)
 #define CHECK_GT(val1, val2) CHECK_OP(GT, > , val1, val2)
-#define CHECK_IMPLIES(val1, val2) CHECK(!(val1) || (val2))
 
 #if defined(NDEBUG)
 #define ENABLE_DLOG 0
@@ -514,12 +567,20 @@ const LogSeverity LOG_DCHECK = LOG_INFO;
 
 // Helper macro for binary operators.
 // Don't use this macro directly in your code, use DCHECK_EQ et al below.
-#define DCHECK_OP(name, op, val1, val2)                                   \
-  if (DCHECK_IS_ON())                                                     \
-    if (std::string* _result = logging::Check##name##Impl(                \
-            (val1), (val2), #val1 " " #op " " #val2))                     \
-  logging::LogMessage(__FILE__, __LINE__, ::logging::LOG_DCHECK, _result) \
-      .stream()
+// The 'switch' is used to prevent the 'else' from being ambiguous when the
+// macro is used in an 'if' clause such as:
+// if (a == 1)
+//   DCHECK_EQ(2, a);
+#define DCHECK_OP(name, op, val1, val2)                               \
+  switch (0) case 0: default:                                         \
+  if (logging::CheckOpResult true_if_passed =                         \
+      DCHECK_IS_ON() ?                                                \
+      logging::Check##name##Impl((val1), (val2),                      \
+                                 #val1 " " #op " " #val2) : nullptr)  \
+   ;                                                                  \
+  else                                                                \
+    logging::LogMessage(__FILE__, __LINE__, ::logging::LOG_DCHECK,    \
+                        true_if_passed.message()).stream()
 
 // Equality/Inequality checks - compare two values, and log a
 // LOG_DCHECK message including the two values when the result is not
@@ -546,7 +607,6 @@ const LogSeverity LOG_DCHECK = LOG_INFO;
 #define DCHECK_LT(val1, val2) DCHECK_OP(LT, < , val1, val2)
 #define DCHECK_GE(val1, val2) DCHECK_OP(GE, >=, val1, val2)
 #define DCHECK_GT(val1, val2) DCHECK_OP(GT, > , val1, val2)
-#define DCHECK_IMPLIES(val1, val2) DCHECK(!(val1) || (val2))
 
 #define NOTREACHED() DCHECK(false)
 
@@ -566,6 +626,9 @@ class BASE_EXPORT LogMessage {
  public:
   // Used for LOG(severity).
   LogMessage(const char* file, int line, LogSeverity severity);
+
+  // Used for CHECK().  Implied severity = LOG_FATAL.
+  LogMessage(const char* file, int line, const char* condition);
 
   // Used for CHECK_EQ(), etc. Takes ownership of the given string.
   // Implied severity = LOG_FATAL.
@@ -595,7 +658,7 @@ class BASE_EXPORT LogMessage {
 
 // A non-macro interface to the log facility; (useful
 // when the logging level is not a compile-time constant).
-inline void LogAtLevel(int const log_level, std::string const &msg) {
+inline void LogAtLevel(int log_level, const std::string& msg) {
   LogMessage(__FILE__, __LINE__, log_level).stream() << msg;
 }
 
@@ -652,9 +715,9 @@ BASE_EXPORT void RawLog(int level, const char* message);
 #define NOTIMPLEMENTED() EAT_STREAM_PARAMETERS
 #elif NOTIMPLEMENTED_POLICY == 1
 // TODO, figure out how to generate a warning
-#define NOTIMPLEMENTED() COMPILE_ASSERT(false, NOT_IMPLEMENTED)
+#define NOTIMPLEMENTED() static_assert(false, "NOT_IMPLEMENTED")
 #elif NOTIMPLEMENTED_POLICY == 2
-#define NOTIMPLEMENTED() COMPILE_ASSERT(false, NOT_IMPLEMENTED)
+#define NOTIMPLEMENTED() static_assert(false, "NOT_IMPLEMENTED")
 #elif NOTIMPLEMENTED_POLICY == 3
 #define NOTIMPLEMENTED() NOTREACHED()
 #elif NOTIMPLEMENTED_POLICY == 4

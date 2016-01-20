@@ -5,12 +5,14 @@
 #ifndef BASE_OBSERVER_LIST_H_
 #define BASE_OBSERVER_LIST_H_
 
+#include <stddef.h>
+
 #include <algorithm>
 #include <limits>
 #include <vector>
 
-#include "base/basictypes.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -152,8 +154,8 @@ ObserverType* ObserverListBase<ObserverType>::Iterator::GetNext() {
 template <class ObserverType>
 void ObserverListBase<ObserverType>::AddObserver(ObserverType* obs) {
   DCHECK(obs);
-  if (std::find(observers_.begin(), observers_.end(), obs)
-      != observers_.end()) {
+  auto it = std::find(observers_.begin(), observers_.end(), obs);
+  if (it != observers_.end()) {
     NOTREACHED() << "Observers can only be added once!";
     return;
   }
