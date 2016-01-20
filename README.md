@@ -99,7 +99,7 @@ make out/Debug/libweave.so
 ### Build examples
 
 ```
-make examples-all
+make all-examples
 ```
 
 See [the examples README](/examples/daemon/README.md) for details.
