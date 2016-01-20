@@ -6,13 +6,15 @@
 
 #include <math.h>
 #include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include <algorithm>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversion_utils.h"
 
 using ::testing::ElementsAre;

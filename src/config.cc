@@ -121,10 +121,9 @@ void Config::Load() {
   CHECK(!settings_.model_id.empty());
   CHECK(!settings_.name.empty());
   CHECK(!settings_.device_id.empty());
-  CHECK_EQ(
-      settings_.embedded_code.empty(),
-      std::find(settings_.pairing_modes.begin(), settings_.pairing_modes.end(),
-                PairingType::kEmbeddedCode) == settings_.pairing_modes.end());
+  CHECK_EQ(settings_.embedded_code.empty(),
+           (settings_.pairing_modes.find(PairingType::kEmbeddedCode) ==
+              settings_.pairing_modes.end()));
 
   // Values below will be generated at runtime.
   CHECK(settings_.cloud_id.empty());

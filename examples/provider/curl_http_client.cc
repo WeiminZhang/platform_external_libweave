@@ -4,6 +4,7 @@
 
 #include "examples/provider/curl_http_client.h"
 
+#include <algorithm>
 #include <future>
 #include <thread>
 

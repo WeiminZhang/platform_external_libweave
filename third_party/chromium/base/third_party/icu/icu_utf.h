@@ -17,13 +17,13 @@
 #ifndef BASE_THIRD_PARTY_ICU_ICU_UTF_H_
 #define BASE_THIRD_PARTY_ICU_ICU_UTF_H_
 
-#include "base/basictypes.h"
+#include <stdint.h>
 
 namespace base_icu {
 
-typedef int32 UChar32;
-typedef uint16 UChar;
-typedef int8 UBool;
+typedef int32_t UChar32;
+typedef uint16_t UChar;
+typedef int8_t UBool;
 
 // General ---------------------------------------------------------------------
 // from utf.h
@@ -56,8 +56,8 @@ typedef int8 UBool;
  */
 #define CBU_IS_UNICODE_NONCHAR(c) \
     ((c)>=0xfdd0 && \
-     ((uint32)(c)<=0xfdef || ((c)&0xfffe)==0xfffe) && \
-     (uint32)(c)<=0x10ffff)
+     ((uint32_t)(c)<=0xfdef || ((c)&0xfffe)==0xfffe) && \
+     (uint32_t)(c)<=0x10ffff)
 
 /**
  * Is c a Unicode code point value (0..U+10ffff)
@@ -77,9 +77,9 @@ typedef int8 UBool;
  * @stable ICU 2.4
  */
 #define CBU_IS_UNICODE_CHAR(c) \
-    ((uint32)(c)<0xd800 || \
-        ((uint32)(c)>0xdfff && \
-         (uint32)(c)<=0x10ffff && \
+    ((uint32_t)(c)<0xd800 || \
+        ((uint32_t)(c)>0xdfff && \
+         (uint32_t)(c)<=0x10ffff && \
          !CBU_IS_UNICODE_NONCHAR(c)))
 
 /**
@@ -103,13 +103,13 @@ typedef int8 UBool;
 // UTF-8 macros ----------------------------------------------------------------
 // from utf8.h
 
-extern const uint8 utf8_countTrailBytes[256];
+extern const uint8_t utf8_countTrailBytes[256];
 
 /**
  * Count the trail bytes for a UTF-8 lead byte.
  * @internal
  */
-#define CBU8_COUNT_TRAIL_BYTES(leadByte) (base_icu::utf8_countTrailBytes[(uint8)leadByte])
+#define CBU8_COUNT_TRAIL_BYTES(leadByte) (base_icu::utf8_countTrailBytes[(uint8_t)leadByte])
 
 /**
  * Mask a UTF-8 lead byte, leave only the lower bits that form part of the code point value.
@@ -131,7 +131,7 @@ extern const uint8 utf8_countTrailBytes[256];
  * @return TRUE or FALSE
  * @stable ICU 2.4
  */
-#define CBU8_IS_LEAD(c) ((uint8)((c)-0xc0)<0x3e)
+#define CBU8_IS_LEAD(c) ((uint8_t)((c)-0xc0)<0x3e)
 
 /**
  * Is this code unit (byte) a UTF-8 trail byte?
@@ -149,11 +149,11 @@ extern const uint8 utf8_countTrailBytes[256];
  * @stable ICU 2.4
  */
 #define CBU8_LENGTH(c) \
-    ((uint32)(c)<=0x7f ? 1 : \
-        ((uint32)(c)<=0x7ff ? 2 : \
-            ((uint32)(c)<=0xd7ff ? 3 : \
-                ((uint32)(c)<=0xdfff || (uint32)(c)>0x10ffff ? 0 : \
-                    ((uint32)(c)<=0xffff ? 3 : 4)\
+    ((uint32_t)(c)<=0x7f ? 1 : \
+        ((uint32_t)(c)<=0x7ff ? 2 : \
+            ((uint32_t)(c)<=0xd7ff ? 3 : \
+                ((uint32_t)(c)<=0xdfff || (uint32_t)(c)>0x10ffff ? 0 : \
+                    ((uint32_t)(c)<=0xffff ? 3 : 4)\
                 ) \
             ) \
         ) \
@@ -170,7 +170,7 @@ extern const uint8 utf8_countTrailBytes[256];
  * Function for handling "next code point" with error-checking.
  * @internal
  */
-UChar32 utf8_nextCharSafeBody(const uint8 *s, int32 *pi, int32 length, UChar32 c, UBool strict);
+UChar32 utf8_nextCharSafeBody(const uint8_t *s, int32_t *pi, int32_t length, UChar32 c, UBool strict);
 
 /**
  * Get a code point from a string at a code point boundary offset,
@@ -183,7 +183,7 @@ UChar32 utf8_nextCharSafeBody(const uint8 *s, int32 *pi, int32 length, UChar32 c
  * If the offset points to a trail byte or an illegal UTF-8 sequence, then
  * c is set to a negative value.
  *
- * @param s const uint8 * string
+ * @param s const uint8_t * string
  * @param i string offset, i<length
  * @param length string length
  * @param c output UChar32 variable, set to <0 in case of an error
@@ -192,9 +192,9 @@ UChar32 utf8_nextCharSafeBody(const uint8 *s, int32 *pi, int32 length, UChar32 c
  */
 #define CBU8_NEXT(s, i, length, c) { \
     (c)=(s)[(i)++]; \
-    if(((uint8)(c))>=0x80) { \
+    if(((uint8_t)(c))>=0x80) { \
         if(CBU8_IS_LEAD(c)) { \
-            (c)=base_icu::utf8_nextCharSafeBody((const uint8 *)s, &(i), (int32)(length), c, -1); \
+            (c)=base_icu::utf8_nextCharSafeBody((const uint8_t *)s, &(i), (int32_t)(length), c, -1); \
         } else { \
             (c)=CBU_SENTINEL; \
         } \
@@ -208,28 +208,28 @@ UChar32 utf8_nextCharSafeBody(const uint8 *s, int32 *pi, int32 length, UChar32 c
  * "Unsafe" macro, assumes a valid code point and sufficient space in the string.
  * Otherwise, the result is undefined.
  *
- * @param s const uint8 * string buffer
+ * @param s const uint8_t * string buffer
  * @param i string offset
  * @param c code point to append
  * @see CBU8_APPEND
  * @stable ICU 2.4
  */
 #define CBU8_APPEND_UNSAFE(s, i, c) { \
-    if((uint32)(c)<=0x7f) { \
-        (s)[(i)++]=(uint8)(c); \
+    if((uint32_t)(c)<=0x7f) { \
+        (s)[(i)++]=(uint8_t)(c); \
     } else { \
-        if((uint32)(c)<=0x7ff) { \
-            (s)[(i)++]=(uint8)(((c)>>6)|0xc0); \
+        if((uint32_t)(c)<=0x7ff) { \
+            (s)[(i)++]=(uint8_t)(((c)>>6)|0xc0); \
         } else { \
-            if((uint32)(c)<=0xffff) { \
-                (s)[(i)++]=(uint8)(((c)>>12)|0xe0); \
+            if((uint32_t)(c)<=0xffff) { \
+                (s)[(i)++]=(uint8_t)(((c)>>12)|0xe0); \
             } else { \
-                (s)[(i)++]=(uint8)(((c)>>18)|0xf0); \
-                (s)[(i)++]=(uint8)((((c)>>12)&0x3f)|0x80); \
+                (s)[(i)++]=(uint8_t)(((c)>>18)|0xf0); \
+                (s)[(i)++]=(uint8_t)((((c)>>12)&0x3f)|0x80); \
             } \
-            (s)[(i)++]=(uint8)((((c)>>6)&0x3f)|0x80); \
+            (s)[(i)++]=(uint8_t)((((c)>>6)&0x3f)|0x80); \
         } \
-        (s)[(i)++]=(uint8)(((c)&0x3f)|0x80); \
+        (s)[(i)++]=(uint8_t)(((c)&0x3f)|0x80); \
     } \
 }
 
@@ -325,7 +325,7 @@ UChar32 utf8_nextCharSafeBody(const uint8 *s, int32 *pi, int32 length, UChar32 c
  * @return 1 or 2
  * @stable ICU 2.4
  */
-#define CBU16_LENGTH(c) ((uint32)(c)<=0xffff ? 1 : 2)
+#define CBU16_LENGTH(c) ((uint32_t)(c)<=0xffff ? 1 : 2)
 
 /**
  * The maximum number of 16-bit code units per Unicode code point (U+0000..U+10ffff).
@@ -356,7 +356,7 @@ UChar32 utf8_nextCharSafeBody(const uint8 *s, int32 *pi, int32 length, UChar32 c
 #define CBU16_NEXT(s, i, length, c) { \
     (c)=(s)[(i)++]; \
     if(CBU16_IS_LEAD(c)) { \
-        uint16 __c2; \
+        uint16_t __c2; \
         if((i)<(length) && CBU16_IS_TRAIL(__c2=(s)[(i)])) { \
             ++(i); \
             (c)=CBU16_GET_SUPPLEMENTARY((c), __c2); \
@@ -378,11 +378,11 @@ UChar32 utf8_nextCharSafeBody(const uint8 *s, int32 *pi, int32 length, UChar32 c
  * @stable ICU 2.4
  */
 #define CBU16_APPEND_UNSAFE(s, i, c) { \
-    if((uint32)(c)<=0xffff) { \
-        (s)[(i)++]=(uint16)(c); \
+    if((uint32_t)(c)<=0xffff) { \
+        (s)[(i)++]=(uint16_t)(c); \
     } else { \
-        (s)[(i)++]=(uint16)(((c)>>10)+0xd7c0); \
-        (s)[(i)++]=(uint16)(((c)&0x3ff)|0xdc00); \
+        (s)[(i)++]=(uint16_t)(((c)>>10)+0xd7c0); \
+        (s)[(i)++]=(uint16_t)(((c)&0x3ff)|0xdc00); \
     } \
 }
 

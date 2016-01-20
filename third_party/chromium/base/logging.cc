@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -79,6 +80,17 @@ int GetMinLogLevel() {
   return g_min_log_level;
 }
 
+bool ShouldCreateLogMessage(int severity) {
+  if (severity < g_min_log_level)
+    return false;
+
+  // Return true here unless we know ~LogMessage won't do anything. Note that
+  // ~LogMessage writes to stderr if severity_ >= kAlwaysPrintErrorLevel, even
+  // when g_logging_destination is LOG_NONE.
+  return g_logging_destination != LOG_NONE || log_message_handler ||
+         severity >= kAlwaysPrintErrorLevel;
+}
+
 int GetVlogVerbosity() {
   return std::max(-1, LOG_INFO - GetMinLogLevel());
 }
@@ -119,6 +131,12 @@ template std::string* MakeCheckOpString<std::string, std::string>(
 LogMessage::LogMessage(const char* file, int line, LogSeverity severity)
     : severity_(severity), file_(file), line_(line) {
   Init(file, line);
+}
+
+LogMessage::LogMessage(const char* file, int line, const char* condition)
+    : severity_(LOG_FATAL), file_(file), line_(line) {
+  Init(file, line);
+  stream_ << "Check failed: " << condition << ". ";
 }
 
 LogMessage::LogMessage(const char* file, int line, std::string* result)
@@ -187,7 +205,8 @@ void LogMessage::Init(const char* file, int line) {
   stream_ <<  '[';
   if (g_log_timestamp) {
     time_t t = time(nullptr);
-    struct tm local_time = {0};
+    struct tm local_time;
+    memset(&local_time, 0, sizeof(local_time));
 #ifdef _MSC_VER
     localtime_s(&local_time, &t);
 #else
