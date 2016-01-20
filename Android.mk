@@ -14,6 +14,8 @@
 
 LOCAL_PATH := $(call my-dir)
 
+include $(LOCAL_PATH)/file_lists.mk
+
 # Common variables
 # ========================================================
 
@@ -54,16 +56,9 @@ LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/external
 
 LOCAL_SRC_FILES := \
-	third_party/chromium/crypto/p224.cc \
-	third_party/chromium/crypto/p224_spake.cc \
-	third_party/chromium/crypto/sha2.cc \
-	third_party/libuweave/src/crypto_hmac.c \
-	third_party/libuweave/src/crypto_utils.c \
-	third_party/libuweave/src/macaroon.c \
-	third_party/libuweave/src/macaroon_caveat.c \
-	third_party/libuweave/src/macaroon_context.c \
-	third_party/libuweave/src/macaroon_encoding.c \
-	third_party/modp_b64/modp_b64.cc \
+	$(THIRD_PARTY_CHROMIUM_CRYPTO_SRC_FILES) \
+	$(THIRD_PARTY_MODP_B64_SRC_FILES) \
+	$(THIRD_PARTY_LIBUWEAVE_SRC_FILES)
 
 include $(BUILD_STATIC_LIBRARY)
 
@@ -80,44 +75,7 @@ LOCAL_STATIC_LIBRARIES := libweave-external
 LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 
-LOCAL_SRC_FILES := \
-	src/backoff_entry.cc \
-	src/base_api_handler.cc \
-	src/commands/cloud_command_proxy.cc \
-	src/commands/command_instance.cc \
-	src/commands/command_queue.cc \
-	src/commands/schema_constants.cc \
-	src/component_manager_impl.cc \
-	src/config.cc \
-	src/data_encoding.cc \
-	src/device_manager.cc \
-	src/device_registration_info.cc \
-	src/error.cc \
-	src/http_constants.cc \
-	src/json_error_codes.cc \
-	src/notification/notification_parser.cc \
-	src/notification/pull_channel.cc \
-	src/notification/xml_node.cc \
-	src/notification/xmpp_channel.cc \
-	src/notification/xmpp_iq_stanza_handler.cc \
-	src/notification/xmpp_stream_parser.cc \
-	src/privet/auth_manager.cc \
-	src/privet/cloud_delegate.cc \
-	src/privet/constants.cc \
-	src/privet/device_delegate.cc \
-	src/privet/device_ui_kind.cc \
-	src/privet/openssl_utils.cc \
-	src/privet/privet_handler.cc \
-	src/privet/privet_manager.cc \
-	src/privet/privet_types.cc \
-	src/privet/publisher.cc \
-	src/privet/security_manager.cc \
-	src/privet/wifi_bootstrap_manager.cc \
-	src/privet/wifi_ssid_generator.cc \
-	src/registration_status.cc \
-	src/states/state_change_queue.cc \
-	src/string_utils.cc \
-	src/utils.cc \
+LOCAL_SRC_FILES := $(WEAVE_SRC_FILES)
 
 include $(BUILD_STATIC_LIBRARY)
 
@@ -137,10 +95,7 @@ LOCAL_STATIC_LIBRARIES := libgtest libgmock
 LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
-LOCAL_SRC_FILES := \
-	src/test/fake_stream.cc \
-	src/test/fake_task_runner.cc \
-	src/test/unittest_utils.cc \
+LOCAL_SRC_FILES := $(WEAVE_TEST_SRC_FILES)
 
 include $(BUILD_STATIC_LIBRARY)
 
@@ -157,8 +112,7 @@ LOCAL_WHOLE_STATIC_LIBRARIES := libweave-common libweave-external
 LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
-LOCAL_SRC_FILES := \
-	src/empty.cc
+LOCAL_SRC_FILES :=
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -188,31 +142,7 @@ LOCAL_CLANG := true
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 
 LOCAL_SRC_FILES := \
-	src/backoff_entry_unittest.cc \
-	src/base_api_handler_unittest.cc \
-	src/commands/cloud_command_proxy_unittest.cc \
-	src/commands/command_instance_unittest.cc \
-	src/commands/command_queue_unittest.cc \
-	src/component_manager_unittest.cc \
-	src/config_unittest.cc \
-	src/data_encoding_unittest.cc \
-	src/device_registration_info_unittest.cc \
-	src/error_unittest.cc \
-	src/notification/notification_parser_unittest.cc \
-	src/notification/xml_node_unittest.cc \
-	src/notification/xmpp_channel_unittest.cc \
-	src/notification/xmpp_iq_stanza_handler_unittest.cc \
-	src/notification/xmpp_stream_parser_unittest.cc \
-	src/privet/auth_manager_unittest.cc \
-	src/privet/privet_handler_unittest.cc \
-	src/privet/security_manager_unittest.cc \
-	src/privet/wifi_ssid_generator_unittest.cc \
-	src/states/state_change_queue_unittest.cc \
-	src/string_utils_unittest.cc \
-	src/test/weave_testrunner.cc \
-	src/weave_unittest.cc \
-	third_party/chromium/crypto/p224_spake_unittest.cc \
-	third_party/chromium/crypto/p224_unittest.cc \
-	third_party/chromium/crypto/sha2_unittest.cc \
+	$(WEAVE_UNITTEST_SRC_FILES) \
+	$(THIRD_PARTY_CHROMIUM_CRYPTO_UNITTEST_SRC_FILES)
 
 include $(BUILD_NATIVE_TEST)
