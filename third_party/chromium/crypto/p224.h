@@ -5,9 +5,12 @@
 #ifndef LIBWEAVE_THIRD_PARTY_CHROMIUM_P224_H_
 #define LIBWEAVE_THIRD_PARTY_CHROMIUM_P224_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <string>
 
-#include <base/basictypes.h>
+#include "base/strings/string_piece.h"
 
 namespace crypto {
 
@@ -17,14 +20,14 @@ namespace p224 {
 
 // An element of the field (ℤ/pℤ) is represented with 8, 28-bit limbs in
 // little endian order.
-typedef uint32 FieldElement[8];
+typedef uint32_t FieldElement[8];
 
 struct Point {
   // SetFromString the value of the point from the 56 byte, external
   // representation. The external point representation is an (x, y) pair of a
   // point on the curve. Each field element is represented as a big-endian
   // number < p.
-  bool SetFromString(const std::string& in);
+  bool SetFromString(const base::StringPiece& in);
 
   // ToString returns an external representation of the Point.
   std::string ToString() const;
@@ -39,11 +42,11 @@ static const size_t kScalarBytes = 28;
 
 // ScalarMult computes *out = in*scalar where scalar is a 28-byte, big-endian
 // number.
-void ScalarMult(const Point& in, const uint8* scalar, Point* out);
+void ScalarMult(const Point& in, const uint8_t* scalar, Point* out);
 
 // ScalarBaseMult computes *out = g*scalar where g is the base point of the
 // curve and scalar is a 28-byte, big-endian number.
-void ScalarBaseMult(const uint8* scalar, Point* out);
+void ScalarBaseMult(const uint8_t* scalar, Point* out);
 
 // Add computes *out = a+b.
 void Add(const Point& a, const Point& b, Point* out);
@@ -52,6 +55,7 @@ void Add(const Point& a, const Point& b, Point* out);
 void Negate(const Point& a, Point* out);
 
 }  // namespace p224
+
 }  // namespace crypto
 
 #endif  // LIBWEAVE_THIRD_PARTY_CHROMIUM_P224_H_
