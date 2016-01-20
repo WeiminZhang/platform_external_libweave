@@ -33,7 +33,7 @@ class BaseApiHandler final {
   void OnConfigChanged(const Settings& settings);
 
   DeviceRegistrationInfo* device_info_;
-  Device* device_;
+  Device* device_{nullptr};
 
   base::WeakPtrFactory<BaseApiHandler> weak_ptr_factory_{this};
   DISALLOW_COPY_AND_ASSIGN(BaseApiHandler);

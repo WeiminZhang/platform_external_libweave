@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 WEAVE_SRC_FILES := \
+	src/access_api_handler.cc \
 	src/backoff_entry.cc \
 	src/base_api_handler.cc \
 	src/commands/cloud_command_proxy.cc \
@@ -48,6 +49,7 @@ WEAVE_TEST_SRC_FILES := \
 	src/test/unittest_utils.cc
 
 WEAVE_UNITTEST_SRC_FILES := \
+	src/access_api_handler_unittest.cc \
 	src/backoff_entry_unittest.cc \
 	src/base_api_handler_unittest.cc \
 	src/commands/cloud_command_proxy_unittest.cc \
