@@ -7,29 +7,25 @@
 
 third_party_chromium_base_obj_files := $(THIRD_PARTY_CHROMIUM_BASE_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# We don't need libgtest.a, but the headers files in third_party/include.
-$(third_party_chromium_base_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
+$(third_party_chromium_base_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
 third_party_chromium_base_unittest_obj_files := $(THIRD_PARTY_CHROMIUM_BASE_UNITTEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# We don't need libgtest.a, but the headers files in third_party/include.
-$(third_party_chromium_base_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
+$(third_party_chromium_base_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
 third_party_chromium_crypto_obj_files := $(THIRD_PARTY_CHROMIUM_CRYPTO_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# We don't need libgtest.a, but the headers files in third_party/include.
-$(third_party_chromium_crypto_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
+$(third_party_chromium_crypto_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
 third_party_chromium_crypto_unittest_obj_files := $(THIRD_PARTY_CHROMIUM_CRYPTO_UNITTEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# We don't need libgtest.a, but the headers files in third_party/include.
-$(third_party_chromium_crypto_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
+$(third_party_chromium_crypto_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -54,7 +50,7 @@ $(third_party_libuweave_obj_files) : out/$(BUILD_MODE)/%.o : %.c
 ###
 # libgtest and libgmock (third_party, downloaded on build)
 
-third_party/lib/libgtest.a :
+third_party/include/gtest/gtest.h :
 	@echo Downloading and building libgtest and libgmock...
 	third_party/get_gtest.sh
 	@echo Finished downloading and building libgtest and libgmock.
@@ -67,7 +63,7 @@ clean-gtest :
 ###
 # libevent (third_party, downloaded on build)
 
-third_party/lib/libevent.a :
+third_party/include/event2/event.h :
 	@echo Downloading and building libevent...
 	DISABLE_LIBEVENT_TEST=1 third_party/get_libevent.sh
 	@echo Finished downloading and building libevent.
