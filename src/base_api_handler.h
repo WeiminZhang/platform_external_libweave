@@ -30,9 +30,6 @@ class BaseApiHandler final {
  private:
   void UpdateBaseConfiguration(const std::weak_ptr<Command>& command);
   void UpdateDeviceInfo(const std::weak_ptr<Command>& command);
-  bool UpdateState(const std::string& anonymous_access_role,
-                   bool discovery_enabled,
-                   bool pairing_enabled);
   void OnConfigChanged(const Settings& settings);
 
   DeviceRegistrationInfo* device_info_;
