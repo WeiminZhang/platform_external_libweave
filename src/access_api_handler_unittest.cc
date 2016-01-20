@@ -169,11 +169,11 @@ TEST_F(AccessApiHandlerTest, Initialization) {
   })";
   EXPECT_JSON_EQ(expected, *trait);
 
-  EXPECT_JSON_EQ((R"({
+  expected = R"({
     "capacity": 10,
     "size": 0
-  })"),
-                 *GetState());
+  })";
+  EXPECT_JSON_EQ(expected, *GetState());
 }
 
 TEST_F(AccessApiHandlerTest, Block) {
@@ -192,11 +192,12 @@ TEST_F(AccessApiHandlerTest, Block) {
       'expirationTimeoutSec': 1234
     }
   })");
-  EXPECT_JSON_EQ((R"({
+
+  auto expected = R"({
     "capacity": 10,
     "size": 1
-  })"),
-                 *GetState());
+  })";
+  EXPECT_JSON_EQ(expected, *GetState());
 }
 
 TEST_F(AccessApiHandlerTest, Unblock) {
@@ -214,11 +215,12 @@ TEST_F(AccessApiHandlerTest, Unblock) {
       'expirationTimeoutSec': 1234
     }
   })");
-  EXPECT_JSON_EQ((R"({
+
+  auto expected = R"({
     "capacity": 10,
     "size": 4
-  })"),
-                 *GetState());
+  })";
+  EXPECT_JSON_EQ(expected, *GetState());
 }
 
 TEST_F(AccessApiHandlerTest, List) {
@@ -239,11 +241,13 @@ TEST_F(AccessApiHandlerTest, List) {
     } ]
   })";
 
-  EXPECT_JSON_EQ(expected, AddCommand(R"({
+  const auto& results = AddCommand(R"({
     'name' : '_accessControlBlackList.list',
     'component': 'accessControl',
     'parameters': {
     }
-  })"));
+  })");
+
+  EXPECT_JSON_EQ(expected, results);
 }
 }  // namespace weave

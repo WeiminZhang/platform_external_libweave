@@ -165,4 +165,3 @@ THIRD_PARTY_LIBUWEAVE_SRC_FILES := \
 	third_party/libuweave/src/macaroon_caveat.c \
 	third_party/libuweave/src/macaroon_context.c \
 	third_party/libuweave/src/macaroon_encoding.c
-
