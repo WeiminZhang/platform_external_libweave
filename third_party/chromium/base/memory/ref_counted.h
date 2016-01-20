@@ -11,8 +11,8 @@
 
 #include "base/base_export.h"
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/logging.h"
-#include "base/move.h"
 #include "build/build_config.h"
 
 namespace base {
@@ -105,7 +105,7 @@ class BASE_EXPORT RefCountedThreadSafeBase {
 //     ~MyFoo();
 //   };
 //
-// You should always make your destructor private, to avoid any code deleting
+// You should always make your destructor non-public, to avoid any code deleting
 // the object accidently while there are references to it.
 template <class T>
 class RefCounted : public subtle::RefCountedBase {
@@ -252,7 +252,6 @@ class RefCountedData
 //
 template <class T>
 class scoped_refptr {
-  TYPE_WITH_MOVE_CONSTRUCTOR_FOR_CPP_03(scoped_refptr)
  public:
   typedef T element_type;
 
@@ -264,17 +263,24 @@ class scoped_refptr {
       AddRef(ptr_);
   }
 
+  // Copy constructor.
   scoped_refptr(const scoped_refptr<T>& r) : ptr_(r.ptr_) {
     if (ptr_)
       AddRef(ptr_);
   }
 
+  // Copy conversion constructor.
   template <typename U>
   scoped_refptr(const scoped_refptr<U>& r) : ptr_(r.get()) {
     if (ptr_)
       AddRef(ptr_);
   }
 
+  // Move constructor. This is required in addition to the conversion
+  // constructor below in order for clang to warn about pessimizing moves.
+  scoped_refptr(scoped_refptr&& r) : ptr_(r.get()) { r.ptr_ = nullptr; }
+
+  // Move conversion constructor.
   template <typename U>
   scoped_refptr(scoped_refptr<U>&& r) : ptr_(r.get()) {
     r.ptr_ = nullptr;
@@ -318,13 +324,13 @@ class scoped_refptr {
   }
 
   scoped_refptr<T>& operator=(scoped_refptr<T>&& r) {
-    scoped_refptr<T>(r.Pass()).swap(*this);
+    scoped_refptr<T>(std::move(r)).swap(*this);
     return *this;
   }
 
   template <typename U>
   scoped_refptr<T>& operator=(scoped_refptr<U>&& r) {
-    scoped_refptr<T>(r.Pass()).swap(*this);
+    scoped_refptr<T>(std::move(r)).swap(*this);
     return *this;
   }
 

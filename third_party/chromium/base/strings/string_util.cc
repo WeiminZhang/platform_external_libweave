@@ -4,8 +4,13 @@
 
 #include "base/strings/string_util.h"
 
+#include <stdint.h>
+#include <limits>
+#include "base/macros.h"
 #include "base/strings/utf_string_conversion_utils.h"
 #include "base/third_party/icu/icu_utf.h"
+
+namespace base {
 
 namespace {
 
@@ -30,8 +35,72 @@ template<> struct NonASCIIMask<8, char> {
 };
 
 }  // namespace
+namespace {
 
-namespace base {
+template<typename StringType>
+StringType ToLowerASCIIImpl(BasicStringPiece<StringType> str) {
+  StringType ret;
+  ret.reserve(str.size());
+  for (size_t i = 0; i < str.size(); i++)
+    ret.push_back(ToLowerASCII(str[i]));
+  return ret;
+}
+
+template<typename StringType>
+StringType ToUpperASCIIImpl(BasicStringPiece<StringType> str) {
+  StringType ret;
+  ret.reserve(str.size());
+  for (size_t i = 0; i < str.size(); i++)
+    ret.push_back(ToUpperASCII(str[i]));
+  return ret;
+}
+
+}  // namespace
+
+std::string ToLowerASCII(StringPiece str) {
+  return ToLowerASCIIImpl<std::string>(str);
+}
+
+std::string ToUpperASCII(StringPiece str) {
+  return ToUpperASCIIImpl<std::string>(str);
+}
+
+template<class StringType>
+int CompareCaseInsensitiveASCIIT(BasicStringPiece<StringType> a,
+                                 BasicStringPiece<StringType> b) {
+  // Find the first characters that aren't equal and compare them.  If the end
+  // of one of the strings is found before a nonequal character, the lengths
+  // of the strings are compared.
+  size_t i = 0;
+  while (i < a.length() && i < b.length()) {
+    typename StringType::value_type lower_a = ToLowerASCII(a[i]);
+    typename StringType::value_type lower_b = ToLowerASCII(b[i]);
+    if (lower_a < lower_b)
+      return -1;
+    if (lower_a > lower_b)
+      return 1;
+    i++;
+  }
+
+  // End of one string hit before finding a different character. Expect the
+  // common case to be "strings equal" at this point so check that first.
+  if (a.length() == b.length())
+    return 0;
+
+  if (a.length() < b.length())
+    return -1;
+  return 1;
+}
+
+int CompareCaseInsensitiveASCII(StringPiece a, StringPiece b) {
+  return CompareCaseInsensitiveASCIIT<std::string>(a, b);
+}
+
+bool EqualsCaseInsensitiveASCII(StringPiece a, StringPiece b) {
+  if (a.length() != b.length())
+    return false;
+  return CompareCaseInsensitiveASCIIT<std::string>(a, b) == 0;
+}
 
 template<typename STR>
 bool ReplaceCharsT(const STR& input,
@@ -54,7 +123,7 @@ bool ReplaceCharsT(const STR& input,
 }
 
 bool ReplaceChars(const std::string& input,
-                  const base::StringPiece& replace_chars,
+                  const StringPiece& replace_chars,
                   const std::string& replace_with,
                   std::string* output) {
   return ReplaceCharsT(input, replace_chars.as_string(), replace_with, output);
@@ -97,7 +166,7 @@ TrimPositions TrimStringT(const Str& input,
 }
 
 bool TrimString(const std::string& input,
-                base::StringPiece trim_chars,
+                StringPiece trim_chars,
                 std::string* output) {
   return TrimStringT(input, trim_chars, TRIM_ALL, output) != TRIM_NONE;
 }
@@ -114,7 +183,7 @@ BasicStringPiece<Str> TrimStringPieceT(BasicStringPiece<Str> input,
 }
 
 StringPiece TrimString(StringPiece input,
-                       const base::StringPiece& trim_chars,
+                       const StringPiece& trim_chars,
                        TrimPositions positions) {
   return TrimStringPieceT(input, trim_chars, positions);
 }
@@ -161,11 +230,11 @@ bool IsStringASCII(const StringPiece& str) {
 
 bool IsStringUTF8(const StringPiece& str) {
   const char *src = str.data();
-  int32 src_len = static_cast<int32>(str.length());
-  int32 char_index = 0;
+  int32_t src_len = static_cast<int32_t>(str.length());
+  int32_t char_index = 0;
 
   while (char_index < src_len) {
-    int32 code_point;
+    int32_t code_point;
     CBU8_NEXT(src, char_index, src_len, code_point);
     if (!IsValidCharacter(code_point))
       return false;

@@ -4,9 +4,12 @@
 
 #include "third_party/chromium/crypto/p224.h"
 
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "base/macros.h"
 #include <gtest/gtest.h>
 
 namespace crypto {
@@ -14,22 +17,20 @@ namespace crypto {
 using p224::Point;
 
 // kBasePointExternal is the P224 base point in external representation.
-static const uint8 kBasePointExternal[56] = {
-  0xb7, 0x0e, 0x0c, 0xbd, 0x6b, 0xb4, 0xbf, 0x7f,
-  0x32, 0x13, 0x90, 0xb9, 0x4a, 0x03, 0xc1, 0xd3,
-  0x56, 0xc2, 0x11, 0x22, 0x34, 0x32, 0x80, 0xd6,
-  0x11, 0x5c, 0x1d, 0x21, 0xbd, 0x37, 0x63, 0x88,
-  0xb5, 0xf7, 0x23, 0xfb, 0x4c, 0x22, 0xdf, 0xe6,
-  0xcd, 0x43, 0x75, 0xa0, 0x5a, 0x07, 0x47, 0x64,
-  0x44, 0xd5, 0x81, 0x99, 0x85, 0x00, 0x7e, 0x34,
+static const uint8_t kBasePointExternal[56] = {
+    0xb7, 0x0e, 0x0c, 0xbd, 0x6b, 0xb4, 0xbf, 0x7f, 0x32, 0x13, 0x90, 0xb9,
+    0x4a, 0x03, 0xc1, 0xd3, 0x56, 0xc2, 0x11, 0x22, 0x34, 0x32, 0x80, 0xd6,
+    0x11, 0x5c, 0x1d, 0x21, 0xbd, 0x37, 0x63, 0x88, 0xb5, 0xf7, 0x23, 0xfb,
+    0x4c, 0x22, 0xdf, 0xe6, 0xcd, 0x43, 0x75, 0xa0, 0x5a, 0x07, 0x47, 0x64,
+    0x44, 0xd5, 0x81, 0x99, 0x85, 0x00, 0x7e, 0x34,
 };
 
 // TestVector represents a test of scalar multiplication of the base point.
 // |scalar| is a big-endian scalar and |affine| is the external representation
 // of g*scalar.
 struct TestVector {
-  uint8 scalar[28];
-  uint8 affine[28*2];
+  uint8_t scalar[28];
+  uint8_t affine[28 * 2];
 };
 
 static const int kNumNISTTestVectors = 52;
@@ -770,15 +771,15 @@ static const TestVector kNISTTestVectors[kNumNISTTestVectors] = {
 TEST(P224, ExternalToInternalAndBack) {
   Point point;
 
-  EXPECT_TRUE(point.SetFromString(
-      std::string(reinterpret_cast<const char*>(kBasePointExternal),
-                  sizeof(kBasePointExternal))));
+  EXPECT_TRUE(point.SetFromString(base::StringPiece(
+      reinterpret_cast<const char *>(kBasePointExternal),
+      sizeof(kBasePointExternal))));
 
   const std::string external = point.ToString();
 
   ASSERT_EQ(external.size(), 56u);
-  EXPECT_EQ(0, memcmp(external.data(), kBasePointExternal,
-                      sizeof(kBasePointExternal)));
+  EXPECT_TRUE(memcmp(external.data(), kBasePointExternal,
+                     sizeof(kBasePointExternal)) == 0);
 }
 
 TEST(P224, ScalarBaseMult) {
@@ -788,22 +789,22 @@ TEST(P224, ScalarBaseMult) {
     p224::ScalarBaseMult(kNISTTestVectors[i].scalar, &point);
     const std::string external = point.ToString();
     ASSERT_EQ(external.size(), 56u);
-    EXPECT_EQ(0, memcmp(external.data(), kNISTTestVectors[i].affine,
-                        external.size()));
+    EXPECT_TRUE(memcmp(external.data(), kNISTTestVectors[i].affine,
+                       external.size()) == 0);
   }
 }
 
 TEST(P224, Addition) {
   Point a, b, minus_b, sum, a_again;
 
-  ASSERT_TRUE(a.SetFromString(std::string(
-      reinterpret_cast<const char*>(kNISTTestVectors[10].affine), 56)));
-  ASSERT_TRUE(b.SetFromString(std::string(
-      reinterpret_cast<const char*>(kNISTTestVectors[11].affine), 56)));
+  ASSERT_TRUE(a.SetFromString(base::StringPiece(
+      reinterpret_cast<const char *>(kNISTTestVectors[10].affine), 56)));
+  ASSERT_TRUE(b.SetFromString(base::StringPiece(
+      reinterpret_cast<const char *>(kNISTTestVectors[11].affine), 56)));
 
   p224::Negate(b, &minus_b);
   p224::Add(a, b, &sum);
-  EXPECT_NE(0, memcmp(&sum, &a, sizeof(sum)));
+  EXPECT_TRUE(memcmp(&sum, &a, sizeof(sum)) != 0);
   p224::Add(minus_b, sum, &a_again);
   EXPECT_TRUE(a_again.ToString() == a.ToString());
 }
@@ -814,8 +815,8 @@ TEST(P224, Infinity) {
 
   // Test that x^0 = ∞.
   Point a;
-  p224::ScalarBaseMult(reinterpret_cast<const uint8*>(zeros), &a);
-  EXPECT_EQ(0, memcmp(zeros, a.ToString().data(), sizeof(zeros)));
+  p224::ScalarBaseMult(reinterpret_cast<const uint8_t*>(zeros), &a);
+  EXPECT_TRUE(memcmp(zeros, a.ToString().data(), sizeof(zeros)) == 0);
 
   // We shouldn't allow ∞ to be imported.
   EXPECT_FALSE(a.SetFromString(std::string(zeros, sizeof(zeros))));

@@ -5,10 +5,11 @@
 #ifndef BASE_GUID_H_
 #define BASE_GUID_H_
 
+#include <stdint.h>
+
 #include <string>
 
 #include "base/base_export.h"
-#include "base/basictypes.h"
 #include "build/build_config.h"
 
 namespace base {
@@ -21,7 +22,7 @@ std::string GenerateGUID();
 
 #if defined(OS_POSIX)
 // For unit testing purposes only.  Do not use outside of tests.
-std::string RandomDataToGUIDString(const uint64 bytes[2]);
+std::string RandomDataToGUIDString(const uint64_t bytes[2]);
 #endif
 
 }  // namespace base

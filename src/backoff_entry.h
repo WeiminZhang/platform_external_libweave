@@ -38,11 +38,11 @@ class BackoffEntry {
 
     // Maximum amount of time we are willing to delay our request, -1
     // for no maximum.
-    int64 maximum_backoff_ms;
+    int64_t maximum_backoff_ms;
 
     // Time to keep an entry from being discarded even when it
     // has no significant state, -1 to never discard.
-    int64 entry_lifetime_ms;
+    int64_t entry_lifetime_ms;
 
     // If true, we always use a delay of initial_delay_ms, even before
     // we've seen num_errors_to_ignore errors.  Otherwise, initial_delay_ms

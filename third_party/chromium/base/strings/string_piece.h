@@ -28,7 +28,7 @@
 #include <string>
 
 #include "base/base_export.h"
-#include "base/basictypes.h"
+#include "base/logging.h"
 
 namespace base {
 
@@ -112,9 +112,13 @@ template <typename STRING_TYPE> class BasicStringPiece {
   BasicStringPiece(const value_type* offset, size_type len)
       : ptr_(offset), length_(len) {}
   BasicStringPiece(const typename STRING_TYPE::const_iterator& begin,
-                    const typename STRING_TYPE::const_iterator& end)
-      : ptr_((end > begin) ? &(*begin) : NULL),
-        length_((end > begin) ? (size_type)(end - begin) : 0) {}
+                   const typename STRING_TYPE::const_iterator& end) {
+    length_ = static_cast<size_t>(std::distance(begin, end));
+
+    // The length test before assignment is to avoid dereferencing an iterator
+    // that may point to the end() of a string.
+    ptr_ = length_ > 0 ? &*begin : nullptr;
+  }
 
   // data() may return a pointer to a buffer with embedded NULs, and the
   // returned buffer may or may not be null terminated.  Therefore it is
@@ -283,12 +287,12 @@ BasicStringPiece<STRING_TYPE>::npos =
 
 // MSVC doesn't like complex extern templates and DLLs.
 #if !defined(COMPILER_MSVC)
-extern template class BasicStringPiece<std::string>;
+extern template class BASE_EXPORT BasicStringPiece<std::string>;
 #endif
 
 // StingPiece operators --------------------------------------------------------
 
-bool operator==(const StringPiece& x, const StringPiece& y);
+BASE_EXPORT bool operator==(const StringPiece& x, const StringPiece& y);
 
 inline bool operator!=(const StringPiece& x, const StringPiece& y) {
   return !(x == y);

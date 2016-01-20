@@ -14,8 +14,6 @@
 
 #include "third_party/chromium/crypto/p224.h"
 
-namespace crypto {
-
 namespace {
 
 // The following two points (M and N in the protocol) are verifiable random
@@ -79,19 +77,19 @@ namespace {
 //   return 0;
 // }
 
-const p224::Point kM = {
+const crypto::p224::Point kM = {
   {174237515, 77186811, 235213682, 33849492,
-    33188520, 48266885, 177021753, 81038478},
+   33188520, 48266885, 177021753, 81038478},
   {104523827, 245682244, 266509668, 236196369,
-    28372046, 145351378, 198520366, 113345994},
+   28372046, 145351378, 198520366, 113345994},
   {1, 0, 0, 0, 0, 0, 0, 0},
 };
 
-const p224::Point kN = {
+const crypto::p224::Point kN = {
   {136176322, 263523628, 251628795, 229292285,
-    5034302, 185981975, 171998428, 11653062},
+   5034302, 185981975, 171998428, 11653062},
   {197567436, 51226044, 60372156, 175772188,
-    42075930, 8083165, 160827401, 65097570},
+   42075930, 8083165, 160827401, 65097570},
   {1, 0, 0, 0, 0, 0, 0, 0},
 };
 
@@ -114,9 +112,12 @@ bool SecureMemEqual(const uint8_t* s1_ptr, const uint8_t* s2_ptr, size_t n) {
 
 }  // anonymous namespace
 
-P224EncryptedKeyExchange::P224EncryptedKeyExchange(PeerType peer_type,
-                                                   const std::string& password)
-    : state_(kStateInitial), is_server_(peer_type == kPeerTypeServer) {
+namespace crypto {
+
+P224EncryptedKeyExchange::P224EncryptedKeyExchange(
+    PeerType peer_type, const base::StringPiece& password)
+    : state_(kStateInitial),
+      is_server_(peer_type == kPeerTypeServer) {
   memset(&x_, 0, sizeof(x_));
   memset(&expected_authenticator_, 0, sizeof(expected_authenticator_));
 
@@ -163,7 +164,7 @@ const std::string& P224EncryptedKeyExchange::GetNextMessage() {
 }
 
 P224EncryptedKeyExchange::Result P224EncryptedKeyExchange::ProcessMessage(
-    const std::string& message) {
+    const base::StringPiece& message) {
   if (state_ == kStateRecvHash) {
     // This is the final state of the protocol: we are reading the peer's
     // authentication hash and checking that it matches the one that we expect.
@@ -210,23 +211,23 @@ P224EncryptedKeyExchange::Result P224EncryptedKeyExchange::ProcessMessage(
 
   std::string client_masked_dh, server_masked_dh;
   if (is_server_) {
-    client_masked_dh = message;
+    client_masked_dh = message.as_string();
     server_masked_dh = next_message_;
   } else {
     client_masked_dh = next_message_;
-    server_masked_dh = message;
+    server_masked_dh = message.as_string();
   }
 
   // Now we calculate the hashes that each side will use to prove to the other
   // that they derived the correct value for K.
-  uint8 client_hash[kSHA256Length], server_hash[kSHA256Length];
+  uint8_t client_hash[kSHA256Length], server_hash[kSHA256Length];
   CalculateHash(kPeerTypeClient, client_masked_dh, server_masked_dh, key_,
                 client_hash);
   CalculateHash(kPeerTypeServer, client_masked_dh, server_masked_dh, key_,
                 server_hash);
 
-  const uint8* my_hash = is_server_ ? server_hash : client_hash;
-  const uint8* their_hash = is_server_ ? client_hash : server_hash;
+  const uint8_t* my_hash = is_server_ ? server_hash : client_hash;
+  const uint8_t* their_hash = is_server_ ? client_hash : server_hash;
 
   next_message_ =
       std::string(reinterpret_cast<const char*>(my_hash), kSHA256Length);
@@ -240,7 +241,7 @@ void P224EncryptedKeyExchange::CalculateHash(
     const std::string& client_masked_dh,
     const std::string& server_masked_dh,
     const std::string& k,
-    uint8* out_digest) {
+    uint8_t* out_digest) {
   std::string hash_contents;
 
   if (peer_type == kPeerTypeServer) {

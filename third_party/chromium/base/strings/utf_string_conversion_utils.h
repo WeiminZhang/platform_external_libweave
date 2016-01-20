@@ -9,12 +9,14 @@
 
 // This should only be used by the various UTF string conversion files.
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include "base/base_export.h"
-#include "base/basictypes.h"
 
 namespace base {
 
-inline bool IsValidCodepoint(uint32 code_point) {
+inline bool IsValidCodepoint(uint32_t code_point) {
   // Excludes the surrogate code points ([0xD800, 0xDFFF]) and
   // codepoints larger than 0x10FFFF (the highest codepoint allowed).
   // Non-characters and unassigned codepoints are allowed.
@@ -22,7 +24,7 @@ inline bool IsValidCodepoint(uint32 code_point) {
          (code_point >= 0xE000u && code_point <= 0x10FFFFu);
 }
 
-inline bool IsValidCharacter(uint32 code_point) {
+inline bool IsValidCharacter(uint32_t code_point) {
   // Excludes non-characters (U+FDD0..U+FDEF, and all codepoints ending in
   // 0xFFFE or 0xFFFF) from the set of valid code points.
   return code_point < 0xD800u || (code_point >= 0xE000u &&
@@ -40,16 +42,16 @@ inline bool IsValidCharacter(uint32 code_point) {
 //
 // Returns true on success. On false, |*code_point| will be invalid.
 bool ReadUnicodeCharacter(const char* src,
-                          int32 src_len,
-                          int32* char_index,
-                          uint32* code_point_out);
+                          int32_t src_len,
+                          int32_t* char_index,
+                          uint32_t* code_point_out);
 
 #if defined(WCHAR_T_IS_UTF32)
 // Reads UTF-32 character. The usage is the same as the 8-bit version above.
 bool ReadUnicodeCharacter(const wchar_t* src,
-                          int32 src_len,
-                          int32* char_index,
-                          uint32* code_point);
+                          int32_t src_len,
+                          int32_t* char_index,
+                          uint32_t* code_point);
 #endif  // defined(WCHAR_T_IS_UTF32)
 
 // WriteUnicodeCharacter -------------------------------------------------------
@@ -57,12 +59,12 @@ bool ReadUnicodeCharacter(const wchar_t* src,
 // Appends a UTF-8 character to the given 8-bit string.  Returns the number of
 // bytes written.
 // TODO(brettw) Bug 79631: This function should not be exposed.
-size_t WriteUnicodeCharacter(uint32 code_point, std::string* output);
+size_t WriteUnicodeCharacter(uint32_t code_point, std::string* output);
 
 #if defined(WCHAR_T_IS_UTF32)
 // Appends the given UTF-32 character to the given 32-bit string.  Returns the
 // number of 32-bit values written.
-inline size_t WriteUnicodeCharacter(uint32 code_point, std::wstring* output) {
+inline size_t WriteUnicodeCharacter(uint32_t code_point, std::wstring* output) {
   // This is the easy case, just append the character.
   output->push_back(code_point);
   return 1;
