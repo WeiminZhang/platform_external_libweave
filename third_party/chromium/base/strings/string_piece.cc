@@ -5,8 +5,12 @@
 
 #include "base/strings/string_piece.h"
 
+#include <limits.h>
+
 #include <algorithm>
 #include <ostream>
+
+#include "base/logging.h"
 
 namespace base {
 namespace {

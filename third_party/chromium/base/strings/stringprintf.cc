@@ -5,12 +5,13 @@
 #include "base/strings/stringprintf.h"
 
 #include <errno.h>
+#include <stddef.h>
 
 #include <vector>
 
-#include "base/logging.h"
 #include "base/scoped_clear_errno.h"
 #include "base/strings/string_util.h"
+#include "build/build_config.h"
 
 namespace base {
 

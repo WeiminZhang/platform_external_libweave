@@ -131,7 +131,6 @@ THIRD_PARTY_CHROMIUM_BASE_UNITTEST_SRC_FILES := \
 	third_party/chromium/base/memory/ref_counted_unittest.cc \
 	third_party/chromium/base/memory/scoped_ptr_unittest.cc \
 	third_party/chromium/base/memory/weak_ptr_unittest.cc \
-	third_party/chromium/base/move_unittest.cc \
 	third_party/chromium/base/numerics/safe_numerics_unittest.cc \
 	third_party/chromium/base/observer_list_unittest.cc \
 	third_party/chromium/base/rand_util_unittest.cc \
