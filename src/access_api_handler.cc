@@ -178,13 +178,9 @@ void AccessApiHandler::Unblock(const std::weak_ptr<Command>& cmd) {
     return;
   }
 
-  if (!manager_->Unblock(user_id, app_id, &error)) {
-    command->Abort(error.get(), nullptr);
-    return;
-  }
-
-  UpdateState();
-  command->Complete({}, nullptr);
+  manager_->Unblock(user_id, app_id,
+                    base::Bind(&AccessApiHandler::OnCommandDone,
+                               weak_ptr_factory_.GetWeakPtr(), cmd));
 }
 
 void AccessApiHandler::List(const std::weak_ptr<Command>& cmd) {

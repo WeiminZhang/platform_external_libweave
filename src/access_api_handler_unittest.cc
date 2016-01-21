@@ -29,9 +29,12 @@ class MockAccessBlackListManager : public AccessBlackListManager {
                     const base::Time&,
                     const DoneCallback&));
   MOCK_METHOD3(Unblock,
-               bool(const std::vector<uint8_t>&,
+               void(const std::vector<uint8_t>&,
                     const std::vector<uint8_t>&,
-                    ErrorPtr*));
+                    const DoneCallback&));
+  MOCK_CONST_METHOD2(IsBlocked,
+                     bool(const std::vector<uint8_t>&,
+                          const std::vector<uint8_t>&));
   MOCK_CONST_METHOD0(GetEntries, std::vector<Entry>());
   MOCK_CONST_METHOD0(GetSize, size_t());
   MOCK_CONST_METHOD0(GetCapacity, size_t());
@@ -203,7 +206,8 @@ TEST_F(AccessApiHandlerTest, Block) {
 TEST_F(AccessApiHandlerTest, Unblock) {
   EXPECT_CALL(access_manager_, Unblock(std::vector<uint8_t>{1, 2, 3},
                                        std::vector<uint8_t>{3, 4, 5}, _))
-      .WillOnce(Return(true));
+      .WillOnce(WithArgs<2>(
+          Invoke([](const DoneCallback& callback) { callback.Run(nullptr); })));
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(4));
 
   AddCommand(R"({
