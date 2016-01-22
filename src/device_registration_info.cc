@@ -196,10 +196,9 @@ std::unique_ptr<base::DictionaryValue> ParseJsonResponse(
       SplitAtFirst(response.GetContentType(), ";", true).first;
 
   if (content_type != http::kJson && content_type != http::kPlain) {
-    Error::AddTo(
+    return Error::AddTo(
         error, FROM_HERE, "non_json_content_type",
         "Unexpected content type: \'" + response.GetContentType() + "\'");
-    return std::unique_ptr<base::DictionaryValue>();
   }
 
   const std::string& json = response.GetData();
@@ -328,10 +327,11 @@ bool DeviceRegistrationInfo::VerifyRegistrationCredentials(
 
   VLOG(2) << "Device registration record "
           << ((have_credentials) ? "found" : "not found.");
-  if (!have_credentials)
-    Error::AddTo(error, FROM_HERE, "device_not_registered",
-                 "No valid device registration record found");
-  return have_credentials;
+  if (!have_credentials) {
+    return Error::AddTo(error, FROM_HERE, "device_not_registered",
+                        "No valid device registration record found");
+  }
+  return true;
 }
 
 std::unique_ptr<base::DictionaryValue>
@@ -352,8 +352,7 @@ DeviceRegistrationInfo::ParseOAuthResponse(const HttpClient::Response& response,
     if (!resp->GetString("error_description", &error_message)) {
       error_message = "Unexpected OAuth error";
     }
-    Error::AddTo(error, FROM_HERE, error_code, error_message);
-    return std::unique_ptr<base::DictionaryValue>();
+    return Error::AddTo(error, FROM_HERE, error_code, error_message);
   }
   return resp;
 }
@@ -836,9 +835,8 @@ bool DeviceRegistrationInfo::UpdateServiceConfig(
     const std::string& service_url,
     ErrorPtr* error) {
   if (HaveRegistrationCredentials()) {
-    Error::AddTo(error, FROM_HERE, kErrorAlreayRegistered,
-                 "Unable to change config for registered device");
-    return false;
+    return Error::AddTo(error, FROM_HERE, kErrorAlreayRegistered,
+                        "Unable to change config for registered device");
   }
   Config::Transaction change{config_};
   change.set_client_id(client_id);

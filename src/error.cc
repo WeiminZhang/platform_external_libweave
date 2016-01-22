@@ -39,10 +39,10 @@ ErrorPtr Error::Create(const tracked_objects::Location& location,
   return ErrorPtr(new Error(location, code, message, std::move(inner_error)));
 }
 
-void Error::AddTo(ErrorPtr* error,
-                  const tracked_objects::Location& location,
-                  const std::string& code,
-                  const std::string& message) {
+Error::AddToTypeProxy Error::AddTo(ErrorPtr* error,
+                                   const tracked_objects::Location& location,
+                                   const std::string& code,
+                                   const std::string& message) {
   if (error) {
     *error = Create(location, code, message, std::move(*error));
   } else {
@@ -50,18 +50,21 @@ void Error::AddTo(ErrorPtr* error,
     // we still want to log the error...
     LogError(location, code, message);
   }
+  return {};
 }
 
-void Error::AddToPrintf(ErrorPtr* error,
-                        const tracked_objects::Location& location,
-                        const std::string& code,
-                        const char* format,
-                        ...) {
+Error::AddToTypeProxy Error::AddToPrintf(
+    ErrorPtr* error,
+    const tracked_objects::Location& location,
+    const std::string& code,
+    const char* format,
+    ...) {
   va_list ap;
   va_start(ap, format);
   std::string message = base::StringPrintV(format, ap);
   va_end(ap);
   AddTo(error, location, code, message);
+  return {};
 }
 
 ErrorPtr Error::Clone() const {

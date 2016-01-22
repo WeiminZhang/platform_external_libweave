@@ -47,18 +47,17 @@ bool ComponentManagerImpl::AddComponent(const std::string& path,
       return false;
   }
   if (root->GetWithoutPathExpansion(name, nullptr)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidState,
-                       "Component '%s' already exists at path '%s'",
-                       name.c_str(), path.c_str());
-    return false;
+    return Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidState,
+                              "Component '%s' already exists at path '%s'",
+                              name.c_str(), path.c_str());
   }
 
   // Check to make sure the declared traits are already defined.
   for (const std::string& trait : traits) {
     if (!FindTraitDefinition(trait)) {
-      Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidPropValue,
-                         "Trait '%s' is undefined", trait.c_str());
-      return false;
+      return Error::AddToPrintf(error, FROM_HERE,
+                                errors::commands::kInvalidPropValue,
+                                "Trait '%s' is undefined", trait.c_str());
     }
   }
   std::unique_ptr<base::DictionaryValue> dict{new base::DictionaryValue};
@@ -108,10 +107,9 @@ bool ComponentManagerImpl::RemoveComponent(const std::string& path,
   }
 
   if (!root->RemoveWithoutPathExpansion(name, nullptr)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidState,
-                       "Component '%s' does not exist at path '%s'",
-                       name.c_str(), path.c_str());
-    return false;
+    return Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidState,
+                              "Component '%s' does not exist at path '%s'",
+                              name.c_str(), path.c_str());
   }
 
   for (const auto& cb : on_componet_tree_changed_)
@@ -132,18 +130,17 @@ bool ComponentManagerImpl::RemoveComponentArrayItem(const std::string& path,
 
   base::ListValue* array_value = nullptr;
   if (!root->GetListWithoutPathExpansion(name, &array_value)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidState,
-                       "There is no component array named '%s' at path '%s'",
-                       name.c_str(), path.c_str());
-    return false;
+    return Error::AddToPrintf(
+        error, FROM_HERE, errors::commands::kInvalidState,
+        "There is no component array named '%s' at path '%s'", name.c_str(),
+        path.c_str());
   }
 
   if (!array_value->Remove(index, nullptr)) {
-    Error::AddToPrintf(
+    return Error::AddToPrintf(
         error, FROM_HERE, errors::commands::kInvalidState,
         "Component array '%s' at path '%s' does not have an element %zu",
         name.c_str(), path.c_str(), index);
-    return false;
   }
 
   for (const auto& cb : on_componet_tree_changed_)
@@ -233,11 +230,10 @@ std::unique_ptr<CommandInstance> ComponentManagerImpl::ParseCommandInstance(
     return nullptr;
 
   if (role < minimal_role) {
-    Error::AddToPrintf(error, FROM_HERE, "access_denied",
-                       "User role '%s' less than minimal: '%s'",
-                       EnumToString(role).c_str(),
-                       EnumToString(minimal_role).c_str());
-    return nullptr;
+    return Error::AddToPrintf(error, FROM_HERE, "access_denied",
+                              "User role '%s' less than minimal: '%s'",
+                              EnumToString(role).c_str(),
+                              EnumToString(minimal_role).c_str());
   }
 
   std::string component_path = command_instance->GetComponent();
@@ -248,12 +244,11 @@ std::unique_ptr<CommandInstance> ComponentManagerImpl::ParseCommandInstance(
         SplitAtFirst(command_instance->GetName(), ".", true).first;
     component_path = FindComponentWithTrait(trait_name);
     if (component_path.empty()) {
-      Error::AddToPrintf(
+      return Error::AddToPrintf(
           error, FROM_HERE, "unrouted_command",
           "Unable route command '%s' because there is no component supporting"
           "trait '%s'",
           command_instance->GetName().c_str(), trait_name.c_str());
-      return nullptr;
     }
     command_instance->SetComponent(component_path);
   }
@@ -279,10 +274,9 @@ std::unique_ptr<CommandInstance> ComponentManagerImpl::ParseCommandInstance(
   }
 
   if (!trait_supported) {
-    Error::AddToPrintf(error, FROM_HERE, "trait_not_supported",
-                       "Component '%s' doesn't support trait '%s'",
-                       component_path.c_str(), pair.first.c_str());
-    return nullptr;
+    return Error::AddToPrintf(error, FROM_HERE, "trait_not_supported",
+                              "Component '%s' doesn't support trait '%s'",
+                              component_path.c_str(), pair.first.c_str());
   }
 
   if (command_id.empty()) {
@@ -353,10 +347,9 @@ bool ComponentManagerImpl::GetMinimalRole(const std::string& command_name,
                                           ErrorPtr* error) const {
   const base::DictionaryValue* command = FindCommandDefinition(command_name);
   if (!command) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidCommandName,
-                       "Command definition for '%s' not found",
-                       command_name.c_str());
-    return false;
+    return Error::AddToPrintf(
+        error, FROM_HERE, errors::commands::kInvalidCommandName,
+        "Command definition for '%s' not found", command_name.c_str());
   }
   std::string value;
   // The JSON definition has been pre-validated already in LoadCommands, so
@@ -414,22 +407,22 @@ const base::Value* ComponentManagerImpl::GetStateProperty(
     return nullptr;
   auto pair = SplitAtFirst(name, ".", true);
   if (pair.first.empty()) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kPropertyMissing,
-                       "Empty state package in '%s'", name.c_str());
-    return nullptr;
+    return Error::AddToPrintf(error, FROM_HERE,
+                              errors::commands::kPropertyMissing,
+                              "Empty state package in '%s'", name.c_str());
   }
   if (pair.second.empty()) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kPropertyMissing,
-                       "State property name not specified in '%s'",
-                       name.c_str());
-    return nullptr;
+    return Error::AddToPrintf(
+        error, FROM_HERE, errors::commands::kPropertyMissing,
+        "State property name not specified in '%s'", name.c_str());
   }
   std::string key = base::StringPrintf("state.%s", name.c_str());
   const base::Value* value = nullptr;
   if (!component->Get(key, &value)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kPropertyMissing,
-                       "State property '%s' not found in component '%s'",
-                       name.c_str(), component_path.c_str());
+    return Error::AddToPrintf(error, FROM_HERE,
+                              errors::commands::kPropertyMissing,
+                              "State property '%s' not found in component '%s'",
+                              name.c_str(), component_path.c_str());
   }
   return value;
 }
@@ -441,15 +434,14 @@ bool ComponentManagerImpl::SetStateProperty(const std::string& component_path,
   base::DictionaryValue dict;
   auto pair = SplitAtFirst(name, ".", true);
   if (pair.first.empty()) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kPropertyMissing,
-                       "Empty state package in '%s'", name.c_str());
-    return false;
+    return Error::AddToPrintf(error, FROM_HERE,
+                              errors::commands::kPropertyMissing,
+                              "Empty state package in '%s'", name.c_str());
   }
   if (pair.second.empty()) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kPropertyMissing,
-                       "State property name not specified in '%s'",
-                       name.c_str());
-    return false;
+    return Error::AddToPrintf(
+        error, FROM_HERE, errors::commands::kPropertyMissing,
+        "State property name not specified in '%s'", name.c_str());
   }
   dict.Set(name, value.DeepCopy());
   return SetStateProperties(component_path, dict, error);
@@ -673,26 +665,24 @@ const base::DictionaryValue* ComponentManagerImpl::FindComponentAt(
     auto element = SplitAtFirst(parts[i], "[", true);
     int array_index = -1;
     if (element.first.empty()) {
-      Error::AddToPrintf(error, FROM_HERE, errors::commands::kPropertyMissing,
-                         "Empty path element at '%s'", root_path.c_str());
-      return nullptr;
+      return Error::AddToPrintf(
+          error, FROM_HERE, errors::commands::kPropertyMissing,
+          "Empty path element at '%s'", root_path.c_str());
     }
     if (!element.second.empty()) {
       if (element.second.back() != ']') {
-        Error::AddToPrintf(error, FROM_HERE, errors::commands::kPropertyMissing,
-                           "Invalid array element syntax '%s'",
-                           parts[i].c_str());
-        return nullptr;
+        return Error::AddToPrintf(
+            error, FROM_HERE, errors::commands::kPropertyMissing,
+            "Invalid array element syntax '%s'", parts[i].c_str());
       }
       element.second.pop_back();
       std::string index_str;
       base::TrimWhitespaceASCII(element.second, base::TrimPositions::TRIM_ALL,
                                 &index_str);
       if (!base::StringToInt(index_str, &array_index) || array_index < 0) {
-        Error::AddToPrintf(error, FROM_HERE,
-                           errors::commands::kInvalidPropValue,
-                           "Invalid array index '%s'", element.second.c_str());
-        return nullptr;
+        return Error::AddToPrintf(
+            error, FROM_HERE, errors::commands::kInvalidPropValue,
+            "Invalid array index '%s'", element.second.c_str());
       }
     }
 
@@ -701,10 +691,10 @@ const base::DictionaryValue* ComponentManagerImpl::FindComponentAt(
       // points to the actual parent component. We need the root to point to
       // the 'components' element containing child sub-components instead.
       if (!root->GetDictionary("components", &root)) {
-        Error::AddToPrintf(error, FROM_HERE, errors::commands::kPropertyMissing,
-                           "Component '%s' does not exist at '%s'",
-                           element.first.c_str(), root_path.c_str());
-        return nullptr;
+        return Error::AddToPrintf(error, FROM_HERE,
+                                  errors::commands::kPropertyMissing,
+                                  "Component '%s' does not exist at '%s'",
+                                  element.first.c_str(), root_path.c_str());
       }
     }
 
@@ -717,16 +707,16 @@ const base::DictionaryValue* ComponentManagerImpl::FindComponentAt(
     }
 
     if (value->GetType() == base::Value::TYPE_LIST && array_index < 0) {
-      Error::AddToPrintf(error, FROM_HERE, errors::commands::kTypeMismatch,
-                         "Element '%s.%s' is an array", root_path.c_str(),
-                         element.first.c_str());
-      return nullptr;
+      return Error::AddToPrintf(error, FROM_HERE,
+                                errors::commands::kTypeMismatch,
+                                "Element '%s.%s' is an array",
+                                root_path.c_str(), element.first.c_str());
     }
     if (value->GetType() == base::Value::TYPE_DICTIONARY && array_index >= 0) {
-      Error::AddToPrintf(error, FROM_HERE, errors::commands::kTypeMismatch,
-                         "Element '%s.%s' is not an array", root_path.c_str(),
-                         element.first.c_str());
-      return nullptr;
+      return Error::AddToPrintf(error, FROM_HERE,
+                                errors::commands::kTypeMismatch,
+                                "Element '%s.%s' is not an array",
+                                root_path.c_str(), element.first.c_str());
     }
 
     if (value->GetType() == base::Value::TYPE_DICTIONARY) {
@@ -737,11 +727,10 @@ const base::DictionaryValue* ComponentManagerImpl::FindComponentAt(
       const base::Value* component_value = nullptr;
       if (!component_array->Get(array_index, &component_value) ||
           !component_value->GetAsDictionary(&root)) {
-        Error::AddToPrintf(error, FROM_HERE, errors::commands::kPropertyMissing,
-                           "Element '%s.%s' does not contain item #%d",
-                           root_path.c_str(), element.first.c_str(),
-                           array_index);
-        return nullptr;
+        return Error::AddToPrintf(
+            error, FROM_HERE, errors::commands::kPropertyMissing,
+            "Element '%s.%s' does not contain item #%d", root_path.c_str(),
+            element.first.c_str(), array_index);
       }
     }
     if (!root_path.empty())

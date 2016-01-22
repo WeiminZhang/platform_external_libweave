@@ -320,9 +320,8 @@ class CloudDelegateImpl : public CloudDelegate {
       return true;
     }
 
-    Error::AddTo(error, FROM_HERE, errors::kAccessDenied,
-                 "Need to be owner of the command.");
-    return false;
+    return Error::AddTo(error, FROM_HERE, errors::kAccessDenied,
+                        "Need to be owner of the command.");
   }
 
   provider::TaskRunner* task_runner_{nullptr};

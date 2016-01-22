@@ -24,6 +24,21 @@ class LIBWEAVE_EXPORT Error final {
  public:
   ~Error() = default;
 
+  class AddToTypeProxy {
+   public:
+    operator bool() const { return false; }
+
+    template <class T>
+    operator std::unique_ptr<T>() const {
+      return nullptr;
+    }
+
+    template <class T>
+    operator T*() const {
+      return nullptr;
+    }
+  };
+
   // Creates an instance of Error class.
   static ErrorPtr Create(const tracked_objects::Location& location,
                          const std::string& code,
@@ -35,17 +50,17 @@ class LIBWEAVE_EXPORT Error final {
   // If |error| is not nullptr, creates another instance of Error class,
   // initializes it with specified arguments and adds it to the head of
   // the error chain pointed to by |error|.
-  static void AddTo(ErrorPtr* error,
-                    const tracked_objects::Location& location,
-                    const std::string& code,
-                    const std::string& message);
+  static AddToTypeProxy AddTo(ErrorPtr* error,
+                              const tracked_objects::Location& location,
+                              const std::string& code,
+                              const std::string& message);
   // Same as the Error::AddTo above, but allows to pass in a printf-like
   // format string and optional parameters to format the error message.
-  static void AddToPrintf(ErrorPtr* error,
-                          const tracked_objects::Location& location,
-                          const std::string& code,
-                          const char* format,
-                          ...) PRINTF_FORMAT(4, 5);
+  static AddToTypeProxy AddToPrintf(ErrorPtr* error,
+                                    const tracked_objects::Location& location,
+                                    const std::string& code,
+                                    const char* format,
+                                    ...) PRINTF_FORMAT(4, 5);
 
   // Clones error with all inner errors.
   ErrorPtr Clone() const;

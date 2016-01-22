@@ -51,9 +51,8 @@ class Spakep224Exchanger : public SecurityManager::KeyExchanger {
       case crypto::P224EncryptedKeyExchange::kResultPending:
         return true;
       case crypto::P224EncryptedKeyExchange::kResultFailed:
-        Error::AddTo(error, FROM_HERE, errors::kInvalidClientCommitment,
-                     spake_.error());
-        return false;
+        return Error::AddTo(error, FROM_HERE, errors::kInvalidClientCommitment,
+                            spake_.error());
       default:
         LOG(FATAL) << "SecurityManager uses only one round trip";
     }
@@ -139,9 +138,8 @@ bool SecurityManager::CreateAccessTokenImpl(
     base::TimeDelta* access_token_ttl,
     ErrorPtr* error) {
   auto disabled_mode = [](ErrorPtr* error) {
-    Error::AddTo(error, FROM_HERE, errors::kInvalidAuthMode,
-                 "Mode is not available");
-    return false;
+    return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthMode,
+                        "Mode is not available");
   };
 
   switch (auth_type) {
@@ -154,9 +152,8 @@ bool SecurityManager::CreateAccessTokenImpl(
       if (!IsPairingAuthSupported())
         return disabled_mode(error);
       if (!IsValidPairingCode(auth_code)) {
-        Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode,
-                     "Invalid authCode");
-        return false;
+        return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode,
+                            "Invalid authCode");
       }
       return CreateAccessTokenImpl(auth_type, desired_scope, access_token,
                                    access_token_scope, access_token_ttl);
@@ -170,9 +167,8 @@ bool SecurityManager::CreateAccessTokenImpl(
           error);
   }
 
-  Error::AddTo(error, FROM_HERE, errors::kInvalidAuthMode,
-               "Unsupported auth mode");
-  return false;
+  return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthMode,
+                      "Unsupported auth mode");
 }
 
 bool SecurityManager::CreateAccessToken(AuthType auth_type,
@@ -290,9 +286,8 @@ bool SecurityManager::StartPairing(PairingType mode,
   const auto& pairing_modes = GetSettings().pairing_modes;
   if (std::find(pairing_modes.begin(), pairing_modes.end(), mode) ==
       pairing_modes.end()) {
-    Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
-                 "Pairing mode is not enabled");
-    return false;
+    return Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
+                        "Pairing mode is not enabled");
   }
 
   std::string code;
@@ -305,9 +300,8 @@ bool SecurityManager::StartPairing(PairingType mode,
       code = base::StringPrintf("%04i", base::RandInt(0, 9999));
       break;
     default:
-      Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
-                   "Unsupported pairing mode");
-      return false;
+      return Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
+                          "Unsupported pairing mode");
   }
 
   std::unique_ptr<KeyExchanger> spake;
@@ -322,9 +316,8 @@ bool SecurityManager::StartPairing(PairingType mode,
       }
     // Fall through...
     default:
-      Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
-                   "Unsupported crypto");
-      return false;
+      return Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
+                          "Unsupported crypto");
   }
 
   // Allow only a single session at a time for now.
@@ -382,9 +375,8 @@ bool SecurityManager::ConfirmPairing(const std::string& session_id,
   if (!session->second->ProcessMessage(
           std::string(commitment.begin(), commitment.end()), error)) {
     ClosePendingSession(session_id);
-    Error::AddTo(error, FROM_HERE, errors::kCommitmentMismatch,
-                 "Pairing code or crypto implementation mismatch");
-    return false;
+    return Error::AddTo(error, FROM_HERE, errors::kCommitmentMismatch,
+                        "Pairing code or crypto implementation mismatch");
   }
 
   const std::string& key = session->second->GetKey();
@@ -440,9 +432,8 @@ bool SecurityManager::CheckIfPairingAllowed(ErrorPtr* error) {
     return true;
 
   if (block_pairing_until_ > auth_manager_->Now()) {
-    Error::AddTo(error, FROM_HERE, errors::kDeviceBusy,
-                 "Too many pairing attempts");
-    return false;
+    return Error::AddTo(error, FROM_HERE, errors::kDeviceBusy,
+                        "Too many pairing attempts");
   }
 
   if (++pairing_attemts_ >= kMaxAllowedPairingAttemts) {

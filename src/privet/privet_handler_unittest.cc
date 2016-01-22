@@ -197,11 +197,9 @@ TEST_F(PrivetHandlerTest, InvalidAuth) {
 TEST_F(PrivetHandlerTest, ExpiredAuth) {
   auth_header_ = "Privet 123";
   EXPECT_CALL(security_, ParseAccessToken(_, _, _))
-      .WillRepeatedly(DoAll(WithArgs<2>(Invoke([](ErrorPtr* error) {
-                              Error::AddTo(error, FROM_HERE,
-                                           "authorizationExpired", "");
-                            })),
-                            Return(false)));
+      .WillRepeatedly(WithArgs<2>(Invoke([](ErrorPtr* error) {
+        return Error::AddTo(error, FROM_HERE, "authorizationExpired", "");
+      })));
   EXPECT_PRED2(IsEqualError, CodeWithReason(403, "authorizationExpired"),
                HandleRequest("/privet/info", "{}"));
 }
@@ -379,10 +377,10 @@ TEST_F(PrivetHandlerTest, AuthErrorAccessDenied) {
 
 TEST_F(PrivetHandlerTest, AuthErrorInvalidAuthCode) {
   auto set_error = [](ErrorPtr* error) {
-    Error::AddTo(error, FROM_HERE, "invalidAuthCode", "");
+    return Error::AddTo(error, FROM_HERE, "invalidAuthCode", "");
   };
   EXPECT_CALL(security_, CreateAccessToken(_, "testToken", _, _, _, _, _))
-      .WillRepeatedly(DoAll(WithArgs<6>(Invoke(set_error)), Return(false)));
+      .WillRepeatedly(WithArgs<6>(Invoke(set_error)));
   const char kInput[] = R"({
     'mode': 'pairing',
     'requestedScope': 'user',
@@ -601,10 +599,9 @@ TEST_F(PrivetHandlerSetupTest, WifiSetup) {
     }
   })";
   auto set_error = [](const std::string&, const std::string&, ErrorPtr* error) {
-    Error::AddTo(error, FROM_HERE, "deviceBusy", "");
+    return Error::AddTo(error, FROM_HERE, "deviceBusy", "");
   };
-  EXPECT_CALL(wifi_, ConfigureCredentials(_, _, _))
-      .WillOnce(DoAll(Invoke(set_error), Return(false)));
+  EXPECT_CALL(wifi_, ConfigureCredentials(_, _, _)).WillOnce(Invoke(set_error));
   EXPECT_PRED2(IsEqualError, CodeWithReason(503, "deviceBusy"),
                HandleRequest("/privet/v3/setup/start", kInput));
 
@@ -641,10 +638,9 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
   })";
 
   auto set_error = [](const std::string&, const std::string&, ErrorPtr* error) {
-    Error::AddTo(error, FROM_HERE, "deviceBusy", "");
+    return Error::AddTo(error, FROM_HERE, "deviceBusy", "");
   };
-  EXPECT_CALL(cloud_, Setup(_, _, _))
-      .WillOnce(DoAll(Invoke(set_error), Return(false)));
+  EXPECT_CALL(cloud_, Setup(_, _, _)).WillOnce(Invoke(set_error));
   EXPECT_PRED2(IsEqualError, CodeWithReason(503, "deviceBusy"),
                HandleRequest("/privet/v3/setup/start", kInput));
 
@@ -857,8 +853,7 @@ TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
           "{'path':'comp1.comp2', 'filter':['traits', 'components']}"));
 
   auto error_handler = [](ErrorPtr* error) -> const base::DictionaryValue* {
-    Error::AddTo(error, FROM_HERE, "componentNotFound", "");
-    return nullptr;
+    return Error::AddTo(error, FROM_HERE, "componentNotFound", "");
   };
   EXPECT_CALL(cloud_, FindComponent("comp7", _))
       .WillOnce(WithArgs<1>(Invoke(error_handler)));
