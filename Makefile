@@ -26,9 +26,9 @@ CFLAGS := \
 	-Wall \
 	-Werror \
 	-Wextra \
+	-Wformat=2 \
 	-Wl,--exclude-libs,ALL \
 	-Wno-char-subscripts \
-	-Wno-format-nonliteral \
 	-Wno-missing-field-initializers \
 	-Wno-unused-local-typedefs \
 	-Wno-unused-parameter \
