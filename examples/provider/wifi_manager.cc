@@ -84,7 +84,7 @@ void WifiImpl::TryToConnect(const std::string& ssid,
 
   if (base::Time::Now() >= until) {
     ErrorPtr error;
-    Error::AddTo(&error, FROM_HERE, "wifi", "timeout",
+    Error::AddTo(&error, FROM_HERE, "timeout",
                  "Timeout connecting to WiFI network.");
     task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(callback, base::Passed(&error)), {});
@@ -105,7 +105,7 @@ void WifiImpl::Connect(const std::string& ssid,
   CHECK(!hostapd_started_);
   if (hostapd_started_) {
     ErrorPtr error;
-    Error::AddTo(&error, FROM_HERE, "wifi", "busy", "Running Access Point.");
+    Error::AddTo(&error, FROM_HERE, "busy", "Running Access Point.");
     task_runner_->PostDelayedTask(
         FROM_HERE, base::Bind(callback, base::Passed(&error)), {});
     return;

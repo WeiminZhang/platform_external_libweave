@@ -37,8 +37,7 @@ const EnumToStringMap<Command::Origin>::Map kMapOrigin[] = {
 bool ReportInvalidStateTransition(ErrorPtr* error,
                                   Command::State from,
                                   Command::State to) {
-  Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                     errors::commands::kInvalidState,
+  Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidState,
                      "State switch impossible: '%s' -> '%s'",
                      EnumToString(from).c_str(), EnumToString(to).c_str());
   return false;
@@ -153,8 +152,7 @@ std::unique_ptr<base::DictionaryValue> GetCommandParameters(
     // Make sure the "parameters" property is actually an object.
     const base::DictionaryValue* params_dict = nullptr;
     if (!params_value->GetAsDictionary(&params_dict)) {
-      Error::AddToPrintf(error, FROM_HERE, errors::json::kDomain,
-                         errors::json::kObjectExpected,
+      Error::AddToPrintf(error, FROM_HERE, errors::json::kObjectExpected,
                          "Property '%s' must be a JSON object",
                          commands::attributes::kCommand_Parameters);
       return params;
@@ -182,8 +180,7 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
   // Get the command JSON object from the value.
   const base::DictionaryValue* json = nullptr;
   if (!value->GetAsDictionary(&json)) {
-    Error::AddTo(error, FROM_HERE, errors::json::kDomain,
-                 errors::json::kObjectExpected,
+    Error::AddTo(error, FROM_HERE, errors::json::kObjectExpected,
                  "Command instance is not a JSON object");
     command_id->clear();
     return instance;
@@ -196,15 +193,14 @@ std::unique_ptr<CommandInstance> CommandInstance::FromJson(
   // Get the command name from 'name' property.
   std::string command_name;
   if (!json->GetString(commands::attributes::kCommand_Name, &command_name)) {
-    Error::AddTo(error, FROM_HERE, errors::commands::kDomain,
-                 errors::commands::kPropertyMissing, "Command name is missing");
+    Error::AddTo(error, FROM_HERE, errors::commands::kPropertyMissing,
+                 "Command name is missing");
     return instance;
   }
 
   auto parameters = GetCommandParameters(json, error);
   if (!parameters) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                       errors::commands::kCommandFailed,
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kCommandFailed,
                        "Failed to validate command '%s'", command_name.c_str());
     return instance;
   }

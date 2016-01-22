@@ -136,7 +136,7 @@ class PrivetHandlerTest : public testing::Test {
         .WillRepeatedly(ReturnRef(gcd_disabled_state_));
     auto set_error = [](const std::string&, const std::string&,
                         ErrorPtr* error) {
-      Error::AddTo(error, FROM_HERE, errors::kDomain, "setupUnavailable", "");
+      Error::AddTo(error, FROM_HERE, "setupUnavailable", "");
     };
     EXPECT_CALL(cloud_, Setup(_, _, _))
         .WillRepeatedly(DoAll(Invoke(set_error), Return(false)));
@@ -198,7 +198,7 @@ TEST_F(PrivetHandlerTest, ExpiredAuth) {
   auth_header_ = "Privet 123";
   EXPECT_CALL(security_, ParseAccessToken(_, _, _))
       .WillRepeatedly(DoAll(WithArgs<2>(Invoke([](ErrorPtr* error) {
-                              Error::AddTo(error, FROM_HERE, errors::kDomain,
+                              Error::AddTo(error, FROM_HERE,
                                            "authorizationExpired", "");
                             })),
                             Return(false)));
@@ -379,7 +379,7 @@ TEST_F(PrivetHandlerTest, AuthErrorAccessDenied) {
 
 TEST_F(PrivetHandlerTest, AuthErrorInvalidAuthCode) {
   auto set_error = [](ErrorPtr* error) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, "invalidAuthCode", "");
+    Error::AddTo(error, FROM_HERE, "invalidAuthCode", "");
   };
   EXPECT_CALL(security_, CreateAccessToken(_, "testToken", _, _, _, _, _))
       .WillRepeatedly(DoAll(WithArgs<6>(Invoke(set_error)), Return(false)));
@@ -511,7 +511,7 @@ TEST_F(PrivetHandlerSetupTest, StatusWifi) {
 
 TEST_F(PrivetHandlerSetupTest, StatusWifiError) {
   ErrorPtr error;
-  Error::AddTo(&error, FROM_HERE, "test", "invalidPassphrase", "");
+  Error::AddTo(&error, FROM_HERE, "invalidPassphrase", "");
   wifi_.setup_state_ = SetupState{std::move(error)};
 
   const char kExpected[] = R"({
@@ -541,7 +541,7 @@ TEST_F(PrivetHandlerSetupTest, StatusGcd) {
 
 TEST_F(PrivetHandlerSetupTest, StatusGcdError) {
   ErrorPtr error;
-  Error::AddTo(&error, FROM_HERE, "test", "invalidTicket", "");
+  Error::AddTo(&error, FROM_HERE, "invalidTicket", "");
   cloud_.setup_state_ = SetupState{std::move(error)};
 
   const char kExpected[] = R"({
@@ -601,7 +601,7 @@ TEST_F(PrivetHandlerSetupTest, WifiSetup) {
     }
   })";
   auto set_error = [](const std::string&, const std::string&, ErrorPtr* error) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, "deviceBusy", "");
+    Error::AddTo(error, FROM_HERE, "deviceBusy", "");
   };
   EXPECT_CALL(wifi_, ConfigureCredentials(_, _, _))
       .WillOnce(DoAll(Invoke(set_error), Return(false)));
@@ -641,7 +641,7 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
   })";
 
   auto set_error = [](const std::string&, const std::string&, ErrorPtr* error) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, "deviceBusy", "");
+    Error::AddTo(error, FROM_HERE, "deviceBusy", "");
   };
   EXPECT_CALL(cloud_, Setup(_, _, _))
       .WillOnce(DoAll(Invoke(set_error), Return(false)));
@@ -857,7 +857,7 @@ TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
           "{'path':'comp1.comp2', 'filter':['traits', 'components']}"));
 
   auto error_handler = [](ErrorPtr* error) -> const base::DictionaryValue* {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, "componentNotFound", "");
+    Error::AddTo(error, FROM_HERE, "componentNotFound", "");
     return nullptr;
   };
   EXPECT_CALL(cloud_, FindComponent("comp7", _))
@@ -899,7 +899,7 @@ TEST_F(PrivetHandlerTestWithAuth, CommandsStatus) {
                  HandleRequest("/privet/v3/commands/status", kInput));
 
   ErrorPtr error;
-  Error::AddTo(&error, FROM_HERE, errors::kDomain, "notFound", "");
+  Error::AddTo(&error, FROM_HERE, "notFound", "");
   EXPECT_CALL(cloud_, GetCommand(_, _, _))
       .WillOnce(WithArgs<2>(
           Invoke([&error](const CloudDelegate::CommandDoneCallback& callback) {
@@ -924,7 +924,7 @@ TEST_F(PrivetHandlerTestWithAuth, CommandsCancel) {
                  HandleRequest("/privet/v3/commands/cancel", "{'id': '8'}"));
 
   ErrorPtr error;
-  Error::AddTo(&error, FROM_HERE, errors::kDomain, "notFound", "");
+  Error::AddTo(&error, FROM_HERE, "notFound", "");
   EXPECT_CALL(cloud_, CancelCommand(_, _, _))
       .WillOnce(WithArgs<2>(
           Invoke([&error](const CloudDelegate::CommandDoneCallback& callback) {

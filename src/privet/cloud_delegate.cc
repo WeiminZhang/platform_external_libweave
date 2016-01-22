@@ -32,7 +32,7 @@ const int kMaxDeviceRegistrationRetries = 100;  // ~ 8 minutes @5s retries.
 
 CommandInstance* ReturnNotFound(const std::string& command_id,
                                 ErrorPtr* error) {
-  Error::AddToPrintf(error, FROM_HERE, errors::kDomain, errors::kNotFound,
+  Error::AddToPrintf(error, FROM_HERE, errors::kNotFound,
                      "Command not found, ID='%s'", command_id.c_str());
   return nullptr;
 }
@@ -171,9 +171,8 @@ class CloudDelegateImpl : public CloudDelegate {
     UserRole role;
     std::string str_scope = EnumToString(user_info.scope());
     if (!StringToEnum(str_scope, &role)) {
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidParams, "Invalid role: '%s'",
-                         str_scope.c_str());
+      Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidParams,
+                         "Invalid role: '%s'", str_scope.c_str());
       return callback.Run({}, std::move(error));
     }
 
@@ -251,9 +250,9 @@ class CloudDelegateImpl : public CloudDelegate {
       connection_state_ = ConnectionState{ConnectionState::kOnline};
     } else {
       ErrorPtr error;
-      Error::AddToPrintf(
-          &error, FROM_HERE, errors::kDomain, errors::kInvalidState,
-          "Unexpected registration status: %s", EnumToString(status).c_str());
+      Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidState,
+                         "Unexpected registration status: %s",
+                         EnumToString(status).c_str());
       connection_state_ = ConnectionState{std::move(error)};
     }
     NotifyOnDeviceInfoChanged();
@@ -268,7 +267,7 @@ class CloudDelegateImpl : public CloudDelegate {
     ErrorPtr error;
     CHECK_GE(registation_retry_count_, 0);
     if (registation_retry_count_-- == 0) {
-      Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+      Error::AddTo(&error, FROM_HERE, errors::kInvalidState,
                    "Failed to register device");
       setup_state_ = SetupState{std::move(error)};
       return;
@@ -321,7 +320,7 @@ class CloudDelegateImpl : public CloudDelegate {
       return true;
     }
 
-    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kAccessDenied,
+    Error::AddTo(error, FROM_HERE, errors::kAccessDenied,
                  "Need to be owner of the command.");
     return false;
   }

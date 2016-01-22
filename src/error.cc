@@ -11,7 +11,6 @@ namespace weave {
 
 namespace {
 inline void LogError(const tracked_objects::Location& location,
-                     const std::string& domain,
                      const std::string& code,
                      const std::string& message) {
   // Use logging::LogMessage() directly instead of LOG(ERROR) to substitute
@@ -22,44 +21,39 @@ inline void LogError(const tracked_objects::Location& location,
                       logging::LOG_ERROR)
           .stream()
       << location.function_name() << "(...): "
-      << "Domain=" << domain << ", Code=" << code << ", Message=" << message;
+      << "Code=" << code << ", Message=" << message;
 }
 }  // anonymous namespace
 
 ErrorPtr Error::Create(const tracked_objects::Location& location,
-                       const std::string& domain,
                        const std::string& code,
                        const std::string& message) {
-  return Create(location, domain, code, message, ErrorPtr());
+  return Create(location, code, message, ErrorPtr());
 }
 
 ErrorPtr Error::Create(const tracked_objects::Location& location,
-                       const std::string& domain,
                        const std::string& code,
                        const std::string& message,
                        ErrorPtr inner_error) {
-  LogError(location, domain, code, message);
-  return ErrorPtr(
-      new Error(location, domain, code, message, std::move(inner_error)));
+  LogError(location, code, message);
+  return ErrorPtr(new Error(location, code, message, std::move(inner_error)));
 }
 
 void Error::AddTo(ErrorPtr* error,
                   const tracked_objects::Location& location,
-                  const std::string& domain,
                   const std::string& code,
                   const std::string& message) {
   if (error) {
-    *error = Create(location, domain, code, message, std::move(*error));
+    *error = Create(location, code, message, std::move(*error));
   } else {
     // Create already logs the error, but if |error| is nullptr,
     // we still want to log the error...
-    LogError(location, domain, code, message);
+    LogError(location, code, message);
   }
 }
 
 void Error::AddToPrintf(ErrorPtr* error,
                         const tracked_objects::Location& location,
-                        const std::string& domain,
                         const std::string& code,
                         const char* format,
                         ...) {
@@ -67,21 +61,17 @@ void Error::AddToPrintf(ErrorPtr* error,
   va_start(ap, format);
   std::string message = base::StringPrintV(format, ap);
   va_end(ap);
-  AddTo(error, location, domain, code, message);
+  AddTo(error, location, code, message);
 }
 
 ErrorPtr Error::Clone() const {
   ErrorPtr inner_error = inner_error_ ? inner_error_->Clone() : nullptr;
   return ErrorPtr(
-      new Error(location_, domain_, code_, message_, std::move(inner_error)));
+      new Error(location_, code_, message_, std::move(inner_error)));
 }
 
-bool Error::HasDomain(const std::string& domain) const {
-  return FindErrorOfDomain(this, domain) != nullptr;
-}
-
-bool Error::HasError(const std::string& domain, const std::string& code) const {
-  return FindError(this, domain, code) != nullptr;
+bool Error::HasError(const std::string& code) const {
+  return FindError(this, code) != nullptr;
 }
 
 const Error* Error::GetFirstError() const {
@@ -92,40 +82,25 @@ const Error* Error::GetFirstError() const {
 }
 
 Error::Error(const tracked_objects::Location& location,
-             const std::string& domain,
              const std::string& code,
              const std::string& message,
              ErrorPtr inner_error)
-    : Error{tracked_objects::LocationSnapshot{location}, domain, code, message,
+    : Error{tracked_objects::LocationSnapshot{location}, code, message,
             std::move(inner_error)} {}
 
 Error::Error(const tracked_objects::LocationSnapshot& location,
-             const std::string& domain,
              const std::string& code,
              const std::string& message,
              ErrorPtr inner_error)
-    : domain_(domain),
-      code_(code),
+    : code_(code),
       message_(message),
       location_(location),
       inner_error_(std::move(inner_error)) {}
 
-const Error* Error::FindErrorOfDomain(const Error* error_chain_start,
-                                      const std::string& domain) {
-  while (error_chain_start) {
-    if (error_chain_start->GetDomain() == domain)
-      break;
-    error_chain_start = error_chain_start->GetInnerError();
-  }
-  return error_chain_start;
-}
-
 const Error* Error::FindError(const Error* error_chain_start,
-                              const std::string& domain,
                               const std::string& code) {
   while (error_chain_start) {
-    if (error_chain_start->GetDomain() == domain &&
-        error_chain_start->GetCode() == code)
+    if (error_chain_start->GetCode() == code)
       break;
     error_chain_start = error_chain_start->GetInnerError();
   }

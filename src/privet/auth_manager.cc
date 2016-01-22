@@ -65,13 +65,12 @@ bool CheckCaveatType(const UwMacaroonCaveat& caveat,
                      ErrorPtr* error) {
   UwMacaroonCaveatType caveat_type{};
   if (!uw_macaroon_caveat_get_type_(&caveat, &caveat_type)) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
-                 "Unable to get type");
+    Error::AddTo(error, FROM_HERE, kInvalidTokenError, "Unable to get type");
     return false;
   }
 
   if (caveat_type != type) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
+    Error::AddTo(error, FROM_HERE, kInvalidTokenError,
                  "Unexpected caveat type");
     return false;
   }
@@ -87,8 +86,7 @@ bool ReadCaveat(const UwMacaroonCaveat& caveat,
     return false;
 
   if (!uw_macaroon_caveat_get_value_uint_(&caveat, value)) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
-                 "Unable to read caveat");
+    Error::AddTo(error, FROM_HERE, kInvalidTokenError, "Unable to read caveat");
     return false;
   }
 
@@ -105,8 +103,7 @@ bool ReadCaveat(const UwMacaroonCaveat& caveat,
   const uint8_t* start{nullptr};
   size_t size{0};
   if (!uw_macaroon_caveat_get_value_str_(&caveat, &start, &size)) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
-                 "Unable to read caveat");
+    Error::AddTo(error, FROM_HERE, kInvalidTokenError, "Unable to read caveat");
     return false;
   }
 
@@ -147,8 +144,7 @@ bool LoadMacaroon(const std::vector<uint8_t>& token,
   buffer->resize(kMaxMacaroonSize);
   if (!uw_macaroon_load_(token.data(), token.size(), buffer->data(),
                          buffer->size(), macaroon)) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, kInvalidTokenError,
-                 "Invalid token format");
+    Error::AddTo(error, FROM_HERE, kInvalidTokenError, "Invalid token format");
     return false;
   }
   return true;
@@ -159,7 +155,7 @@ bool VerifyMacaroon(const std::vector<uint8_t>& secret,
                     ErrorPtr* error) {
   CHECK_EQ(kSha256OutputSize, secret.size());
   if (!uw_macaroon_verify_(&macaroon, secret.data(), secret.size())) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, "invalid_signature",
+    Error::AddTo(error, FROM_HERE, "invalid_signature",
                  "Invalid token signature");
     return false;
   }
@@ -275,22 +271,22 @@ bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
                   &user_id, error) ||
       !ReadCaveat(macaroon.caveats[2], kUwMacaroonCaveatTypeExpiration,
                   &expiration, error)) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain,
-                 errors::kInvalidAuthorization, "Invalid token");
+    Error::AddTo(error, FROM_HERE, errors::kInvalidAuthorization,
+                 "Invalid token");
     return false;
   }
 
   AuthScope auth_scope{FromMacaroonScope(scope)};
   if (auth_scope == AuthScope::kNone) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain,
-                 errors::kInvalidAuthorization, "Invalid token data");
+    Error::AddTo(error, FROM_HERE, errors::kInvalidAuthorization,
+                 "Invalid token data");
     return false;
   }
 
   base::Time time{base::Time::FromTimeT(expiration)};
   if (time < clock_->Now()) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain,
-                 errors::kAuthorizationExpired, "Token is expired");
+    Error::AddTo(error, FROM_HERE, errors::kAuthorizationExpired,
+                 "Token is expired");
     return false;
   }
 
@@ -307,9 +303,9 @@ std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
   if (config_) {
     auto current = config_->GetSettings().root_client_token_owner;
     if (!IsClaimAllowed(current, owner)) {
-      Error::AddToPrintf(
-          error, FROM_HERE, errors::kDomain, errors::kAlreadyClaimed,
-          "Device already claimed by '%s'", EnumToString(current).c_str());
+      Error::AddToPrintf(error, FROM_HERE, errors::kAlreadyClaimed,
+                         "Device already claimed by '%s'",
+                         EnumToString(current).c_str());
       return {};
     }
   };
@@ -333,8 +329,7 @@ bool AuthManager::ConfirmClientAuthToken(const std::vector<uint8_t>& token,
                      return auth.first->IsValidAuthToken(token, nullptr);
                    });
   if (claim == pending_claims_.end()) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kNotFound,
-                 "Unknown claim");
+    Error::AddTo(error, FROM_HERE, errors::kNotFound, "Unknown claim");
     return false;
   }
 
@@ -363,8 +358,7 @@ bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token,
   UwMacaroon macaroon{};
   if (!LoadMacaroon(token, &buffer, &macaroon, error) ||
       !VerifyMacaroon(auth_secret_, macaroon, error)) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthCode,
-                 "Invalid token");
+    Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode, "Invalid token");
     return false;
   }
   return true;

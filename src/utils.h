@@ -14,7 +14,6 @@
 namespace weave {
 
 namespace errors {
-extern const char kErrorDomain[];
 extern const char kSchemaError[];
 extern const char kInvalidCategoryError[];
 extern const char kInvalidPackageError[];

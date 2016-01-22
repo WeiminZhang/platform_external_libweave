@@ -21,7 +21,7 @@ void AddSslError(ErrorPtr* error,
                  unsigned long ssl_error_code) {
   ERR_load_BIO_strings();
   SSL_load_error_strings();
-  Error::AddToPrintf(error, location, "ssl_stream", error_code, "%s: %s",
+  Error::AddToPrintf(error, location, error_code, "%s: %s",
                      ERR_lib_error_string(ssl_error_code),
                      ERR_reason_error_string(ssl_error_code));
 }

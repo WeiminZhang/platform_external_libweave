@@ -143,7 +143,7 @@ TEST(CommandInstanceTest, ToJsonError) {
   instance->SetID("testId");
 
   ErrorPtr error;
-  Error::AddTo(&error, FROM_HERE, "DOMAIN", "CODE", "MESSAGE");
+  Error::AddTo(&error, FROM_HERE, "CODE", "MESSAGE");
   instance->Abort(error.get(), nullptr);
 
   json->MergeDictionary(CreateDictionaryValue(R"({
