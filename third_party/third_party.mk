@@ -7,7 +7,7 @@
 
 third_party_chromium_base_obj_files := $(THIRD_PARTY_CHROMIUM_BASE_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-$(third_party_chromium_base_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
+$(third_party_chromium_base_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -15,11 +15,11 @@ third_party_chromium_base_unittest_obj_files := $(THIRD_PARTY_CHROMIUM_BASE_UNIT
 
 $(third_party_chromium_base_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
-	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
+	$(CXX) $(DEFS_TEST) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
 third_party_chromium_crypto_obj_files := $(THIRD_PARTY_CHROMIUM_CRYPTO_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-$(third_party_chromium_crypto_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
+$(third_party_chromium_crypto_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -27,7 +27,7 @@ third_party_chromium_crypto_unittest_obj_files := $(THIRD_PARTY_CHROMIUM_CRYPTO_
 
 $(third_party_chromium_crypto_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
-	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
+	$(CXX) $(DEFS_TEST) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
 ###
 # third_party/modp_b64/
