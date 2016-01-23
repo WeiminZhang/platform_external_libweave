@@ -50,7 +50,10 @@ $(third_party_libuweave_obj_files) : out/$(BUILD_MODE)/%.o : %.c
 ###
 # libgtest and libgmock (third_party, downloaded on build)
 
-third_party/include/gtest/gtest.h :
+third_party/lib/gtest.a: third_party/include/gtest/gtest.h
+third_party/lib/gmock.a: third_party/include/gtest/gtest.h
+
+third_party/include/gtest/gtest.h:
 	@echo Downloading and building libgtest and libgmock...
 	third_party/get_gtest.sh
 	@echo Finished downloading and building libgtest and libgmock.
