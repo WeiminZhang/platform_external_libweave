@@ -29,7 +29,6 @@ const char kErrorMessageKey[] = "message";
 }  // anonymous namespace
 
 namespace errors {
-const char kErrorDomain[] = "weave";
 const char kSchemaError[] = "schema_error";
 const char kInvalidCategoryError[] = "invalid_category";
 const char kInvalidPackageError[] = "invalid_package";
@@ -43,8 +42,7 @@ std::unique_ptr<base::DictionaryValue> LoadJsonDict(
   auto value = base::JSONReader::ReadAndReturnError(
       json_string, base::JSON_PARSE_RFC, nullptr, &error_message);
   if (!value) {
-    Error::AddToPrintf(error, FROM_HERE, errors::json::kDomain,
-                       errors::json::kParseError,
+    Error::AddToPrintf(error, FROM_HERE, errors::json::kParseError,
                        "Error parsing JSON string '%s' (%zu): %s",
                        LimitString(json_string, kMaxStrLen).c_str(),
                        json_string.size(), error_message.c_str());
@@ -52,8 +50,7 @@ std::unique_ptr<base::DictionaryValue> LoadJsonDict(
   }
   base::DictionaryValue* dict_value = nullptr;
   if (!value->GetAsDictionary(&dict_value)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::json::kDomain,
-                       errors::json::kObjectExpected,
+    Error::AddToPrintf(error, FROM_HERE, errors::json::kObjectExpected,
                        "JSON string '%s' is not a JSON object",
                        LimitString(json_string, kMaxStrLen).c_str());
     return result;

@@ -35,7 +35,8 @@ AvahiClient::AvahiClient() {
   int ret = 0;
   client_.reset(avahi_client_new(avahi_threaded_poll_get(thread_pool_.get()),
                                  {}, nullptr, this, &ret));
-  CHECK(client_) << avahi_strerror(ret);
+  CHECK(client_) << "failed to connect to avahi-daemon: "
+                 << avahi_strerror(ret);
 
   avahi_threaded_poll_start(thread_pool_.get());
 

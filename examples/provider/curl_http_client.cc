@@ -109,7 +109,7 @@ SendRequestBlocking(CurlHttpClient::Method method,
 
   ErrorPtr error;
   if (res != CURLE_OK) {
-    Error::AddTo(&error, FROM_HERE, "curl", "curl_easy_perform_error",
+    Error::AddTo(&error, FROM_HERE, "curl_easy_perform_error",
                  curl_easy_strerror(res));
     return {nullptr, std::move(error)};
   }

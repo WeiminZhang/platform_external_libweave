@@ -7,8 +7,7 @@
 
 examples_provider_obj_files := $(EXAMPLES_PROVIDER_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# We don't need libevent.a, but the headers files in third_party/include.
-$(examples_provider_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libevent.a
+$(examples_provider_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/event2/event.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -16,8 +15,7 @@ out/$(BUILD_MODE)/examples_provider.a : $(examples_provider_obj_files)
 	rm -f $@
 	$(AR) crsT $@ $^
 
-# We don't need libevent.a, but the headers files in third_party/include.
-out/$(BUILD_MODE)/examples/daemon/%.o : examples/daemon/%.cc third_party/lib/libevent.a
+out/$(BUILD_MODE)/examples/daemon/%.o : examples/daemon/%.cc third_party/include/event2/event.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 

@@ -8,7 +8,6 @@ namespace weave {
 
 namespace errors {
 namespace commands {
-const char kDomain[] = "command_schema";
 
 const char kTypeMismatch[] = "type_mismatch";
 const char kInvalidPropValue[] = "invalid_parameter_value";

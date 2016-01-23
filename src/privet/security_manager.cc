@@ -51,9 +51,8 @@ class Spakep224Exchanger : public SecurityManager::KeyExchanger {
       case crypto::P224EncryptedKeyExchange::kResultPending:
         return true;
       case crypto::P224EncryptedKeyExchange::kResultFailed:
-        Error::AddTo(error, FROM_HERE, errors::kDomain,
-                     errors::kInvalidClientCommitment, spake_.error());
-        return false;
+        return Error::AddTo(error, FROM_HERE, errors::kInvalidClientCommitment,
+                            spake_.error());
       default:
         LOG(FATAL) << "SecurityManager uses only one round trip";
     }
@@ -139,9 +138,8 @@ bool SecurityManager::CreateAccessTokenImpl(
     base::TimeDelta* access_token_ttl,
     ErrorPtr* error) {
   auto disabled_mode = [](ErrorPtr* error) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthMode,
-                 "Mode is not available");
-    return false;
+    return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthMode,
+                        "Mode is not available");
   };
 
   switch (auth_type) {
@@ -154,9 +152,8 @@ bool SecurityManager::CreateAccessTokenImpl(
       if (!IsPairingAuthSupported())
         return disabled_mode(error);
       if (!IsValidPairingCode(auth_code)) {
-        Error::AddTo(error, FROM_HERE, errors::kDomain,
-                     errors::kInvalidAuthCode, "Invalid authCode");
-        return false;
+        return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode,
+                            "Invalid authCode");
       }
       return CreateAccessTokenImpl(auth_type, desired_scope, access_token,
                                    access_token_scope, access_token_ttl);
@@ -170,9 +167,8 @@ bool SecurityManager::CreateAccessTokenImpl(
           error);
   }
 
-  Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidAuthMode,
-               "Unsupported auth mode");
-  return false;
+  return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthMode,
+                      "Unsupported auth mode");
 }
 
 bool SecurityManager::CreateAccessToken(AuthType auth_type,
@@ -185,8 +181,7 @@ bool SecurityManager::CreateAccessToken(AuthType auth_type,
   std::vector<uint8_t> auth_decoded;
   if (auth_type != AuthType::kAnonymous &&
       !Base64Decode(auth_code, &auth_decoded)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidAuthorization,
+    Error::AddToPrintf(error, FROM_HERE, errors::kInvalidAuthorization,
                        "Invalid auth_code encoding: %s", auth_code.c_str());
     return false;
   }
@@ -209,8 +204,7 @@ bool SecurityManager::ParseAccessToken(const std::string& token,
                                        ErrorPtr* error) const {
   std::vector<uint8_t> decoded;
   if (!Base64Decode(token, &decoded)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidAuthorization,
+    Error::AddToPrintf(error, FROM_HERE, errors::kInvalidAuthorization,
                        "Invalid token encoding: %s", token.c_str());
     return false;
   }
@@ -252,8 +246,7 @@ bool SecurityManager::ConfirmClientAuthToken(const std::string& token,
                                              ErrorPtr* error) {
   std::vector<uint8_t> token_decoded;
   if (!Base64Decode(token, &token_decoded)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidFormat,
+    Error::AddToPrintf(error, FROM_HERE, errors::kInvalidFormat,
                        "Invalid auth token string: '%s'", token.c_str());
     return false;
   }
@@ -293,9 +286,8 @@ bool SecurityManager::StartPairing(PairingType mode,
   const auto& pairing_modes = GetSettings().pairing_modes;
   if (std::find(pairing_modes.begin(), pairing_modes.end(), mode) ==
       pairing_modes.end()) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidParams,
-                 "Pairing mode is not enabled");
-    return false;
+    return Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
+                        "Pairing mode is not enabled");
   }
 
   std::string code;
@@ -308,9 +300,8 @@ bool SecurityManager::StartPairing(PairingType mode,
       code = base::StringPrintf("%04i", base::RandInt(0, 9999));
       break;
     default:
-      Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidParams,
-                   "Unsupported pairing mode");
-      return false;
+      return Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
+                          "Unsupported pairing mode");
   }
 
   std::unique_ptr<KeyExchanger> spake;
@@ -325,9 +316,8 @@ bool SecurityManager::StartPairing(PairingType mode,
       }
     // Fall through...
     default:
-      Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kInvalidParams,
-                   "Unsupported crypto");
-      return false;
+      return Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
+                          "Unsupported crypto");
   }
 
   // Allow only a single session at a time for now.
@@ -368,27 +358,25 @@ bool SecurityManager::ConfirmPairing(const std::string& session_id,
                                      ErrorPtr* error) {
   auto session = pending_sessions_.find(session_id);
   if (session == pending_sessions_.end()) {
-    Error::AddToPrintf(error, FROM_HERE, errors::kDomain,
-                       errors::kUnknownSession, "Unknown session id: '%s'",
-                       session_id.c_str());
+    Error::AddToPrintf(error, FROM_HERE, errors::kUnknownSession,
+                       "Unknown session id: '%s'", session_id.c_str());
     return false;
   }
 
   std::vector<uint8_t> commitment;
   if (!Base64Decode(client_commitment, &commitment)) {
     ClosePendingSession(session_id);
-    Error::AddToPrintf(
-        error, FROM_HERE, errors::kDomain, errors::kInvalidFormat,
-        "Invalid commitment string: '%s'", client_commitment.c_str());
+    Error::AddToPrintf(error, FROM_HERE, errors::kInvalidFormat,
+                       "Invalid commitment string: '%s'",
+                       client_commitment.c_str());
     return false;
   }
 
   if (!session->second->ProcessMessage(
           std::string(commitment.begin(), commitment.end()), error)) {
     ClosePendingSession(session_id);
-    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kCommitmentMismatch,
-                 "Pairing code or crypto implementation mismatch");
-    return false;
+    return Error::AddTo(error, FROM_HERE, errors::kCommitmentMismatch,
+                        "Pairing code or crypto implementation mismatch");
   }
 
   const std::string& key = session->second->GetKey();
@@ -422,7 +410,7 @@ bool SecurityManager::CancelPairing(const std::string& session_id,
   CHECK(!confirmed || !pending);
   if (confirmed || pending)
     return true;
-  Error::AddToPrintf(error, FROM_HERE, errors::kDomain, errors::kUnknownSession,
+  Error::AddToPrintf(error, FROM_HERE, errors::kUnknownSession,
                      "Unknown session id: '%s'", session_id.c_str());
   return false;
 }
@@ -444,9 +432,8 @@ bool SecurityManager::CheckIfPairingAllowed(ErrorPtr* error) {
     return true;
 
   if (block_pairing_until_ > auth_manager_->Now()) {
-    Error::AddTo(error, FROM_HERE, errors::kDomain, errors::kDeviceBusy,
-                 "Too many pairing attempts");
-    return false;
+    return Error::AddTo(error, FROM_HERE, errors::kDeviceBusy,
+                        "Too many pairing attempts");
   }
 
   if (++pairing_attemts_ >= kMaxAllowedPairingAttemts) {

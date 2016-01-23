@@ -192,7 +192,7 @@ TEST_F(CloudCommandProxyTest, RetryFailed) {
       *CreateDictionaryValue("{'status': 'ready'}"), nullptr));
   task_runner_.Run();
   ErrorPtr error;
-  Error::AddTo(&error, FROM_HERE, "TEST", "TEST", "TEST");
+  Error::AddTo(&error, FROM_HERE, "TEST", "TEST");
   callback.Run(error->Clone());
   task_runner_.Run();
   EXPECT_GE(task_runner_.GetClock()->Now() - started,

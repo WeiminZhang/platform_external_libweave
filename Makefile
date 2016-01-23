@@ -26,9 +26,9 @@ CFLAGS := \
 	-Wall \
 	-Werror \
 	-Wextra \
+	-Wformat=2 \
 	-Wl,--exclude-libs,ALL \
 	-Wno-char-subscripts \
-	-Wno-format-nonliteral \
 	-Wno-missing-field-initializers \
 	-Wno-unused-local-typedefs \
 	-Wno-unused-parameter \
@@ -84,8 +84,8 @@ include file_lists.mk third_party/third_party.mk examples/examples.mk tests.mk
 
 weave_obj_files := $(WEAVE_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# TODO(jacobmarble): There are too many libgtest.a deps in non-test targets. Fix.
-$(weave_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
+# TODO(jacobmarble): There are too many gtest/gmock deps in non-test targets. Fix.
+$(weave_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 

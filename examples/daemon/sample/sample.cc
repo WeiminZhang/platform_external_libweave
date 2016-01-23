@@ -88,8 +88,8 @@ class SampleHandler {
     std::string name;
     if (!params.GetString("name", &name)) {
       weave::ErrorPtr error;
-      weave::Error::AddTo(&error, FROM_HERE, "example",
-                          "invalid_parameter_value", "Name is missing");
+      weave::Error::AddTo(&error, FROM_HERE, "invalid_parameter_value",
+                          "Name is missing");
       cmd->Abort(error.get(), nullptr);
       return;
     }

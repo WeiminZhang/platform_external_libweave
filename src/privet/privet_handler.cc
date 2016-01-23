@@ -185,7 +185,7 @@ void ReturnError(const Error& error,
                  const PrivetHandler::RequestCallback& callback) {
   int code = http::kInternalServerError;
   for (const auto& it : kReasonToCode) {
-    if (error.HasError(errors::kDomain, it.reason)) {
+    if (error.HasError(it.reason)) {
       code = it.code;
       break;
     }
@@ -201,14 +201,12 @@ void OnCommandRequestSucceeded(const PrivetHandler::RequestCallback& callback,
   if (!error)
     return callback.Run(http::kOk, output);
 
-  if (error->HasError("gcd", "unknown_command")) {
-    Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kNotFound,
-                 "Unknown command ID");
+  if (error->HasError("unknown_command")) {
+    Error::AddTo(&error, FROM_HERE, errors::kNotFound, "Unknown command ID");
     return ReturnError(*error, callback);
   }
-  if (error->HasError("gcd", "access_denied")) {
-    Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kAccessDenied,
-                 error->GetMessage());
+  if (error->HasError("access_denied")) {
+    Error::AddTo(&error, FROM_HERE, errors::kAccessDenied, error->GetMessage());
     return ReturnError(*error, callback);
   }
   return ReturnError(*error, callback);
@@ -471,26 +469,22 @@ void PrivetHandler::HandleRequest(const std::string& api,
                                   const RequestCallback& callback) {
   ErrorPtr error;
   if (!input) {
-    Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidFormat,
-                 "Malformed JSON");
+    Error::AddTo(&error, FROM_HERE, errors::kInvalidFormat, "Malformed JSON");
     return ReturnError(*error, callback);
   }
   auto handler = handlers_.find(api);
   if (handler == handlers_.end()) {
-    Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kNotFound,
-                 "Path not found");
+    Error::AddTo(&error, FROM_HERE, errors::kNotFound, "Path not found");
     return ReturnError(*error, callback);
   }
   if (auth_header.empty()) {
-    Error::AddTo(&error, FROM_HERE, errors::kDomain,
-                 errors::kMissingAuthorization,
+    Error::AddTo(&error, FROM_HERE, errors::kMissingAuthorization,
                  "Authorization header must not be empty");
     return ReturnError(*error, callback);
   }
   std::string token = GetAuthTokenFromAuthHeader(auth_header);
   if (token.empty()) {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidAuthorization,
+    Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidAuthorization,
                        "Invalid authorization header: %s", auth_header.c_str());
     return ReturnError(*error, callback);
   }
@@ -501,8 +495,7 @@ void PrivetHandler::HandleRequest(const std::string& api,
   }
 
   if (handler->second.scope > user_info.scope()) {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidAuthorizationScope,
+    Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidAuthorizationScope,
                        "Scope '%s' does not allow '%s'",
                        EnumToString(user_info.scope()).c_str(), api.c_str());
     return ReturnError(*error, callback);
@@ -590,9 +583,9 @@ void PrivetHandler::HandlePairingStart(const base::DictionaryValue& input,
   std::set<PairingType> modes = security_->GetPairingTypes();
   if (!StringToEnum(pairing_str, &pairing) ||
       modes.find(pairing) == modes.end()) {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidParams, kInvalidParamValueFormat,
-                       kPairingKey, pairing_str.c_str());
+    Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidParams,
+                       kInvalidParamValueFormat, kPairingKey,
+                       pairing_str.c_str());
     return ReturnError(*error, callback);
   }
 
@@ -600,9 +593,9 @@ void PrivetHandler::HandlePairingStart(const base::DictionaryValue& input,
   std::set<CryptoType> cryptos = security_->GetCryptoTypes();
   if (!StringToEnum(crypto_str, &crypto) ||
       cryptos.find(crypto) == cryptos.end()) {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidParams, kInvalidParamValueFormat,
-                       kCryptoKey, crypto_str.c_str());
+    Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidParams,
+                       kInvalidParamValueFormat, kCryptoKey,
+                       crypto_str.c_str());
     return ReturnError(*error, callback);
   }
 
@@ -663,9 +656,9 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   AuthType auth_type{};
   if (!input.GetString(kAuthModeKey, &auth_code_type) ||
       !StringToEnum(auth_code_type, &auth_type)) {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidAuthMode, kInvalidParamValueFormat,
-                       kAuthModeKey, auth_code_type.c_str());
+    Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidAuthMode,
+                       kInvalidParamValueFormat, kAuthModeKey,
+                       auth_code_type.c_str());
     return ReturnError(*error, callback);
   }
 
@@ -676,8 +669,7 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   input.GetString(kAuthRequestedScopeKey, &requested_scope);
   if (requested_scope != kAuthScopeAutoValue) {
     if (!StringToEnum(requested_scope, &desired_scope)) {
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidRequestedScope,
+      Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidRequestedScope,
                          kInvalidParamValueFormat, kAuthRequestedScopeKey,
                          requested_scope.c_str());
       return ReturnError(*error, callback);
@@ -701,8 +693,8 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
   }
 
   if (access_token_scope < acceptable_scope) {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kAccessDenied, "Scope '%s' is not allowed",
+    Error::AddToPrintf(&error, FROM_HERE, errors::kAccessDenied,
+                       "Scope '%s' is not allowed",
                        EnumToString(access_token_scope).c_str());
     return ReturnError(*error, callback);
   }
@@ -737,9 +729,9 @@ void PrivetHandler::HandleAccessControlConfirm(
 
   std::string token;
   if (!input.GetString(kAuthClientTokenKey, &token)) {
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidParams, kInvalidParamValueFormat,
-                       kAuthClientTokenKey, token.c_str());
+    Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidParams,
+                       kInvalidParamValueFormat, kAuthClientTokenKey,
+                       token.c_str());
     return ReturnError(*error, callback);
   }
 
@@ -771,16 +763,15 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
   if (input.GetDictionary(kWifiKey, &wifi)) {
     if (!wifi_ || wifi_->GetTypes().empty()) {
       ErrorPtr error;
-      Error::AddTo(&error, FROM_HERE, errors::kDomain,
-                   errors::kSetupUnavailable, "WiFi setup unavailable");
+      Error::AddTo(&error, FROM_HERE, errors::kSetupUnavailable,
+                   "WiFi setup unavailable");
       return ReturnError(*error, callback);
     }
     wifi->GetString(kSetupStartSsidKey, &ssid);
     if (ssid.empty()) {
       ErrorPtr error;
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidParams, kInvalidParamValueFormat,
-                         kSetupStartSsidKey, "");
+      Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidParams,
+                         kInvalidParamValueFormat, kSetupStartSsidKey, "");
       return ReturnError(*error, callback);
     }
     wifi->GetString(kSetupStartPassKey, &passphrase);
@@ -790,17 +781,15 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
   if (input.GetDictionary(kGcdKey, &registration)) {
     if (user_info.scope() < AuthScope::kOwner) {
       ErrorPtr error;
-      Error::AddTo(&error, FROM_HERE, errors::kDomain,
-                   errors::kInvalidAuthorizationScope,
+      Error::AddTo(&error, FROM_HERE, errors::kInvalidAuthorizationScope,
                    "Only owner can register device");
       return ReturnError(*error, callback);
     }
     registration->GetString(kSetupStartTicketIdKey, &ticket);
     if (ticket.empty()) {
       ErrorPtr error;
-      Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                         errors::kInvalidParams, kInvalidParamValueFormat,
-                         kSetupStartTicketIdKey, "");
+      Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidParams,
+                         kInvalidParamValueFormat, kSetupStartTicketIdKey, "");
       return ReturnError(*error, callback);
     }
     registration->GetString(kSetupStartUserKey, &user);
@@ -932,9 +921,8 @@ void PrivetHandler::HandleCommandsStatus(const base::DictionaryValue& input,
   std::string id;
   if (!input.GetString(kCommandsIdKey, &id)) {
     ErrorPtr error;
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidParams, kInvalidParamValueFormat,
-                       kCommandsIdKey, id.c_str());
+    Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidParams,
+                       kInvalidParamValueFormat, kCommandsIdKey, id.c_str());
     return ReturnError(*error, callback);
   }
   cloud_->GetCommand(id, user_info,
@@ -954,9 +942,8 @@ void PrivetHandler::HandleCommandsCancel(const base::DictionaryValue& input,
   std::string id;
   if (!input.GetString(kCommandsIdKey, &id)) {
     ErrorPtr error;
-    Error::AddToPrintf(&error, FROM_HERE, errors::kDomain,
-                       errors::kInvalidParams, kInvalidParamValueFormat,
-                       kCommandsIdKey, id.c_str());
+    Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidParams,
+                       kInvalidParamValueFormat, kCommandsIdKey, id.c_str());
     return ReturnError(*error, callback);
   }
   cloud_->CancelCommand(id, user_info,

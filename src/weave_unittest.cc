@@ -435,13 +435,12 @@ TEST_F(WeaveBasicTest, Register) {
   EXPECT_TRUE(done);
 
   done = false;
-  device_->Register(
-      "TICKET_ID2", base::Bind([this, &done](ErrorPtr error) {
-        EXPECT_TRUE(error->HasError("weave", "already_registered"));
-        done = true;
-        task_runner_.Break();
-        EXPECT_EQ("CLOUD_ID", device_->GetSettings().cloud_id);
-      }));
+  device_->Register("TICKET_ID2", base::Bind([this, &done](ErrorPtr error) {
+                      EXPECT_TRUE(error->HasError("already_registered"));
+                      done = true;
+                      task_runner_.Break();
+                      EXPECT_EQ("CLOUD_ID", device_->GetSettings().cloud_id);
+                    }));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }

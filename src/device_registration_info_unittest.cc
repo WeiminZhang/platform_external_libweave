@@ -309,7 +309,7 @@ TEST_F(DeviceRegistrationInfoTest, CheckAuthenticationFailure) {
 
   ErrorPtr error;
   EXPECT_FALSE(RefreshAccessToken(&error));
-  EXPECT_TRUE(error->HasError(kErrorDomainOAuth2, "unable_to_authenticate"));
+  EXPECT_TRUE(error->HasError("unable_to_authenticate"));
   EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 }
 
@@ -338,7 +338,7 @@ TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
 
   ErrorPtr error;
   EXPECT_FALSE(RefreshAccessToken(&error));
-  EXPECT_TRUE(error->HasError(kErrorDomainOAuth2, "invalid_grant"));
+  EXPECT_TRUE(error->HasError("invalid_grant"));
   EXPECT_EQ(GcdState::kInvalidCredentials, GetGcdState());
   EXPECT_EQ(test_data::kCloudId, dev_reg_->GetSettings().cloud_id);
 }
@@ -567,7 +567,7 @@ TEST_F(DeviceRegistrationInfoTest, ReRegisterDevice) {
   bool done = false;
   dev_reg_->RegisterDevice(
       test_data::kClaimTicketId, base::Bind([this, &done](ErrorPtr error) {
-        EXPECT_TRUE(error->HasError("weave", "already_registered"));
+        EXPECT_TRUE(error->HasError("already_registered"));
         done = true;
         task_runner_.Break();
         EXPECT_EQ(GcdState::kConnecting, GetGcdState());
