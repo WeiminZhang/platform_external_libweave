@@ -60,7 +60,7 @@ void RequestDoneCallback(evhttp_request* req, void* ctx) {
   if (!req) {
     ErrorPtr error;
     auto err = EVUTIL_SOCKET_ERROR();
-    Error::AddToPrintf(&error, FROM_HERE, "http_client", "request_failed",
+    Error::AddToPrintf(&error, FROM_HERE, "request_failed",
                        "request failed: %s",
                        evutil_socket_error_to_string(err));
     state->task_runner_->PostDelayedTask(
@@ -134,7 +134,7 @@ void EventHttpClient::SendRequest(Method method,
   if (res >= 0)
     return;
   ErrorPtr error;
-  Error::AddToPrintf(&error, FROM_HERE, "http_client", "request_failed",
+  Error::AddToPrintf(&error, FROM_HERE, "request_failed",
                      "request failed: %s %s", EnumToString(method).c_str(),
                      url.c_str());
   task_runner_->PostDelayedTask(

@@ -33,9 +33,6 @@
 
 namespace weave {
 
-const char kErrorDomainOAuth2[] = "oauth2";
-const char kErrorDomainGCD[] = "gcd";
-const char kErrorDomainGCDServer[] = "gcd_server";
 const char kErrorAlreayRegistered[] = "already_registered";
 
 namespace {
@@ -55,8 +52,7 @@ const char kJustInCase[] = "just_in_case";   // Backup fetch when XMPP is live.
 using provider::HttpClient;
 
 inline void SetUnexpectedError(ErrorPtr* error) {
-  Error::AddTo(error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
-               "Unexpected GCD error");
+  Error::AddTo(error, FROM_HERE, "unexpected_response", "Unexpected GCD error");
 }
 
 void ParseGCDError(const base::DictionaryValue* json, ErrorPtr* error) {
@@ -79,8 +75,7 @@ void ParseGCDError(const base::DictionaryValue* json, ErrorPtr* error) {
     std::string error_code, error_message;
     if (error_object->GetString("reason", &error_code) &&
         error_object->GetString("message", &error_message)) {
-      Error::AddTo(error, FROM_HERE, kErrorDomainGCDServer, error_code,
-                   error_message);
+      Error::AddTo(error, FROM_HERE, error_code, error_message);
     } else {
       SetUnexpectedError(error);
     }
@@ -201,10 +196,9 @@ std::unique_ptr<base::DictionaryValue> ParseJsonResponse(
       SplitAtFirst(response.GetContentType(), ";", true).first;
 
   if (content_type != http::kJson && content_type != http::kPlain) {
-    Error::AddTo(
-        error, FROM_HERE, errors::json::kDomain, "non_json_content_type",
+    return Error::AddTo(
+        error, FROM_HERE, "non_json_content_type",
         "Unexpected content type: \'" + response.GetContentType() + "\'");
-    return std::unique_ptr<base::DictionaryValue>();
   }
 
   const std::string& json = response.GetData();
@@ -212,17 +206,16 @@ std::unique_ptr<base::DictionaryValue> ParseJsonResponse(
   auto value = base::JSONReader::ReadAndReturnError(json, base::JSON_PARSE_RFC,
                                                     nullptr, &error_message);
   if (!value) {
-    Error::AddToPrintf(error, FROM_HERE, errors::json::kDomain,
-                       errors::json::kParseError,
+    Error::AddToPrintf(error, FROM_HERE, errors::json::kParseError,
                        "Error '%s' occurred parsing JSON string '%s'",
                        error_message.c_str(), json.c_str());
     return std::unique_ptr<base::DictionaryValue>();
   }
   base::DictionaryValue* dict_value = nullptr;
   if (!value->GetAsDictionary(&dict_value)) {
-    Error::AddToPrintf(
-        error, FROM_HERE, errors::json::kDomain, errors::json::kObjectExpected,
-        "Response is not a valid JSON object: '%s'", json.c_str());
+    Error::AddToPrintf(error, FROM_HERE, errors::json::kObjectExpected,
+                       "Response is not a valid JSON object: '%s'",
+                       json.c_str());
     return std::unique_ptr<base::DictionaryValue>();
   } else {
     // |value| is now owned by |dict_value|, so release the scoped_ptr now.
@@ -334,10 +327,11 @@ bool DeviceRegistrationInfo::VerifyRegistrationCredentials(
 
   VLOG(2) << "Device registration record "
           << ((have_credentials) ? "found" : "not found.");
-  if (!have_credentials)
-    Error::AddTo(error, FROM_HERE, kErrorDomainGCD, "device_not_registered",
-                 "No valid device registration record found");
-  return have_credentials;
+  if (!have_credentials) {
+    return Error::AddTo(error, FROM_HERE, "device_not_registered",
+                        "No valid device registration record found");
+  }
+  return true;
 }
 
 std::unique_ptr<base::DictionaryValue>
@@ -358,9 +352,7 @@ DeviceRegistrationInfo::ParseOAuthResponse(const HttpClient::Response& response,
     if (!resp->GetString("error_description", &error_message)) {
       error_message = "Unexpected OAuth error";
     }
-    Error::AddTo(error, FROM_HERE, kErrorDomainOAuth2, error_code,
-                 error_message);
-    return std::unique_ptr<base::DictionaryValue>();
+    return Error::AddTo(error, FROM_HERE, error_code, error_message);
   }
   return resp;
 }
@@ -416,8 +408,8 @@ void DeviceRegistrationInfo::OnRefreshAccessTokenDone(
       !json->GetInteger("expires_in", &expires_in) || access_token_.empty() ||
       expires_in <= 0) {
     LOG(ERROR) << "Access token unavailable.";
-    Error::AddTo(&error, FROM_HERE, kErrorDomainOAuth2,
-                 "unexpected_server_response", "Access token unavailable");
+    Error::AddTo(&error, FROM_HERE, "unexpected_server_response",
+                 "Access token unavailable");
     return callback.Run(std::move(error));
   }
   access_token_expiration_ =
@@ -526,8 +518,7 @@ void DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
                                             const DoneCallback& callback) {
   if (HaveRegistrationCredentials()) {
     ErrorPtr error;
-    Error::AddTo(&error, FROM_HERE, errors::kErrorDomain,
-                 kErrorAlreayRegistered,
+    Error::AddTo(&error, FROM_HERE, kErrorAlreayRegistered,
                  "Unable to register already registered device");
     return RegisterDeviceError(callback, std::move(error));
   }
@@ -595,7 +586,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
       !json_resp->GetString("robotAccountAuthorizationCode", &auth_code) ||
       !json_resp->GetDictionary("deviceDraft", &device_draft_response) ||
       !device_draft_response->GetString("id", &cloud_id)) {
-    Error::AddTo(&error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
+    Error::AddTo(&error, FROM_HERE, "unexpected_response",
                  "Device account missing in response");
     return RegisterDeviceError(callback, std::move(error));
   }
@@ -630,7 +621,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent(
       !json_resp->GetString("refresh_token", &refresh_token) ||
       !json_resp->GetInteger("expires_in", &expires_in) ||
       access_token_.empty() || refresh_token.empty() || expires_in <= 0) {
-    Error::AddTo(&error, FROM_HERE, kErrorDomainGCD, "unexpected_response",
+    Error::AddTo(&error, FROM_HERE, "unexpected_response",
                  "Device access_token missing in response");
     return RegisterDeviceError(callback, std::move(error));
   }
@@ -737,7 +728,7 @@ void DeviceRegistrationInfo::OnCloudRequestDone(
   if (!IsSuccessful(*response)) {
     ParseGCDError(json_resp.get(), &error);
     if (status_code == http::kForbidden &&
-        error->HasError(kErrorDomainGCDServer, "rateLimitExceeded")) {
+        error->HasError("rateLimitExceeded")) {
       // If we exceeded server quota, retry the request later.
       return RetryCloudRequest(data);
     }
@@ -770,13 +761,13 @@ void DeviceRegistrationInfo::OnAccessTokenRefreshed(
 }
 
 void DeviceRegistrationInfo::CheckAccessTokenError(ErrorPtr error) {
-  if (error && error->HasError(kErrorDomainOAuth2, "invalid_grant"))
+  if (error && error->HasError("invalid_grant"))
     RemoveCredentials();
 }
 
 void DeviceRegistrationInfo::ConnectToCloud(ErrorPtr error) {
   if (error) {
-    if (error->HasError(kErrorDomainOAuth2, "invalid_grant"))
+    if (error->HasError("invalid_grant"))
       RemoveCredentials();
     return;
   }
@@ -844,9 +835,8 @@ bool DeviceRegistrationInfo::UpdateServiceConfig(
     const std::string& service_url,
     ErrorPtr* error) {
   if (HaveRegistrationCredentials()) {
-    Error::AddTo(error, FROM_HERE, errors::kErrorDomain, kErrorAlreayRegistered,
-                 "Unable to change config for registered device");
-    return false;
+    return Error::AddTo(error, FROM_HERE, kErrorAlreayRegistered,
+                        "Unable to change config for registered device");
   }
   Config::Transaction change{config_};
   change.set_client_id(client_id);
@@ -1012,7 +1002,7 @@ void DeviceRegistrationInfo::OnUpdateDeviceResourceDone(
 }
 
 void DeviceRegistrationInfo::OnUpdateDeviceResourceError(ErrorPtr error) {
-  if (error->HasError(kErrorDomainGCDServer, "invalid_last_update_time_ms")) {
+  if (error->HasError("invalid_last_update_time_ms")) {
     // If the server rejected our previous request, retrieve the latest
     // timestamp from the server and retry.
     VLOG(1) << "Getting the last device resource timestamp from server...";

@@ -211,7 +211,7 @@ std::set<WifiType> WifiBootstrapManager::GetTypes() const {
 void WifiBootstrapManager::OnConnectDone(const std::string& ssid,
                                          ErrorPtr error) {
   if (error) {
-    Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+    Error::AddTo(&error, FROM_HERE, errors::kInvalidState,
                  "Failed to connect to provided network");
     setup_state_ = SetupState{std::move(error)};
     return StartBootstrapping();
@@ -226,7 +226,7 @@ void WifiBootstrapManager::OnConnectDone(const std::string& ssid,
 
 void WifiBootstrapManager::OnConnectTimeout() {
   ErrorPtr error;
-  Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+  Error::AddTo(&error, FROM_HERE, errors::kInvalidState,
                "Timeout connecting to provided network");
   setup_state_ = SetupState{std::move(error)};
   return StartBootstrapping();
@@ -265,7 +265,7 @@ void WifiBootstrapManager::UpdateConnectionState() {
     case Network::State::kError: {
       // TODO(wiley) Pull error information from somewhere.
       ErrorPtr error;
-      Error::AddTo(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+      Error::AddTo(&error, FROM_HERE, errors::kInvalidState,
                    "Unknown WiFi error");
       connection_state_ = ConnectionState{std::move(error)};
       return;
@@ -278,7 +278,7 @@ void WifiBootstrapManager::UpdateConnectionState() {
       return;
   }
   ErrorPtr error;
-  Error::AddToPrintf(&error, FROM_HERE, errors::kDomain, errors::kInvalidState,
+  Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidState,
                      "Unknown network state: %s",
                      EnumToString(service_state).c_str());
   connection_state_ = ConnectionState{std::move(error)};

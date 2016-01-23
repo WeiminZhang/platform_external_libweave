@@ -143,8 +143,7 @@ void BaseApiHandler::UpdateBaseConfiguration(
   AuthScope auth_scope{AuthScope::kNone};
   if (!StringToEnum(anonymous_access_role, &auth_scope)) {
     ErrorPtr error;
-    Error::AddToPrintf(&error, FROM_HERE, errors::commands::kDomain,
-                       errors::commands::kInvalidPropValue,
+    Error::AddToPrintf(&error, FROM_HERE, errors::commands::kInvalidPropValue,
                        "Invalid localAnonymousAccessMaxRole value '%s'",
                        anonymous_access_role.c_str());
     command->Abort(error.get(), nullptr);

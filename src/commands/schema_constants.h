@@ -9,8 +9,6 @@ namespace weave {
 
 namespace errors {
 namespace commands {
-// Error domain for command schema description.
-extern const char kDomain[];
 
 // Common command definition error codes.
 extern const char kTypeMismatch[];
