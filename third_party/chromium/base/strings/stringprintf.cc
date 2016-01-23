@@ -27,7 +27,10 @@ inline int vsnprintfT(char* buffer,
                       size_t buf_size,
                       const char* format,
                       va_list argptr) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
   return base::vsnprintf(buffer, buf_size, format, argptr);
+#pragma GCC diagnostic pop
 }
 
 // Templatized backend for StringPrintF/StringAppendF. This does not finalize

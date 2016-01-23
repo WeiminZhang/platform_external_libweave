@@ -22,7 +22,10 @@ namespace {
 static void StringAppendVTestHelper(std::string* out, const char* format, ...) {
   va_list ap;
   va_start(ap, format);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
   StringAppendV(out, format, ap);
+#pragma GCC diagnostic pop
   va_end(ap);
 }
 

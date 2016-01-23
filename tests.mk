@@ -15,8 +15,7 @@ endif
 
 weave_test_obj_files := $(WEAVE_TEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# We don't need libgtest.a, but the headers files in third_party/include.
-$(weave_test_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
+$(weave_test_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -25,8 +24,7 @@ out/$(BUILD_MODE)/libweave-test.a : $(weave_test_obj_files)
 
 weave_unittest_obj_files := $(WEAVE_UNITTEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# We don't need libgtest.a, but the headers files in third_party/include.
-$(weave_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
+$(weave_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -41,8 +39,7 @@ test : out/$(BUILD_MODE)/libweave_testrunner
 
 weave_exports_unittest_obj_files := $(WEAVE_EXPORTS_UNITTEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# We don't need libgtest.a, but the headers files in third_party/include.
-$(weave_exports_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/lib/libgtest.a
+$(weave_exports_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
