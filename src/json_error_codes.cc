@@ -8,7 +8,6 @@ namespace weave {
 namespace errors {
 
 namespace json {
-const char kDomain[] = "json_parser";
 const char kParseError[] = "json_parse_error";
 const char kObjectExpected[] = "json_object_expected";
 }  // namespace json

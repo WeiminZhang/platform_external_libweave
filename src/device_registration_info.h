@@ -45,10 +45,6 @@ namespace privet {
 class AuthManager;
 }
 
-extern const char kErrorDomainOAuth2[];
-extern const char kErrorDomainGCD[];
-extern const char kErrorDomainGCDServer[];
-
 // The DeviceRegistrationInfo class represents device registration information.
 class DeviceRegistrationInfo : public NotificationDelegate,
                                public CloudCommandUpdateInterface {

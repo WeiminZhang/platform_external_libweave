@@ -98,8 +98,8 @@ class LockHandler {
       if (!weave::StringToEnum(requested_state, &new_lock_status)) {
         // Invalid lock state was specified.
         weave::ErrorPtr error;
-        weave::Error::AddTo(&error, FROM_HERE, "example",
-                            "invalid_parameter_value", "Invalid parameters");
+        weave::Error::AddTo(&error, FROM_HERE, "invalid_parameter_value",
+                            "Invalid parameters");
         cmd->Abort(error.get(), nullptr);
         return;
       }
@@ -114,7 +114,7 @@ class LockHandler {
       return;
     }
     weave::ErrorPtr error;
-    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+    weave::Error::AddTo(&error, FROM_HERE, "invalid_parameter_value",
                         "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }

@@ -218,8 +218,7 @@ bool DeviceManager::SetStateProperties(const base::DictionaryValue& dict,
     std::string component =
         component_manager_->FindComponentWithTrait(it.key());
     if (component.empty()) {
-      Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                         "unrouted_state",
+      Error::AddToPrintf(error, FROM_HERE, "unrouted_state",
                          "Unable to set property value because there is no "
                          "component supporting "
                          "trait '%s'",
@@ -250,7 +249,7 @@ bool DeviceManager::SetStateProperty(const std::string& name,
   std::string component = component_manager_->FindComponentWithTrait(trait);
   if (component.empty()) {
     Error::AddToPrintf(
-        error, FROM_HERE, errors::commands::kDomain, "unrouted_state",
+        error, FROM_HERE, "unrouted_state",
         "Unable set value of state property '%s' because there is no component "
         "supporting trait '%s'",
         name.c_str(), trait.c_str());

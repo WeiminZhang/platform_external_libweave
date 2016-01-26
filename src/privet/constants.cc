@@ -8,8 +8,6 @@ namespace weave {
 namespace privet {
 namespace errors {
 
-const char kDomain[] = "privetd";
-
 const char kInvalidClientCommitment[] = "invalidClientCommitment";
 const char kInvalidFormat[] = "invalidFormat";
 const char kMissingAuthorization[] = "missingAuthorization";

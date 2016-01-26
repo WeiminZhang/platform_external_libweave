@@ -10,8 +10,6 @@ namespace privet {
 
 namespace errors {
 
-extern const char kDomain[];
-
 extern const char kInvalidClientCommitment[];
 extern const char kInvalidFormat[];
 extern const char kMissingAuthorization[];

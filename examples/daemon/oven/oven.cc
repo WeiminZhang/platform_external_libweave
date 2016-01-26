@@ -191,7 +191,7 @@ class OvenHandler {
     }
 
     weave::ErrorPtr error;
-    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+    weave::Error::AddTo(&error, FROM_HERE, "invalid_parameter_value",
                         "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }
@@ -215,7 +215,7 @@ class OvenHandler {
     }
 
     weave::ErrorPtr error;
-    weave::Error::AddTo(&error, FROM_HERE, "example", "invalid_parameter_value",
+    weave::Error::AddTo(&error, FROM_HERE, "invalid_parameter_value",
                         "Invalid parameters");
     cmd->Abort(error.get(), nullptr);
   }
