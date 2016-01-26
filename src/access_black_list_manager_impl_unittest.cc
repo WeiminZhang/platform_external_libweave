@@ -86,10 +86,10 @@ TEST_F(AccessBlackListManagerImplTest, Block) {
 }
 
 TEST_F(AccessBlackListManagerImplTest, BlockExpired) {
-  manager_->Block(
-      {}, {}, base::Time::FromTimeT(1400000000), base::Bind([](ErrorPtr error) {
-        EXPECT_TRUE(error->HasError("command_schema", "aleady_expired"));
-      }));
+  manager_->Block({}, {}, base::Time::FromTimeT(1400000000),
+                  base::Bind([](ErrorPtr error) {
+                    EXPECT_TRUE(error->HasError("aleady_expired"));
+                  }));
 }
 
 TEST_F(AccessBlackListManagerImplTest, BlockListIsFull) {
@@ -105,11 +105,10 @@ TEST_F(AccessBlackListManagerImplTest, BlockListIsFull) {
         {8, 8, 8}, base::Time::FromTimeT(1419990000), {});
     EXPECT_EQ(i + 1, manager_->GetSize());
   }
-  manager_->Block(
-      {99}, {8, 8, 8}, base::Time::FromTimeT(1419990000),
-      base::Bind([](ErrorPtr error) {
-        EXPECT_TRUE(error->HasError("command_schema", "blacklist_is_full"));
-      }));
+  manager_->Block({99}, {8, 8, 8}, base::Time::FromTimeT(1419990000),
+                  base::Bind([](ErrorPtr error) {
+                    EXPECT_TRUE(error->HasError("blacklist_is_full"));
+                  }));
 }
 
 TEST_F(AccessBlackListManagerImplTest, Unblock) {
@@ -124,10 +123,9 @@ TEST_F(AccessBlackListManagerImplTest, Unblock) {
 }
 
 TEST_F(AccessBlackListManagerImplTest, UnblockNotFound) {
-  manager_->Unblock(
-      {5, 2, 3}, {5, 4, 5}, base::Bind([](ErrorPtr error) {
-        EXPECT_TRUE(error->HasError("command_schema", "entry_not_found"));
-      }));
+  manager_->Unblock({5, 2, 3}, {5, 4, 5}, base::Bind([](ErrorPtr error) {
+                      EXPECT_TRUE(error->HasError("entry_not_found"));
+                    }));
 }
 
 TEST_F(AccessBlackListManagerImplTest, IsBlockedFalse) {

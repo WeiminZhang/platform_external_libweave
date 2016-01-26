@@ -95,8 +95,8 @@ void AccessBlackListManagerImpl::Block(const std::vector<uint8_t>& user_id,
   if (expiration <= clock_->Now()) {
     if (!callback.is_null()) {
       ErrorPtr error;
-      Error::AddTo(&error, FROM_HERE, errors::commands::kDomain,
-                   "aleady_expired", "Entry already expired");
+      Error::AddTo(&error, FROM_HERE, "aleady_expired",
+                   "Entry already expired");
       callback.Run(std::move(error));
     }
     return;
@@ -104,8 +104,8 @@ void AccessBlackListManagerImpl::Block(const std::vector<uint8_t>& user_id,
   if (entries_.size() >= capacity_) {
     if (!callback.is_null()) {
       ErrorPtr error;
-      Error::AddTo(&error, FROM_HERE, errors::commands::kDomain,
-                   "blacklist_is_full", "Unable to store more entries");
+      Error::AddTo(&error, FROM_HERE, "blacklist_is_full",
+                   "Unable to store more entries");
       callback.Run(std::move(error));
     }
     return;
@@ -121,8 +121,7 @@ void AccessBlackListManagerImpl::Unblock(const std::vector<uint8_t>& user_id,
   if (!entries_.erase(std::make_pair(user_id, app_id))) {
     if (!callback.is_null()) {
       ErrorPtr error;
-      Error::AddTo(&error, FROM_HERE, errors::commands::kDomain,
-                   "entry_not_found", "Unknown entry");
+      Error::AddTo(&error, FROM_HERE, "entry_not_found", "Unknown entry");
       callback.Run(std::move(error));
     }
     return;

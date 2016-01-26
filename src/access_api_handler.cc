@@ -32,8 +32,7 @@ bool GetIds(const base::DictionaryValue& parameters,
   std::string user_id;
   parameters.GetString(kUserId, &user_id);
   if (!Base64Decode(user_id, user_id_decoded)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                       errors::commands::kInvalidPropValue,
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidPropValue,
                        "Invalid user id '%s'", user_id.c_str());
     return false;
   }
@@ -41,8 +40,7 @@ bool GetIds(const base::DictionaryValue& parameters,
   std::string app_id;
   parameters.GetString(kApplicationId, &app_id);
   if (!Base64Decode(app_id, app_id_decoded)) {
-    Error::AddToPrintf(error, FROM_HERE, errors::commands::kDomain,
-                       errors::commands::kInvalidPropValue,
+    Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidPropValue,
                        "Invalid app id '%s'", user_id.c_str());
     return false;
   }
