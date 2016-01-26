@@ -79,7 +79,6 @@ EXAMPLES_PROVIDER_SRC_FILES := \
 	examples/provider/avahi_client.cc \
 	examples/provider/bluez_client.cc \
 	examples/provider/curl_http_client.cc \
-	examples/provider/event_http_client.cc \
 	examples/provider/event_http_server.cc \
 	examples/provider/event_network.cc \
 	examples/provider/event_task_runner.cc \
