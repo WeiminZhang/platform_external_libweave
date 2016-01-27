@@ -9,7 +9,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "macaroon_caveat.h"
+#include "src/macaroon_caveat.h"
+#include "src/macaroon_context.h"
 
 #define UW_MACAROON_MAC_LEN 16
 
@@ -20,45 +21,71 @@
 typedef struct {
   uint8_t mac_tag[UW_MACAROON_MAC_LEN];
   size_t num_caveats;
-  const UwMacaroonCaveat* caveats;
+  const UwMacaroonCaveat* const* caveats;
 } UwMacaroon;
 
-bool uw_macaroon_new_from_mac_tag_(UwMacaroon* new_macaroon,
-                                   const uint8_t mac_tag[UW_MACAROON_MAC_LEN],
-                                   const UwMacaroonCaveat* caveats,
-                                   size_t num_caveats);
+// For the delegatee list in the validation result object
+typedef struct {
+  const uint8_t* id;
+  size_t id_len;
+  bool is_app;
+} UwMacaroonDelegateeInfo;
 
-bool uw_macaroon_new_from_root_key_(UwMacaroon* new_macaroon,
-                                    const uint8_t* root_key,
-                                    size_t root_key_len,
-                                    const UwMacaroonCaveat* caveats,
-                                    size_t num_caveats);
+#define MAX_NUM_DELEGATEES 10
 
-bool uw_macaroon_verify_(const UwMacaroon* macaroon,
-                         const uint8_t* root_key,
-                         size_t root_key_len);
+typedef struct {
+  UwMacaroonCaveatScopeType granted_scope;
+  uint32_t expiration_time;
+  bool weave_app_restricted;
+  const uint8_t* lan_session_id;
+  size_t lan_session_id_len;
+  UwMacaroonDelegateeInfo delegatees[MAX_NUM_DELEGATEES];
+  size_t num_delegatees;
+} UwMacaroonValidationResult;
 
-// Create a new macaroon with a new caveat
+bool uw_macaroon_create_from_root_key_(UwMacaroon* new_macaroon,
+                                       const uint8_t* root_key,
+                                       size_t root_key_len,
+                                       const UwMacaroonContext* context,
+                                       const UwMacaroonCaveat* const caveats[],
+                                       size_t num_caveats);
+
+/** Creates a new macaroon with a new caveat. */
 bool uw_macaroon_extend_(const UwMacaroon* old_macaroon,
                          UwMacaroon* new_macaroon,
+                         const UwMacaroonContext* context,
                          const UwMacaroonCaveat* additional_caveat,
-                         uint8_t* buffer, size_t buffer_size);
+                         uint8_t* buffer,
+                         size_t buffer_size);
 
-// Encode a Macaroon to a byte string
-bool uw_macaroon_dump_(const UwMacaroon* macaroon,
-                       uint8_t* out,
-                       size_t out_len,
-                       size_t* resulting_str_len);
+/**
+ * Verify and validate the Macaroon, and put relevant information into the
+ * result object.
+ */
+bool uw_macaroon_validate_(
+    const UwMacaroon* macaroon,
+    const uint8_t* root_key,
+    size_t root_key_len,
+    const UwMacaroonContext* context,
+    UwMacaroonValidationResult* result);
 
-// Decode a byte string to a Macaroon (the caveats_buffer here is used only for
-// the caveat pointer list *caveats in the UwMacaroon *macaroon). One note is
-// that the function doesn't copy string values to new buffers, so the caller
-// may maintain the input string around to make caveats with string values to
-// be usuable.
-bool uw_macaroon_load_(const uint8_t* in,
-                       size_t in_len,
-                       uint8_t* caveats_buffer,
-                       size_t caveats_buffer_size,
-                       UwMacaroon* macaroon);
+/** Encode a Macaroon to a byte string. */
+bool uw_macaroon_serialize_(const UwMacaroon* macaroon,
+                            uint8_t* out,
+                            size_t out_len,
+                            size_t* resulting_str_len);
+
+/**
+ * Decodes a byte string to a Macaroon.
+ *
+ * One note is that the function doesn't copy string values to new buffers, so
+ * the caller must maintain the input string around to make caveats with string
+ * values to be usable.
+ */
+bool uw_macaroon_deserialize_(const uint8_t* in,
+                              size_t in_len,
+                              uint8_t* buffer,
+                              size_t buffer_size,
+                              UwMacaroon* new_macaroon);
 
 #endif  // LIBUWEAVE_SRC_MACAROON_H_

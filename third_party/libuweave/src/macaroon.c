@@ -8,13 +8,17 @@
 
 #include "src/crypto_utils.h"
 #include "src/macaroon_caveat.h"
+#include "src/macaroon_caveat_internal.h"
 #include "src/macaroon_encoding.h"
 
-static bool create_mac_tag_(const uint8_t* key, size_t key_len,
-                            const UwMacaroonCaveat* caveats, size_t num_caveats,
+static bool create_mac_tag_(const uint8_t* key,
+                            size_t key_len,
+                            const UwMacaroonContext* context,
+                            const UwMacaroonCaveat* const caveats[],
+                            size_t num_caveats,
                             uint8_t mac_tag[UW_MACAROON_MAC_LEN]) {
-  if (key == NULL || key_len == 0 || caveats == NULL || num_caveats == 0 ||
-      mac_tag == NULL) {
+  if (key == NULL || key_len == 0 || context == NULL || caveats == NULL ||
+      num_caveats == 0 || mac_tag == NULL) {
     return false;
   }
 
@@ -26,15 +30,15 @@ static bool create_mac_tag_(const uint8_t* key, size_t key_len,
   uint8_t mac_tag_buff[UW_MACAROON_MAC_LEN];
 
   // Compute the first tag by using the key
-  if (!uw_macaroon_caveat_sign_(key, key_len, &(caveats[0]), mac_tag_buff,
+  if (!uw_macaroon_caveat_sign_(key, key_len, context, caveats[0], mac_tag_buff,
                                 UW_MACAROON_MAC_LEN)) {
     return false;
   }
 
   // Compute the rest of the tags by using the tag as the key
   for (size_t i = 1; i < num_caveats; i++) {
-    if (!uw_macaroon_caveat_sign_(mac_tag_buff, UW_MACAROON_MAC_LEN,
-                                  &(caveats[i]), mac_tag_buff,
+    if (!uw_macaroon_caveat_sign_(mac_tag_buff, UW_MACAROON_MAC_LEN, context,
+                                  caveats[i], mac_tag_buff,
                                   UW_MACAROON_MAC_LEN)) {
       return false;
     }
@@ -44,33 +48,38 @@ static bool create_mac_tag_(const uint8_t* key, size_t key_len,
   return true;
 }
 
-bool uw_macaroon_new_from_mac_tag_(UwMacaroon* new_macaroon,
-                                   const uint8_t mac_tag[UW_MACAROON_MAC_LEN],
-                                   const UwMacaroonCaveat* caveats,
-                                   size_t num_caveats) {
-  if (new_macaroon == NULL || mac_tag == NULL || caveats == NULL ||
-      num_caveats == 0) {
+static bool verify_mac_tag_(const uint8_t* root_key,
+                            size_t root_key_len,
+                            const UwMacaroonContext* context,
+                            const UwMacaroonCaveat* const caveats[],
+                            size_t num_caveats,
+                            const uint8_t mac_tag[UW_MACAROON_MAC_LEN]) {
+  if (root_key == NULL || root_key_len == 0 || context == NULL ||
+      caveats == NULL || num_caveats == 0 || mac_tag == 0) {
     return false;
   }
 
-  memcpy(new_macaroon->mac_tag, mac_tag, UW_MACAROON_MAC_LEN);
-  new_macaroon->num_caveats = num_caveats;
-  new_macaroon->caveats = caveats;
+  uint8_t computed_mac_tag[UW_MACAROON_MAC_LEN] = {0};
+  if (!create_mac_tag_(root_key, root_key_len, context, caveats, num_caveats,
+                       computed_mac_tag)) {
+    return false;
+  }
 
-  return true;
+  return uw_crypto_utils_equal_(mac_tag, computed_mac_tag, UW_MACAROON_MAC_LEN);
 }
 
-bool uw_macaroon_new_from_root_key_(UwMacaroon* new_macaroon,
-                                    const uint8_t* root_key,
-                                    size_t root_key_len,
-                                    const UwMacaroonCaveat* caveats,
-                                    size_t num_caveats) {
-  if (new_macaroon == NULL || root_key == NULL || root_key_len == 0 ||
-      caveats == NULL || num_caveats == 0) {
+bool uw_macaroon_create_from_root_key_(UwMacaroon* new_macaroon,
+                                       const uint8_t* root_key,
+                                       size_t root_key_len,
+                                       const UwMacaroonContext* context,
+                                       const UwMacaroonCaveat* const caveats[],
+                                       size_t num_caveats) {
+  if (new_macaroon == NULL || root_key == NULL || context == NULL ||
+      root_key_len == 0 || caveats == NULL || num_caveats == 0) {
     return false;
   }
 
-  if (!create_mac_tag_(root_key, root_key_len, caveats, num_caveats,
+  if (!create_mac_tag_(root_key, root_key_len, context, caveats, num_caveats,
                        new_macaroon->mac_tag)) {
     return false;
   }
@@ -81,139 +90,228 @@ bool uw_macaroon_new_from_root_key_(UwMacaroon* new_macaroon,
   return true;
 }
 
-bool uw_macaroon_verify_(const UwMacaroon* macaroon,
-                         const uint8_t* root_key,
-                         size_t root_key_len) {
-  if (macaroon == NULL || root_key == NULL) {
-    return false;
-  }
-
-  uint8_t mac_tag[UW_MACAROON_MAC_LEN] = {0};
-  if (!create_mac_tag_(root_key, root_key_len, macaroon->caveats,
-                       macaroon->num_caveats, mac_tag)) {
-    return false;
-  }
-
-  return uw_crypto_utils_equal_(mac_tag, macaroon->mac_tag,
-                                UW_MACAROON_MAC_LEN);
-}
-
 bool uw_macaroon_extend_(const UwMacaroon* old_macaroon,
                          UwMacaroon* new_macaroon,
+                         const UwMacaroonContext* context,
                          const UwMacaroonCaveat* additional_caveat,
-                         uint8_t* buffer, size_t buffer_size) {
-  if (old_macaroon == NULL || new_macaroon == NULL ||
+                         uint8_t* buffer,
+                         size_t buffer_size) {
+  if (old_macaroon == NULL || new_macaroon == NULL || context == NULL ||
       additional_caveat == NULL || buffer == NULL || buffer_size == 0) {
     return false;
   }
 
   new_macaroon->num_caveats = old_macaroon->num_caveats + 1;
 
-  // Extend the caveat list
-  if ((new_macaroon->num_caveats) * sizeof(UwMacaroonCaveat) > buffer_size) {
-    // Not enough memory to store the extended caveat list
+  // Extend the caveat pointer list
+  if ((new_macaroon->num_caveats) * sizeof(UwMacaroonCaveat*) > buffer_size) {
+    // Not enough memory to store the extended caveat pointer list
     return false;
   }
-  UwMacaroonCaveat* extended_list = (UwMacaroonCaveat*)buffer;
-  if (old_macaroon->caveats != NULL && extended_list != old_macaroon->caveats) {
+  const UwMacaroonCaveat** extended_list = (const UwMacaroonCaveat**)buffer;
+  if (new_macaroon->caveats != old_macaroon->caveats) {
     memcpy(extended_list, old_macaroon->caveats,
-           (old_macaroon->num_caveats) * sizeof(UwMacaroonCaveat));
+           old_macaroon->num_caveats * sizeof(old_macaroon->caveats[0]));
   }
-  extended_list[old_macaroon->num_caveats] = *additional_caveat;
-  new_macaroon->caveats = extended_list;
+  extended_list[old_macaroon->num_caveats] = additional_caveat;
+  new_macaroon->caveats = (const UwMacaroonCaveat* const*)extended_list;
 
   // Compute the new MAC tag
-  return create_mac_tag_(old_macaroon->mac_tag, UW_MACAROON_MAC_LEN,
-                         additional_caveat, 1, new_macaroon->mac_tag);
+  return create_mac_tag_(old_macaroon->mac_tag, UW_MACAROON_MAC_LEN, context,
+                         new_macaroon->caveats + old_macaroon->num_caveats, 1,
+                         new_macaroon->mac_tag);
+}
+
+static void init_validation_result(UwMacaroonValidationResult* result) {
+  // Start from the largest scope
+  result->granted_scope = kUwMacaroonCaveatScopeTypeOwner;
+  result->expiration_time = UINT32_MAX;
+  result->weave_app_restricted = false;
+  result->lan_session_id = NULL;
+  result->lan_session_id_len = 0;
+  result->num_delegatees = 0;
+}
+
+/** Reset the result object to the lowest scope when encountering errors */
+static void reset_validation_result(UwMacaroonValidationResult* result) {
+  // Start from the largest scope or highest privilege
+  result->granted_scope =
+      (UwMacaroonCaveatScopeType)UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE;
+  result->expiration_time = 0;
+  result->weave_app_restricted = true;
+  result->lan_session_id = NULL;
+  result->lan_session_id_len = 0;
+
+  result->num_delegatees = 0;
+  for (size_t i = 0; i < MAX_NUM_DELEGATEES; i++) {
+    result->delegatees[i].id = NULL;
+    result->delegatees[i].id_len = 0;
+    result->delegatees[i].is_app = true;
+  }
+}
+
+bool uw_macaroon_validate_(const UwMacaroon* macaroon,
+                           const uint8_t* root_key,
+                           size_t root_key_len,
+                           const UwMacaroonContext* context,
+                           UwMacaroonValidationResult* result) {
+  if (result == NULL) {
+    return false;
+  }
+  init_validation_result(result);
+
+  if (root_key == NULL || root_key_len == 0 || macaroon == NULL ||
+      context == NULL || result == NULL ||
+      !verify_mac_tag_(root_key, root_key_len, context, macaroon->caveats,
+                       macaroon->num_caveats, macaroon->mac_tag)) {
+    return false;
+  }
+
+  UwMacaroonValidationState state;
+  if (!uw_macaroon_caveat_init_validation_state_(&state)) {
+    return false;
+  }
+  for (size_t i = 0; i < macaroon->num_caveats; i++) {
+    if (!uw_macaroon_caveat_validate_(macaroon->caveats[i], context, &state,
+                                      result)) {
+      reset_validation_result(result);  // Reset the result object
+      return false;
+    }
+  }
+
+  return true;
 }
 
 // Encode a Macaroon to a byte string
-bool uw_macaroon_dump_(const UwMacaroon* macaroon,
-                       uint8_t* out,
-                       size_t out_len,
-                       size_t* resulting_str_len) {
-  if (macaroon == NULL || out == NULL || out_len == 0 ||
+bool uw_macaroon_serialize_(const UwMacaroon* macaroon,
+                            uint8_t* out,
+                            size_t out_len,
+                            size_t* resulting_str_len) {
+  if (macaroon == NULL || out == NULL ||
+      out_len < UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN ||
       resulting_str_len == NULL) {
     return false;
   }
 
-  size_t offset = 0, item_len;
+  // Need to encode the whole Macaroon again into a byte string.
 
-  if (!uw_macaroon_encoding_encode_byte_str_(
-          macaroon->mac_tag, UW_MACAROON_MAC_LEN, out, out_len, &item_len)) {
-    return false;
-  }
-  offset += item_len;
-
-  if (!uw_macaroon_encoding_encode_array_len_(
-          (uint32_t)(macaroon->num_caveats), out + offset, out_len - offset, &item_len)) {
+  // First encode the part without the overall byte string header to the buffer
+  // to get the total length.
+  size_t item_len = 0;
+  // Start with an offset
+  size_t offset = UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN;
+  if (!uw_macaroon_encoding_encode_array_len_((uint32_t)(macaroon->num_caveats),
+                                              out + offset, out_len - offset,
+                                              &item_len)) {
     return false;
   }
   offset += item_len;
 
   for (size_t i = 0; i < macaroon->num_caveats; i++) {
     if (!uw_macaroon_encoding_encode_byte_str_(
-            macaroon->caveats[i].bytes, macaroon->caveats[i].num_bytes,
+            macaroon->caveats[i]->bytes, macaroon->caveats[i]->num_bytes,
             out + offset, out_len - offset, &item_len)) {
       return false;
     }
     offset += item_len;
   }
 
-  *resulting_str_len = offset;
+  if (!uw_macaroon_encoding_encode_byte_str_(macaroon->mac_tag,
+                                             UW_MACAROON_MAC_LEN, out + offset,
+                                             out_len - offset, &item_len)) {
+    return false;
+  }
+  offset += item_len;
+
+  // Encode the length of the body at the beginning of the buffer
+  size_t bstr_len = offset - UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN;
+  if (!uw_macaroon_encoding_encode_byte_str_len_(
+          bstr_len, out, UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN, &item_len)) {
+    return false;
+  }
+
+  // Move the body part to be adjacent to the byte string header part
+  memmove(out + item_len, out + UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN,
+          bstr_len);
+
+  *resulting_str_len = item_len + bstr_len;
   return true;
 }
 
 // Decode a byte string to a Macaroon
-bool uw_macaroon_load_(const uint8_t* in,
-                       size_t in_len,
-                       uint8_t* caveats_buffer,
-                       size_t caveats_buffer_size,
-                       UwMacaroon* macaroon) {
-  if (in == NULL || in_len == 0 || caveats_buffer == NULL ||
-      caveats_buffer_size == 0 || macaroon == NULL) {
+bool uw_macaroon_deserialize_(const uint8_t* in,
+                              size_t in_len,
+                              uint8_t* buffer,
+                              size_t buffer_size,
+                              UwMacaroon* macaroon) {
+  if (in == NULL || in_len == 0 || buffer == NULL || buffer_size == 0 ||
+      macaroon == NULL) {
     return false;
   }
 
-  const uint8_t* tag;
-  size_t tag_len;
-  if (!uw_macaroon_encoding_decode_byte_str_(in, in_len, &tag, &tag_len) ||
-      tag_len != UW_MACAROON_MAC_LEN) {
+  size_t offset = 0;
+  size_t item_len = 0;
+
+  const uint8_t* bstr = NULL;
+  size_t bstr_len = 0;
+  if (!uw_macaroon_encoding_decode_byte_str_(in + offset, in_len - offset,
+                                             &bstr, &bstr_len)) {
     return false;
   }
-  memcpy(macaroon->mac_tag, tag, UW_MACAROON_MAC_LEN);
+  item_len = bstr - in;  // The length of the first byte string header
+  offset += item_len;
 
-  size_t offset = 0, cbor_item_len;
-  if (!uw_macaroon_encoding_get_item_len_(in, in_len, &cbor_item_len)) {
+  if (item_len + bstr_len != in_len) {
+    // The string length doesn't match
     return false;
   }
-  offset += cbor_item_len;
 
-  uint32_t array_len;
+  uint32_t array_len = 0;
   if (!uw_macaroon_encoding_decode_array_len_(in + offset, in_len - offset,
                                               &array_len)) {
     return false;
   }
   macaroon->num_caveats = (size_t)array_len;
-  if (caveats_buffer_size < array_len * sizeof(UwMacaroonCaveat)) {
+  if (buffer_size <
+      (array_len * (sizeof(UwMacaroonCaveat) + sizeof(UwMacaroonCaveat*)))) {
+    // Need two levels of abstraction, one for structs and one for pointers
     return false;
   }
 
-  UwMacaroonCaveat* caveats = (UwMacaroonCaveat*)caveats_buffer;
-  for (size_t i = 0; i < array_len; i++) {
-    if (!uw_macaroon_encoding_get_item_len_(in + offset, in_len - offset,
-                                            &cbor_item_len)) {
-      return false;
-    }
-    offset += cbor_item_len;
-
-    if (!uw_macaroon_encoding_decode_byte_str_(in + offset, in_len - offset,
-                                               &(caveats[i].bytes),
-                                               &(caveats[i].num_bytes))) {
-      return false;
-    }
+  if (!uw_macaroon_encoding_get_item_len_(in + offset, in_len - offset,
+                                          &item_len)) {
+    return false;
   }
-  macaroon->caveats = caveats;
+  offset += item_len;
+
+  const UwMacaroonCaveat** caveat_pointers = (const UwMacaroonCaveat**)buffer;
+  buffer += array_len * sizeof(UwMacaroonCaveat*);
+  UwMacaroonCaveat* caveat_structs = (UwMacaroonCaveat*)buffer;
+  for (size_t i = 0; i < array_len; i++) {
+    caveat_pointers[i] = &(caveat_structs[i]);
+
+    if (!uw_macaroon_encoding_decode_byte_str_(
+            in + offset, in_len - offset, &(caveat_structs[i].bytes),
+            &(caveat_structs[i].num_bytes))) {
+      return false;
+    }
+
+    if (!uw_macaroon_encoding_get_item_len_(in + offset, in_len - offset,
+                                            &item_len)) {
+      return false;
+    }
+    offset += item_len;
+  }
+  macaroon->caveats = caveat_pointers;
+
+  const uint8_t* tag;
+  size_t tag_len;
+  if (!uw_macaroon_encoding_decode_byte_str_(in + offset, in_len - offset, &tag,
+                                             &tag_len) ||
+      tag_len != UW_MACAROON_MAC_LEN) {
+    return false;
+  }
+  memcpy(macaroon->mac_tag, tag, UW_MACAROON_MAC_LEN);
 
   return true;
 }
