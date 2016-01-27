@@ -79,7 +79,6 @@ class Manager : public CloudDelegate::Observer {
   void OnChanged();
   void OnConnectivityChanged();
 
-  bool disable_security_{false};
   provider::TaskRunner* task_runner_{nullptr};
   std::unique_ptr<CloudDelegate> cloud_;
   std::unique_ptr<DeviceDelegate> device_;

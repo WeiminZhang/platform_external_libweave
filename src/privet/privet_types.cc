@@ -52,7 +52,6 @@ const EnumToStringMap<WifiType>::Map kWifiTypeMap[] = {
 };
 
 const EnumToStringMap<CryptoType>::Map kCryptoTypeMap[] = {
-    {CryptoType::kNone, "none"},
     {CryptoType::kSpake_p224, "p224_spake2"},
 };
 
