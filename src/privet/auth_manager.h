@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include <base/gtest_prod_util.h>
 #include <base/time/default_clock.h>
 #include <base/time/time.h>
 #include <weave/error.h>
@@ -54,7 +55,7 @@ class AuthManager {
   bool ConfirmClientAuthToken(const std::vector<uint8_t>& token,
                               ErrorPtr* error);
 
-  std::vector<uint8_t> GetRootClientAuthToken() const;
+  std::vector<uint8_t> GetRootClientAuthToken(RootClientTokenOwner owner) const;
   bool IsValidAuthToken(const std::vector<uint8_t>& token,
                         ErrorPtr* error) const;
   bool CreateAccessTokenFromAuth(const std::vector<uint8_t>& auth_token,
@@ -70,6 +71,12 @@ class AuthManager {
   std::vector<uint8_t> CreateSessionId();
 
  private:
+  FRIEND_TEST_ALL_PREFIXES(AuthManagerClaimTest, CreateAccessTokenFromAuth);
+
+  // Test helper.
+  std::vector<uint8_t> DelegateToUser(const std::vector<uint8_t>& token,
+                                      const UserInfo& user_info) const;
+
   Config* config_{nullptr};  // Can be nullptr for tests.
   base::DefaultClock default_clock_;
   base::Clock* clock_{&default_clock_};

@@ -64,18 +64,18 @@ TEST_F(AuthManagerTest, Constructor) {
 }
 
 TEST_F(AuthManagerTest, CreateAccessToken) {
-  EXPECT_EQ("UABRUHgcSZDry0bvIsoJv+WDQgEURQJjMjM0RgUaVArkgA==",
+  EXPECT_EQ("WCKDQgEURQlDMjM0RgUaG52hAFA3hFh7TexW1jC96sU4CxvN",
             Base64Encode(auth_.CreateAccessToken(
                 UserInfo{AuthScope::kViewer, "234"}, {})));
-  EXPECT_EQ("UL7YEruLg5QQRDIp2+u1cqCDQgEIRQJjMjU3RgUaVArkgA==",
+  EXPECT_EQ("WCKDQgEIRQlDMjU3RgUaG52hAFD3dEHl3Y9Y28uoUESiYuLq",
             Base64Encode(auth_.CreateAccessToken(
                 UserInfo{AuthScope::kManager, "257"}, {})));
-  EXPECT_EQ("UPFGeZRanR1wLGYLP5ZDkXiDQgECRQJjNDU2RgUaVArkgA==",
+  EXPECT_EQ("WCKDQgECRQlDNDU2RgUaG52hAFBy35bQdtvlqYf+Y/ANyxLU",
             Base64Encode(auth_.CreateAccessToken(
                 UserInfo{AuthScope::kOwner, "456"}, {})));
   auto new_time = clock_.Now() + base::TimeDelta::FromDays(11);
   EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
-  EXPECT_EQ("UMm9KlF3OEtZFBmhScJpl4uDQgEORQJjMzQ1RgUaVBllAA==",
+  EXPECT_EQ("WCKDQgEORQlDMzQ1RgUaG6whgFD1HGVxL8+FPaf/U0bOkXr8",
             Base64Encode(auth_.CreateAccessToken(
                 UserInfo{AuthScope::kUser, "345"}, {})));
 }
@@ -137,30 +137,40 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthToken) {
-  EXPECT_EQ("UK1ACOc3cWGjGBoTIX2bd3qCQgECRgMaVArkgA==",
-            Base64Encode(auth_.GetRootClientAuthToken()));
+  EXPECT_EQ("WCCDQxkgAUYIGhudoQBCCUBQn9rT/8iUzwKa0ZIAgCNxyg==",
+            Base64Encode(
+                auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient)));
+}
+
+TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentOwner) {
+  EXPECT_EQ(
+      "WCCDQxkgAUYIGhudoQBCCUBQn9rT/8iUzwKa0ZIAgCNxyg==",
+      Base64Encode(auth_.GetRootClientAuthToken(RootClientTokenOwner::kCloud)));
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
   auto new_time = clock_.Now() + base::TimeDelta::FromDays(15);
   EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
-  EXPECT_EQ("UBpNF8g/GbNUmAyHg1qqJr+CQgECRgMaVB6rAA==",
-            Base64Encode(auth_.GetRootClientAuthToken()));
+  EXPECT_EQ("WCCDQxkgAUYIGhuxZ4BCCUBQmNBWA9KdLzxHUCMqzonDZw==",
+            Base64Encode(
+                auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient)));
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentSecret) {
   AuthManager auth{kSecret2, {}, kSecret1, &clock_};
-  EXPECT_EQ("UFTBUcgd9d0HnPRnLeroN2mCQgECRgMaVArkgA==",
-            Base64Encode(auth.GetRootClientAuthToken()));
+  EXPECT_EQ(
+      "WCCDQxkgAUYIGhudoQBCCUBQQ/BSJs7FEI260RnwjlJrVw==",
+      Base64Encode(auth.GetRootClientAuthToken(RootClientTokenOwner::kClient)));
 }
 
 TEST_F(AuthManagerTest, IsValidAuthToken) {
-  EXPECT_TRUE(auth_.IsValidAuthToken(auth_.GetRootClientAuthToken(), nullptr));
+  EXPECT_TRUE(auth_.IsValidAuthToken(
+      auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient), nullptr));
   // Multiple attempts with random secrets.
   for (size_t i = 0; i < 1000; ++i) {
     AuthManager auth{{}, {}, {}, &clock_};
 
-    auto token = auth.GetRootClientAuthToken();
+    auto token = auth.GetRootClientAuthToken(RootClientTokenOwner::kClient);
     EXPECT_FALSE(auth_.IsValidAuthToken(token, nullptr));
     EXPECT_TRUE(auth.IsValidAuthToken(token, nullptr));
   }
@@ -245,13 +255,17 @@ TEST_F(AuthManagerClaimTest, CreateAccessTokenFromAuth) {
   std::vector<uint8_t> access_token;
   AuthScope scope;
   base::TimeDelta ttl;
-  EXPECT_TRUE(auth_.CreateAccessTokenFromAuth(
-      auth_.GetRootClientAuthToken(), base::TimeDelta::FromDays(1),
-      &access_token, &scope, &ttl, nullptr));
+  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
+  auto extended = auth_.DelegateToUser(root, UserInfo{AuthScope::kUser, "234"});
+  EXPECT_TRUE(
+      auth_.CreateAccessTokenFromAuth(extended, base::TimeDelta::FromDays(1),
+                                      &access_token, &scope, &ttl, nullptr));
   UserInfo user_info;
   EXPECT_TRUE(auth_.ParseAccessToken(access_token, &user_info, nullptr));
   EXPECT_EQ(scope, user_info.scope());
-  EXPECT_FALSE(user_info.user_id().empty());
+  EXPECT_EQ(AuthScope::kUser, user_info.scope());
+
+  EXPECT_EQ("234", user_info.user_id());
 }
 
 }  // namespace privet
