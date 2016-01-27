@@ -67,25 +67,6 @@ class Spakep224Exchanger : public SecurityManager::KeyExchanger {
   crypto::P224EncryptedKeyExchange spake_;
 };
 
-class UnsecureKeyExchanger : public SecurityManager::KeyExchanger {
- public:
-  explicit UnsecureKeyExchanger(const std::string& password)
-      : password_(password) {}
-  ~UnsecureKeyExchanger() override = default;
-
-  // SecurityManager::KeyExchanger methods.
-  const std::string& GetMessage() override { return password_; }
-
-  bool ProcessMessage(const std::string& message, ErrorPtr* error) override {
-    return true;
-  }
-
-  const std::string& GetKey() const override { return password_; }
-
- private:
-  std::string password_;
-};
-
 }  // namespace
 
 SecurityManager::SecurityManager(const Config* config,
@@ -218,8 +199,6 @@ std::set<PairingType> SecurityManager::GetPairingTypes() const {
 
 std::set<CryptoType> SecurityManager::GetCryptoTypes() const {
   std::set<CryptoType> result{CryptoType::kSpake_p224};
-  if (GetSettings().disable_security)
-    result.insert(CryptoType::kNone);
   return result;
 }
 
@@ -259,8 +238,6 @@ const Config::Settings& SecurityManager::GetSettings() const {
 
 bool SecurityManager::IsValidPairingCode(
     const std::vector<uint8_t>& auth_code) const {
-  if (GetSettings().disable_security)
-    return true;
   for (const auto& session : confirmed_sessions_) {
     const std::string& key = session.second->GetKey();
     const std::string& id = session.first;
@@ -309,11 +286,6 @@ bool SecurityManager::StartPairing(PairingType mode,
     case CryptoType::kSpake_p224:
       spake.reset(new Spakep224Exchanger(code));
       break;
-    case CryptoType::kNone:
-      if (GetSettings().disable_security) {
-        spake.reset(new UnsecureKeyExchanger(code));
-        break;
-      }
     // Fall through...
     default:
       return Error::AddTo(error, FROM_HERE, errors::kInvalidParams,
@@ -428,9 +400,6 @@ void SecurityManager::RegisterPairingListeners(
 }
 
 bool SecurityManager::CheckIfPairingAllowed(ErrorPtr* error) {
-  if (GetSettings().disable_security)
-    return true;
-
   if (block_pairing_until_ > auth_manager_->Now()) {
     return Error::AddTo(error, FROM_HERE, errors::kDeviceBusy,
                         "Too many pairing attempts");

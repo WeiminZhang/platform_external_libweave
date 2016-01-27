@@ -20,7 +20,6 @@ class Daemon {
  public:
   struct Options {
     bool force_bootstrapping_{false};
-    bool disable_security_{false};
     bool disable_privet_{false};
     std::string registration_ticket_;
     std::string model_id_{"AAAAA"};
@@ -31,7 +30,6 @@ class Daemon {
                  << "\t-h,--help                    Show this help message\n"
                  << "\t--v=LEVEL                    Logging level\n"
                  << "\t-b,--bootstrapping           Force WiFi bootstrapping\n"
-                 << "\t-d,--disable_security        Disable privet security\n"
                  << "\t--registration_ticket=TICKET Register device with the "
                     "given ticket\n"
                  << "\t--disable_privet             Disable local privet\n";
@@ -44,8 +42,6 @@ class Daemon {
           return false;
         } else if (arg == "-b" || arg == "--bootstrapping") {
           force_bootstrapping_ = true;
-        } else if (arg == "-d" || arg == "--disable_security") {
-          disable_security_ = true;
         } else if (arg == "--disable_privet") {
           disable_privet_ = true;
         } else if (arg.find("--registration_ticket") != std::string::npos) {
@@ -71,8 +67,7 @@ class Daemon {
   Daemon(const Options& opts)
       : task_runner_{new weave::examples::EventTaskRunner},
         config_store_{
-            new weave::examples::FileConfigStore(opts.disable_security_,
-                                                 opts.model_id_,
+            new weave::examples::FileConfigStore(opts.model_id_,
                                                  task_runner_.get())},
         http_client_{new weave::examples::CurlHttpClient(task_runner_.get())},
         network_{new weave::examples::EventNetworkImpl(task_runner_.get())},
