@@ -106,17 +106,17 @@ class UserIdCaveat : public Caveat {
   DISALLOW_COPY_AND_ASSIGN(UserIdCaveat);
 };
 
-// class ServiceCaveat : public Caveat {
-//  public:
-//   ServiceCaveat() : Caveat(kUwMacaroonCaveatTypeDelegateeService, 0) {
-//     // TODO: Replace with service delegatee.
-//     CHECK(uw_macaroon_caveat_create_delegatee_user_(
-//         nullptr, 0, buffer_.data(), buffer_.size(),
-//         &caveat_));
-//   }
+class ServiceCaveat : public Caveat {
+ public:
+  explicit ServiceCaveat(const std::string& id)
+      : Caveat(kUwMacaroonCaveatTypeDelegateeService, id.size()) {
+    CHECK(uw_macaroon_caveat_create_delegatee_service_(
+        reinterpret_cast<const uint8_t*>(id.data()), id.size(), buffer_.data(),
+        buffer_.size(), &caveat_));
+  }
 
-//   DISALLOW_COPY_AND_ASSIGN(ServiceCaveat);
-// };
+  DISALLOW_COPY_AND_ASSIGN(ServiceCaveat);
+};
 
 class SessionIdCaveat : public Caveat {
  public:
@@ -348,7 +348,7 @@ bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   // values.
   CHECK_GE(FromJ2000Time(result.expiration_time), now);
   CHECK_EQ(1u, result.num_delegatees);
-  CHECK(!result.delegatees[0].is_app);
+  CHECK_EQ(kUwMacaroonDelegateeTypeUser, result.delegatees[0].type);
   std::string user_id{reinterpret_cast<const char*>(result.delegatees[0].id),
                       result.delegatees[0].id_len};
   if (user_info)
@@ -405,10 +405,8 @@ std::vector<uint8_t> AuthManager::GetRootClientAuthToken(
   const base::Time now = Now();
   TimestampCaveat issued{now};
 
-  UserIdCaveat client{""};
-  // TODO: service caveat when available.
-  // ServiceCaveat cloud;
-
+  ServiceCaveat client{owner == RootClientTokenOwner::kCloud ? "google.com"
+                                                             : "privet"};
   return CreateMacaroonToken(
       auth_secret_, now,
       {
@@ -464,7 +462,7 @@ bool AuthManager::CreateAccessTokenFromAuth(
   auto last_user_id =
       std::find_if(delegates_rbegin, delegates_rend,
                    [](const UwMacaroonDelegateeInfo& delegatee) {
-                     return !delegatee.is_app;
+                     return delegatee.type == kUwMacaroonDelegateeTypeUser;
                    });
 
   if (last_user_id == delegates_rend || !last_user_id->id_len) {

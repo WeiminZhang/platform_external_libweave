@@ -146,21 +146,21 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthToken) {
-  EXPECT_EQ("WCCDQxkgAUYIGhudoQBCCUBQn9rT/8iUzwKa0ZIAgCNxyg==",
+  EXPECT_EQ("WCaDQxkgAUYIGhudoQBIDEZwcml2ZXRQ5aV4jIdY2JGosyU0APnQpA==",
             Base64Encode(
                 auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient)));
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentOwner) {
   EXPECT_EQ(
-      "WCCDQxkgAUYIGhudoQBCCUBQn9rT/8iUzwKa0ZIAgCNxyg==",
+      "WCqDQxkgAUYIGhudoQBMDEpnb29nbGUuY29tUOoLAxSUAZAAv54drarqhag=",
       Base64Encode(auth_.GetRootClientAuthToken(RootClientTokenOwner::kCloud)));
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
   auto new_time = clock_.Now() + base::TimeDelta::FromDays(15);
   EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
-  EXPECT_EQ("WCCDQxkgAUYIGhuxZ4BCCUBQmNBWA9KdLzxHUCMqzonDZw==",
+  EXPECT_EQ("WCaDQxkgAUYIGhuxZ4BIDEZwcml2ZXRQsDNy7gcfJT/yvRs3/q40oA==",
             Base64Encode(
                 auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient)));
 }
@@ -168,7 +168,7 @@ TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentSecret) {
   AuthManager auth{kSecret2, {}, kSecret1, &clock_};
   EXPECT_EQ(
-      "WCCDQxkgAUYIGhudoQBCCUBQQ/BSJs7FEI260RnwjlJrVw==",
+      "WCaDQxkgAUYIGhudoQBIDEZwcml2ZXRQKw9xcidyzrelxUkgkLmv1g==",
       Base64Encode(auth.GetRootClientAuthToken(RootClientTokenOwner::kClient)));
 }
 
@@ -205,12 +205,12 @@ TEST_F(AuthManagerTest, CreateAccessTokenFromAuth) {
   std::vector<uint8_t> access_token;
   AuthScope scope;
   base::TimeDelta ttl;
-  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
+  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kCloud);
   auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(1000),
                                  UserInfo{AuthScope::kUser, "234"});
   EXPECT_EQ(
-      "WEWIQxkgAUYIGhudoQBCCUBGCBobnaEARgUaG52k6EIBDkUJQzIzNE0RSzQ2MzMxNTIwMDox"
-      "UHN8Lm+CUQo7s84Sh+grpAE=",
+      "WE+IQxkgAUYIGhudoQBMDEpnb29nbGUuY29tRggaG52hAEYFGhudpOhCAQ5FCUMyMzRNEUs0"
+      "NjMzMTUyMDA6MVCRVKU+0SpOoBppnwqdKMwP",
       Base64Encode(extended));
   EXPECT_TRUE(
       auth_.CreateAccessTokenFromAuth(extended, base::TimeDelta::FromDays(1),
