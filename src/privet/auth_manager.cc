@@ -320,7 +320,6 @@ std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
       {
           &scope.GetCaveat(), &user.GetCaveat(), &expiration.GetCaveat(),
       });
-  return {};
 }
 
 bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
