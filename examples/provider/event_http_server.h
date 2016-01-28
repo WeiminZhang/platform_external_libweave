@@ -5,8 +5,7 @@
 #ifndef LIBWEAVE_EXAMPLES_PROVIDER_EVENT_HTTP_SERVER_H_
 #define LIBWEAVE_EXAMPLES_PROVIDER_EVENT_HTTP_SERVER_H_
 
-#include <event2/http.h>
-#include <evhttp.h>
+#include <evhtp.h>
 #include <openssl/ssl.h>
 
 #include <map>
@@ -16,12 +15,14 @@
 #include <base/memory/weak_ptr.h>
 #include <weave/provider/http_server.h>
 
+#include "examples/provider/event_deleter.h"
+
 namespace weave {
 namespace examples {
 
 class EventTaskRunner;
 
-// HTTP/HTTPS server implemented with libevent.
+// HTTP/HTTPS server implemented with libevhtp.
 class HttpServerImpl : public provider::HttpServer {
  public:
   class RequestImpl;
@@ -38,32 +39,21 @@ class HttpServerImpl : public provider::HttpServer {
   std::vector<uint8_t> GetHttpsCertificateFingerprint() const override;
 
  private:
-  void GenerateX509();
-  static void ProcessRequestCallback(evhttp_request* req, void* arg);
-  void ProcessRequest(evhttp_request* req);
+  void GenerateX509(X509* x509, EVP_PKEY* pkey);
+  static void ProcessRequestCallback(evhtp_request_t* req, void* arg);
+  void ProcessRequest(evhtp_request_t* req);
   void ProcessReply(std::shared_ptr<RequestImpl> request,
                     int status_code,
                     const std::string& data,
                     const std::string& mime_type);
-  void NotFound(evhttp_request* req);
+  void NotFound(evhtp_request_t* req);
 
   std::map<std::string, RequestHandlerCallback> handlers_;
 
-  std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)> ec_key_{nullptr,
-                                                          &EC_KEY_free};
-
-  std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> pkey_{nullptr,
-                                                            &EVP_PKEY_free};
-
-  std::unique_ptr<X509, decltype(&X509_free)> x509_{nullptr, &X509_free};
-
-  std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)> ctx_{nullptr,
-                                                         &SSL_CTX_free};
   std::vector<uint8_t> cert_fingerprint_;
   EventTaskRunner* task_runner_{nullptr};
-  std::unique_ptr<evhttp, decltype(&evhttp_free)> httpd_{nullptr, &evhttp_free};
-  std::unique_ptr<evhttp, decltype(&evhttp_free)> httpsd_{nullptr,
-                                                          &evhttp_free};
+  EventPtr<evhtp_t> httpd_;
+  EventPtr<evhtp_t> httpsd_;
 
   base::WeakPtrFactory<HttpServerImpl> weak_ptr_factory_{this};
 };
