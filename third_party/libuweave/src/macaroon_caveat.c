@@ -12,8 +12,6 @@
 #include "src/macaroon_context.h"
 #include "src/macaroon_encoding.h"
 
-#define MAX_CBOR_STR_LEN_FOR_UINT 5
-
 static bool is_valid_caveat_type_(UwMacaroonCaveatType type) {
   switch (type) {
     case kUwMacaroonCaveatTypeNonce:
@@ -25,6 +23,7 @@ static bool is_valid_caveat_type_(UwMacaroonCaveatType type) {
     case kUwMacaroonCaveatTypeDelegateeUser:
     case kUwMacaroonCaveatTypeDelegateeApp:
     case kUwMacaroonCaveatTypeAppCommandsOnly:
+    case kUwMacaroonCaveatTypeDelegateeService:
     case kUwMacaroonCaveatTypeBleSessionID:
     case kUwMacaroonCaveatTypeLanSessionID:
     case kUwMacaroonCaveatTypeClientAuthorizationTokenV1:
@@ -103,7 +102,7 @@ static bool create_caveat_bstr_value_(UwMacaroonCaveatType type,
                                       uint8_t* buffer,
                                       size_t buffer_size,
                                       UwMacaroonCaveat* new_caveat) {
-  if ((str == NULL && str_len != 0) || buffer == NULL || buffer_size == 0 ||
+  if (str == NULL || str_len == 0 || buffer == NULL || buffer_size == 0 ||
       new_caveat == NULL ||
       uw_macaroon_caveat_creation_get_buffsize_(type, str_len) > buffer_size) {
     return false;
@@ -147,6 +146,7 @@ size_t uw_macaroon_caveat_creation_get_buffsize_(UwMacaroonCaveatType type,
     case kUwMacaroonCaveatTypeNonce:
     case kUwMacaroonCaveatTypeDelegateeUser:
     case kUwMacaroonCaveatTypeDelegateeApp:
+    case kUwMacaroonCaveatTypeDelegateeService:
     case kUwMacaroonCaveatTypeLanSessionID:
     case kUwMacaroonCaveatTypeClientAuthorizationTokenV1:
     case kUwMacaroonCaveatTypeServerAuthenticationTokenV1:
@@ -235,6 +235,17 @@ bool uw_macaroon_caveat_create_app_commands_only_(
     UwMacaroonCaveat* new_caveat) {
   return create_caveat_no_value_(kUwMacaroonCaveatTypeAppCommandsOnly, buffer,
                                  buffer_size, new_caveat);
+}
+
+bool uw_macaroon_caveat_create_delegatee_service_(
+    const uint8_t* id_str,
+    size_t id_str_len,
+    uint8_t* buffer,
+    size_t buffer_size,
+    UwMacaroonCaveat* new_caveat) {
+  return create_caveat_bstr_value_(kUwMacaroonCaveatTypeDelegateeService,
+                                   id_str, id_str_len, buffer, buffer_size,
+                                   new_caveat);
 }
 
 bool uw_macaroon_caveat_create_ble_session_id_(uint8_t* buffer,
@@ -393,12 +404,29 @@ static bool update_delegatee_list(UwMacaroonCaveatType caveat_type,
   if (result->num_delegatees >= MAX_NUM_DELEGATEES) {
     return false;
   }
-  bool is_app = (caveat_type == kUwMacaroonCaveatTypeDelegateeApp);
 
-  if (is_app) {
+  UwMacaroonDelegateeType delegatee_type = kUwMacaroonDelegateeTypeNone;
+  switch (caveat_type) {
+    case kUwMacaroonCaveatTypeDelegateeUser:
+      delegatee_type = kUwMacaroonDelegateeTypeUser;
+      break;
+
+    case kUwMacaroonCaveatTypeDelegateeApp:
+      delegatee_type = kUwMacaroonDelegateeTypeApp;
+      break;
+
+    case kUwMacaroonCaveatTypeDelegateeService:
+      delegatee_type = kUwMacaroonDelegateeTypeService;
+      break;
+
+    default:
+      return false;
+  }
+
+  if (caveat_type != kUwMacaroonCaveatTypeDelegateeUser) {
     for (size_t i = 0; i < result->num_delegatees; i++) {
-      // There must have at most one DelegateeApp
-      if (result->delegatees[i].is_app) {
+      // There must have at most one DelegateeApp or DelegateeService
+      if (result->delegatees[i].type == delegatee_type) {
         return false;
       }
     }
@@ -409,7 +437,7 @@ static bool update_delegatee_list(UwMacaroonCaveatType caveat_type,
           &(result->delegatees[result->num_delegatees].id_len))) {
     return false;
   }
-  result->delegatees[result->num_delegatees].is_app = is_app;
+  result->delegatees[result->num_delegatees].type = delegatee_type;
   result->num_delegatees++;
   return true;
 }
@@ -463,9 +491,8 @@ bool uw_macaroon_caveat_validate_(const UwMacaroonCaveat* caveat,
 
     // Need to create a list of delegatees
     case kUwMacaroonCaveatTypeDelegateeUser:
-      return update_delegatee_list(caveat_type, caveat, result);
-
     case kUwMacaroonCaveatTypeDelegateeApp:
+    case kUwMacaroonCaveatTypeDelegateeService:
       return update_delegatee_list(caveat_type, caveat, result);
 
     // Time related caveats
@@ -543,6 +570,7 @@ bool uw_macaroon_caveat_get_value_bstr_(const UwMacaroonCaveat* caveat,
   if (type != kUwMacaroonCaveatTypeNonce &&
       type != kUwMacaroonCaveatTypeDelegateeUser &&
       type != kUwMacaroonCaveatTypeDelegateeApp &&
+      type != kUwMacaroonCaveatTypeDelegateeService &&
       type != kUwMacaroonCaveatTypeLanSessionID &&
       type != kUwMacaroonCaveatTypeClientAuthorizationTokenV1 &&
       type != kUwMacaroonCaveatTypeServerAuthenticationTokenV1) {

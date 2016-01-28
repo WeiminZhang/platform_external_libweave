@@ -15,14 +15,17 @@ typedef struct {
 } UwMacaroonCaveat;
 
 typedef enum {
-  kUwMacaroonCaveatTypeNonce = 0,                            // bstr
-  kUwMacaroonCaveatTypeScope = 1,                            // uint
-  kUwMacaroonCaveatTypeExpirationAbsolute = 5,               // uint
-  kUwMacaroonCaveatTypeTTL1Hour = 6,                         // no value
-  kUwMacaroonCaveatTypeTTL24Hour = 7,                        // no value
-  kUwMacaroonCaveatTypeDelegationTimestamp = 8,              // uint
-  kUwMacaroonCaveatTypeDelegateeUser = 9,                    // bstr
-  kUwMacaroonCaveatTypeDelegateeApp = 10,                    // bstr
+  kUwMacaroonCaveatTypeNonce = 0,                // bstr
+  kUwMacaroonCaveatTypeScope = 1,                // uint
+  kUwMacaroonCaveatTypeExpirationAbsolute = 5,   // uint
+  kUwMacaroonCaveatTypeTTL1Hour = 6,             // no value
+  kUwMacaroonCaveatTypeTTL24Hour = 7,            // no value
+  kUwMacaroonCaveatTypeDelegationTimestamp = 8,  // uint
+
+  kUwMacaroonCaveatTypeDelegateeUser = 9,      // bstr
+  kUwMacaroonCaveatTypeDelegateeApp = 10,      // bstr
+  kUwMacaroonCaveatTypeDelegateeService = 12,  // bstr
+
   kUwMacaroonCaveatTypeAppCommandsOnly = 11,                 // no value
   kUwMacaroonCaveatTypeBleSessionID = 16,                    // no value
   kUwMacaroonCaveatTypeLanSessionID = 17,                    // bstr
@@ -81,6 +84,11 @@ bool uw_macaroon_caveat_create_delegatee_app_(const uint8_t* id_str,
                                               uint8_t* buffer,
                                               size_t buffer_size,
                                               UwMacaroonCaveat* new_caveat);
+bool uw_macaroon_caveat_create_delegatee_service_(const uint8_t* id_str,
+                                                  size_t id_str_len,
+                                                  uint8_t* buffer,
+                                                  size_t buffer_size,
+                                                  UwMacaroonCaveat* new_caveat);
 bool uw_macaroon_caveat_create_app_commands_only_(uint8_t* buffer,
                                                   size_t buffer_size,
                                                   UwMacaroonCaveat* new_caveat);

@@ -146,7 +146,7 @@ static void reset_validation_result(UwMacaroonValidationResult* result) {
   for (size_t i = 0; i < MAX_NUM_DELEGATEES; i++) {
     result->delegatees[i].id = NULL;
     result->delegatees[i].id_len = 0;
-    result->delegatees[i].is_app = true;
+    result->delegatees[i].type = kUwMacaroonDelegateeTypeNone;
   }
 }
 

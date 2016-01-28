@@ -25,10 +25,17 @@ typedef struct {
 } UwMacaroon;
 
 // For the delegatee list in the validation result object
+typedef enum {
+  kUwMacaroonDelegateeTypeNone = 0,
+  kUwMacaroonDelegateeTypeUser = 1,
+  kUwMacaroonDelegateeTypeApp = 2,
+  kUwMacaroonDelegateeTypeService = 3,
+} UwMacaroonDelegateeType;
+
 typedef struct {
   const uint8_t* id;
   size_t id_len;
-  bool is_app;
+  UwMacaroonDelegateeType type;
 } UwMacaroonDelegateeInfo;
 
 #define MAX_NUM_DELEGATEES 10
