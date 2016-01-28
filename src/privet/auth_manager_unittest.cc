@@ -29,6 +29,11 @@ class AuthManagerTest : public testing::Test {
   }
 
  protected:
+  std::vector<uint8_t> DelegateToUser(const std::vector<uint8_t>& token,
+                                      base::TimeDelta ttl,
+                                      const UserInfo& user_info) const {
+    return auth_.DelegateToUser(token, ttl, user_info);
+  }
   const std::vector<uint8_t> kSecret1{
       78, 40, 39, 68, 29, 19, 70, 86, 38, 61, 13, 55, 33, 32, 51, 52,
       34, 43, 97, 48, 8,  56, 11, 99, 50, 59, 24, 26, 31, 71, 76, 28};
@@ -129,6 +134,10 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
         .WillRepeatedly(Return(kStartTime + base::TimeDelta::FromSeconds(i)));
     EXPECT_TRUE(auth.ParseAccessToken(token, &user_info, nullptr));
 
+    auto extended = DelegateToUser(token, base::TimeDelta::FromSeconds(1000),
+                                   UserInfo{AuthScope::kUser, "234"});
+    EXPECT_FALSE(auth.ParseAccessToken(extended, &user_info, nullptr));
+
     EXPECT_CALL(clock_, Now())
         .WillRepeatedly(
             Return(kStartTime + base::TimeDelta::FromSeconds(i + 1)));
@@ -174,6 +183,96 @@ TEST_F(AuthManagerTest, IsValidAuthToken) {
     EXPECT_FALSE(auth_.IsValidAuthToken(token, nullptr));
     EXPECT_TRUE(auth.IsValidAuthToken(token, nullptr));
   }
+}
+
+TEST_F(AuthManagerTest, CreateSessionId) {
+  EXPECT_EQ("463315200:1", auth_.CreateSessionId());
+}
+
+TEST_F(AuthManagerTest, IsValidSessionId) {
+  EXPECT_TRUE(auth_.IsValidSessionId("463315200:1"));
+  EXPECT_TRUE(auth_.IsValidSessionId("463315200:2"));
+  EXPECT_TRUE(auth_.IsValidSessionId("463315150"));
+
+  // Future
+  EXPECT_FALSE(auth_.IsValidSessionId("463315230:1"));
+
+  // Expired
+  EXPECT_FALSE(auth_.IsValidSessionId("463315100:1"));
+}
+
+TEST_F(AuthManagerTest, CreateAccessTokenFromAuth) {
+  std::vector<uint8_t> access_token;
+  AuthScope scope;
+  base::TimeDelta ttl;
+  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
+  auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(1000),
+                                 UserInfo{AuthScope::kUser, "234"});
+  EXPECT_EQ(
+      "WEWIQxkgAUYIGhudoQBCCUBGCBobnaEARgUaG52k6EIBDkUJQzIzNE0RSzQ2MzMxNTIwMDox"
+      "UHN8Lm+CUQo7s84Sh+grpAE=",
+      Base64Encode(extended));
+  EXPECT_TRUE(
+      auth_.CreateAccessTokenFromAuth(extended, base::TimeDelta::FromDays(1),
+                                      &access_token, &scope, &ttl, nullptr));
+  UserInfo user_info;
+  EXPECT_TRUE(auth_.ParseAccessToken(access_token, &user_info, nullptr));
+  EXPECT_EQ(scope, user_info.scope());
+  EXPECT_EQ(AuthScope::kUser, user_info.scope());
+
+  EXPECT_EQ("234", user_info.user_id());
+}
+
+TEST_F(AuthManagerTest, CreateAccessTokenFromAuthNotMinted) {
+  std::vector<uint8_t> access_token;
+  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
+  ErrorPtr error;
+  EXPECT_FALSE(auth_.CreateAccessTokenFromAuth(
+      root, base::TimeDelta::FromDays(1), nullptr, nullptr, nullptr, &error));
+  EXPECT_TRUE(error->HasError("invalidAuthCode"));
+}
+
+TEST_F(AuthManagerTest, CreateAccessTokenFromAuthValidateAfterSomeTime) {
+  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
+  auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(1000),
+                                 UserInfo{AuthScope::kUser, "234"});
+
+  // new_time < session_id_expiration < token_expiration.
+  auto new_time = clock_.Now() + base::TimeDelta::FromSeconds(15);
+  EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
+  EXPECT_TRUE(
+      auth_.CreateAccessTokenFromAuth(extended, base::TimeDelta::FromDays(1),
+                                      nullptr, nullptr, nullptr, nullptr));
+}
+
+TEST_F(AuthManagerTest, CreateAccessTokenFromAuthExpired) {
+  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
+  auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(10),
+                                 UserInfo{AuthScope::kUser, "234"});
+  ErrorPtr error;
+
+  // token_expiration < new_time < session_id_expiration.
+  auto new_time = clock_.Now() + base::TimeDelta::FromSeconds(15);
+  EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
+  EXPECT_FALSE(
+      auth_.CreateAccessTokenFromAuth(extended, base::TimeDelta::FromDays(1),
+                                      nullptr, nullptr, nullptr, &error));
+  EXPECT_TRUE(error->HasError("invalidAuthCode"));
+}
+
+TEST_F(AuthManagerTest, CreateAccessTokenFromAuthExpiredSessionid) {
+  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
+  auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(1000),
+                                 UserInfo{AuthScope::kUser, "234"});
+  ErrorPtr error;
+
+  // session_id_expiration < new_time < token_expiration.
+  auto new_time = clock_.Now() + base::TimeDelta::FromSeconds(200);
+  EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
+  EXPECT_FALSE(
+      auth_.CreateAccessTokenFromAuth(extended, base::TimeDelta::FromDays(1),
+                                      nullptr, nullptr, nullptr, &error));
+  EXPECT_TRUE(error->HasError("invalidAuthCode"));
 }
 
 class AuthManagerClaimTest : public testing::Test {
@@ -249,23 +348,6 @@ TEST_F(AuthManagerClaimTest, TokenOverflow) {
   for (size_t i = 0; i < 100; ++i)
     auth_.ClaimRootClientAuthToken(RootClientTokenOwner::kCloud, nullptr);
   EXPECT_FALSE(auth_.ConfirmClientAuthToken(token, nullptr));
-}
-
-TEST_F(AuthManagerClaimTest, CreateAccessTokenFromAuth) {
-  std::vector<uint8_t> access_token;
-  AuthScope scope;
-  base::TimeDelta ttl;
-  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
-  auto extended = auth_.DelegateToUser(root, UserInfo{AuthScope::kUser, "234"});
-  EXPECT_TRUE(
-      auth_.CreateAccessTokenFromAuth(extended, base::TimeDelta::FromDays(1),
-                                      &access_token, &scope, &ttl, nullptr));
-  UserInfo user_info;
-  EXPECT_TRUE(auth_.ParseAccessToken(access_token, &user_info, nullptr));
-  EXPECT_EQ(scope, user_info.scope());
-  EXPECT_EQ(AuthScope::kUser, user_info.scope());
-
-  EXPECT_EQ("234", user_info.user_id());
 }
 
 }  // namespace privet

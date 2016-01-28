@@ -30,6 +30,7 @@ const time_t kJ2000ToTimeT = 946684800;
 const size_t kMaxMacaroonSize = 1024;
 const size_t kMaxPendingClaims = 10;
 const char kInvalidTokenError[] = "invalid_token";
+const int kSessionIdTtlMinutes = 1;
 
 uint32_t ToJ2000Time(const base::Time& time) {
   return std::max(time.ToTimeT(), kJ2000ToTimeT) - kJ2000ToTimeT;
@@ -95,11 +96,11 @@ class ExpirationCaveat : public Caveat {
 
 class UserIdCaveat : public Caveat {
  public:
-  explicit UserIdCaveat(const std::string& user_id)
-      : Caveat(kUwMacaroonCaveatTypeDelegateeUser, user_id.size()) {
+  explicit UserIdCaveat(const std::string& id)
+      : Caveat(kUwMacaroonCaveatTypeDelegateeUser, id.size()) {
     CHECK(uw_macaroon_caveat_create_delegatee_user_(
-        reinterpret_cast<const uint8_t*>(user_id.data()), user_id.size(),
-        buffer_.data(), buffer_.size(), &caveat_));
+        reinterpret_cast<const uint8_t*>(id.data()), id.size(), buffer_.data(),
+        buffer_.size(), &caveat_));
   }
 
   DISALLOW_COPY_AND_ASSIGN(UserIdCaveat);
@@ -116,6 +117,18 @@ class UserIdCaveat : public Caveat {
 
 //   DISALLOW_COPY_AND_ASSIGN(ServiceCaveat);
 // };
+
+class SessionIdCaveat : public Caveat {
+ public:
+  explicit SessionIdCaveat(const std::string& id)
+      : Caveat(kUwMacaroonCaveatTypeLanSessionID, id.size()) {
+    CHECK(uw_macaroon_caveat_create_lan_session_id_(
+        reinterpret_cast<const uint8_t*>(id.data()), id.size(), buffer_.data(),
+        buffer_.size(), &caveat_));
+  }
+
+  DISALLOW_COPY_AND_ASSIGN(SessionIdCaveat);
+};
 
 class ClientAuthTokenCaveat : public Caveat {
  public:
@@ -439,12 +452,11 @@ bool AuthManager::CreateAccessTokenFromAuth(
 
   AuthScope auth_scope{FromMacaroonScope(result.granted_scope)};
   if (auth_scope == AuthScope::kNone) {
-    return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthorization,
+    return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode,
                         "Invalid token data");
   }
 
   // TODO: Integrate black list checks.
-  // TODO: Check session id.
   auto delegates_rbegin = std::reverse_iterator<const UwMacaroonDelegateeInfo*>(
       result.delegatees + result.num_delegatees);
   auto delegates_rend =
@@ -456,8 +468,14 @@ bool AuthManager::CreateAccessTokenFromAuth(
                    });
 
   if (last_user_id == delegates_rend || !last_user_id->id_len) {
-    return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthorization,
+    return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode,
                         "User ID is missing");
+  }
+
+  const char* session_id = reinterpret_cast<const char*>(result.lan_session_id);
+  if (!IsValidSessionId({session_id, session_id + result.lan_session_id_len})) {
+    return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode,
+                        "Invalid session id");
   }
 
   CHECK_GE(FromJ2000Time(result.expiration_time), now);
@@ -480,27 +498,39 @@ bool AuthManager::CreateAccessTokenFromAuth(
   return true;
 }
 
-std::vector<uint8_t> AuthManager::CreateSessionId() {
-  std::vector<uint8_t> result;
-  AppendToArray(Now().ToTimeT(), &result);
-  AppendToArray(++session_counter_, &result);
-  return result;
+std::string AuthManager::CreateSessionId() const {
+  return std::to_string(ToJ2000Time(Now())) + ":" +
+         std::to_string(++session_counter_);
+}
+
+bool AuthManager::IsValidSessionId(const std::string& session_id) const {
+  base::Time ssid_time = FromJ2000Time(std::atoi(session_id.c_str()));
+  return Now() - base::TimeDelta::FromMinutes(kSessionIdTtlMinutes) <=
+             ssid_time &&
+         ssid_time <= Now();
 }
 
 std::vector<uint8_t> AuthManager::DelegateToUser(
     const std::vector<uint8_t>& token,
+    base::TimeDelta ttl,
     const UserInfo& user_info) const {
   std::vector<uint8_t> buffer;
   UwMacaroon macaroon{};
   CHECK(LoadMacaroon(token, &buffer, &macaroon, nullptr));
 
+  const base::Time now = Now();
+  TimestampCaveat issued{now};
+  ExpirationCaveat expiration{now + ttl};
   ScopeCaveat scope{ToMacaroonScope(user_info.scope())};
-  UserIdCaveat user_caveat{user_info.user_id()};
+  UserIdCaveat user{user_info.user_id()};
+  SessionIdCaveat session{CreateSessionId()};
 
-  return ExtendMacaroonToken(macaroon, Now(),
-                             {
-                                 &scope.GetCaveat(), &user_caveat.GetCaveat(),
-                             });
+  return ExtendMacaroonToken(
+      macaroon, now,
+      {
+          &issued.GetCaveat(), &expiration.GetCaveat(), &scope.GetCaveat(),
+          &user.GetCaveat(), &session.GetCaveat(),
+      });
 }
 
 }  // namespace privet

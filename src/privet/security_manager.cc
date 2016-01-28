@@ -388,7 +388,7 @@ bool SecurityManager::CancelPairing(const std::string& session_id,
 }
 
 std::string SecurityManager::CreateSessionId() {
-  return Base64Encode(auth_manager_->CreateSessionId());
+  return auth_manager_->CreateSessionId();
 }
 
 void SecurityManager::RegisterPairingListeners(

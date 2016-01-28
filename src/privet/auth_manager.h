@@ -68,19 +68,21 @@ class AuthManager {
   void SetAuthSecret(const std::vector<uint8_t>& secret,
                      RootClientTokenOwner owner);
 
-  std::vector<uint8_t> CreateSessionId();
+  std::string CreateSessionId() const;
+  bool IsValidSessionId(const std::string& session_id) const;
 
  private:
-  FRIEND_TEST_ALL_PREFIXES(AuthManagerClaimTest, CreateAccessTokenFromAuth);
+  friend class AuthManagerTest;
 
-  // Test helper.
+  // Test helpers. Device does not need to implement delegation.
   std::vector<uint8_t> DelegateToUser(const std::vector<uint8_t>& token,
+                                      base::TimeDelta ttl,
                                       const UserInfo& user_info) const;
 
   Config* config_{nullptr};  // Can be nullptr for tests.
   base::DefaultClock default_clock_;
   base::Clock* clock_{&default_clock_};
-  uint32_t session_counter_{0};
+  mutable uint32_t session_counter_{0};
 
   std::vector<uint8_t> auth_secret_;  // Persistent.
   std::vector<uint8_t> certificate_fingerprint_;
