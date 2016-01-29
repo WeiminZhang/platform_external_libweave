@@ -102,7 +102,7 @@ static bool create_caveat_bstr_value_(UwMacaroonCaveatType type,
                                       uint8_t* buffer,
                                       size_t buffer_size,
                                       UwMacaroonCaveat* new_caveat) {
-  if (str == NULL || str_len == 0 || buffer == NULL || buffer_size == 0 ||
+  if ((str == NULL && str_len != 0) || buffer == NULL || buffer_size == 0 ||
       new_caveat == NULL ||
       uw_macaroon_caveat_creation_get_buffsize_(type, str_len) > buffer_size) {
     return false;

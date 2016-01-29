@@ -405,7 +405,7 @@ std::vector<uint8_t> AuthManager::GetRootClientAuthToken(
   TimestampCaveat issued{now};
 
   ServiceCaveat client{owner == RootClientTokenOwner::kCloud ? "google.com"
-                                                             : "privet"};
+                                                             : ""};
   return CreateMacaroonToken(
       auth_secret_, now,
       {

@@ -146,7 +146,7 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthToken) {
-  EXPECT_EQ("WCaDQxkgAUYIGhudoQBIDEZwcml2ZXRQ5aV4jIdY2JGosyU0APnQpA==",
+  EXPECT_EQ("WCCDQxkgAUYIGhudoQBCDEBQZgRhYq78I8GtFUZHNBbfGw==",
             Base64Encode(
                 auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient)));
 }
@@ -160,7 +160,7 @@ TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentOwner) {
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
   auto new_time = clock_.Now() + base::TimeDelta::FromDays(15);
   EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
-  EXPECT_EQ("WCaDQxkgAUYIGhuxZ4BIDEZwcml2ZXRQsDNy7gcfJT/yvRs3/q40oA==",
+  EXPECT_EQ("WCCDQxkgAUYIGhuxZ4BCDEBQjO+OTbjjTzZ/Dvk66nfQqg==",
             Base64Encode(
                 auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient)));
 }
@@ -168,7 +168,7 @@ TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentTime) {
 TEST_F(AuthManagerTest, GetRootClientAuthTokenDifferentSecret) {
   AuthManager auth{kSecret2, {}, kSecret1, &clock_};
   EXPECT_EQ(
-      "WCaDQxkgAUYIGhudoQBIDEZwcml2ZXRQKw9xcidyzrelxUkgkLmv1g==",
+      "WCCDQxkgAUYIGhudoQBCDEBQ2MZF8YXv5pbtmMxwz9VtLA==",
       Base64Encode(auth.GetRootClientAuthToken(RootClientTokenOwner::kClient)));
 }
 
