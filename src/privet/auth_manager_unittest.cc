@@ -10,6 +10,7 @@
 
 #include "src/config.h"
 #include "src/data_encoding.h"
+#include "src/privet/mock_delegates.h"
 #include "src/test/mock_clock.h"
 
 using testing::Return;
@@ -69,49 +70,90 @@ TEST_F(AuthManagerTest, Constructor) {
 }
 
 TEST_F(AuthManagerTest, CreateAccessToken) {
-  EXPECT_EQ("WCKDQgEURQlDMjM0RgUaG52hAFA3hFh7TexW1jC96sU4CxvN",
+  EXPECT_EQ("WCaEQgEURglEMjM0AEIKQEYFGhudoQBQaML7svgzFKDXI+/geUUn0w==",
             Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kViewer, "234"}, {})));
-  EXPECT_EQ("WCKDQgEIRQlDMjU3RgUaG52hAFD3dEHl3Y9Y28uoUESiYuLq",
+                UserInfo{AuthScope::kViewer, TestUserId{"234"}}, {})));
+  EXPECT_EQ("WCaEQgEIRglEMjU3AEIKQEYFGhudoQBQ0f4NfEW7KDC1QnbExFbf9w==",
             Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kManager, "257"}, {})));
-  EXPECT_EQ("WCKDQgECRQlDNDU2RgUaG52hAFBy35bQdtvlqYf+Y/ANyxLU",
+                UserInfo{AuthScope::kManager, TestUserId{"257"}}, {})));
+  EXPECT_EQ("WCaEQgECRglENDU2AEIKQEYFGhudoQBQtgk1ZlsGqs5gF7m+UpwxmQ==",
             Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kOwner, "456"}, {})));
+                UserInfo{AuthScope::kOwner, TestUserId{"456"}}, {})));
   auto new_time = clock_.Now() + base::TimeDelta::FromDays(11);
   EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
-  EXPECT_EQ("WCKDQgEORQlDMzQ1RgUaG6whgFD1HGVxL8+FPaf/U0bOkXr8",
+  EXPECT_EQ("WCaEQgEORglEMzQ1AEIKQEYFGhusIYBQl3SG1De+fl2qTquwTl1uRA==",
             Base64Encode(auth_.CreateAccessToken(
-                UserInfo{AuthScope::kUser, "345"}, {})));
+                UserInfo{AuthScope::kUser, TestUserId{"345"}}, {})));
 }
 
 TEST_F(AuthManagerTest, CreateSameToken) {
-  EXPECT_EQ(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, "555"}, {}),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, "555"}, {}));
+  EXPECT_EQ(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer, TestUserId{"555"}}, {}),
+            auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer, TestUserId{"555"}}, {}));
+}
+
+TEST_F(AuthManagerTest, CreateSameTokenWithApp) {
+  EXPECT_EQ(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer,
+                         {AuthType::kLocal, {1, 2, 3}, {4, 5, 6}}},
+                {}),
+            auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer,
+                         {AuthType::kLocal, {1, 2, 3}, {4, 5, 6}}},
+                {}));
+}
+
+TEST_F(AuthManagerTest, CreateSameTokenWithDifferentType) {
+  EXPECT_NE(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer,
+                         {AuthType::kLocal, {1, 2, 3}, {4, 5, 6}}},
+                {}),
+            auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer,
+                         {AuthType::kPairing, {1, 2, 3}, {4, 5, 6}}},
+                {}));
+}
+
+TEST_F(AuthManagerTest, CreateSameTokenWithDifferentApp) {
+  EXPECT_NE(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer,
+                         {AuthType::kLocal, {1, 2, 3}, {4, 5, 6}}},
+                {}),
+            auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer,
+                         {AuthType::kLocal, {1, 2, 3}, {4, 5, 7}}},
+                {}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentScope) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kViewer, "456"}, {}),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "456"}, {}));
+  EXPECT_NE(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kViewer, TestUserId{"456"}}, {}),
+            auth_.CreateAccessToken(
+                UserInfo{AuthScope::kOwner, TestUserId{"456"}}, {}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentUser) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "456"}, {}),
-            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "789"}, {}));
+  EXPECT_NE(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kOwner, TestUserId{"456"}}, {}),
+            auth_.CreateAccessToken(
+                UserInfo{AuthScope::kOwner, TestUserId{"789"}}, {}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentTime) {
-  auto token = auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "567"}, {});
+  auto token = auth_.CreateAccessToken(
+      UserInfo{AuthScope::kOwner, TestUserId{"567"}}, {});
   EXPECT_CALL(clock_, Now())
       .WillRepeatedly(Return(base::Time::FromTimeT(1400000000)));
-  EXPECT_NE(token,
-            auth_.CreateAccessToken(UserInfo{AuthScope::kOwner, "567"}, {}));
+  EXPECT_NE(token, auth_.CreateAccessToken(
+                       UserInfo{AuthScope::kOwner, TestUserId{"567"}}, {}));
 }
 
 TEST_F(AuthManagerTest, CreateTokenDifferentInstance) {
-  EXPECT_NE(auth_.CreateAccessToken(UserInfo{AuthScope::kUser, "123"}, {}),
+  EXPECT_NE(auth_.CreateAccessToken(
+                UserInfo{AuthScope::kUser, TestUserId{"123"}}, {}),
             AuthManager({}, {}).CreateAccessToken(
-                UserInfo{AuthScope::kUser, "123"}, {}));
+                UserInfo{AuthScope::kUser, TestUserId{"123"}}, {}));
 }
 
 TEST_F(AuthManagerTest, ParseAccessToken) {
@@ -122,20 +164,22 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
 
     AuthManager auth{{}, {}, {}, &clock_};
 
-    auto token = auth.CreateAccessToken(UserInfo{AuthScope::kUser, "5"},
-                                        base::TimeDelta::FromSeconds(i));
+    auto token =
+        auth.CreateAccessToken(UserInfo{AuthScope::kUser, TestUserId{"5"}},
+                               base::TimeDelta::FromSeconds(i));
     UserInfo user_info;
     EXPECT_FALSE(auth_.ParseAccessToken(token, &user_info, nullptr));
     EXPECT_TRUE(auth.ParseAccessToken(token, &user_info, nullptr));
     EXPECT_EQ(AuthScope::kUser, user_info.scope());
-    EXPECT_EQ("5", user_info.user_id());
+    EXPECT_EQ(TestUserId{"5"}, user_info.id());
 
     EXPECT_CALL(clock_, Now())
         .WillRepeatedly(Return(kStartTime + base::TimeDelta::FromSeconds(i)));
     EXPECT_TRUE(auth.ParseAccessToken(token, &user_info, nullptr));
 
-    auto extended = DelegateToUser(token, base::TimeDelta::FromSeconds(1000),
-                                   UserInfo{AuthScope::kUser, "234"});
+    auto extended =
+        DelegateToUser(token, base::TimeDelta::FromSeconds(1000),
+                       UserInfo{AuthScope::kUser, TestUserId{"234"}});
     EXPECT_FALSE(auth.ParseAccessToken(extended, &user_info, nullptr));
 
     EXPECT_CALL(clock_, Now())
@@ -207,7 +251,7 @@ TEST_F(AuthManagerTest, CreateAccessTokenFromAuth) {
   base::TimeDelta ttl;
   auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kCloud);
   auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(1000),
-                                 UserInfo{AuthScope::kUser, "234"});
+                                 UserInfo{AuthScope::kUser, TestUserId{"234"}});
   EXPECT_EQ(
       "WE+IQxkgAUYIGhudoQBMDEpnb29nbGUuY29tRggaG52hAEYFGhudpOhCAQ5FCUMyMzRNEUs0"
       "NjMzMTUyMDA6MVCRVKU+0SpOoBppnwqdKMwP",
@@ -220,7 +264,7 @@ TEST_F(AuthManagerTest, CreateAccessTokenFromAuth) {
   EXPECT_EQ(scope, user_info.scope());
   EXPECT_EQ(AuthScope::kUser, user_info.scope());
 
-  EXPECT_EQ("234", user_info.user_id());
+  EXPECT_EQ(TestUserId{"234"}, user_info.id());
 }
 
 TEST_F(AuthManagerTest, CreateAccessTokenFromAuthNotMinted) {
@@ -235,7 +279,7 @@ TEST_F(AuthManagerTest, CreateAccessTokenFromAuthNotMinted) {
 TEST_F(AuthManagerTest, CreateAccessTokenFromAuthValidateAfterSomeTime) {
   auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
   auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(1000),
-                                 UserInfo{AuthScope::kUser, "234"});
+                                 UserInfo{AuthScope::kUser, TestUserId{"234"}});
 
   // new_time < session_id_expiration < token_expiration.
   auto new_time = clock_.Now() + base::TimeDelta::FromSeconds(15);
@@ -248,7 +292,7 @@ TEST_F(AuthManagerTest, CreateAccessTokenFromAuthValidateAfterSomeTime) {
 TEST_F(AuthManagerTest, CreateAccessTokenFromAuthExpired) {
   auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
   auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(10),
-                                 UserInfo{AuthScope::kUser, "234"});
+                                 UserInfo{AuthScope::kUser, TestUserId{"234"}});
   ErrorPtr error;
 
   // token_expiration < new_time < session_id_expiration.
@@ -263,7 +307,7 @@ TEST_F(AuthManagerTest, CreateAccessTokenFromAuthExpired) {
 TEST_F(AuthManagerTest, CreateAccessTokenFromAuthExpiredSessionid) {
   auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kClient);
   auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(1000),
-                                 UserInfo{AuthScope::kUser, "234"});
+                                 UserInfo{AuthScope::kUser, TestUserId{"234"}});
   ErrorPtr error;
 
   // session_id_expiration < new_time < token_expiration.

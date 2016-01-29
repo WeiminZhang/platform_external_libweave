@@ -165,7 +165,7 @@ class CloudDelegateImpl : public CloudDelegate {
                   const UserInfo& user_info,
                   const CommandDoneCallback& callback) override {
     CHECK(user_info.scope() != AuthScope::kNone);
-    CHECK(!user_info.user_id().empty());
+    CHECK(!user_info.id().IsEmpty());
 
     ErrorPtr error;
     UserRole role;
@@ -182,7 +182,7 @@ class CloudDelegateImpl : public CloudDelegate {
     if (!command_instance)
       return callback.Run({}, std::move(error));
     component_manager_->AddCommand(std::move(command_instance));
-    command_owners_[id] = user_info.user_id();
+    command_owners_[id] = user_info.id();
     callback.Run(*component_manager_->FindCommand(id)->ToJson(), nullptr);
   }
 
@@ -230,7 +230,7 @@ class CloudDelegateImpl : public CloudDelegate {
  private:
   void OnCommandAdded(Command* command) {
     // Set to "" for any new unknown command.
-    command_owners_.insert(std::make_pair(command->GetID(), ""));
+    command_owners_.insert(std::make_pair(command->GetID(), UserAppId{}));
   }
 
   void OnCommandRemoved(Command* command) {
@@ -309,14 +309,17 @@ class CloudDelegateImpl : public CloudDelegate {
     return command;
   }
 
-  bool CanAccessCommand(const std::string& owner_id,
+  bool CanAccessCommand(const UserAppId& owner,
                         const UserInfo& user_info,
                         ErrorPtr* error) const {
     CHECK(user_info.scope() != AuthScope::kNone);
-    CHECK(!user_info.user_id().empty());
+    CHECK(!user_info.id().IsEmpty());
 
     if (user_info.scope() == AuthScope::kManager ||
-        owner_id == user_info.user_id()) {
+        (owner.type == user_info.id().type &&
+         owner.user == user_info.id().user &&
+         (user_info.id().app.empty() ||  // Token is not restricted to the app.
+          owner.app == user_info.id().app))) {
       return true;
     }
 
@@ -341,7 +344,7 @@ class CloudDelegateImpl : public CloudDelegate {
   int registation_retry_count_{0};
 
   // Map of command IDs to user IDs.
-  std::map<std::string, std::string> command_owners_;
+  std::map<std::string, UserAppId> command_owners_;
 
   // Backoff entry for retrying device registration.
   BackoffEntry backoff_entry_{&register_backoff_policy};

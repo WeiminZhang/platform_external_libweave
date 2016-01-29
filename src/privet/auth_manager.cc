@@ -96,14 +96,24 @@ class ExpirationCaveat : public Caveat {
 
 class UserIdCaveat : public Caveat {
  public:
-  explicit UserIdCaveat(const std::string& id)
+  explicit UserIdCaveat(const std::vector<uint8_t>& id)
       : Caveat(kUwMacaroonCaveatTypeDelegateeUser, id.size()) {
     CHECK(uw_macaroon_caveat_create_delegatee_user_(
-        reinterpret_cast<const uint8_t*>(id.data()), id.size(), buffer_.data(),
-        buffer_.size(), &caveat_));
+        id.data(), id.size(), buffer_.data(), buffer_.size(), &caveat_));
   }
 
   DISALLOW_COPY_AND_ASSIGN(UserIdCaveat);
+};
+
+class AppIdCaveat : public Caveat {
+ public:
+  explicit AppIdCaveat(const std::vector<uint8_t>& id)
+      : Caveat(kUwMacaroonCaveatTypeDelegateeApp, id.size()) {
+    CHECK(uw_macaroon_caveat_create_delegatee_app_(
+        id.data(), id.size(), buffer_.data(), buffer_.size(), &caveat_));
+  }
+
+  DISALLOW_COPY_AND_ASSIGN(AppIdCaveat);
 };
 
 class ServiceCaveat : public Caveat {
@@ -312,14 +322,19 @@ AuthManager::~AuthManager() {}
 std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
                                                     base::TimeDelta ttl) const {
   ScopeCaveat scope{ToMacaroonScope(user_info.scope())};
-  UserIdCaveat user{user_info.user_id()};
+  // Macaroons have no caveats for auth type. So we just append the type to the
+  // user ID.
+  std::vector<uint8_t> id_with_type{user_info.id().user};
+  id_with_type.push_back(static_cast<uint8_t>(user_info.id().type));
+  UserIdCaveat user{id_with_type};
+  AppIdCaveat app{user_info.id().app};
   const base::Time now = Now();
   ExpirationCaveat expiration{now + ttl};
-  return CreateMacaroonToken(
-      access_secret_, now,
-      {
-          &scope.GetCaveat(), &user.GetCaveat(), &expiration.GetCaveat(),
-      });
+  return CreateMacaroonToken(access_secret_, now,
+                             {
+                                 &scope.GetCaveat(), &user.GetCaveat(),
+                                 &app.GetCaveat(), &expiration.GetCaveat(),
+                             });
 }
 
 bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
@@ -331,7 +346,7 @@ bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   UwMacaroonValidationResult result{};
   const base::Time now = Now();
   if (!LoadMacaroon(token, &buffer, &macaroon, error) ||
-      macaroon.num_caveats != 3 ||
+      macaroon.num_caveats != 4 ||
       !VerifyMacaroon(access_secret_, macaroon, now, &result, error)) {
     return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthorization,
                         "Invalid token");
@@ -346,12 +361,22 @@ bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   // If token is valid and token was not extended, it should has precisely this
   // values.
   CHECK_GE(FromJ2000Time(result.expiration_time), now);
-  CHECK_EQ(1u, result.num_delegatees);
+  CHECK_EQ(2u, result.num_delegatees);
   CHECK_EQ(kUwMacaroonDelegateeTypeUser, result.delegatees[0].type);
-  std::string user_id{reinterpret_cast<const char*>(result.delegatees[0].id),
-                      result.delegatees[0].id_len};
+  CHECK_EQ(kUwMacaroonDelegateeTypeApp, result.delegatees[1].type);
+  CHECK_GT(result.delegatees[0].id_len, 1u);
+  std::vector<uint8_t> user_id{
+      result.delegatees[0].id,
+      result.delegatees[0].id + result.delegatees[0].id_len};
+  // Last byte is used for type. See |CreateAccessToken|.
+  AuthType type = static_cast<AuthType>(user_id.back());
+  user_id.pop_back();
+
+  std::vector<uint8_t> app_id{
+      result.delegatees[1].id,
+      result.delegatees[1].id + result.delegatees[1].id_len};
   if (user_info)
-    *user_info = UserInfo{auth_scope, user_id};
+    *user_info = UserInfo{auth_scope, UserAppId{type, user_id, app_id}};
 
   return true;
 }
@@ -463,6 +488,11 @@ bool AuthManager::CreateAccessTokenFromAuth(
                    [](const UwMacaroonDelegateeInfo& delegatee) {
                      return delegatee.type == kUwMacaroonDelegateeTypeUser;
                    });
+  auto last_app_id =
+      std::find_if(delegates_rbegin, delegates_rend,
+                   [](const UwMacaroonDelegateeInfo& delegatee) {
+                     return delegatee.type == kUwMacaroonDelegateeTypeApp;
+                   });
 
   if (last_user_id == delegates_rend || !last_user_id->id_len) {
     return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode,
@@ -480,9 +510,13 @@ bool AuthManager::CreateAccessTokenFromAuth(
   if (!access_token)
     return true;
 
-  std::string user_id{reinterpret_cast<const char*>(last_user_id->id),
-                      last_user_id->id_len};
-  UserInfo info{auth_scope, user_id};
+  std::vector<uint8_t> user_id{last_user_id->id,
+                               last_user_id->id + last_user_id->id_len};
+  std::vector<uint8_t> app_id;
+  if (last_app_id != delegates_rend)
+    app_id.assign(last_app_id->id, last_app_id->id + last_app_id->id_len);
+
+  UserInfo info{auth_scope, {AuthType::kLocal, user_id, app_id}};
 
   ttl = std::min(ttl, FromJ2000Time(result.expiration_time) - now);
   *access_token = CreateAccessToken(info, ttl);
@@ -519,15 +553,21 @@ std::vector<uint8_t> AuthManager::DelegateToUser(
   TimestampCaveat issued{now};
   ExpirationCaveat expiration{now + ttl};
   ScopeCaveat scope{ToMacaroonScope(user_info.scope())};
-  UserIdCaveat user{user_info.user_id()};
+  UserIdCaveat user{user_info.id().user};
+  AppIdCaveat app{user_info.id().app};
   SessionIdCaveat session{CreateSessionId()};
 
-  return ExtendMacaroonToken(
-      macaroon, now,
-      {
-          &issued.GetCaveat(), &expiration.GetCaveat(), &scope.GetCaveat(),
-          &user.GetCaveat(), &session.GetCaveat(),
-      });
+  std::vector<const UwMacaroonCaveat*> caveats{
+      &issued.GetCaveat(), &expiration.GetCaveat(), &scope.GetCaveat(),
+      &user.GetCaveat(),
+  };
+
+  if (!user_info.id().app.empty())
+    caveats.push_back(&app.GetCaveat());
+
+  caveats.push_back(&session.GetCaveat());
+
+  return ExtendMacaroonToken(macaroon, now, caveats);
 }
 
 }  // namespace privet
