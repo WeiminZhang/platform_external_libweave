@@ -12,6 +12,9 @@
 #include "src/macaroon_context.h"
 #include "src/macaroon_encoding.h"
 
+// For security sanity checks
+#define UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE 127
+
 static bool is_valid_caveat_type_(UwMacaroonCaveatType type) {
   switch (type) {
     case kUwMacaroonCaveatTypeNonce:
@@ -507,7 +510,6 @@ bool uw_macaroon_caveat_validate_(const UwMacaroonCaveat* caveat,
     case kUwMacaroonCaveatTypeScope:
       if (!uw_macaroon_caveat_get_value_uint_(caveat, &scope) ||
           // Larger value means less priviledge
-          scope < UW_MACAROON_CAVEAT_SCOPE_HIGHEST_POSSIBLE ||
           scope > UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE) {
         return false;
       }

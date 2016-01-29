@@ -135,8 +135,7 @@ static void init_validation_result(UwMacaroonValidationResult* result) {
 /** Reset the result object to the lowest scope when encountering errors */
 static void reset_validation_result(UwMacaroonValidationResult* result) {
   // Start from the largest scope or highest privilege
-  result->granted_scope =
-      (UwMacaroonCaveatScopeType)UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE;
+  result->granted_scope = 0;
   result->expiration_time = 0;
   result->weave_app_restricted = true;
   result->lan_session_id = NULL;

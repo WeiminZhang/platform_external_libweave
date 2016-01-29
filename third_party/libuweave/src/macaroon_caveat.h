@@ -33,10 +33,6 @@ typedef enum {
   kUwMacaroonCaveatTypeServerAuthenticationTokenV1 = 12289,  // bstr (0x3001)
 } UwMacaroonCaveatType;
 
-// For security sanity checks
-#define UW_MACAROON_CAVEAT_SCOPE_HIGHEST_POSSIBLE 0
-#define UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE 127
-
 typedef enum {
   kUwMacaroonCaveatScopeTypeOwner = 2,
   kUwMacaroonCaveatScopeTypeManager = 8,
