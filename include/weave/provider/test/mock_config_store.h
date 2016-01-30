@@ -39,11 +39,21 @@ class MockConfigStore : public ConfigStore {
           "version": 1,
           "device_id": "TEST_DEVICE_ID"
         })"));
-    EXPECT_CALL(*this, SaveSettings(_)).WillRepeatedly(Return());
+    EXPECT_CALL(*this, LoadSettings("config")).WillRepeatedly(Return(""));
+    EXPECT_CALL(*this, SaveSettings("config", _, _))
+        .WillRepeatedly(testing::WithArgs<1, 2>(testing::Invoke(
+            [](const std::string& json, const DoneCallback& callback) {
+              if (!callback.is_null())
+                callback.Run(nullptr);
+            })));
   }
   MOCK_METHOD1(LoadDefaults, bool(Settings*));
+  MOCK_METHOD1(LoadSettings, std::string(const std::string&));
+  MOCK_METHOD3(SaveSettings,
+               void(const std::string&,
+                    const std::string&,
+                    const DoneCallback&));
   MOCK_METHOD0(LoadSettings, std::string());
-  MOCK_METHOD1(SaveSettings, void(const std::string&));
 };
 
 }  // namespace test
