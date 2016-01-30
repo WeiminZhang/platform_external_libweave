@@ -12,16 +12,27 @@
 #include <string>
 #include <vector>
 
+#include <base/bind.h>
+
 namespace weave {
 namespace examples {
 
 const char kSettingsDir[] = "/var/lib/weave/";
 
 FileConfigStore::FileConfigStore(bool disable_security,
-                                 const std::string& model_id)
+                                 const std::string& model_id,
+                                 provider::TaskRunner* task_runner)
     : disable_security_{disable_security},
       model_id_{model_id},
-      settings_path_{"/var/lib/weave/weave_settings_" + model_id + ".json"} {}
+      task_runner_{task_runner} {}
+
+std::string FileConfigStore::GetPath(const std::string& name) const {
+  std::string path{kSettingsDir};
+  path += path + "weave_settings_" + model_id_;
+  if (!name.empty())
+    path += "_" + name;
+  return path + ".json";
+}
 
 bool FileConfigStore::LoadDefaults(Settings* settings) {
   char host_name[HOST_NAME_MAX] = {};
@@ -55,17 +66,25 @@ bool FileConfigStore::LoadDefaults(Settings* settings) {
 }
 
 std::string FileConfigStore::LoadSettings() {
-  LOG(INFO) << "Loading settings from " << settings_path_;
-  std::ifstream str(settings_path_);
+  return LoadSettings("");
+}
+
+std::string FileConfigStore::LoadSettings(const std::string& name) {
+  LOG(INFO) << "Loading settings from " << GetPath(name);
+  std::ifstream str(GetPath(name));
   return std::string(std::istreambuf_iterator<char>(str),
                      std::istreambuf_iterator<char>());
 }
 
-void FileConfigStore::SaveSettings(const std::string& settings) {
+void FileConfigStore::SaveSettings(const std::string& name,
+                                   const std::string& settings,
+                                   const DoneCallback& callback) {
   CHECK(mkdir(kSettingsDir, S_IRWXU) == 0 || errno == EEXIST);
-  LOG(INFO) << "Saving settings to " << settings_path_;
-  std::ofstream str(settings_path_);
+  LOG(INFO) << "Saving settings to " << GetPath(name);
+  std::ofstream str(GetPath(name));
   str << settings;
+  if (!callback.is_null())
+    task_runner_->PostDelayedTask(FROM_HERE, base::Bind(callback, nullptr), {});
 }
 
 }  // namespace examples

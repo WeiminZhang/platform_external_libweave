@@ -5,6 +5,8 @@
 #ifndef BASE_GTEST_PROD_UTIL_H_
 #define BASE_GTEST_PROD_UTIL_H_
 
+#if defined(HAS_GTEST)
+
 #include <gtest/gtest_prod.h>
 
 // This is a wrapper for gtest's FRIEND_TEST macro that friends
@@ -62,5 +64,11 @@
   class test_case_name##_##test_name##_Test; \
   class test_case_name##_##DISABLED_##test_name##_Test; \
   class test_case_name##_##FLAKY_##test_name##_Test
+
+#else  // defined(HAS_GTEST)
+
+#define FRIEND_TEST_ALL_PREFIXES(test_case_name, test_name)
+
+#endif  // defined(HAS_GTEST)
 
 #endif  // BASE_GTEST_PROD_UTIL_H_

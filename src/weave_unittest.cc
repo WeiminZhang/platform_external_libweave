@@ -204,10 +204,6 @@ class WeaveTest : public ::testing::Test {
             })));
   }
 
-  void InitConfigStore() {
-    EXPECT_CALL(config_store_, SaveSettings("")).WillRepeatedly(Return());
-  }
-
   void InitNetwork() {
     EXPECT_CALL(network_, AddConnectionChangedCallback(_))
         .WillRepeatedly(Invoke(
@@ -267,7 +263,6 @@ class WeaveTest : public ::testing::Test {
   }
 
   void InitDefaultExpectations() {
-    InitConfigStore();
     InitNetwork();
     EXPECT_CALL(wifi_, StartAccessPoint(MatchesRegex("TEST_NAME.*prv")))
         .WillOnce(Return());
@@ -360,13 +355,11 @@ TEST_F(WeaveTest, Mocks) {
 }
 
 TEST_F(WeaveTest, StartMinimal) {
-  InitConfigStore();
   device_ = weave::Device::Create(&config_store_, &task_runner_, &http_client_,
                                   &network_, nullptr, nullptr, &wifi_, nullptr);
 }
 
 TEST_F(WeaveTest, StartNoWifi) {
-  InitConfigStore();
   InitNetwork();
   InitHttpServer();
   InitDnsSd();
@@ -450,7 +443,6 @@ class WeaveWiFiSetupTest : public WeaveTest {
   void SetUp() override {
     WeaveTest::SetUp();
 
-    InitConfigStore();
     InitHttpServer();
     InitNetwork();
     InitDnsSd();

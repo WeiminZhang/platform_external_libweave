@@ -18,8 +18,11 @@
 #include "src/data_encoding.h"
 #include "src/privet/privet_types.h"
 #include "src/string_utils.h"
+#include "src/bind_lambda.h"
 
 namespace weave {
+
+const char kConfigName[] = "config";
 
 namespace config_keys {
 
@@ -139,9 +142,12 @@ void Config::Load() {
 void Config::Transaction::LoadState() {
   if (!config_->config_store_)
     return;
-  std::string json_string = config_->config_store_->LoadSettings();
-  if (json_string.empty())
-    return;
+  std::string json_string = config_->config_store_->LoadSettings(kConfigName);
+  if (json_string.empty()) {
+    json_string = config_->config_store_->LoadSettings();
+    if (json_string.empty())
+      return;
+  }
 
   auto value = base::JSONReader::Read(json_string);
   base::DictionaryValue* dict = nullptr;
@@ -266,7 +272,9 @@ void Config::Save() {
   base::JSONWriter::WriteWithOptions(
       dict, base::JSONWriter::OPTIONS_PRETTY_PRINT, &json_string);
 
-  config_store_->SaveSettings(json_string);
+  config_store_->SaveSettings(
+      kConfigName, json_string,
+      base::Bind([](ErrorPtr error) { CHECK(!error); }));
 }
 
 Config::Transaction::~Transaction() {

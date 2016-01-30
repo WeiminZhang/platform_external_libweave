@@ -69,10 +69,11 @@ class Daemon {
   };
 
   Daemon(const Options& opts)
-      : config_store_{new weave::examples::FileConfigStore(
-            opts.disable_security_,
-            opts.model_id_)},
-        task_runner_{new weave::examples::EventTaskRunner},
+      : task_runner_{new weave::examples::EventTaskRunner},
+        config_store_{
+            new weave::examples::FileConfigStore(opts.disable_security_,
+                                                 opts.model_id_,
+                                                 task_runner_.get())},
         http_client_{new weave::examples::CurlHttpClient(task_runner_.get())},
         network_{new weave::examples::EventNetworkImpl(task_runner_.get())},
         bluetooth_{new weave::examples::BluetoothImpl} {
@@ -114,8 +115,8 @@ class Daemon {
       LOG(INFO) << "Device registered: " << device->GetSettings().cloud_id;
   }
 
-  std::unique_ptr<weave::examples::FileConfigStore> config_store_;
   std::unique_ptr<weave::examples::EventTaskRunner> task_runner_;
+  std::unique_ptr<weave::examples::FileConfigStore> config_store_;
   std::unique_ptr<weave::examples::CurlHttpClient> http_client_;
   std::unique_ptr<weave::examples::EventNetworkImpl> network_;
   std::unique_ptr<weave::examples::BluetoothImpl> bluetooth_;

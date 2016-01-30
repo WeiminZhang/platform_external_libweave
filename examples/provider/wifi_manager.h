@@ -48,6 +48,7 @@ class WifiImpl : public provider::Wifi {
   provider::TaskRunner* task_runner_{nullptr};
   EventNetworkImpl* network_{nullptr};
   base::WeakPtrFactory<WifiImpl> weak_ptr_factory_{this};
+  std::string iface_;
 };
 
 }  // namespace examples
