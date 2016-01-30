@@ -5,6 +5,7 @@
 #include "examples/provider/wifi_manager.h"
 
 #include <arpa/inet.h>
+#include <dirent.h>
 #include <linux/wireless.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
@@ -32,18 +33,43 @@ int ForkCmd(const std::string& path, const std::vector<std::string>& args) {
   for (auto& i : args)
     args_vector.push_back(i.c_str());
   args_vector.push_back(nullptr);
-
   execvp(path.c_str(), const_cast<char**>(args_vector.data()));
   NOTREACHED();
   return 0;
 }
 
+int ForkCmdAndWait(const std::string& path,
+                   const std::vector<std::string>& args) {
+  int pid = ForkCmd(path, args);
+  int status = 0;
+  CHECK_EQ(pid, waitpid(pid, &status, 0));
+  return status;
+}
+
+std::string FindWirelessInterface() {
+  std::string sysfs_net{"/sys/class/net"};
+  DIR* net_dir = opendir(sysfs_net.c_str());
+  dirent* iface;
+  while ((iface = readdir(net_dir))) {
+    auto path = sysfs_net + "/" + iface->d_name + "/wireless";
+    DIR* wireless_dir = opendir(path.c_str());
+    if (wireless_dir != nullptr) {
+      closedir(net_dir);
+      closedir(wireless_dir);
+      return iface->d_name;
+    }
+  }
+  closedir(net_dir);
+  return "";
+}
+
 }  // namespace
 
 WifiImpl::WifiImpl(provider::TaskRunner* task_runner, EventNetworkImpl* network)
-    : task_runner_{task_runner}, network_{network} {
+  : task_runner_{task_runner}, network_{network}, iface_{FindWirelessInterface()} {
+  CHECK(!iface_.empty()) <<  "WiFi interface not found";
   CHECK_EQ(0u, getuid())
-      << "WiFi manager expects root access to control WiFi capabilities";
+      << "\nWiFi manager expects root access to control WiFi capabilities";
   StopAccessPoint();
 }
 WifiImpl::~WifiImpl() {
@@ -62,7 +88,7 @@ void WifiImpl::TryToConnect(const std::string& ssid,
       CHECK_GE(sockf_d, 0) << strerror(errno);
 
       iwreq wreq = {};
-      snprintf(wreq.ifr_name, sizeof(wreq.ifr_name), "wlan0");
+      strncpy(wreq.ifr_name, iface_.c_str(), sizeof(wreq.ifr_name));
       std::string essid(' ', IW_ESSID_MAX_SIZE + 1);
       wreq.u.essid.pointer = &essid[0];
       wreq.u.essid.length = essid.size();
@@ -119,24 +145,24 @@ void WifiImpl::StartAccessPoint(const std::string& ssid) {
   if (hostapd_started_)
     return;
 
-  // Release wlan0 interface.
-  CHECK_EQ(0, std::system("nmcli nm wifi off"));
-  CHECK_EQ(0, std::system("rfkill unblock wlan"));
+  // Release wifi interface.
+  CHECK_EQ(0, ForkCmdAndWait("nmcli", {"nm", "wifi",  "off"}));
+  CHECK_EQ(0, ForkCmdAndWait("rfkill", {"unblock", "wlan"}));
   sleep(1);
 
   std::string hostapd_conf = "/tmp/weave_hostapd.conf";
   {
     std::ofstream ofs(hostapd_conf);
-    ofs << "interface=wlan0" << std::endl;
+    ofs << "interface=" << iface_ << std::endl;
     ofs << "channel=1" << std::endl;
     ofs << "ssid=" << ssid << std::endl;
   }
 
-  CHECK_EQ(0, std::system(("hostapd -B -K " + hostapd_conf).c_str()));
+  CHECK_EQ(0, ForkCmdAndWait("hostapd", {"-B", "-K", hostapd_conf}));
   hostapd_started_ = true;
 
   for (size_t i = 0; i < 10; ++i) {
-    if (0 == std::system("ifconfig wlan0 192.168.76.1/24"))
+    if (0 == ForkCmdAndWait("ifconfig", {iface_, "192.168.76.1/24"}))
       break;
     sleep(1);
   }
@@ -148,22 +174,22 @@ void WifiImpl::StartAccessPoint(const std::string& ssid) {
     ofs << "bind-interfaces" << std::endl;
     ofs << "log-dhcp" << std::endl;
     ofs << "dhcp-range=192.168.76.10,192.168.76.100" << std::endl;
-    ofs << "interface=wlan0" << std::endl;
+    ofs << "interface=" << iface_ << std::endl;
     ofs << "dhcp-leasefile=" << dnsmasq_conf << ".leases" << std::endl;
   }
 
-  CHECK_EQ(0, std::system(("dnsmasq --conf-file=" + dnsmasq_conf).c_str()));
+  CHECK_EQ(0, ForkCmdAndWait("dnsmasq", {"--conf-file=" + dnsmasq_conf}));
 }
 
 void WifiImpl::StopAccessPoint() {
-  base::IgnoreResult(std::system("pkill -f dnsmasq.*/tmp/weave"));
-  base::IgnoreResult(std::system("pkill -f hostapd.*/tmp/weave"));
-  CHECK_EQ(0, std::system("nmcli nm wifi on"));
+  base::IgnoreResult(ForkCmdAndWait("pkill", {"-f", "dnsmasq.*/tmp/weave"}));
+  base::IgnoreResult(ForkCmdAndWait("pkill", {"-f", "hostapd.*/tmp/weave"}));
+  CHECK_EQ(0, ForkCmdAndWait("nmcli", {"nm", "wifi", "on"}));
   hostapd_started_ = false;
 }
 
 bool WifiImpl::HasWifiCapability() {
-  return std::system("nmcli dev | grep ^wlan0") == 0;
+  return !FindWirelessInterface().empty();
 }
 
 }  // namespace examples
