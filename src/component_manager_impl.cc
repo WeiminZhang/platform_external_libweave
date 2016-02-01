@@ -31,8 +31,10 @@ template <>
 LIBWEAVE_EXPORT EnumToStringMap<UserRole>::EnumToStringMap()
     : EnumToStringMap(kMap) {}
 
-ComponentManagerImpl::ComponentManagerImpl(base::Clock* clock)
-    : clock_{clock ? clock : &default_clock_} {}
+ComponentManagerImpl::ComponentManagerImpl(provider::TaskRunner* task_runner,
+                                           base::Clock* clock)
+    : clock_{clock ? clock : &default_clock_},
+      command_queue_{task_runner, clock_} {}
 
 ComponentManagerImpl::~ComponentManagerImpl() {}
 

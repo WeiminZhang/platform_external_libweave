@@ -29,7 +29,7 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::Wifi* wifi,
                              provider::Bluetooth* bluetooth)
     : config_{new Config{config_store}},
-      component_manager_{new ComponentManagerImpl} {
+      component_manager_{new ComponentManagerImpl{task_runner}} {
   if (http_server) {
     auth_manager_.reset(new privet::AuthManager(
         config_.get(), http_server->GetHttpsCertificateFingerprint()));

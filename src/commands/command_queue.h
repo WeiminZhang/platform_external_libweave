@@ -14,8 +14,10 @@
 
 #include <base/callback.h>
 #include <base/macros.h>
+#include <base/time/default_clock.h>
 #include <base/time/time.h>
 #include <weave/device.h>
+#include <weave/provider/task_runner.h>
 
 #include "src/commands/command_instance.h"
 
@@ -23,7 +25,7 @@ namespace weave {
 
 class CommandQueue final {
  public:
-  CommandQueue() = default;
+  CommandQueue(provider::TaskRunner* task_runner, base::Clock* clock);
 
   // TODO: Remove AddCommandAddedCallback and AddCommandRemovedCallback.
   using CommandCallback = base::Callback<void(Command* command)>;
@@ -64,23 +66,29 @@ class CommandQueue final {
   // Removes a command identified by |id| from the queue.
   bool Remove(const std::string& id);
 
-  // Removes old commands selected with DelayedRemove.
-  void Cleanup();
+  // Removes old commands scheduled by RemoveLater() to be deleted after
+  // |cutoff_time|.
+  void Cleanup(const base::Time& cutoff_time);
 
-  // Overrides CommandQueue::Now() for tests.
-  void SetNowForTest(base::Time now);
+  // Schedule a cleanup task to be run after the specified |delay|.
+  void ScheduleCleanup(base::TimeDelta delay);
 
-  // Returns current time.
-  base::Time Now() const;
+  // Perform removal of scheduled commands (by calling Cleanup()) and scheduling
+  // another cleanup task if the removal queue is still not empty.
+  void PerformScheduledCleanup();
 
-  // Overridden value to be returned from Now().
-  base::Time test_now_;
+  provider::TaskRunner* task_runner_{nullptr};
+  base::Clock* clock_{nullptr};
 
   // ID-to-CommandInstance map.
   std::map<std::string, std::shared_ptr<CommandInstance>> map_;
 
-  // Queue of commands to be removed.
-  std::queue<std::pair<base::Time, std::string>> remove_queue_;
+  // Queue of commands to be removed, keeps them sorted by the timestamp
+  // (earliest first). This is done to tolerate system clock changes.
+  template <typename T>
+  using InversePriorityQueue =
+      std::priority_queue<T, std::vector<T>, std::greater<T>>;
+  InversePriorityQueue<std::pair<base::Time, std::string>> remove_queue_;
 
   using CallbackList = std::vector<CommandCallback>;
   CallbackList on_command_added_;
@@ -88,6 +96,9 @@ class CommandQueue final {
   std::map<std::string, Device::CommandHandlerCallback> command_callbacks_;
   Device::CommandHandlerCallback default_command_callback_;
 
+  // WeakPtr factory for controlling the lifetime of command queue cleanup
+  // tasks.
+  base::WeakPtrFactory<CommandQueue> weak_ptr_factory_{this};
   DISALLOW_COPY_AND_ASSIGN(CommandQueue);
 };
 

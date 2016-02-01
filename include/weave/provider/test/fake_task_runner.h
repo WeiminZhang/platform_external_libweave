@@ -31,6 +31,7 @@ class FakeTaskRunner : public TaskRunner {
   void Run(size_t number_of_iterations = 1000);
   void Break();
   base::Clock* GetClock();
+  size_t GetTaskQueueSize() const;
 
  private:
   void SaveTask(const tracked_objects::Location& from_here,
