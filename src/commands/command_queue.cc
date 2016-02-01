@@ -88,7 +88,7 @@ void CommandQueue::Add(std::unique_ptr<CommandInstance> instance) {
   Cleanup();
 }
 
-void CommandQueue::DelayedRemove(const std::string& id) {
+void CommandQueue::RemoveLater(const std::string& id) {
   auto p = map_.find(id);
   if (p == map_.end())
     return;

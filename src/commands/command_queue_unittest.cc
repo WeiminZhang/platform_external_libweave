@@ -105,12 +105,12 @@ TEST_F(CommandQueueTest, Remove) {
   EXPECT_TRUE(queue_.IsEmpty());
 }
 
-TEST_F(CommandQueueTest, DelayedRemove) {
+TEST_F(CommandQueueTest, RemoveLater) {
   const std::string id1 = "id1";
   queue_.Add(CreateDummyCommandInstance("base.reboot", id1));
   EXPECT_EQ(1u, queue_.GetCount());
 
-  queue_.DelayedRemove(id1);
+  queue_.RemoveLater(id1);
   EXPECT_EQ(1u, queue_.GetCount());
 
   Cleanup(base::TimeDelta::FromMinutes(1));

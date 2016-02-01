@@ -51,7 +51,7 @@ class CommandQueue final {
 
   // Selects command identified by |id| ready for removal. Command will actually
   // be removed after some time.
-  void DelayedRemove(const std::string& id);
+  void RemoveLater(const std::string& id);
 
   // Finds a command instance in the queue by the instance |id|. Returns
   // nullptr if the command with the given |id| is not found. The returned
