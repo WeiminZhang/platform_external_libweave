@@ -80,17 +80,16 @@ sudo apt-get install autoconf automake binutils g++ hostapd libavahi-client-dev 
 The `make --jobs/-j` flag is encouraged, to speed up build time. For example
 
 ```
-make all -j
+make -j
 ```
+
+which happens to be the same as
+
+```
+make all -j
+````
 
 ### Build library
-
-```
-make
-
-```
-
-or
 
 ```
 make out/Debug/libweave.so

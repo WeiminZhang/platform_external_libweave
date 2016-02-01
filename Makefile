@@ -104,4 +104,5 @@ clean :
 cleanall : clean clean-gtest clean-libevhtp
 
 .PHONY : clean cleanall all
+.DEFAULT_GOAL := all
 
