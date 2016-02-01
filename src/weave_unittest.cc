@@ -181,7 +181,10 @@ std::set<typename Map::key_type> GetKeys(const Map& map) {
 
 class WeaveTest : public ::testing::Test {
  protected:
-  void SetUp() override {}
+  void SetUp() override {
+    EXPECT_CALL(wifi_, IsWifi24Supported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(wifi_, IsWifi50Supported()).WillRepeatedly(Return(false));
+  }
 
   template <class UrlMatcher>
   void ExpectRequest(HttpClient::Method method,
