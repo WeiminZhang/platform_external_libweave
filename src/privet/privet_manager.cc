@@ -53,8 +53,6 @@ void Manager::Start(Network* network,
   CHECK(auth_manager);
   CHECK(device);
 
-  disable_security_ = device->GetSettings().disable_security;
-
   device_ = DeviceDelegate::CreateDefault(
       task_runner_, http_server->GetHttpPort(), http_server->GetHttpsPort(),
       http_server->GetRequestTimeout());
@@ -129,9 +127,6 @@ void Manager::PrivetRequestHandlerWithData(
     const std::shared_ptr<provider::HttpServer::Request>& request,
     const std::string& data) {
   std::string auth_header = request->GetFirstHeader(http::kAuthorization);
-  if (auth_header.empty() && disable_security_)
-    auth_header = "Privet anonymous";
-
   base::DictionaryValue empty;
   auto value = base::JSONReader::Read(data);
   const base::DictionaryValue* dictionary = &empty;

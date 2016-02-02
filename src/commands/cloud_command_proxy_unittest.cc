@@ -7,6 +7,7 @@
 #include <memory>
 #include <queue>
 
+#include <base/bind.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <weave/provider/test/fake_task_runner.h>
@@ -16,6 +17,7 @@
 #include "src/mock_component_manager.h"
 
 using testing::_;
+using testing::AnyNumber;
 using testing::DoAll;
 using testing::Invoke;
 using testing::Return;
@@ -62,6 +64,27 @@ class TestBackoffEntry : public BackoffEntry {
   base::Time creation_time_;
 };
 
+class CloudCommandProxyWrapper : public CloudCommandProxy {
+ public:
+  CloudCommandProxyWrapper(CommandInstance* command_instance,
+                           CloudCommandUpdateInterface* cloud_command_updater,
+                           ComponentManager* component_manager,
+                           std::unique_ptr<BackoffEntry> backoff_entry,
+                           provider::TaskRunner* task_runner,
+                           const base::Closure& destruct_callback)
+      : CloudCommandProxy{command_instance, cloud_command_updater,
+                          component_manager, std::move(backoff_entry),
+                          task_runner},
+        destruct_callback_{destruct_callback} {}
+
+  ~CloudCommandProxyWrapper() {
+    destruct_callback_.Run();
+  }
+
+ private:
+  base::Closure destruct_callback_;
+};
+
 class CloudCommandProxyTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -100,14 +123,20 @@ class CloudCommandProxyTest : public ::testing::Test {
         new TestBackoffEntry{&policy, task_runner_.GetClock()}};
 
     // Finally construct the CloudCommandProxy we are going to test here.
-    std::unique_ptr<CloudCommandProxy> proxy{new CloudCommandProxy{
+    std::unique_ptr<CloudCommandProxy> proxy{new CloudCommandProxyWrapper{
         command_instance_.get(), &cloud_updater_, &component_manager_,
-        std::move(backoff), &task_runner_}};
+        std::move(backoff), &task_runner_,
+        base::Bind(&CloudCommandProxyTest::OnProxyDestroyed,
+                   base::Unretained(this))}};
     // CloudCommandProxy::CloudCommandProxy() subscribe itself to weave::Command
     // notifications. When weave::Command is being destroyed it sends
     // ::OnCommandDestroyed() and CloudCommandProxy deletes itself.
     proxy.release();
+
+    EXPECT_CALL(*this, OnProxyDestroyed()).Times(AnyNumber());
   }
+
+  MOCK_METHOD0(OnProxyDestroyed, void());
 
   ComponentManager::UpdateID current_state_update_id_{0};
   base::CallbackList<void(ComponentManager::UpdateID)> callbacks_;
@@ -119,6 +148,14 @@ class CloudCommandProxyTest : public ::testing::Test {
 };
 
 }  // anonymous namespace
+
+TEST_F(CloudCommandProxyTest, EnsureDestroyed) {
+  EXPECT_CALL(*this, OnProxyDestroyed()).Times(1);
+  command_instance_.reset();
+  // Verify that CloudCommandProxy has been destroyed already and not at some
+  // point during the destruction of CloudCommandProxyTest class.
+  testing::Mock::VerifyAndClearExpectations(this);
+}
 
 TEST_F(CloudCommandProxyTest, ImmediateUpdate) {
   const char expected[] = "{'state':'done'}";

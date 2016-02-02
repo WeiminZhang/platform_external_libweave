@@ -18,6 +18,10 @@ std::string GetCommandHandlerKey(const std::string& component_path,
 }
 }
 
+CommandQueue::CommandQueue(provider::TaskRunner* task_runner,
+                           base::Clock* clock)
+    : task_runner_{task_runner}, clock_{clock} {}
+
 void CommandQueue::AddCommandAddedCallback(const CommandCallback& callback) {
   on_command_added_.push_back(callback);
   // Send all pre-existed commands.
@@ -84,18 +88,19 @@ void CommandQueue::Add(std::unique_ptr<CommandInstance> instance) {
     it_handler->second.Run(pair.first->second);
   else if (!default_command_callback_.is_null())
     default_command_callback_.Run(pair.first->second);
-
-  Cleanup();
 }
 
-void CommandQueue::DelayedRemove(const std::string& id) {
+void CommandQueue::RemoveLater(const std::string& id) {
   auto p = map_.find(id);
   if (p == map_.end())
     return;
-  remove_queue_.push(std::make_pair(
-      base::Time::Now() + base::TimeDelta::FromMinutes(kRemoveCommandDelayMin),
-      id));
-  Cleanup();
+  auto remove_delay = base::TimeDelta::FromMinutes(kRemoveCommandDelayMin);
+  remove_queue_.push(std::make_pair(clock_->Now() + remove_delay, id));
+  if (remove_queue_.size() == 1) {
+    // The queue was empty, this is the first command to be removed, schedule
+    // a clean-up task.
+    ScheduleCleanup(remove_delay);
+  }
 }
 
 bool CommandQueue::Remove(const std::string& id) {
@@ -110,19 +115,26 @@ bool CommandQueue::Remove(const std::string& id) {
   return true;
 }
 
-void CommandQueue::Cleanup() {
-  while (!remove_queue_.empty() && remove_queue_.front().first < Now()) {
-    Remove(remove_queue_.front().second);
+void CommandQueue::Cleanup(const base::Time& cutoff_time) {
+  while (!remove_queue_.empty() && remove_queue_.top().first <= cutoff_time) {
+    Remove(remove_queue_.top().second);
     remove_queue_.pop();
   }
 }
 
-void CommandQueue::SetNowForTest(base::Time now) {
-  test_now_ = now;
+void CommandQueue::ScheduleCleanup(base::TimeDelta delay) {
+  task_runner_->PostDelayedTask(
+      FROM_HERE,
+      base::Bind(&CommandQueue::PerformScheduledCleanup,
+                 weak_ptr_factory_.GetWeakPtr()),
+      delay);
 }
 
-base::Time CommandQueue::Now() const {
-  return test_now_.is_null() ? base::Time::Now() : test_now_;
+void CommandQueue::PerformScheduledCleanup() {
+  base::Time now = clock_->Now();
+  Cleanup(now);
+  if (!remove_queue_.empty())
+    ScheduleCleanup(remove_queue_.top().first - now);
 }
 
 CommandInstance* CommandQueue::Find(const std::string& id) const {

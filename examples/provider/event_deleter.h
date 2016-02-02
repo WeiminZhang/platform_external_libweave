@@ -7,9 +7,10 @@
 
 #include <memory>
 
-#include <third_party/include/event2/event.h>
-#include <third_party/include/event2/event_struct.h>
-#include <third_party/include/event2/http.h>
+#include <evhtp.h>
+#include <event2/event.h>
+#include <event2/event_struct.h>
+#include <openssl/ssl.h>
 
 namespace weave {
 namespace examples {
@@ -18,9 +19,19 @@ namespace examples {
 // so we can use one unique_ptr definition for all of them
 class EventDeleter {
  public:
-  void operator()(evhttp_uri* http_uri) { evhttp_uri_free(http_uri); }
-  void operator()(evhttp_connection* conn) { evhttp_connection_free(conn); }
-  void operator()(evhttp_request* req) { evhttp_request_free(req); }
+  void operator()(evbuffer* buf) { evbuffer_free(buf); }
+  void operator()(evhtp_t* evhtp) {
+    if (evhtp->ssl_ctx) {
+      // Work around a double-free bug in recent versions of libevhtp.
+      // https://github.com/ellzey/libevhtp/pull/208
+      SSL_CTX_free(evhtp->ssl_ctx);
+      evhtp->ssl_ctx = nullptr;
+    }
+    evhtp_unbind_socket(evhtp);
+    evhtp_free(evhtp);
+  }
+  void operator()(evhtp_connection_t* conn) { evhtp_connection_free(conn); }
+  void operator()(evhtp_request_t* req) { evhtp_request_free(req); }
   void operator()(event_base* base) { event_base_free(base); }
   void operator()(event* ev) {
     event_del(ev);

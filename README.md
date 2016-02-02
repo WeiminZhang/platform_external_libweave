@@ -49,7 +49,20 @@ repo sync
 
 ```
 sudo apt-get update
-sudo apt-get install autoconf automake binutils g++ hostapd libavahi-client-dev libcurl4-openssl-dev libexpat1-dev libnl-3-dev libnl-route-3-dev libssl-dev libtool
+sudo apt-get install \
+  autoconf \
+  automake \
+  binutils \
+  g++ \
+  hostapd \
+  libavahi-client-dev \
+  libcurl4-openssl-dev \
+  libevent-dev \
+  libexpat1-dev \
+  libnl-3-dev \
+  libnl-route-3-dev \
+  libssl-dev \
+  libtool
 ```
 
 # Prerequisites
@@ -72,7 +85,8 @@ sudo apt-get install autoconf automake binutils g++ hostapd libavahi-client-dev 
   - hostapd
   - libavahi-client-dev
   - libcurl4-openssl-dev
-  - libevent 2.1.x-alpha (included; see third_party/get_libevent.sh)
+  - libevent 2.0.x
+  - libevhtp (included; see third_party/get_libevhtp.sh)
 
 
 # Compiling
@@ -80,17 +94,16 @@ sudo apt-get install autoconf automake binutils g++ hostapd libavahi-client-dev 
 The `make --jobs/-j` flag is encouraged, to speed up build time. For example
 
 ```
-make all -j
+make -j
 ```
+
+which happens to be the same as
+
+```
+make all -j
+````
 
 ### Build library
-
-```
-make
-
-```
-
-or
 
 ```
 make out/Debug/libweave.so

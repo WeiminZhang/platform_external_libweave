@@ -208,7 +208,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
       {},
       &clock_};
   std::unique_ptr<DeviceRegistrationInfo> dev_reg_;
-  ComponentManagerImpl component_manager_;
+  ComponentManagerImpl component_manager_{&task_runner_};
 };
 
 TEST_F(DeviceRegistrationInfoTest, GetServiceURL) {

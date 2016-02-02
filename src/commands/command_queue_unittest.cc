@@ -10,11 +10,17 @@
 
 #include <base/bind.h>
 #include <base/memory/weak_ptr.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <weave/provider/test/fake_task_runner.h>
 
+#include "src/bind_lambda.h"
 #include "src/string_utils.h"
 
 namespace weave {
+
+using testing::Return;
+using testing::StrictMock;
 
 class CommandQueueTest : public testing::Test {
  public:
@@ -30,11 +36,15 @@ class CommandQueueTest : public testing::Test {
   bool Remove(const std::string& id) { return queue_.Remove(id); }
 
   void Cleanup(const base::TimeDelta& interval) {
-    queue_.SetNowForTest(base::Time::Now() + interval);
-    return queue_.Cleanup();
+    return queue_.Cleanup(task_runner_.GetClock()->Now() + interval);
   }
 
-  CommandQueue queue_;
+  std::string GetFirstCommandToBeRemoved() const {
+    return queue_.remove_queue_.top().second;
+  }
+
+  StrictMock<provider::test::FakeTaskRunner> task_runner_;
+  CommandQueue queue_{&task_runner_, task_runner_.GetClock()};
 };
 
 // Keeps track of commands being added to and removed from the queue_.
@@ -105,12 +115,12 @@ TEST_F(CommandQueueTest, Remove) {
   EXPECT_TRUE(queue_.IsEmpty());
 }
 
-TEST_F(CommandQueueTest, DelayedRemove) {
+TEST_F(CommandQueueTest, RemoveLater) {
   const std::string id1 = "id1";
   queue_.Add(CreateDummyCommandInstance("base.reboot", id1));
   EXPECT_EQ(1u, queue_.GetCount());
 
-  queue_.DelayedRemove(id1);
+  queue_.RemoveLater(id1);
   EXPECT_EQ(1u, queue_.GetCount());
 
   Cleanup(base::TimeDelta::FromMinutes(1));
@@ -118,6 +128,46 @@ TEST_F(CommandQueueTest, DelayedRemove) {
 
   Cleanup(base::TimeDelta::FromMinutes(15));
   EXPECT_EQ(0u, queue_.GetCount());
+}
+
+TEST_F(CommandQueueTest, RemoveLaterOnCleanupTask) {
+  const std::string id1 = "id1";
+  queue_.Add(CreateDummyCommandInstance("base.reboot", id1));
+  EXPECT_EQ(1u, queue_.GetCount());
+
+  queue_.RemoveLater(id1);
+  EXPECT_EQ(1u, queue_.GetCount());
+  ASSERT_EQ(1u, task_runner_.GetTaskQueueSize());
+
+  task_runner_.RunOnce();
+
+  EXPECT_EQ(0u, queue_.GetCount());
+  EXPECT_EQ(0u, task_runner_.GetTaskQueueSize());
+}
+
+TEST_F(CommandQueueTest, CleanupMultipleCommands) {
+  const std::string id1 = "id1";
+  const std::string id2 = "id2";
+
+  queue_.Add(CreateDummyCommandInstance("base.reboot", id1));
+  queue_.Add(CreateDummyCommandInstance("base.reboot", id2));
+  auto remove_task = [this](const std::string& id) { queue_.RemoveLater(id); };
+  remove_task(id1);
+  task_runner_.PostDelayedTask(FROM_HERE, base::Bind(remove_task, id2),
+                               base::TimeDelta::FromSeconds(10));
+  EXPECT_EQ(2u, queue_.GetCount());
+  ASSERT_EQ(2u, task_runner_.GetTaskQueueSize());
+  task_runner_.RunOnce();  // Executes "remove_task(id2) @ T+10s".
+  ASSERT_EQ(2u, queue_.GetCount());
+  ASSERT_EQ(1u, task_runner_.GetTaskQueueSize());
+  EXPECT_EQ(id1, GetFirstCommandToBeRemoved());
+  task_runner_.RunOnce();  // Should remove task "id1" from queue.
+  ASSERT_EQ(1u, queue_.GetCount());
+  ASSERT_EQ(1u, task_runner_.GetTaskQueueSize());
+  EXPECT_EQ(id2, GetFirstCommandToBeRemoved());
+  task_runner_.RunOnce();  // Should remove task "id2" from queue.
+  EXPECT_EQ(0u, queue_.GetCount());
+  EXPECT_EQ(0u, task_runner_.GetTaskQueueSize());
 }
 
 TEST_F(CommandQueueTest, Dispatch) {

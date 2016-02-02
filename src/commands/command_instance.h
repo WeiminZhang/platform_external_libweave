@@ -89,10 +89,7 @@ class CommandInstance final : public Command {
 
   // Sets the pointer to queue this command is part of.
   void AttachToQueue(CommandQueue* queue) { queue_ = queue; }
-  void DetachFromQueue() {
-    observers_.Clear();
-    queue_ = nullptr;
-  }
+  void DetachFromQueue() { queue_ = nullptr; }
 
  private:
   // Helper function to update the command status.

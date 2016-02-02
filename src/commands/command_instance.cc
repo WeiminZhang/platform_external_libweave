@@ -284,7 +284,7 @@ bool CommandInstance::SetStatus(Command::State status, ErrorPtr* error) {
 
 void CommandInstance::RemoveFromQueue() {
   if (queue_)
-    queue_->DelayedRemove(GetID());
+    queue_->RemoveLater(GetID());
 }
 
 }  // namespace weave

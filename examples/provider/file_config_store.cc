@@ -19,11 +19,9 @@ namespace examples {
 
 const char kSettingsDir[] = "/var/lib/weave/";
 
-FileConfigStore::FileConfigStore(bool disable_security,
-                                 const std::string& model_id,
+FileConfigStore::FileConfigStore(const std::string& model_id,
                                  provider::TaskRunner* task_runner)
-    : disable_security_{disable_security},
-      model_id_{model_id},
+    : model_id_{model_id},
       task_runner_{task_runner} {}
 
 std::string FileConfigStore::GetPath(const std::string& name) const {
@@ -61,7 +59,6 @@ bool FileConfigStore::LoadDefaults(Settings* settings) {
   settings->client_secret = "LS_iPYo_WIOE0m2VnLdduhnx";
   settings->api_key = "AIzaSyACK3oZtmIylUKXiTMqkZqfuRiCgQmQSAQ";
 
-  settings->disable_security = disable_security_;
   return true;
 }
 

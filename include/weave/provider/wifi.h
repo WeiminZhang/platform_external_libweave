@@ -28,6 +28,9 @@ class Wifi {
   // Stops WiFi access point.
   virtual void StopAccessPoint() = 0;
 
+  virtual bool IsWifi24Supported() const = 0;
+  virtual bool IsWifi50Supported() const = 0;
+
  protected:
   virtual ~Wifi() {}
 };
