@@ -52,6 +52,10 @@ void FakeTaskRunner::PostDelayedTask(const tracked_objects::Location& from_here,
   queue_.emplace(std::make_pair(test_clock_->Now() + delay, ++counter_), task);
 }
 
+size_t FakeTaskRunner::GetTaskQueueSize() const {
+  return queue_.size();
+}
+
 }  // namespace test
 }  // namespace provider
 }  // namespace weave

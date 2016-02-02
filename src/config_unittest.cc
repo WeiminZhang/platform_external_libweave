@@ -68,7 +68,6 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_FALSE(GetSettings().device_id.empty());
   EXPECT_EQ("", GetSettings().firmware_version);
   EXPECT_TRUE(GetSettings().wifi_auto_setup_enabled);
-  EXPECT_FALSE(GetSettings().disable_security);
   EXPECT_EQ("", GetSettings().test_privet_ssid);
   EXPECT_EQ(std::set<PairingType>{PairingType::kPinCode},
             GetSettings().pairing_modes);
@@ -164,8 +163,6 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ("state_device_id", GetSettings().device_id);
   EXPECT_EQ(GetDefaultSettings().wifi_auto_setup_enabled,
             GetSettings().wifi_auto_setup_enabled);
-  EXPECT_EQ(GetDefaultSettings().disable_security,
-            GetSettings().disable_security);
   EXPECT_EQ(GetDefaultSettings().test_privet_ssid,
             GetSettings().test_privet_ssid);
   EXPECT_EQ(GetDefaultSettings().pairing_modes, GetSettings().pairing_modes);

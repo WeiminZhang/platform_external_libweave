@@ -29,7 +29,7 @@ class TaskRunner;
 }
 
 // Command proxy which publishes command updates to the cloud.
-class CloudCommandProxy final : public CommandInstance::Observer {
+class CloudCommandProxy : public CommandInstance::Observer {
  public:
   CloudCommandProxy(CommandInstance* command_instance,
                     CloudCommandUpdateInterface* cloud_command_updater,

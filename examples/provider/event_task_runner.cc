@@ -31,7 +31,9 @@ void EventTaskRunner::AddIoCompletionTask(
   int16_t flags = EV_PERSIST | EV_ET;
   flags |= (what & kReadable) ? EV_READ : 0;
   flags |= (what & kWriteable) ? EV_WRITE : 0;
+#if LIBEVENT_VERSION_NUMBER >= 0x02010400
   flags |= (what & kClosed) ? EV_CLOSED : 0;
+#endif
   event* ioevent = event_new(base_.get(), fd, flags, FdEventHandler, this);
   EventPtr<event> ioeventPtr{ioevent};
   fd_task_map_.insert(
@@ -53,7 +55,9 @@ void EventTaskRunner::Run() {
   sigfillset(&sa.sa_mask);
   sigaction(SIGINT, &sa, nullptr);
 
-  event_base_loop(g_event_base, EVLOOP_NO_EXIT_ON_EMPTY);
+  do {
+    event_base_loop(g_event_base, EVLOOP_ONCE);
+  } while (!event_base_got_exit(g_event_base));
   g_event_base = nullptr;
 }
 

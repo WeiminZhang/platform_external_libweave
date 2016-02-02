@@ -71,7 +71,6 @@ struct Settings {
   // Internal options to tweak some library functionality. External code should
   // avoid using them.
   bool wifi_auto_setup_enabled{true};
-  bool disable_security{false};
   std::string test_privet_ssid;
 };
 

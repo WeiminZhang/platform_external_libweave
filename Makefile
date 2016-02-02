@@ -88,7 +88,6 @@ include file_lists.mk third_party/third_party.mk examples/examples.mk tests.mk
 
 weave_obj_files := $(WEAVE_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-# TODO(jacobmarble): There are too many gtest/gmock deps in non-test targets. Fix.
 $(weave_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
@@ -102,7 +101,8 @@ all : out/$(BUILD_MODE)/libweave.so all-examples out/$(BUILD_MODE)/libweave_expo
 clean :
 	rm -rf out
 
-cleanall : clean clean-gtest clean-libevent
+cleanall : clean clean-gtest clean-libevhtp
 
 .PHONY : clean cleanall all
+.DEFAULT_GOAL := all
 

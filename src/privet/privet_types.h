@@ -15,7 +15,6 @@ namespace weave {
 namespace privet {
 
 enum class CryptoType {
-  kNone,
   kSpake_p224,
 };
 
