@@ -20,8 +20,7 @@ bool uw_macaroon_caveat_sign_(const uint8_t* key,
                               size_t mac_tag_size);
 
 typedef struct {
-  bool has_issued_time;
-  uint32_t issued_time;
+  uint32_t issued_time;  // 0 when invalid or not set.
 } UwMacaroonValidationState;
 
 bool uw_macaroon_caveat_init_validation_state_(

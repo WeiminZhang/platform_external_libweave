@@ -12,9 +12,6 @@
 #include "src/macaroon_context.h"
 #include "src/macaroon_encoding.h"
 
-// For security sanity checks
-#define UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE 127
-
 static bool is_valid_caveat_type_(UwMacaroonCaveatType type) {
   switch (type) {
     case kUwMacaroonCaveatTypeNonce:
@@ -403,8 +400,9 @@ static bool update_and_check_expiration_time(
 
 static bool update_delegatee_list(UwMacaroonCaveatType caveat_type,
                                   const UwMacaroonCaveat* caveat,
+                                  uint32_t issued_time,
                                   UwMacaroonValidationResult* result) {
-  if (result->num_delegatees >= MAX_NUM_DELEGATEES) {
+  if (result->num_delegatees >= MAX_NUM_DELEGATEES || issued_time == 0) {
     return false;
   }
 
@@ -441,6 +439,7 @@ static bool update_delegatee_list(UwMacaroonCaveatType caveat_type,
     return false;
   }
   result->delegatees[result->num_delegatees].type = delegatee_type;
+  result->delegatees[result->num_delegatees].timestamp = issued_time;
   result->num_delegatees++;
   return true;
 }
@@ -471,22 +470,22 @@ bool uw_macaroon_caveat_validate_(const UwMacaroonCaveat* caveat,
       return true;
 
     case kUwMacaroonCaveatTypeDelegationTimestamp:
-      state->has_issued_time = true;
-      if (!uw_macaroon_caveat_get_value_uint_(caveat, &issued_time)) {
+      if (!uw_macaroon_caveat_get_value_uint_(caveat, &issued_time) ||
+          issued_time < state->issued_time) {
         return false;
       }
       state->issued_time = issued_time;
       return true;
 
     case kUwMacaroonCaveatTypeTTL1Hour:
-      if (!(state->has_issued_time)) {
+      if (state->issued_time == 0) {
         return false;
       }
       return update_and_check_expiration_time(
           context->current_time, state->issued_time + 60 * 60, result);
 
     case kUwMacaroonCaveatTypeTTL24Hour:
-      if (!(state->has_issued_time)) {
+      if (state->issued_time == 0) {
         return false;
       }
       return update_and_check_expiration_time(
@@ -496,7 +495,8 @@ bool uw_macaroon_caveat_validate_(const UwMacaroonCaveat* caveat,
     case kUwMacaroonCaveatTypeDelegateeUser:
     case kUwMacaroonCaveatTypeDelegateeApp:
     case kUwMacaroonCaveatTypeDelegateeService:
-      return update_delegatee_list(caveat_type, caveat, result);
+      return update_delegatee_list(caveat_type, caveat, state->issued_time,
+                                   result);
 
     // Time related caveats
     case kUwMacaroonCaveatTypeExpirationAbsolute:
@@ -596,7 +596,6 @@ bool uw_macaroon_caveat_init_validation_state_(
     return false;
   }
 
-  state->has_issued_time = false;
   state->issued_time = 0;
   return true;
 }

@@ -321,6 +321,8 @@ AuthManager::~AuthManager() {}
 
 std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
                                                     base::TimeDelta ttl) const {
+  const base::Time now = Now();
+  TimestampCaveat issued{now};
   ScopeCaveat scope{ToMacaroonScope(user_info.scope())};
   // Macaroons have no caveats for auth type. So we just append the type to the
   // user ID.
@@ -328,13 +330,14 @@ std::vector<uint8_t> AuthManager::CreateAccessToken(const UserInfo& user_info,
   id_with_type.push_back(static_cast<uint8_t>(user_info.id().type));
   UserIdCaveat user{id_with_type};
   AppIdCaveat app{user_info.id().app};
-  const base::Time now = Now();
   ExpirationCaveat expiration{now + ttl};
-  return CreateMacaroonToken(access_secret_, now,
-                             {
-                                 &scope.GetCaveat(), &user.GetCaveat(),
-                                 &app.GetCaveat(), &expiration.GetCaveat(),
-                             });
+  return CreateMacaroonToken(
+      access_secret_, now,
+      {
+
+          &issued.GetCaveat(), &scope.GetCaveat(), &user.GetCaveat(),
+          &app.GetCaveat(), &expiration.GetCaveat(),
+      });
 }
 
 bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
@@ -346,7 +349,7 @@ bool AuthManager::ParseAccessToken(const std::vector<uint8_t>& token,
   UwMacaroonValidationResult result{};
   const base::Time now = Now();
   if (!LoadMacaroon(token, &buffer, &macaroon, error) ||
-      macaroon.num_caveats != 4 ||
+      macaroon.num_caveats != 5 ||
       !VerifyMacaroon(access_secret_, macaroon, now, &result, error)) {
     return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthorization,
                         "Invalid token");

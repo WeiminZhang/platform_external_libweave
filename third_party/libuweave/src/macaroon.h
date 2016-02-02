@@ -36,6 +36,7 @@ typedef struct {
   const uint8_t* id;
   size_t id_len;
   UwMacaroonDelegateeType type;
+  uint32_t timestamp;
 } UwMacaroonDelegateeInfo;
 
 #define MAX_NUM_DELEGATEES 10
@@ -67,7 +68,8 @@ bool uw_macaroon_extend_(const UwMacaroon* old_macaroon,
 
 /**
  * Verify and validate the Macaroon, and put relevant information into the
- * result object.
+ * result object. Note that the resulting granted_scope will be the closest
+ * valid scope type (to the narrower side) defined in macaroon_caveat.h.
  */
 bool uw_macaroon_validate_(
     const UwMacaroon* macaroon,

@@ -40,6 +40,9 @@ typedef enum {
   kUwMacaroonCaveatScopeTypeViewer = 20,
 } UwMacaroonCaveatScopeType;
 
+// For security sanity checks
+#define UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE 127
+
 /** Compute the buffer sizes that are enough for caveat creation functions. */
 size_t uw_macaroon_caveat_creation_get_buffsize_(UwMacaroonCaveatType type,
                                                  size_t str_len);

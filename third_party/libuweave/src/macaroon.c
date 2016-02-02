@@ -124,29 +124,32 @@ bool uw_macaroon_extend_(const UwMacaroon* old_macaroon,
 
 static void init_validation_result(UwMacaroonValidationResult* result) {
   // Start from the largest scope
-  result->granted_scope = kUwMacaroonCaveatScopeTypeOwner;
-  result->expiration_time = UINT32_MAX;
-  result->weave_app_restricted = false;
-  result->lan_session_id = NULL;
-  result->lan_session_id_len = 0;
-  result->num_delegatees = 0;
+  *result = (UwMacaroonValidationResult){
+      .granted_scope = kUwMacaroonCaveatScopeTypeOwner,
+      .expiration_time = UINT32_MAX,
+  };
 }
 
 /** Reset the result object to the lowest scope when encountering errors */
 static void reset_validation_result(UwMacaroonValidationResult* result) {
-  // Start from the largest scope or highest privilege
-  result->granted_scope = 0;
-  result->expiration_time = 0;
-  result->weave_app_restricted = true;
-  result->lan_session_id = NULL;
-  result->lan_session_id_len = 0;
+  *result = (UwMacaroonValidationResult){
+      .weave_app_restricted = true,
+      .granted_scope = UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE};
+}
 
-  result->num_delegatees = 0;
-  for (size_t i = 0; i < MAX_NUM_DELEGATEES; i++) {
-    result->delegatees[i].id = NULL;
-    result->delegatees[i].id_len = 0;
-    result->delegatees[i].type = kUwMacaroonDelegateeTypeNone;
+/** Get the next closest scope (to the narrower side). */
+static UwMacaroonCaveatScopeType get_closest_scope(
+    UwMacaroonCaveatScopeType scope) {
+  if (scope <= kUwMacaroonCaveatScopeTypeOwner) {
+    return kUwMacaroonCaveatScopeTypeOwner;
+  } else if (scope <= kUwMacaroonCaveatScopeTypeManager) {
+    return kUwMacaroonCaveatScopeTypeManager;
+  } else if (scope <= kUwMacaroonCaveatScopeTypeUser) {
+    return kUwMacaroonCaveatScopeTypeUser;
+  } else if (scope <= kUwMacaroonCaveatScopeTypeViewer) {
+    return kUwMacaroonCaveatScopeTypeViewer;
   }
+  return scope;
 }
 
 bool uw_macaroon_validate_(const UwMacaroon* macaroon,
@@ -178,6 +181,7 @@ bool uw_macaroon_validate_(const UwMacaroon* macaroon,
     }
   }
 
+  result->granted_scope = get_closest_scope(result->granted_scope);
   return true;
 }
 
