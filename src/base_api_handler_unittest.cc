@@ -8,6 +8,7 @@
 #include <base/time/default_clock.h>
 #include <base/values.h>
 #include <gtest/gtest.h>
+#include <weave/provider/test/fake_task_runner.h>
 #include <weave/provider/test/mock_config_store.h>
 #include <weave/provider/test/mock_http_client.h>
 #include <weave/test/mock_device.h>
@@ -93,7 +94,8 @@ class BaseApiHandlerTest : public ::testing::Test {
   Config config_{&config_store_};
   StrictMock<provider::test::MockHttpClient> http_client_;
   std::unique_ptr<DeviceRegistrationInfo> dev_reg_;
-  ComponentManagerImpl component_manager_;
+  StrictMock<provider::test::FakeTaskRunner> task_runner_;
+  ComponentManagerImpl component_manager_{&task_runner_};
   std::unique_ptr<BaseApiHandler> handler_;
   StrictMock<test::MockDevice> device_;
 };

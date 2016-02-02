@@ -17,8 +17,7 @@ namespace examples {
 
 class FileConfigStore : public provider::ConfigStore {
  public:
-  FileConfigStore(bool disable_security,
-                  const std::string& model_id,
+  FileConfigStore(const std::string& model_id,
                   provider::TaskRunner* task_runner);
 
   bool LoadDefaults(Settings* settings) override;
@@ -31,7 +30,6 @@ class FileConfigStore : public provider::ConfigStore {
 
  private:
   std::string GetPath(const std::string& name) const;
-  const bool disable_security_;
   const std::string model_id_;
   provider::TaskRunner* task_runner_{nullptr};
 };

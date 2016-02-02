@@ -35,6 +35,8 @@ class WifiImpl : public provider::Wifi {
                const DoneCallback& callback) override;
   void StartAccessPoint(const std::string& ssid) override;
   void StopAccessPoint() override;
+  bool IsWifi24Supported() const override {return true;};
+  bool IsWifi50Supported() const override {return false;};
 
   static bool HasWifiCapability();
 

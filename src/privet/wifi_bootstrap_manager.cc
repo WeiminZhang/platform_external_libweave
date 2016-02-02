@@ -204,8 +204,12 @@ std::string WifiBootstrapManager::GetHostedSsid() const {
 }
 
 std::set<WifiType> WifiBootstrapManager::GetTypes() const {
-  // TODO(wiley) This should do some system work to figure this out.
-  return {WifiType::kWifi24};
+  std::set<WifiType> result;
+  if (wifi_->IsWifi24Supported())
+    result.insert(WifiType::kWifi24);
+  if (wifi_->IsWifi50Supported())
+    result.insert(WifiType::kWifi50);
+  return result;
 }
 
 void WifiBootstrapManager::OnConnectDone(const std::string& ssid,
@@ -255,9 +259,15 @@ void WifiBootstrapManager::OnMonitorTimeout() {
 
 void WifiBootstrapManager::UpdateConnectionState() {
   connection_state_ = ConnectionState{ConnectionState::kUnconfigured};
-
   Network::State service_state{network_->GetConnectionState()};
   VLOG(3) << "New network state: " << EnumToString(service_state);
+
+  // TODO: Make it true wifi state, currently it's rather online state.
+  if (service_state != Network::State::kOnline &&
+      config_->GetSettings().last_configured_ssid.empty()) {
+    return;
+  }
+
   switch (service_state) {
     case Network::State::kOffline:
       connection_state_ = ConnectionState{ConnectionState::kOffline};
