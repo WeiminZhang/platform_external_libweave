@@ -37,7 +37,7 @@ CFLAGS := \
 	-Wwrite-strings
 
 CFLAGS_Debug := \
-	-O0   \
+	-O0 \
 	-g3
 
 CFLAGS_Release := \
