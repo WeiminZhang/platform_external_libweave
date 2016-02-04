@@ -120,7 +120,7 @@ include $(BUILD_SHARED_LIBRARY)
 # ========================================================
 include $(CLEAR_VARS)
 LOCAL_MODULE := libweave_test
-LOCAL_MODULE_TAGS := debug
+LOCAL_MODULE_TAGS := eng
 LOCAL_CPP_EXTENSION := $(libweaveCommonCppExtension)
 LOCAL_CFLAGS := $(libweaveCommonCFlags)
 LOCAL_CPPFLAGS := $(libweaveCommonCppFlags)
