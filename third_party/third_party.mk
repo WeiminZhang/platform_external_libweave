@@ -64,15 +64,15 @@ clean-gtest :
 	rm -rf third_party/googletest
 
 ###
-# libevent (third_party, downloaded on build)
+# libevhtp (third_party, downloaded on build)
 
-third_party/include/event2/event.h :
-	@echo Downloading and building libevent...
-	DISABLE_LIBEVENT_TEST=1 third_party/get_libevent.sh
-	@echo Finished downloading and building libevent.
+third_party/lib/libevhtp.a : third_party/include/evhtp.h
+third_party/include/evhtp.h :
+	@echo Downloading and building libevhtp...
+	third_party/get_libevhtp.sh
+	@echo Finished downloading and building libevhtp.
 
-clean-libevent :
-	rm -rf third_party/include/ev* third_party/include/event2
-	rm -rf third_party/lib/libevent*
-	rm -rf third_party/libevent
-
+clean-libevhtp :
+	rm -rf third_party/include/evhtp.h third_party/include/evhtp-config.h third_party/include/evthr.h third_party/include/htparse.h
+	rm -rf third_party/lib/libevhtp.a
+	rm -rf third_party/libevhtp

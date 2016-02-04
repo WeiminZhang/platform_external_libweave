@@ -5,6 +5,7 @@
 #include "src/access_api_handler.h"
 
 #include <gtest/gtest.h>
+#include <weave/provider/test/fake_task_runner.h>
 #include <weave/test/mock_device.h>
 #include <weave/test/unittest_utils.h>
 
@@ -99,7 +100,8 @@ class AccessApiHandlerTest : public ::testing::Test {
     return std::unique_ptr<base::DictionaryValue>{state->DeepCopy()};
   }
 
-  ComponentManagerImpl component_manager_;
+  StrictMock<provider::test::FakeTaskRunner> task_runner_;
+  ComponentManagerImpl component_manager_{&task_runner_};
   StrictMock<test::MockDevice> device_;
   StrictMock<MockAccessBlackListManager> access_manager_;
   std::unique_ptr<AccessApiHandler> handler_;

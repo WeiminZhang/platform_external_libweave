@@ -23,6 +23,8 @@ class MockWifi : public Wifi {
                     const DoneCallback&));
   MOCK_METHOD1(StartAccessPoint, void(const std::string&));
   MOCK_METHOD0(StopAccessPoint, void());
+  MOCK_CONST_METHOD0(IsWifi24Supported, bool());
+  MOCK_CONST_METHOD0(IsWifi50Supported, bool());
 };
 
 }  // namespace test

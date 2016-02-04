@@ -7,6 +7,7 @@
 #include <map>
 
 #include <gtest/gtest.h>
+#include <weave/provider/test/fake_task_runner.h>
 #include <weave/test/unittest_utils.h>
 
 #include "src/bind_lambda.h"
@@ -90,8 +91,9 @@ class ComponentManagerTest : public ::testing::Test {
                                       {"t5", "t6"}, nullptr));
   }
 
+  StrictMock<provider::test::FakeTaskRunner> task_runner_;
   StrictMock<test::MockClock> clock_;
-  ComponentManagerImpl manager_{&clock_};
+  ComponentManagerImpl manager_{&task_runner_, &clock_};
 };
 
 }  // anonymous namespace

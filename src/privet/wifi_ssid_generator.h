@@ -30,7 +30,7 @@ class WifiSsidGenerator final {
 
   // Sets object to use |n| instead of random number for SSID generation.
   void SetRandomForTests(int n);
-  std::string GenerateFlagsInternal(bool for_ssid) const;
+  std::string GenerateFlagsInternal() const;
 
   const CloudDelegate* gcd_{nullptr};
   const WifiDelegate* wifi_{nullptr};

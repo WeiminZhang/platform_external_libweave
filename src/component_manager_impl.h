@@ -15,7 +15,8 @@ namespace weave {
 
 class ComponentManagerImpl final : public ComponentManager {
  public:
-  explicit ComponentManagerImpl(base::Clock* clock = nullptr);
+  explicit ComponentManagerImpl(provider::TaskRunner* task_runner,
+                                base::Clock* clock = nullptr);
   ~ComponentManagerImpl() override;
 
   // Loads trait definition schema.
