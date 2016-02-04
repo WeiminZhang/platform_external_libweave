@@ -77,11 +77,13 @@ sudo apt-get install \
 
 ### For tests
 
+  - cmake
   - gtest (included; see third_party/get_gtest.sh)
   - gmock (included; see third_party/get_gtest.sh)
 
 ### For examples
 
+  - cmake
   - hostapd
   - libavahi-client-dev
   - libcurl4-openssl-dev

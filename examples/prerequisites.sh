@@ -13,6 +13,7 @@ sudo apt-get update && sudo apt-get install ${APT_GET_OPTS} \
   autoconf \
   automake \
   binutils \
+  cmake \
   g++ \
   hostapd \
   libavahi-client-dev \
