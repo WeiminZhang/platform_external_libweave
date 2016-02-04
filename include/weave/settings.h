@@ -61,6 +61,7 @@ struct Settings {
   // Optional cloud information. Can be used for testing or debugging.
   std::string oauth_url;
   std::string service_url;
+  std::string xmpp_endpoint;
 
   // Cloud ID of the registered device. Empty if device is not registered.
   std::string cloud_id;

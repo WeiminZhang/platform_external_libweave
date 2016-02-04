@@ -45,6 +45,7 @@ class XmppChannel : public NotificationChannel,
   // so you will need to reset the XmppClient every time this happens.
   XmppChannel(const std::string& account,
               const std::string& access_token,
+              const std::string& xmpp_endpoint,
               provider::TaskRunner* task_runner,
               provider::Network* network);
   ~XmppChannel() override = default;
@@ -124,11 +125,14 @@ class XmppChannel : public NotificationChannel,
   // Robot account name for the device.
   std::string account_;
 
-  // Full JID of this device.
-  std::string jid_;
-
   // OAuth access token for the account. Expires fairly frequently.
   std::string access_token_;
+
+  // Xmpp endpoint.
+  std::string xmpp_endpoint_;
+
+  // Full JID of this device.
+  std::string jid_;
 
   provider::Network* network_{nullptr};
   std::unique_ptr<Stream> stream_;
