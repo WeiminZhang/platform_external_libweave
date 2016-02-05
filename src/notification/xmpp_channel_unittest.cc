@@ -26,6 +26,7 @@ namespace {
 
 constexpr char kAccountName[] = "Account@Name";
 constexpr char kAccessToken[] = "AccessToken";
+constexpr char kEndpoint[] = "endpoint:456";
 
 constexpr char kStartStreamMessage[] =
     "<stream:stream to='clouddevices.gserviceaccount.com' "
@@ -84,7 +85,8 @@ class FakeXmppChannel : public XmppChannel {
  public:
   explicit FakeXmppChannel(provider::TaskRunner* task_runner,
                            provider::Network* network)
-      : XmppChannel{kAccountName, kAccessToken, task_runner, network},
+      : XmppChannel{kAccountName, kAccessToken, kEndpoint, task_runner,
+                    network},
         stream_{new test::FakeStream{task_runner_}},
         fake_stream_{stream_.get()} {}
 
@@ -122,7 +124,7 @@ class MockNetwork : public provider::test::MockNetwork {
 class XmppChannelTest : public ::testing::Test {
  protected:
   XmppChannelTest() {
-    EXPECT_CALL(network_, OpenSslSocket("talk.google.com", 5223, _))
+    EXPECT_CALL(network_, OpenSslSocket("endpoint", 456, _))
         .WillOnce(
             WithArgs<2>(Invoke(&xmpp_client_, &FakeXmppChannel::Connect)));
   }

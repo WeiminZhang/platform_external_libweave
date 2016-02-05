@@ -29,17 +29,42 @@ enum class WifiType {
   kWifi50,
 };
 
+struct UserAppId {
+  UserAppId() = default;
+
+  UserAppId(AuthType auth_type,
+            const std::vector<uint8_t>& user_id,
+            const std::vector<uint8_t>& app_id)
+      : type{auth_type},
+        user{user_id},
+        app{user_id.empty() ? user_id : app_id} {}
+
+  bool IsEmpty() const { return user.empty(); }
+
+  AuthType type{};
+  std::vector<uint8_t> user;
+  std::vector<uint8_t> app;
+};
+
+inline bool operator==(const UserAppId& l, const UserAppId& r) {
+  return l.user == r.user && l.app == r.app;
+}
+
+inline bool operator!=(const UserAppId& l, const UserAppId& r) {
+  return l.user != r.user || l.app != r.app;
+}
+
 class UserInfo {
  public:
   explicit UserInfo(AuthScope scope = AuthScope::kNone,
-                    const std::string& user_id = {})
-      : scope_{scope}, user_id_{scope == AuthScope::kNone ? "" : user_id} {}
+                    const UserAppId& id = {})
+      : scope_{scope}, id_{scope == AuthScope::kNone ? UserAppId{} : id} {}
   AuthScope scope() const { return scope_; }
-  const std::string& user_id() const { return user_id_; }
+  const UserAppId& id() const { return id_; }
 
  private:
   AuthScope scope_;
-  std::string user_id_;
+  UserAppId id_;
 };
 
 class ConnectionState final {

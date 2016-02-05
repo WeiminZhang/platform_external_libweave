@@ -7,6 +7,7 @@
 #include <string>
 
 #include <base/bind.h>
+#include <base/strings/string_number_conversions.h>
 #include <weave/provider/network.h>
 #include <weave/provider/task_runner.h>
 
@@ -16,6 +17,7 @@
 #include "src/notification/notification_parser.h"
 #include "src/notification/xml_node.h"
 #include "src/privet/openssl_utils.h"
+#include "src/string_utils.h"
 #include "src/utils.h"
 
 namespace weave {
@@ -74,9 +76,6 @@ const BackoffEntry::Policy kDefaultBackoffPolicy = {
     false,
 };
 
-const char kDefaultXmppHost[] = "talk.google.com";
-const uint16_t kDefaultXmppPort = 5223;
-
 // Used for keeping connection alive.
 const int kRegularPingIntervalSeconds = 60;
 const int kRegularPingTimeoutSeconds = 30;
@@ -91,10 +90,12 @@ const int kConnectingTimeoutAfterNetChangeSeconds = 30;
 
 XmppChannel::XmppChannel(const std::string& account,
                          const std::string& access_token,
+                         const std::string& xmpp_endpoint,
                          provider::TaskRunner* task_runner,
                          provider::Network* network)
     : account_{account},
       access_token_{access_token},
+      xmpp_endpoint_{xmpp_endpoint},
       network_{network},
       backoff_entry_{&kDefaultBackoffPolicy},
       task_runner_{task_runner},
@@ -285,10 +286,16 @@ void XmppChannel::HandleMessageStanza(std::unique_ptr<XmlNode> stanza) {
 void XmppChannel::CreateSslSocket() {
   CHECK(!stream_);
   state_ = XmppState::kConnecting;
-  LOG(INFO) << "Starting XMPP connection to " << kDefaultXmppHost << ":"
-            << kDefaultXmppPort;
+  LOG(INFO) << "Starting XMPP connection to: " << xmpp_endpoint_;
 
-  network_->OpenSslSocket(kDefaultXmppHost, kDefaultXmppPort,
+  std::pair<std::string, std::string> host_port =
+      SplitAtFirst(xmpp_endpoint_, ":", true);
+  CHECK(!host_port.first.empty());
+  CHECK(!host_port.second.empty());
+  uint32_t port = 0;
+  CHECK(base::StringToUint(host_port.second, &port)) << xmpp_endpoint_;
+
+  network_->OpenSslSocket(host_port.first, port,
                           base::Bind(&XmppChannel::OnSslSocketReady,
                                      task_ptr_factory_.GetWeakPtr()));
 }

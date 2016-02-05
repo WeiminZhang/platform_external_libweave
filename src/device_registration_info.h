@@ -78,6 +78,7 @@ class DeviceRegistrationInfo : public NotificationDelegate,
                            const std::string& api_key,
                            const std::string& oauth_url,
                            const std::string& service_url,
+                           const std::string& xmpp_endpoint,
                            ErrorPtr* error);
 
   void GetDeviceInfo(const CloudRequestDoneCallback& callback);

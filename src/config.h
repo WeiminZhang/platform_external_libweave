@@ -68,6 +68,9 @@ class Config final {
     void set_service_url(const std::string& url) {
       settings_->service_url = url;
     }
+    void set_xmpp_endpoint(const std::string& endpoint) {
+      settings_->xmpp_endpoint = endpoint;
+    }
     void set_name(const std::string& name) { settings_->name = name; }
     void set_description(const std::string& description) {
       settings_->description = description;

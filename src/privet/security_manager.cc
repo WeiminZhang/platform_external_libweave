@@ -91,9 +91,10 @@ bool SecurityManager::CreateAccessTokenImpl(AuthType auth_type,
                                             std::vector<uint8_t>* access_token,
                                             AuthScope* access_token_scope,
                                             base::TimeDelta* access_token_ttl) {
-  UserInfo user_info{desired_scope,
-                     std::to_string(static_cast<int>(auth_type)) + "/" +
-                         std::to_string(++last_user_id_)};
+  auto user_id = std::to_string(++last_user_id_);
+  UserInfo user_info{
+      desired_scope,
+      UserAppId{auth_type, {user_id.begin(), user_id.end()}, {}}};
 
   const base::TimeDelta kTtl =
       base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
@@ -388,7 +389,7 @@ bool SecurityManager::CancelPairing(const std::string& session_id,
 }
 
 std::string SecurityManager::CreateSessionId() {
-  return Base64Encode(auth_manager_->CreateSessionId());
+  return auth_manager_->CreateSessionId();
 }
 
 void SecurityManager::RegisterPairingListeners(
