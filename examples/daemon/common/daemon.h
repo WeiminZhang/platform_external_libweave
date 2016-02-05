@@ -19,10 +19,11 @@
 class Daemon {
  public:
   struct Options {
-    bool force_bootstrapping_{false};
-    bool disable_privet_{false};
-    std::string registration_ticket_;
-    std::string model_id_{"AAAAA"};
+    bool force_bootstrapping{false};
+    bool disable_privet{false};
+    std::string registration_ticket;
+    std::string model_id{"AAAAA"};
+    std::string service_url;
 
     static void ShowUsage(const std::string& name) {
       LOG(ERROR) << "\nUsage: " << name << " <option(s)>"
@@ -30,8 +31,10 @@ class Daemon {
                  << "\t-h,--help                    Show this help message\n"
                  << "\t--v=LEVEL                    Logging level\n"
                  << "\t-b,--bootstrapping           Force WiFi bootstrapping\n"
-                 << "\t--registration_ticket=TICKET Register device with the "
-                    "given ticket\n"
+                 << "\t-r,--registration_ticket=TICKET Register device with "
+                    "the given ticket\n"
+                 << "\t-s,--staging                 Use staging server. Use "
+                    "only with -r.\n"
                  << "\t--disable_privet             Disable local privet\n";
     }
 
@@ -41,15 +44,19 @@ class Daemon {
         if (arg == "-h" || arg == "--help") {
           return false;
         } else if (arg == "-b" || arg == "--bootstrapping") {
-          force_bootstrapping_ = true;
+          force_bootstrapping = true;
+        } else if (arg == "-s" || arg == "--staging") {
+          service_url =
+              "https://www-googleapis-staging.sandbox.google.com/weave/v1/";
         } else if (arg == "--disable_privet") {
-          disable_privet_ = true;
-        } else if (arg.find("--registration_ticket") != std::string::npos) {
+          disable_privet = true;
+        } else if (arg.find("--registration_ticket=") != std::string::npos ||
+                   arg.find("-r=") != std::string::npos) {
           auto pos = arg.find("=");
           if (pos == std::string::npos) {
             return false;
           }
-          registration_ticket_ = arg.substr(pos + 1);
+          registration_ticket = arg.substr(pos + 1);
         } else if (arg.find("--v") != std::string::npos) {
           auto pos = arg.find("=");
           if (pos == std::string::npos) {
@@ -66,14 +73,13 @@ class Daemon {
 
   Daemon(const Options& opts)
       : task_runner_{new weave::examples::EventTaskRunner},
-        config_store_{
-            new weave::examples::FileConfigStore(opts.model_id_,
-                                                 task_runner_.get())},
+        config_store_{new weave::examples::FileConfigStore(opts.model_id,
+                                                           task_runner_.get())},
         http_client_{new weave::examples::CurlHttpClient(task_runner_.get())},
         network_{new weave::examples::EventNetworkImpl(task_runner_.get())},
         bluetooth_{new weave::examples::BluetoothImpl} {
-    if (!opts.disable_privet_) {
-      network_->SetSimulateOffline(opts.force_bootstrapping_);
+    if (!opts.disable_privet) {
+      network_->SetSimulateOffline(opts.force_bootstrapping);
 
       dns_sd_.reset(new weave::examples::AvahiClient);
       http_server_.reset(
@@ -87,9 +93,11 @@ class Daemon {
                                     dns_sd_.get(), http_server_.get(),
                                     wifi_.get(), bluetooth_.get());
 
-    if (!opts.registration_ticket_.empty()) {
-      device_->Register(opts.registration_ticket_,
-                        base::Bind(&OnRegisterDeviceDone, device_.get()));
+    if (!opts.registration_ticket.empty()) {
+      weave::RegistrationData data;
+      data.ticket_id = opts.registration_ticket;
+      data.service_url = opts.service_url;
+      device_->Register(data, base::Bind(&OnRegisterDeviceDone, device_.get()));
     }
   }
 

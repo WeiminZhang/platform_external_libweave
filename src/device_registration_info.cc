@@ -28,6 +28,7 @@
 #include "src/json_error_codes.h"
 #include "src/notification/xmpp_channel.h"
 #include "src/privet/auth_manager.h"
+#include "src/privet/constants.h"
 #include "src/string_utils.h"
 #include "src/utils.h"
 
@@ -281,8 +282,8 @@ std::string DeviceRegistrationInfo::GetDeviceURL(
     const std::string& subpath,
     const WebParamList& params) const {
   CHECK(!GetSettings().cloud_id.empty()) << "Must have a valid device ID";
-  return BuildURL(GetSettings().service_url,
-                  "devices/" + GetSettings().cloud_id + "/" + subpath, params);
+  return GetServiceURL("devices/" + GetSettings().cloud_id + "/" + subpath,
+                       params);
 }
 
 std::string DeviceRegistrationInfo::GetOAuthURL(
@@ -515,8 +516,47 @@ void DeviceRegistrationInfo::RegisterDeviceError(const DoneCallback& callback,
                                 base::Bind(callback, base::Passed(&error)), {});
 }
 
-void DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
+void DeviceRegistrationInfo::RegisterDevice(RegistrationData registration_data,
                                             const DoneCallback& callback) {
+  if (!GetSettings().allow_endpoints_override &&
+      registration_data != RegistrationData{registration_data.ticket_id}) {
+    ErrorPtr error;
+    Error::AddTo(&error, FROM_HERE, privet::errors::kInvalidParams,
+                 "Endpoint change is not permitted");
+    return RegisterDeviceError(callback, std::move(error));
+  }
+
+  // Reset OAuth to defaults, if device was unregistered values can be
+  // customized. These muse be replaced all together.
+  if (registration_data.oauth_url.empty() ||
+      registration_data.client_id.empty() ||
+      registration_data.client_secret.empty() ||
+      registration_data.api_key.empty()) {
+    registration_data.oauth_url = GetDefaults().oauth_url;
+    registration_data.client_id = GetDefaults().client_id;
+    registration_data.client_secret = GetDefaults().client_secret;
+    registration_data.api_key = GetDefaults().api_key;
+  }
+
+  // Reset Server URL to default, if device was unregistered value can be
+  // customized.
+  if (registration_data.service_url.empty())
+    registration_data.service_url = GetDefaults().service_url;
+
+  // Reset XMPP to default, if device was unregistered value can be
+  // customized.
+  if (registration_data.xmpp_endpoint.empty())
+    registration_data.xmpp_endpoint = GetDefaults().xmpp_endpoint;
+
+  VLOG(1) << "RegisterDevice: "
+          << "ticket_id: " << registration_data.ticket_id
+          << ", oauth_url: " << registration_data.oauth_url
+          << ", client_id: " << registration_data.client_id
+          << ", client_secret: " << registration_data.client_secret
+          << ", api_key: " << registration_data.api_key
+          << ", service_url: " << registration_data.service_url
+          << ", xmpp_endpoint: " << registration_data.xmpp_endpoint;
+
   if (HaveRegistrationCredentials()) {
     ErrorPtr error;
     Error::AddTo(&error, FROM_HERE, kErrorAlreayRegistered,
@@ -528,21 +568,23 @@ void DeviceRegistrationInfo::RegisterDevice(const std::string& ticket_id,
   CHECK(device_draft);
 
   base::DictionaryValue req_json;
-  req_json.SetString("id", ticket_id);
-  req_json.SetString("oauthClientId", GetSettings().client_id);
+  req_json.SetString("id", registration_data.ticket_id);
+  req_json.SetString("oauthClientId", registration_data.client_id);
   req_json.Set("deviceDraft", device_draft.release());
 
-  auto url = GetServiceURL("registrationTickets/" + ticket_id,
-                           {{"key", GetSettings().api_key}});
+  auto url = BuildURL(registration_data.service_url,
+                      "registrationTickets/" + registration_data.ticket_id,
+                      {{"key", registration_data.api_key}});
 
   RequestSender sender{HttpClient::Method::kPatch, url, http_client_};
   sender.SetJsonData(req_json);
   sender.Send(base::Bind(&DeviceRegistrationInfo::RegisterDeviceOnTicketSent,
-                         weak_factory_.GetWeakPtr(), ticket_id, callback));
+                         weak_factory_.GetWeakPtr(), registration_data,
+                         callback));
 }
 
 void DeviceRegistrationInfo::RegisterDeviceOnTicketSent(
-    const std::string& ticket_id,
+    const RegistrationData& registration_data,
     const DoneCallback& callback,
     std::unique_ptr<provider::HttpClient::Response> response,
     ErrorPtr error) {
@@ -557,15 +599,17 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketSent(
     return RegisterDeviceError(callback, std::move(error));
   }
 
-  std::string url =
-      GetServiceURL("registrationTickets/" + ticket_id + "/finalize",
-                    {{"key", GetSettings().api_key}});
+  std::string url = BuildURL(
+      registration_data.service_url,
+      "registrationTickets/" + registration_data.ticket_id + "/finalize",
+      {{"key", registration_data.api_key}});
   RequestSender{HttpClient::Method::kPost, url, http_client_}.Send(
       base::Bind(&DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized,
-                 weak_factory_.GetWeakPtr(), callback));
+                 weak_factory_.GetWeakPtr(), registration_data, callback));
 }
 
 void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
+    const RegistrationData& registration_data,
     const DoneCallback& callback,
     std::unique_ptr<provider::HttpClient::Response> response,
     ErrorPtr error) {
@@ -595,19 +639,21 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
   UpdateDeviceInfoTimestamp(*device_draft_response);
 
   // Now get access_token and refresh_token
-  RequestSender sender2{HttpClient::Method::kPost, GetOAuthURL("token"),
+  RequestSender sender2{HttpClient::Method::kPost,
+                        BuildURL(registration_data.oauth_url, "token", {}),
                         http_client_};
   sender2.SetFormData({{"code", auth_code},
-                       {"client_id", GetSettings().client_id},
-                       {"client_secret", GetSettings().client_secret},
+                       {"client_id", registration_data.client_id},
+                       {"client_secret", registration_data.client_secret},
                        {"redirect_uri", "oob"},
                        {"grant_type", "authorization_code"}});
   sender2.Send(base::Bind(&DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent,
-                          weak_factory_.GetWeakPtr(), cloud_id, robot_account,
-                          callback));
+                          weak_factory_.GetWeakPtr(), registration_data,
+                          cloud_id, robot_account, callback));
 }
 
 void DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent(
+    const RegistrationData& registration_data,
     const std::string& cloud_id,
     const std::string& robot_account,
     const DoneCallback& callback,
@@ -631,9 +677,18 @@ void DeviceRegistrationInfo::RegisterDeviceOnAuthCodeSent(
       base::Time::Now() + base::TimeDelta::FromSeconds(expires_in);
 
   Config::Transaction change{config_};
+
   change.set_cloud_id(cloud_id);
   change.set_robot_account(robot_account);
   change.set_refresh_token(refresh_token);
+
+  change.set_oauth_url(registration_data.oauth_url);
+  change.set_client_id(registration_data.client_id);
+  change.set_client_secret(registration_data.client_secret);
+  change.set_api_key(registration_data.api_key);
+  change.set_service_url(registration_data.service_url);
+  change.set_xmpp_endpoint(registration_data.xmpp_endpoint);
+
   change.Commit();
 
   task_runner_->PostDelayedTask(FROM_HERE, base::Bind(callback, nullptr), {});
@@ -826,34 +881,6 @@ void DeviceRegistrationInfo::UpdateBaseConfig(AuthScope anonymous_access_role,
   change.set_local_anonymous_access_role(anonymous_access_role);
   change.set_local_discovery_enabled(local_discovery_enabled);
   change.set_local_pairing_enabled(local_pairing_enabled);
-}
-
-bool DeviceRegistrationInfo::UpdateServiceConfig(
-    const std::string& client_id,
-    const std::string& client_secret,
-    const std::string& api_key,
-    const std::string& oauth_url,
-    const std::string& service_url,
-    const std::string& xmpp_endpoint,
-    ErrorPtr* error) {
-  if (HaveRegistrationCredentials()) {
-    return Error::AddTo(error, FROM_HERE, kErrorAlreayRegistered,
-                        "Unable to change config for registered device");
-  }
-  Config::Transaction change{config_};
-  if (!client_id.empty())
-    change.set_client_id(client_id);
-  if (!client_secret.empty())
-    change.set_client_secret(client_secret);
-  if (!api_key.empty())
-    change.set_api_key(api_key);
-  if (!oauth_url.empty())
-    change.set_oauth_url(oauth_url);
-  if (!service_url.empty())
-    change.set_service_url(service_url);
-  if (!xmpp_endpoint.empty())
-    change.set_xmpp_endpoint(xmpp_endpoint);
-  return true;
 }
 
 void DeviceRegistrationInfo::UpdateCommand(

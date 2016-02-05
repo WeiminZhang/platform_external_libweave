@@ -64,7 +64,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   void AddGcdStateChangedCallback(
       const Device::GcdStateChangedCallback& callback);
-  void RegisterDevice(const std::string& ticket_id,
+
+  void RegisterDevice(RegistrationData registration_data,
                       const DoneCallback& callback);
 
   void UpdateDeviceInfo(const std::string& name,
@@ -73,13 +74,6 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void UpdateBaseConfig(AuthScope anonymous_access_role,
                         bool local_discovery_enabled,
                         bool local_pairing_enabled);
-  bool UpdateServiceConfig(const std::string& client_id,
-                           const std::string& client_secret,
-                           const std::string& api_key,
-                           const std::string& oauth_url,
-                           const std::string& service_url,
-                           const std::string& xmpp_endpoint,
-                           ErrorPtr* error);
 
   void GetDeviceInfo(const CloudRequestDoneCallback& callback);
 
@@ -123,6 +117,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
  private:
   friend class DeviceRegistrationInfoTest;
+
+  const Config::Settings& GetDefaults() const { return config_->GetDefaults(); }
 
   base::WeakPtr<DeviceRegistrationInfo> AsWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -276,15 +272,17 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   void RegisterDeviceError(const DoneCallback& callback, ErrorPtr error);
   void RegisterDeviceOnTicketSent(
-      const std::string& ticket_id,
+      const RegistrationData& registration_data,
       const DoneCallback& callback,
       std::unique_ptr<provider::HttpClient::Response> response,
       ErrorPtr error);
   void RegisterDeviceOnTicketFinalized(
+      const RegistrationData& registration_data,
       const DoneCallback& callback,
       std::unique_ptr<provider::HttpClient::Response> response,
       ErrorPtr error);
   void RegisterDeviceOnAuthCodeSent(
+      const RegistrationData& registration_data,
       const std::string& cloud_id,
       const std::string& robot_account,
       const DoneCallback& callback,

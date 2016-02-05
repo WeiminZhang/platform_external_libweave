@@ -183,7 +183,7 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_CONST_METHOD0(GetAnonymousMaxScope, AuthScope());
   MOCK_CONST_METHOD0(GetConnectionState, const ConnectionState&());
   MOCK_CONST_METHOD0(GetSetupState, const SetupState&());
-  MOCK_METHOD3(Setup, bool(const std::string&, const std::string&, ErrorPtr*));
+  MOCK_METHOD2(Setup, bool(const RegistrationData&, ErrorPtr*));
   MOCK_CONST_METHOD0(GetCloudId, std::string());
   MOCK_CONST_METHOD0(GetLegacyState, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetLegacyCommandDef, const base::DictionaryValue&());

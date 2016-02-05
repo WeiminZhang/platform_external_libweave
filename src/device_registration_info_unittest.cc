@@ -127,12 +127,12 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   void SetUp() override {
     EXPECT_CALL(clock_, Now())
         .WillRepeatedly(Return(base::Time::FromTimeT(1450000000)));
-    ReloadDefaults();
+    ReloadDefaults(true);
   }
 
-  void ReloadDefaults() {
+  void ReloadDefaults(bool allow_endpoints_override) {
     EXPECT_CALL(config_store_, LoadDefaults(_))
-        .WillOnce(Invoke([](Settings* settings) {
+        .WillOnce(Invoke([allow_endpoints_override](Settings* settings) {
           settings->client_id = test_data::kClientId;
           settings->client_secret = test_data::kClientSecret;
           settings->api_key = test_data::kApiKey;
@@ -146,6 +146,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
           settings->oauth_url = test_data::kOAuthURL;
           settings->service_url = test_data::kServiceURL;
           settings->xmpp_endpoint = test_data::kXmppEndpoint;
+          settings->allow_endpoints_override = allow_endpoints_override;
           return true;
         }));
     config_.reset(new Config{&config_store_});
@@ -155,7 +156,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
     dev_reg_->Start();
   }
 
-  void ReloadSettings(bool registered = true) {
+  void ReloadSettings(bool registered, bool allow_endpoints_override) {
     base::DictionaryValue dict;
     dict.SetInteger("version", 1);
     if (registered) {
@@ -168,7 +169,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
     base::JSONWriter::WriteWithOptions(
         dict, base::JSONWriter::OPTIONS_PRETTY_PRINT, &json_string);
     EXPECT_CALL(config_store_, LoadSettings()).WillOnce(Return(json_string));
-    ReloadDefaults();
+    ReloadDefaults(allow_endpoints_override);
   }
 
   void PublishCommands(const base::ListValue& commands) {
@@ -195,6 +196,9 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   bool HaveRegistrationCredentials() const {
     return dev_reg_->HaveRegistrationCredentials();
   }
+
+  void RegisterDevice(const RegistrationData registration_data,
+                      const RegistrationData& expected_data);
 
   provider::test::FakeTaskRunner task_runner_;
   provider::test::MockConfigStore config_store_;
@@ -245,7 +249,7 @@ TEST_F(DeviceRegistrationInfoTest, GetOAuthURL) {
 
 TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
   EXPECT_FALSE(HaveRegistrationCredentials());
-  ReloadSettings();
+  ReloadSettings(true, false);
 
   EXPECT_CALL(
       http_client_,
@@ -287,7 +291,7 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
 }
 
 TEST_F(DeviceRegistrationInfoTest, CheckAuthenticationFailure) {
-  ReloadSettings();
+  ReloadSettings(true, false);
   EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
   EXPECT_CALL(
@@ -316,7 +320,7 @@ TEST_F(DeviceRegistrationInfoTest, CheckAuthenticationFailure) {
 }
 
 TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
-  ReloadSettings();
+  ReloadSettings(true, false);
   EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
   EXPECT_CALL(
@@ -346,7 +350,7 @@ TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
 }
 
 TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
-  ReloadSettings();
+  ReloadSettings(true, false);
   SetAccessToken();
 
   EXPECT_CALL(
@@ -377,9 +381,32 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
   EXPECT_TRUE(succeeded);
 }
 
-TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
-  ReloadSettings(false);
+TEST_F(DeviceRegistrationInfoTest, ReRegisterDevice) {
+  ReloadSettings(true, false);
 
+  bool done = false;
+  dev_reg_->RegisterDevice(RegistrationData{test_data::kClaimTicketId},
+                           base::Bind([this, &done](ErrorPtr error) {
+                             EXPECT_TRUE(error->HasError("already_registered"));
+                             done = true;
+                             task_runner_.Break();
+                             EXPECT_EQ(GcdState::kConnecting, GetGcdState());
+
+                             // Validate the device info saved to storage...
+                             EXPECT_EQ(test_data::kCloudId,
+                                       dev_reg_->GetSettings().cloud_id);
+                             EXPECT_EQ(test_data::kRefreshToken,
+                                       dev_reg_->GetSettings().refresh_token);
+                             EXPECT_EQ(test_data::kRobotAccountEmail,
+                                       dev_reg_->GetSettings().robot_account);
+                           }));
+  task_runner_.Run();
+  EXPECT_TRUE(done);
+}
+
+void DeviceRegistrationInfoTest::RegisterDevice(
+    const RegistrationData registration_data,
+    const RegistrationData& expected_data) {
   auto json_traits = CreateDictionaryValue(R"({
     'base': {
       'commands': {
@@ -408,25 +435,25 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
   EXPECT_TRUE(component_manager_.SetStateProperty(
       "comp", "base.firmwareVersion", ver, nullptr));
 
-  std::string ticket_url = dev_reg_->GetServiceURL("registrationTickets/") +
-                           test_data::kClaimTicketId;
+  std::string ticket_url = expected_data.service_url + "registrationTickets/" +
+                           expected_data.ticket_id;
   EXPECT_CALL(http_client_,
               SendRequest(HttpClient::Method::kPatch,
-                          ticket_url + "?key=" + test_data::kApiKey,
+                          ticket_url + "?key=" + expected_data.api_key,
                           HttpClient::Headers{GetJsonHeader()}, _, _))
-      .WillOnce(WithArgs<3, 4>(
-          Invoke([](const std::string& data,
-                    const HttpClient::SendRequestCallback& callback) {
+      .WillOnce(WithArgs<3, 4>(Invoke(
+          [&expected_data](const std::string& data,
+                           const HttpClient::SendRequestCallback& callback) {
             auto json = test::CreateDictionaryValue(data);
             EXPECT_NE(nullptr, json.get());
             std::string value;
             EXPECT_TRUE(json->GetString("id", &value));
-            EXPECT_EQ(test_data::kClaimTicketId, value);
+            EXPECT_EQ(expected_data.ticket_id, value);
             EXPECT_TRUE(
                 json->GetString("deviceDraft.channel.supportedType", &value));
             EXPECT_EQ("pull", value);
             EXPECT_TRUE(json->GetString("oauthClientId", &value));
-            EXPECT_EQ(test_data::kClientId, value);
+            EXPECT_EQ(expected_data.client_id, value);
             EXPECT_TRUE(json->GetString("deviceDraft.description", &value));
             EXPECT_EQ("Easy to clean", value);
             EXPECT_TRUE(json->GetString("deviceDraft.location", &value));
@@ -489,7 +516,7 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
 
   EXPECT_CALL(http_client_,
               SendRequest(HttpClient::Method::kPost,
-                          ticket_url + "/finalize?key=" + test_data::kApiKey,
+                          ticket_url + "/finalize?key=" + expected_data.api_key,
                           HttpClient::Headers{}, _, _))
       .WillOnce(WithArgs<4>(
           Invoke([](const HttpClient::SendRequestCallback& callback) {
@@ -509,15 +536,15 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
 
   EXPECT_CALL(
       http_client_,
-      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
+      SendRequest(HttpClient::Method::kPost, expected_data.oauth_url + "token",
                   HttpClient::Headers{GetFormHeader()}, _, _))
-      .WillOnce(WithArgs<3, 4>(Invoke([](
+      .WillOnce(WithArgs<3, 4>(Invoke([&expected_data](
           const std::string& data,
           const HttpClient::SendRequestCallback& callback) {
         EXPECT_EQ("authorization_code", GetFormField(data, "grant_type"));
         EXPECT_EQ(test_data::kRobotAccountAuthCode, GetFormField(data, "code"));
-        EXPECT_EQ(test_data::kClientId, GetFormField(data, "client_id"));
-        EXPECT_EQ(test_data::kClientSecret,
+        EXPECT_EQ(expected_data.client_id, GetFormField(data, "client_id"));
+        EXPECT_EQ(expected_data.client_secret,
                   GetFormField(data, "client_secret"));
         EXPECT_EQ("oob", GetFormField(data, "redirect_uri"));
 
@@ -532,7 +559,9 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
 
   EXPECT_CALL(
       http_client_,
-      SendRequest(HttpClient::Method::kPost, HasSubstr("upsertLocalAuthInfo"),
+      SendRequest(HttpClient::Method::kPost,
+                  expected_data.service_url + "devices/" + test_data::kCloudId +
+                      "/upsertLocalAuthInfo",
                   HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
       .WillOnce(WithArgs<3, 4>(
           Invoke([](const std::string& data,
@@ -546,10 +575,12 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
 
   bool done = false;
   dev_reg_->RegisterDevice(
-      test_data::kClaimTicketId, base::Bind([this, &done](ErrorPtr error) {
-        EXPECT_FALSE(error);
+      registration_data,
+      base::Bind([this, &done, &expected_data](ErrorPtr error) {
         done = true;
         task_runner_.Break();
+
+        EXPECT_FALSE(error);
         EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 
         // Validate the device info saved to storage...
@@ -558,29 +589,66 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
                   dev_reg_->GetSettings().refresh_token);
         EXPECT_EQ(test_data::kRobotAccountEmail,
                   dev_reg_->GetSettings().robot_account);
+        EXPECT_EQ(expected_data.oauth_url, dev_reg_->GetSettings().oauth_url);
+        EXPECT_EQ(expected_data.client_id, dev_reg_->GetSettings().client_id);
+        EXPECT_EQ(expected_data.client_secret,
+                  dev_reg_->GetSettings().client_secret);
+        EXPECT_EQ(expected_data.api_key, dev_reg_->GetSettings().api_key);
+        EXPECT_EQ(expected_data.service_url,
+                  dev_reg_->GetSettings().service_url);
+        EXPECT_EQ(expected_data.xmpp_endpoint,
+                  dev_reg_->GetSettings().xmpp_endpoint);
       }));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }
 
-TEST_F(DeviceRegistrationInfoTest, ReRegisterDevice) {
-  ReloadSettings();
+TEST_F(DeviceRegistrationInfoTest, RegisterDevice) {
+  ReloadSettings(false, true);
+
+  RegistrationData registration_data;
+  registration_data.ticket_id = "test_ticked_id";
+  registration_data.oauth_url = "https://test.oauth/";
+  registration_data.client_id = "test_client_id";
+  registration_data.client_secret = "test_client_secret";
+  registration_data.api_key = "test_api_key";
+  registration_data.service_url = "https://test.service/";
+  registration_data.xmpp_endpoint = "test.xmpp:1234";
+
+  RegisterDevice(registration_data, registration_data);
+}
+
+TEST_F(DeviceRegistrationInfoTest, RegisterDeviceWithDefaultEndpoints) {
+  ReloadSettings(false, true);
+
+  RegistrationData registration_data;
+  registration_data.ticket_id = "test_ticked_id";
+
+  RegistrationData expected_data = registration_data;
+  expected_data.oauth_url = test_data::kOAuthURL;
+  expected_data.client_id = test_data::kClientId;
+  expected_data.client_secret = test_data::kClientSecret;
+  expected_data.api_key = test_data::kApiKey;
+  expected_data.service_url = test_data::kServiceURL;
+  expected_data.xmpp_endpoint = test_data::kXmppEndpoint;
+
+  RegisterDevice(registration_data, expected_data);
+}
+
+TEST_F(DeviceRegistrationInfoTest, RegisterDeviceEndpointsOverrideNotAllowed) {
+  ReloadSettings(false, false);
+
+  RegistrationData registration_data;
+  registration_data.ticket_id = "test_ticked_id";
+  registration_data.service_url = "https://test.service/";
 
   bool done = false;
-  dev_reg_->RegisterDevice(
-      test_data::kClaimTicketId, base::Bind([this, &done](ErrorPtr error) {
-        EXPECT_TRUE(error->HasError("already_registered"));
-        done = true;
-        task_runner_.Break();
-        EXPECT_EQ(GcdState::kConnecting, GetGcdState());
-
-        // Validate the device info saved to storage...
-        EXPECT_EQ(test_data::kCloudId, dev_reg_->GetSettings().cloud_id);
-        EXPECT_EQ(test_data::kRefreshToken,
-                  dev_reg_->GetSettings().refresh_token);
-        EXPECT_EQ(test_data::kRobotAccountEmail,
-                  dev_reg_->GetSettings().robot_account);
-      }));
+  dev_reg_->RegisterDevice(registration_data,
+                           base::Bind([this, &done](ErrorPtr error) {
+                             done = true;
+                             task_runner_.Break();
+                             EXPECT_TRUE(error->HasError("invalidParams"));
+                           }));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }
@@ -590,7 +658,7 @@ TEST_F(DeviceRegistrationInfoTest, OOBRegistrationStatus) {
   // unregistered, depending on whether or not we've found credentials.
   EXPECT_EQ(GcdState::kUnconfigured, GetGcdState());
   // Put some credentials into our state, make sure we call that offline.
-  ReloadSettings();
+  ReloadSettings(true, false);
   EXPECT_EQ(GcdState::kConnecting, GetGcdState());
 }
 
@@ -600,7 +668,7 @@ class DeviceRegistrationInfoUpdateCommandTest
   void SetUp() override {
     DeviceRegistrationInfoTest::SetUp();
 
-    ReloadSettings();
+    ReloadSettings(true, false);
     SetAccessToken();
 
     auto json_traits = CreateDictionaryValue(R"({

@@ -14,6 +14,7 @@
 #include <base/location.h>
 #include <base/strings/stringprintf.h>
 #include <base/values.h>
+#include <weave/device.h>
 #include <weave/enum_to_string.h>
 #include <weave/provider/task_runner.h>
 
@@ -801,7 +802,7 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
   if (!ssid.empty() && !wifi_->ConfigureCredentials(ssid, passphrase, &error))
     return ReturnError(*error, callback);
 
-  if (!ticket.empty() && !cloud_->Setup(ticket, user, &error))
+  if (!ticket.empty() && !cloud_->Setup(RegistrationData{ticket}, &error))
     return ReturnError(*error, callback);
 
   ReplyWithSetupStatus(callback);

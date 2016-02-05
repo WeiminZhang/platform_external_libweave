@@ -15,6 +15,7 @@
 #include <base/values.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <weave/device.h>
 #include <weave/test/unittest_utils.h>
 
 #include "src/privet/constants.h"
@@ -134,12 +135,11 @@ class PrivetHandlerTest : public testing::Test {
     EXPECT_CALL(cloud_, GetCloudId()).WillRepeatedly(Return(""));
     EXPECT_CALL(cloud_, GetConnectionState())
         .WillRepeatedly(ReturnRef(gcd_disabled_state_));
-    auto set_error = [](const std::string&, const std::string&,
-                        ErrorPtr* error) {
+    auto set_error = [](ErrorPtr* error) {
       Error::AddTo(error, FROM_HERE, "setupUnavailable", "");
     };
-    EXPECT_CALL(cloud_, Setup(_, _, _))
-        .WillRepeatedly(DoAll(Invoke(set_error), Return(false)));
+    EXPECT_CALL(cloud_, Setup(_, _))
+        .WillRepeatedly(DoAll(WithArgs<1>(Invoke(set_error)), Return(false)));
   }
 
   test::MockClock clock_;
@@ -638,10 +638,10 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
     }
   })";
 
-  auto set_error = [](const std::string&, const std::string&, ErrorPtr* error) {
+  auto set_error = [](ErrorPtr* error) {
     return Error::AddTo(error, FROM_HERE, "deviceBusy", "");
   };
-  EXPECT_CALL(cloud_, Setup(_, _, _)).WillOnce(Invoke(set_error));
+  EXPECT_CALL(cloud_, Setup(_, _)).WillOnce(WithArgs<1>(Invoke(set_error)));
   EXPECT_PRED2(IsEqualError, CodeWithReason(503, "deviceBusy"),
                HandleRequest("/privet/v3/setup/start", kInput));
 
@@ -651,7 +651,7 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
     }
   })";
   cloud_.setup_state_ = SetupState{SetupState::kInProgress};
-  EXPECT_CALL(cloud_, Setup("testTicket", "testUser", _))
+  EXPECT_CALL(cloud_, Setup(RegistrationData{"testTicket"}, _))
       .WillOnce(Return(true));
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/setup/start", kInput));
 }
