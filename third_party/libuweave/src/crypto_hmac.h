@@ -9,21 +9,21 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Return the minimum required number of bytes for the state_buffer used in the
-// init, update and final functions.
-size_t uw_crypto_hmac_required_buffer_size_();
+typedef struct {
+  const uint8_t* bytes;
+  size_t num_bytes;
+} UwCryptoHmacMsg;
 
-bool uw_crypto_hmac_init_(uint8_t* state_buffer,
-                          size_t state_buffer_len,
-                          const uint8_t* key,
-                          size_t key_len);
-bool uw_crypto_hmac_update_(uint8_t* state_buffer,
-                            size_t state_buffer_len,
-                            const uint8_t* data,
-                            size_t data_len);
-bool uw_crypto_hmac_final_(uint8_t* state_buffer,
-                           size_t state_buffer_len,
-                           uint8_t* truncated_digest,
-                           size_t truncated_digest_len);
+/**
+ * Compute HMAC over a list of messages, which is equivalent to computing HMAC
+ * over the concatenation of all the messages. The HMAC output will be truncated
+ * to the desired length truncated_digest_len, and written into trucated_digest.
+ */
+bool uw_crypto_hmac_(const uint8_t* key,
+                     size_t key_len,
+                     const UwCryptoHmacMsg messages[],
+                     size_t num_messages,
+                     uint8_t* truncated_digest,
+                     size_t truncated_digest_len);
 
 #endif  // LIBUWEAVE_SRC_CRYPTO_HMAC_H_

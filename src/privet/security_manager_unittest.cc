@@ -25,6 +25,7 @@
 #include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/auth_manager.h"
+#include "src/privet/mock_delegates.h"
 #include "src/privet/openssl_utils.h"
 #include "src/test/mock_clock.h"
 #include "third_party/chromium/crypto/p224_spake.h"
@@ -170,7 +171,7 @@ TEST_F(SecurityManagerTest, AccessToken) {
     UserInfo info;
     EXPECT_TRUE(security_.ParseAccessToken(token, &info, nullptr));
     EXPECT_EQ(requested_scope, info.scope());
-    EXPECT_EQ("0/" + std::to_string(i), info.user_id());
+    EXPECT_EQ(TestUserId{std::to_string(i)}, info.id());
   }
 }
 

@@ -18,9 +18,12 @@ namespace test {
 
 class MockConfigStore : public ConfigStore {
  public:
-  MockConfigStore() {
+  explicit MockConfigStore(bool set_expectations = true) {
     using testing::_;
     using testing::Return;
+
+    if (!set_expectations)
+      return;
 
     EXPECT_CALL(*this, LoadDefaults(_))
         .WillRepeatedly(testing::Invoke([](Settings* settings) {
@@ -39,8 +42,8 @@ class MockConfigStore : public ConfigStore {
           "version": 1,
           "device_id": "TEST_DEVICE_ID"
         })"));
-    EXPECT_CALL(*this, LoadSettings("config")).WillRepeatedly(Return(""));
-    EXPECT_CALL(*this, SaveSettings("config", _, _))
+    EXPECT_CALL(*this, LoadSettings(_)).WillRepeatedly(Return(""));
+    EXPECT_CALL(*this, SaveSettings(_, _, _))
         .WillRepeatedly(testing::WithArgs<1, 2>(testing::Invoke(
             [](const std::string& json, const DoneCallback& callback) {
               if (!callback.is_null())

@@ -21,28 +21,34 @@ typedef enum {
   kCborMajorTypeArray = 4 << 5,    // type 4 -- arrays
 } CborMajorType;
 
-// -- Prototypes begin --
 static inline CborMajorType get_type_(const uint8_t* cbor);
 static inline uint8_t get_addtl_data_(const uint8_t* cbor);
 static inline void set_type_(CborMajorType type, uint8_t* cbor);
 static inline void set_addtl_data_(uint8_t addtl_data, uint8_t* cbor);
 
-// Compute the minimum number of bytes to store the unsigned integer.
+/** Computes the minimum number of bytes to store the unsigned integer. */
 static inline size_t uint_min_len_(uint32_t unsigned_int);
 
-// Encoding or decoding without checking types
-static bool blindly_encode_uint_(uint32_t unsigned_int, uint8_t* buffer,
-                                 size_t buffer_size, size_t* result_len);
-static bool blindly_encode_str_(const uint8_t* str, size_t str_len,
-                                uint8_t* buffer, size_t buffer_size,
+/** Encoding or decoding without checking types */
+static bool blindly_encode_uint_(uint32_t unsigned_int,
+                                 uint8_t* buffer,
+                                 size_t buffer_size,
+                                 size_t* result_len);
+static bool blindly_encode_str_(const uint8_t* str,
+                                size_t str_len,
+                                uint8_t* buffer,
+                                size_t buffer_size,
                                 size_t* result_len);
-static bool blindly_decode_uint_(const uint8_t* cbor, size_t cbor_len,
+static bool blindly_decode_uint_(const uint8_t* cbor,
+                                 size_t cbor_len,
                                  uint32_t* unsigned_int);
-static bool blindly_decode_str_(const uint8_t* cbor, size_t cbor_len,
-                                const uint8_t** out_str, size_t* out_str_len);
-// -- Prototypes end --
+static bool blindly_decode_str_(const uint8_t* cbor,
+                                size_t cbor_len,
+                                const uint8_t** out_str,
+                                size_t* out_str_len);
 
-bool uw_macaroon_encoding_get_item_len_(const uint8_t* cbor, size_t cbor_len,
+bool uw_macaroon_encoding_get_item_len_(const uint8_t* cbor,
+                                        size_t cbor_len,
                                         size_t* first_item_len) {
   if (cbor == NULL || cbor_len == 0 || first_item_len == NULL) {
     return false;
@@ -76,7 +82,8 @@ bool uw_macaroon_encoding_get_item_len_(const uint8_t* cbor, size_t cbor_len,
 }
 
 bool uw_macaroon_encoding_encode_uint_(const uint32_t unsigned_int,
-                                       uint8_t* buffer, size_t buffer_size,
+                                       uint8_t* buffer,
+                                       size_t buffer_size,
                                        size_t* resulting_cbor_len) {
   if (buffer == NULL || buffer_size == 0 || resulting_cbor_len == NULL) {
     return false;
@@ -88,7 +95,8 @@ bool uw_macaroon_encoding_encode_uint_(const uint32_t unsigned_int,
 }
 
 bool uw_macaroon_encoding_encode_array_len_(const uint32_t array_len,
-                                            uint8_t* buffer, size_t buffer_size,
+                                            uint8_t* buffer,
+                                            size_t buffer_size,
                                             size_t* resulting_cbor_len) {
   if (buffer == NULL || buffer_size == 0 || resulting_cbor_len == NULL) {
     return false;
@@ -99,8 +107,10 @@ bool uw_macaroon_encoding_encode_array_len_(const uint32_t array_len,
                               resulting_cbor_len);
 }
 
-bool uw_macaroon_encoding_encode_byte_str_(const uint8_t* str, size_t str_len,
-                                           uint8_t* buffer, size_t buffer_size,
+bool uw_macaroon_encoding_encode_byte_str_(const uint8_t* str,
+                                           size_t str_len,
+                                           uint8_t* buffer,
+                                           size_t buffer_size,
                                            size_t* resulting_cbor_len) {
   if (buffer == NULL || buffer_size == 0 || resulting_cbor_len == NULL) {
     return false;
@@ -111,8 +121,10 @@ bool uw_macaroon_encoding_encode_byte_str_(const uint8_t* str, size_t str_len,
                              resulting_cbor_len);
 }
 
-bool uw_macaroon_encoding_encode_text_str_(const uint8_t* str, size_t str_len,
-                                           uint8_t* buffer, size_t buffer_size,
+bool uw_macaroon_encoding_encode_text_str_(const uint8_t* str,
+                                           size_t str_len,
+                                           uint8_t* buffer,
+                                           size_t buffer_size,
                                            size_t* resulting_cbor_len) {
   if (buffer == NULL || buffer_size == 0 || resulting_cbor_len == NULL) {
     return false;
@@ -123,7 +135,19 @@ bool uw_macaroon_encoding_encode_text_str_(const uint8_t* str, size_t str_len,
                              resulting_cbor_len);
 }
 
-bool uw_macaroon_encoding_decode_uint_(const uint8_t* cbor, size_t cbor_len,
+bool uw_macaroon_encoding_encode_byte_str_len_(size_t str_len,
+                                               uint8_t* buffer,
+                                               size_t buffer_size,
+                                               size_t* resulting_cbor_len) {
+  if (buffer == NULL || buffer_size == 0 || resulting_cbor_len == NULL) {
+    return false;
+  }
+  set_type_(kCborMajorTypeByteStr, buffer);
+  return blindly_encode_uint_(str_len, buffer, buffer_size, resulting_cbor_len);
+}
+
+bool uw_macaroon_encoding_decode_uint_(const uint8_t* cbor,
+                                       size_t cbor_len,
                                        uint32_t* unsigned_int) {
   if (cbor == NULL || cbor_len == 0 || unsigned_int == NULL ||
       get_type_(cbor) != kCborMajorTypeUint) {
@@ -144,7 +168,8 @@ bool uw_macaroon_encoding_decode_array_len_(const uint8_t* cbor,
   return blindly_decode_uint_(cbor, cbor_len, array_len);
 }
 
-bool uw_macaroon_encoding_decode_byte_str_(const uint8_t* cbor, size_t cbor_len,
+bool uw_macaroon_encoding_decode_byte_str_(const uint8_t* cbor,
+                                           size_t cbor_len,
                                            const uint8_t** out_str,
                                            size_t* out_str_len) {
   if (cbor == NULL || cbor_len == 0 || out_str == NULL || out_str_len == NULL ||
@@ -155,7 +180,8 @@ bool uw_macaroon_encoding_decode_byte_str_(const uint8_t* cbor, size_t cbor_len,
   return blindly_decode_str_(cbor, cbor_len, out_str, out_str_len);
 }
 
-bool uw_macaroon_encoding_decode_text_str_(const uint8_t* cbor, size_t cbor_len,
+bool uw_macaroon_encoding_decode_text_str_(const uint8_t* cbor,
+                                           size_t cbor_len,
                                            const uint8_t** out_str,
                                            size_t* out_str_len) {
   if (cbor == NULL || cbor_len == 0 || out_str == NULL || out_str_len == NULL ||
@@ -193,9 +219,12 @@ static inline size_t uint_min_len_(uint32_t unsigned_int) {
   return 4;
 }
 
-// Write the unsigned int in the big-endian fashion by using the minimum number
-// of bytes in CBOR
-static inline bool write_uint_big_endian_(uint32_t unsigned_int, uint8_t* buff,
+/**
+ * Writes the unsigned int in the big-endian fashion by using the minimum number
+ * of bytes in CBOR
+ */
+static inline bool write_uint_big_endian_(uint32_t unsigned_int,
+                                          uint8_t* buff,
                                           size_t buff_len) {
   if (buff == NULL || buff_len == 0) {
     return false;
@@ -225,8 +254,9 @@ static inline bool write_uint_big_endian_(uint32_t unsigned_int, uint8_t* buff,
   return true;
 }
 
-// Read the unsigned int written in big-endian
-static inline bool read_uint_big_endian_(const uint8_t* bytes, size_t num_bytes,
+/** Reads the unsigned int written in big-endian. */
+static inline bool read_uint_big_endian_(const uint8_t* bytes,
+                                         size_t num_bytes,
                                          uint32_t* unsigned_int) {
   if (bytes == NULL || num_bytes == 0 || num_bytes > 4 ||
       unsigned_int == NULL) {
@@ -252,8 +282,10 @@ static inline bool read_uint_big_endian_(const uint8_t* bytes, size_t num_bytes,
   return true;
 }
 
-static bool blindly_encode_uint_(uint32_t unsigned_int, uint8_t* buffer,
-                                 size_t buffer_size, size_t* result_len) {
+static bool blindly_encode_uint_(uint32_t unsigned_int,
+                                 uint8_t* buffer,
+                                 size_t buffer_size,
+                                 size_t* result_len) {
   if (buffer == NULL || buffer_size == 0 || result_len == NULL) {
     return false;
   }
@@ -288,8 +320,10 @@ static bool blindly_encode_uint_(uint32_t unsigned_int, uint8_t* buffer,
   return write_uint_big_endian_(unsigned_int, buffer + 1, buffer_size - 1);
 }
 
-static bool blindly_encode_str_(const uint8_t* str, size_t str_len,
-                                uint8_t* buffer, size_t buffer_size,
+static bool blindly_encode_str_(const uint8_t* str,
+                                size_t str_len,
+                                uint8_t* buffer,
+                                size_t buffer_size,
                                 size_t* result_len) {
   if (buffer == NULL || buffer_size == 0) {
     return false;
@@ -320,7 +354,8 @@ static bool blindly_encode_str_(const uint8_t* str, size_t str_len,
   return true;
 }
 
-static bool blindly_decode_uint_(const uint8_t* cbor, size_t cbor_len,
+static bool blindly_decode_uint_(const uint8_t* cbor,
+                                 size_t cbor_len,
                                  uint32_t* unsigned_int) {
   if (cbor == NULL || cbor_len == 0 || unsigned_int == NULL) {
     return false;
@@ -344,8 +379,10 @@ static bool blindly_decode_uint_(const uint8_t* cbor, size_t cbor_len,
   return read_uint_big_endian_(cbor + 1, uint_num_bytes, unsigned_int);
 }
 
-static bool blindly_decode_str_(const uint8_t* cbor, size_t cbor_len,
-                                const uint8_t** out_str, size_t* out_str_len) {
+static bool blindly_decode_str_(const uint8_t* cbor,
+                                size_t cbor_len,
+                                const uint8_t** out_str,
+                                size_t* out_str_len) {
   if (cbor == NULL || cbor_len == 0 || out_str == NULL || out_str == NULL) {
     return false;
   }
