@@ -7,13 +7,6 @@
 bool uw_crypto_utils_equal_(const uint8_t* arr1,
                             const uint8_t* arr2,
                             size_t len) {
-  if (arr1 == NULL || arr2 == NULL) {
-    if (arr1 == NULL && arr2 == NULL && len == 0) {
-      return true;
-    }
-    return false;
-  }
-
   uint8_t diff = 0;
   for (size_t i = 0; i < len; i++) {
     diff |= arr1[i] ^ arr2[i];

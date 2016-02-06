@@ -13,10 +13,12 @@ sudo apt-get update && sudo apt-get install ${APT_GET_OPTS} \
   autoconf \
   automake \
   binutils \
+  cmake \
   g++ \
   hostapd \
   libavahi-client-dev \
   libcurl4-openssl-dev \
+  libevent-dev \
   libexpat1-dev \
   libnl-3-dev \
   libnl-route-3-dev \

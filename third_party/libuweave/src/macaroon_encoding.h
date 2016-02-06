@@ -17,32 +17,53 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Get the number of bytes that is occupied by the first data item in the give
-// CBOR string.
-bool uw_macaroon_encoding_get_item_len_(const uint8_t* cbor, size_t cbor_len,
+#define UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN 5
+
+/**
+ * Gets the number of bytes that is occupied by the first data item in the give
+ * CBOR string.
+ */
+bool uw_macaroon_encoding_get_item_len_(const uint8_t* cbor,
+                                        size_t cbor_len,
                                         size_t* first_item_len);
 
 bool uw_macaroon_encoding_encode_uint_(const uint32_t unsigned_int,
-                                       uint8_t* buffer, size_t buffer_size,
+                                       uint8_t* buffer,
+                                       size_t buffer_size,
                                        size_t* resulting_cbor_len);
 bool uw_macaroon_encoding_encode_array_len_(const uint32_t array_len,
-                                            uint8_t* buffer, size_t buffer_size,
+                                            uint8_t* buffer,
+                                            size_t buffer_size,
                                             size_t* resulting_cbor_len);
-bool uw_macaroon_encoding_encode_byte_str_(const uint8_t* str, size_t str_len,
-                                           uint8_t* buffer, size_t buffer_size,
+bool uw_macaroon_encoding_encode_byte_str_(const uint8_t* str,
+                                           size_t str_len,
+                                           uint8_t* buffer,
+                                           size_t buffer_size,
                                            size_t* resulting_cbor_len);
-bool uw_macaroon_encoding_encode_text_str_(const uint8_t* str, size_t str_len,
-                                           uint8_t* buffer, size_t buffer_size,
+bool uw_macaroon_encoding_encode_text_str_(const uint8_t* str,
+                                           size_t str_len,
+                                           uint8_t* buffer,
+                                           size_t buffer_size,
                                            size_t* resulting_cbor_len);
 
-bool uw_macaroon_encoding_decode_uint_(const uint8_t* cbor, size_t cbor_len,
+/** Only encode the header (major type and length) of the byte string */
+bool uw_macaroon_encoding_encode_byte_str_len_(size_t str_len,
+                                               uint8_t* buffer,
+                                               size_t buffer_size,
+                                               size_t* resulting_cbor_len);
+
+bool uw_macaroon_encoding_decode_uint_(const uint8_t* cbor,
+                                       size_t cbor_len,
                                        uint32_t* unsigned_int);
 bool uw_macaroon_encoding_decode_array_len_(const uint8_t* cbor,
-                                            size_t cbor_len, uint32_t* array_len);
-bool uw_macaroon_encoding_decode_byte_str_(const uint8_t* cbor, size_t cbor_len,
+                                            size_t cbor_len,
+                                            uint32_t* array_len);
+bool uw_macaroon_encoding_decode_byte_str_(const uint8_t* cbor,
+                                           size_t cbor_len,
                                            const uint8_t** str,
                                            size_t* str_len);
-bool uw_macaroon_encoding_decode_text_str_(const uint8_t* cbor, size_t cbor_len,
+bool uw_macaroon_encoding_decode_text_str_(const uint8_t* cbor,
+                                           size_t cbor_len,
                                            const uint8_t** str,
                                            size_t* str_len);
 

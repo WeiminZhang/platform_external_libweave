@@ -62,6 +62,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().api_key);
   EXPECT_EQ("https://accounts.google.com/o/oauth2/", GetSettings().oauth_url);
   EXPECT_EQ("https://www.googleapis.com/weave/v1/", GetSettings().service_url);
+  EXPECT_EQ("talk.google.com:5223", GetSettings().xmpp_endpoint);
   EXPECT_EQ("", GetSettings().oem_name);
   EXPECT_EQ("", GetSettings().model_name);
   EXPECT_EQ("", GetSettings().model_id);
@@ -146,7 +147,8 @@ TEST_F(ConfigTest, LoadState) {
     "refresh_token": "state_refresh_token",
     "robot_account": "state_robot_account",
     "secret": "c3RhdGVfc2VjcmV0",
-    "service_url": "state_service_url"
+    "service_url": "state_service_url",
+    "xmpp_endpoint": "state_xmpp_endpoint"
   })";
   EXPECT_CALL(config_store_, LoadSettings(kConfigName)).WillOnce(Return(state));
 
@@ -157,6 +159,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ("state_api_key", GetSettings().api_key);
   EXPECT_EQ("state_oauth_url", GetSettings().oauth_url);
   EXPECT_EQ("state_service_url", GetSettings().service_url);
+  EXPECT_EQ("state_xmpp_endpoint", GetSettings().xmpp_endpoint);
   EXPECT_EQ(GetDefaultSettings().oem_name, GetSettings().oem_name);
   EXPECT_EQ(GetDefaultSettings().model_name, GetSettings().model_name);
   EXPECT_EQ(GetDefaultSettings().model_id, GetSettings().model_id);
@@ -199,6 +202,9 @@ TEST_F(ConfigTest, Setters) {
 
   change.set_service_url("set_service_url");
   EXPECT_EQ("set_service_url", GetSettings().service_url);
+
+  change.set_xmpp_endpoint("set_xmpp_endpoint");
+  EXPECT_EQ("set_xmpp_endpoint", GetSettings().xmpp_endpoint);
 
   change.set_name("set_name");
   EXPECT_EQ("set_name", GetSettings().name);
@@ -277,7 +283,8 @@ TEST_F(ConfigTest, Setters) {
           'refresh_token': 'set_token',
           'robot_account': 'set_account',
           'secret': 'AQIDBAU=',
-          'service_url': 'set_service_url'
+          'service_url': 'set_service_url',
+          'xmpp_endpoint': 'set_xmpp_endpoint'
         })";
             EXPECT_JSON_EQ(expected, *test::CreateValue(json));
             callback.Run(nullptr);

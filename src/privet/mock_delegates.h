@@ -28,6 +28,11 @@ namespace weave {
 
 namespace privet {
 
+struct TestUserId : public UserAppId {
+  TestUserId(const std::string& user_id)
+      : UserAppId{AuthType::kAnonymous, {user_id.begin(), user_id.end()}, {}} {}
+};
+
 ACTION_TEMPLATE(RunCallback,
                 HAS_1_TEMPLATE_PARAMS(int, k),
                 AND_0_VALUE_PARAMS()) {
@@ -103,9 +108,12 @@ class MockSecurityDelegate : public SecurityDelegate {
         .WillRepeatedly(Return(true));
 
     EXPECT_CALL(*this, ParseAccessToken(_, _, _))
-        .WillRepeatedly(
-            DoAll(SetArgPointee<1>(UserInfo{AuthScope::kViewer, "1234567"}),
-                  Return(true)));
+        .WillRepeatedly(DoAll(SetArgPointee<1>(UserInfo{
+                                  AuthScope::kViewer,
+                                  UserAppId{AuthType::kLocal,
+                                            {'1', '2', '3', '4', '5', '6', '7'},
+                                            {}}}),
+                              Return(true)));
 
     EXPECT_CALL(*this, GetPairingTypes())
         .WillRepeatedly(Return(std::set<PairingType>{

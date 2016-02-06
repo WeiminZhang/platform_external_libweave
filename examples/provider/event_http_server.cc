@@ -38,7 +38,7 @@ class HttpServerImpl::RequestImpl : public Request {
 
   ~RequestImpl() {}
 
-  std::string GetPath() const override { return req_->uri->path->path; }
+  std::string GetPath() const override { return req_->uri->path->full; }
 
   std::string GetFirstHeader(const std::string& name) const override {
     const char* header = evhtp_header_find(req_->headers_in, name.c_str());
@@ -132,7 +132,7 @@ void HttpServerImpl::GenerateX509(X509* x509, EVP_PKEY* pkey) {
 
 void HttpServerImpl::NotFound(evhtp_request_t* req) {
   EventPtr<evbuffer> buf{evbuffer_new()};
-  evbuffer_add_printf(buf.get(), "404 Not Found: %s\n", req->uri->path->path);
+  evbuffer_add_printf(buf.get(), "404 Not Found: %s\n", req->uri->path->full);
   evhtp_send_reply_start(req, 404);
   evhtp_send_reply_body(req, buf.get());
   evhtp_send_reply_end(req);

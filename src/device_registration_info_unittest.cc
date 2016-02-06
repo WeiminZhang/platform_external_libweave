@@ -44,6 +44,7 @@ namespace {
 
 namespace test_data {
 
+const char kXmppEndpoint[] = "xmpp.server.com:1234";
 const char kServiceURL[] = "http://gcd.server.com/";
 const char kOAuthURL[] = "http://oauth.server.com/";
 const char kApiKey[] = "GOadRdTf9FERf0k4w6EFOof56fUJ3kFDdFL3d7f";
@@ -144,6 +145,7 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
           settings->model_id = "AAAAA";
           settings->oauth_url = test_data::kOAuthURL;
           settings->service_url = test_data::kServiceURL;
+          settings->xmpp_endpoint = test_data::kXmppEndpoint;
           return true;
         }));
     config_.reset(new Config{&config_store_});
