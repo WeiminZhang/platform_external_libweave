@@ -4,19 +4,19 @@
 
 #include "src/macaroon_context.h"
 
-#include "src/macaroon_caveat.h"
-
-bool uw_macaroon_context_get_(UwMacaroonCaveatType type,
-                              const uint8_t** context, size_t* context_len) {
-  if (type != kUwMacaroonCaveatTypeSessionIdentifier) {
-    *context = NULL;
-    *context_len = 0;
+bool uw_macaroon_context_create_(uint32_t current_time,
+                                 const uint8_t* ble_session_id,
+                                 size_t ble_session_id_len,
+                                 UwMacaroonContext* new_context) {
+  if (ble_session_id == NULL && ble_session_id_len != 0) {
+    return false;
+  }
+  if (new_context == NULL) {
+    return false;
   }
 
-  // TODO(bozhu): Waiting for a proper way to obtain the session identifier.
-  // Have we already implemented something related to session identifiers?
-  *context = NULL;
-  *context_len = 0;
-
+  new_context->current_time = current_time;
+  new_context->ble_session_id = ble_session_id;
+  new_context->ble_session_id_len = ble_session_id_len;
   return true;
 }

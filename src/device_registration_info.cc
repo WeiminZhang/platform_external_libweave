@@ -463,8 +463,9 @@ void DeviceRegistrationInfo::StartNotificationChannel() {
   current_notification_channel_ = pull_channel_.get();
 
   notification_channel_starting_ = true;
-  primary_notification_channel_.reset(new XmppChannel{
-      GetSettings().robot_account, access_token_, task_runner_, network_});
+  primary_notification_channel_.reset(
+      new XmppChannel{GetSettings().robot_account, access_token_,
+                      GetSettings().xmpp_endpoint, task_runner_, network_});
   primary_notification_channel_->Start(this);
 }
 
@@ -833,17 +834,25 @@ bool DeviceRegistrationInfo::UpdateServiceConfig(
     const std::string& api_key,
     const std::string& oauth_url,
     const std::string& service_url,
+    const std::string& xmpp_endpoint,
     ErrorPtr* error) {
   if (HaveRegistrationCredentials()) {
     return Error::AddTo(error, FROM_HERE, kErrorAlreayRegistered,
                         "Unable to change config for registered device");
   }
   Config::Transaction change{config_};
-  change.set_client_id(client_id);
-  change.set_client_secret(client_secret);
-  change.set_api_key(api_key);
-  change.set_oauth_url(oauth_url);
-  change.set_service_url(service_url);
+  if (!client_id.empty())
+    change.set_client_id(client_id);
+  if (!client_secret.empty())
+    change.set_client_secret(client_secret);
+  if (!api_key.empty())
+    change.set_api_key(api_key);
+  if (!oauth_url.empty())
+    change.set_oauth_url(oauth_url);
+  if (!service_url.empty())
+    change.set_service_url(service_url);
+  if (!xmpp_endpoint.empty())
+    change.set_xmpp_endpoint(xmpp_endpoint);
   return true;
 }
 

@@ -33,6 +33,7 @@ const char kClientSecret[] = "client_secret";
 const char kApiKey[] = "api_key";
 const char kOAuthURL[] = "oauth_url";
 const char kServiceURL[] = "service_url";
+const char kXmppEndpoint[] = "xmpp_endpoint";
 const char kName[] = "name";
 const char kDescription[] = "description";
 const char kLocation[] = "location";
@@ -51,6 +52,7 @@ const char kRootClientTokenOwner[] = "root_client_token_owner";
 
 const char kWeaveUrl[] = "https://www.googleapis.com/weave/v1/";
 const char kDeprecatedUrl[] = "https://www.googleapis.com/clouddevices/v1/";
+const char kXmppEndpoint[] = "talk.google.com:5223";
 
 namespace {
 
@@ -69,6 +71,7 @@ Config::Settings CreateDefaultSettings() {
   Config::Settings result;
   result.oauth_url = "https://accounts.google.com/o/oauth2/";
   result.service_url = kWeaveUrl;
+  result.xmpp_endpoint = kXmppEndpoint;
   result.local_anonymous_access_role = AuthScope::kViewer;
   result.pairing_modes.insert(PairingType::kPinCode);
   result.device_id = base::GenerateGUID();
@@ -119,6 +122,7 @@ void Config::Load() {
   CHECK(!settings_.api_key.empty());
   CHECK(!settings_.oauth_url.empty());
   CHECK(!settings_.service_url.empty());
+  CHECK(!settings_.xmpp_endpoint.empty());
   CHECK(!settings_.oem_name.empty());
   CHECK(!settings_.model_name.empty());
   CHECK(!settings_.model_id.empty());
@@ -190,6 +194,10 @@ void Config::Transaction::LoadState() {
     set_service_url(tmp);
   }
 
+  if (dict->GetString(config_keys::kXmppEndpoint, &tmp)) {
+    set_xmpp_endpoint(tmp);
+  }
+
   if (dict->GetString(config_keys::kName, &tmp))
     set_name(tmp);
 
@@ -249,6 +257,7 @@ void Config::Save() {
   dict.SetString(config_keys::kApiKey, settings_.api_key);
   dict.SetString(config_keys::kOAuthURL, settings_.oauth_url);
   dict.SetString(config_keys::kServiceURL, settings_.service_url);
+  dict.SetString(config_keys::kXmppEndpoint, settings_.xmpp_endpoint);
   dict.SetString(config_keys::kRefreshToken, settings_.refresh_token);
   dict.SetString(config_keys::kCloudId, settings_.cloud_id);
   dict.SetString(config_keys::kDeviceId, settings_.device_id);

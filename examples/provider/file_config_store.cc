@@ -26,7 +26,7 @@ FileConfigStore::FileConfigStore(const std::string& model_id,
 
 std::string FileConfigStore::GetPath(const std::string& name) const {
   std::string path{kSettingsDir};
-  path += path + "weave_settings_" + model_id_;
+  path += "weave_settings_" + model_id_;
   if (!name.empty())
     path += "_" + name;
   return path + ".json";
