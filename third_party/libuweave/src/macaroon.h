@@ -33,9 +33,10 @@ typedef enum {
 } UwMacaroonDelegateeType;
 
 typedef struct {
+  UwMacaroonDelegateeType type;
   const uint8_t* id;
   size_t id_len;
-  UwMacaroonDelegateeType type;
+  UwMacaroonCaveatCloudServiceId service_id;  // Only for cloud services
   uint32_t timestamp;
 } UwMacaroonDelegateeInfo;
 
@@ -71,12 +72,11 @@ bool uw_macaroon_extend_(const UwMacaroon* old_macaroon,
  * result object. Note that the resulting granted_scope will be the closest
  * valid scope type (to the narrower side) defined in macaroon_caveat.h.
  */
-bool uw_macaroon_validate_(
-    const UwMacaroon* macaroon,
-    const uint8_t* root_key,
-    size_t root_key_len,
-    const UwMacaroonContext* context,
-    UwMacaroonValidationResult* result);
+bool uw_macaroon_validate_(const UwMacaroon* macaroon,
+                           const uint8_t* root_key,
+                           size_t root_key_len,
+                           const UwMacaroonContext* context,
+                           UwMacaroonValidationResult* result);
 
 /** Encode a Macaroon to a byte string. */
 bool uw_macaroon_serialize_(const UwMacaroon* macaroon,
