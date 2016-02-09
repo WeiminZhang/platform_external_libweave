@@ -24,11 +24,14 @@ typedef enum {
 
   kUwMacaroonCaveatTypeDelegateeUser = 9,      // bstr
   kUwMacaroonCaveatTypeDelegateeApp = 10,      // bstr
-  kUwMacaroonCaveatTypeDelegateeService = 12,  // bstr
+  kUwMacaroonCaveatTypeDelegateeService = 12,  // uint
 
-  kUwMacaroonCaveatTypeAppCommandsOnly = 11,                 // no value
-  kUwMacaroonCaveatTypeBleSessionID = 16,                    // no value
-  kUwMacaroonCaveatTypeLanSessionID = 17,                    // bstr
+  kUwMacaroonCaveatTypeAppCommandsOnly = 11,  // no value
+  kUwMacaroonCaveatTypeBleSessionID = 16,     // no value
+  kUwMacaroonCaveatTypeLanSessionID = 17,     // bstr
+
+  kUwMacaroonCaveatTypeAuthenticationChallenge = 20,  // no value
+
   kUwMacaroonCaveatTypeClientAuthorizationTokenV1 = 8193,    // bstr (0x2001)
   kUwMacaroonCaveatTypeServerAuthenticationTokenV1 = 12289,  // bstr (0x3001)
 } UwMacaroonCaveatType;
@@ -39,6 +42,11 @@ typedef enum {
   kUwMacaroonCaveatScopeTypeUser = 14,
   kUwMacaroonCaveatScopeTypeViewer = 20,
 } UwMacaroonCaveatScopeType;
+
+typedef enum {
+  kUwMacaroonCaveatCloudServiceIdNotCloudRegistered = 0,
+  kUwMacaroonCaveatCloudServiceIdGoogleWeave = 1,
+} UwMacaroonCaveatCloudServiceId;
 
 // For security sanity checks
 #define UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE 127
@@ -83,11 +91,13 @@ bool uw_macaroon_caveat_create_delegatee_app_(const uint8_t* id_str,
                                               uint8_t* buffer,
                                               size_t buffer_size,
                                               UwMacaroonCaveat* new_caveat);
-bool uw_macaroon_caveat_create_delegatee_service_(const uint8_t* id_str,
-                                                  size_t id_str_len,
-                                                  uint8_t* buffer,
-                                                  size_t buffer_size,
-                                                  UwMacaroonCaveat* new_caveat);
+
+bool uw_macaroon_caveat_create_delegatee_service_(
+    UwMacaroonCaveatCloudServiceId service_id,
+    uint8_t* buffer,
+    size_t buffer_size,
+    UwMacaroonCaveat* new_caveat);
+
 bool uw_macaroon_caveat_create_app_commands_only_(uint8_t* buffer,
                                                   size_t buffer_size,
                                                   UwMacaroonCaveat* new_caveat);
@@ -99,6 +109,11 @@ bool uw_macaroon_caveat_create_lan_session_id_(const uint8_t* session_id,
                                                uint8_t* buffer,
                                                size_t buffer_size,
                                                UwMacaroonCaveat* new_caveat);
+
+bool uw_macaroon_caveat_create_authentication_challenge_(
+    uint8_t* buffer,
+    size_t buffer_size,
+    UwMacaroonCaveat* new_caveat);
 
 // The string values for these two token types are optional.
 // Use str_len = 0 to indicate creating the caveats without string values.

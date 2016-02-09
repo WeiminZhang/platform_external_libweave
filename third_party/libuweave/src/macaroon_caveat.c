@@ -26,6 +26,7 @@ static bool is_valid_caveat_type_(UwMacaroonCaveatType type) {
     case kUwMacaroonCaveatTypeDelegateeService:
     case kUwMacaroonCaveatTypeBleSessionID:
     case kUwMacaroonCaveatTypeLanSessionID:
+    case kUwMacaroonCaveatTypeAuthenticationChallenge:
     case kUwMacaroonCaveatTypeClientAuthorizationTokenV1:
     case kUwMacaroonCaveatTypeServerAuthenticationTokenV1:
       return true;
@@ -44,11 +45,20 @@ static bool is_valid_scope_type_(UwMacaroonCaveatScopeType type) {
   return false;
 }
 
+static bool is_valid_service_id_(UwMacaroonCaveatCloudServiceId service_id) {
+  switch (service_id) {
+    case kUwMacaroonCaveatCloudServiceIdNotCloudRegistered:
+    case kUwMacaroonCaveatCloudServiceIdGoogleWeave:
+      return true;
+  }
+  return false;
+}
+
 static bool create_caveat_no_value_(UwMacaroonCaveatType type,
                                     uint8_t* buffer,
                                     size_t buffer_size,
                                     UwMacaroonCaveat* new_caveat) {
-  // (buffer_size == 0 || get_buffer_size_() > buffer_size) will conver the case
+  // (buffer_size == 0 || get_buffsize_() > buffer_size) will conver the case
   // that get_buffer_size_() returns 0 (for errors), so there is no need to
   // check get_buffer_size_() == 0 again.
   if (buffer == NULL || buffer_size == 0 || new_caveat == NULL ||
@@ -134,10 +144,12 @@ size_t uw_macaroon_caveat_creation_get_buffsize_(UwMacaroonCaveatType type,
     case kUwMacaroonCaveatTypeTTL24Hour:
     case kUwMacaroonCaveatTypeAppCommandsOnly:
     case kUwMacaroonCaveatTypeBleSessionID:
+    case kUwMacaroonCaveatTypeAuthenticationChallenge:
       return UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN;
 
     // Unsigned integers
     case kUwMacaroonCaveatTypeScope:
+    case kUwMacaroonCaveatTypeDelegateeService:
     case kUwMacaroonCaveatTypeExpirationAbsolute:
     case kUwMacaroonCaveatTypeDelegationTimestamp:
       return 2 * UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN;
@@ -146,11 +158,10 @@ size_t uw_macaroon_caveat_creation_get_buffsize_(UwMacaroonCaveatType type,
     case kUwMacaroonCaveatTypeNonce:
     case kUwMacaroonCaveatTypeDelegateeUser:
     case kUwMacaroonCaveatTypeDelegateeApp:
-    case kUwMacaroonCaveatTypeDelegateeService:
     case kUwMacaroonCaveatTypeLanSessionID:
     case kUwMacaroonCaveatTypeClientAuthorizationTokenV1:
     case kUwMacaroonCaveatTypeServerAuthenticationTokenV1:
-      return str_len + UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN;
+      return str_len + 2 * UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN;
 
     default:
       return 0;  // For errors
@@ -238,13 +249,16 @@ bool uw_macaroon_caveat_create_app_commands_only_(
 }
 
 bool uw_macaroon_caveat_create_delegatee_service_(
-    const uint8_t* id_str,
-    size_t id_str_len,
+    UwMacaroonCaveatCloudServiceId service_id,
     uint8_t* buffer,
     size_t buffer_size,
     UwMacaroonCaveat* new_caveat) {
-  return create_caveat_bstr_value_(kUwMacaroonCaveatTypeDelegateeService,
-                                   id_str, id_str_len, buffer, buffer_size,
+  if (!is_valid_service_id_(service_id)) {
+    return false;
+  }
+
+  return create_caveat_uint_value_(kUwMacaroonCaveatTypeDelegateeService,
+                                   (uint32_t)service_id, buffer, buffer_size,
                                    new_caveat);
 }
 
@@ -263,6 +277,14 @@ bool uw_macaroon_caveat_create_lan_session_id_(const uint8_t* session_id,
   return create_caveat_bstr_value_(kUwMacaroonCaveatTypeLanSessionID,
                                    session_id, session_id_len, buffer,
                                    buffer_size, new_caveat);
+}
+
+bool uw_macaroon_caveat_create_authentication_challenge_(
+    uint8_t* buffer,
+    size_t buffer_size,
+    UwMacaroonCaveat* new_caveat) {
+  return create_caveat_no_value_(kUwMacaroonCaveatTypeAuthenticationChallenge,
+                                 buffer, buffer_size, new_caveat);
 }
 
 bool uw_macaroon_caveat_create_client_authorization_token_(
@@ -336,17 +358,18 @@ bool uw_macaroon_caveat_sign_(const uint8_t* key,
 
   // If there is no additional value from the context, just compute the HMAC on
   // the current byte string.
-  uint8_t bstr_cbor_prefix[UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN] = {0};
-  size_t bstr_cbor_prefix_len = 0;
-  if (caveat_type != kUwMacaroonCaveatTypeBleSessionID) {
+  uint8_t caveat_cbor_prefix[UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN] = {0};
+  size_t caveat_cbor_prefix_len = 0;
+  if (caveat_type != kUwMacaroonCaveatTypeBleSessionID &&
+      caveat_type != kUwMacaroonCaveatTypeAuthenticationChallenge) {
     if (!uw_macaroon_encoding_encode_byte_str_len_(
-            (uint32_t)(caveat->num_bytes), bstr_cbor_prefix,
-            sizeof(bstr_cbor_prefix), &bstr_cbor_prefix_len)) {
+            (uint32_t)(caveat->num_bytes), caveat_cbor_prefix,
+            sizeof(caveat_cbor_prefix), &caveat_cbor_prefix_len)) {
       return false;
     }
 
     UwCryptoHmacMsg messages[] = {
-        {bstr_cbor_prefix, bstr_cbor_prefix_len},
+        {caveat_cbor_prefix, caveat_cbor_prefix_len},
         {caveat->bytes, caveat->num_bytes},
     };
 
@@ -356,30 +379,48 @@ bool uw_macaroon_caveat_sign_(const uint8_t* key,
   }
 
   // If there is additional value from the context.
-  if (context->ble_session_id == NULL || context->ble_session_id_len == 0) {
-    return false;
-  }
+  const uint8_t* additional_value_str = NULL;
+  size_t additional_value_str_len = 0;
+  if (caveat_type == kUwMacaroonCaveatTypeBleSessionID) {
+    if (context->ble_session_id == NULL || context->ble_session_id_len == 0) {
+      return false;
+    }
 
-  // The length here includes the length of the BLE session ID string.
-  if (!uw_macaroon_encoding_encode_byte_str_len_(
-          (uint32_t)(context->ble_session_id_len + caveat->num_bytes),
-          bstr_cbor_prefix, sizeof(bstr_cbor_prefix), &bstr_cbor_prefix_len)) {
-    return false;
+    additional_value_str = context->ble_session_id;
+    additional_value_str_len = context->ble_session_id_len;
+  } else {  // kUwMacaroonCaveatTypeAuthenticationChallenge
+    if (context->auth_challenge_str == NULL ||
+        context->auth_challenge_str_len == 0) {
+      return false;
+    }
+
+    additional_value_str = context->auth_challenge_str;
+    additional_value_str_len = context->auth_challenge_str_len;
   }
 
   uint8_t value_cbor_prefix[UW_MACAROON_ENCODING_MAX_UINT_CBOR_LEN] = {0};
   size_t value_cbor_prefix_len = 0;
   if (!uw_macaroon_encoding_encode_byte_str_len_(
-          (uint32_t)(context->ble_session_id_len), value_cbor_prefix,
+          (uint32_t)additional_value_str_len, value_cbor_prefix,
           sizeof(value_cbor_prefix), &value_cbor_prefix_len)) {
     return false;
   }
 
+  // The length here includes: 1. the header for the whole byte string; 2. the
+  // header for the addtional value part; 3. the additional value part.
+  size_t total_length =
+      caveat->num_bytes + value_cbor_prefix_len + additional_value_str_len;
+  if (!uw_macaroon_encoding_encode_byte_str_len_(
+          (uint32_t)total_length, caveat_cbor_prefix,
+          sizeof(caveat_cbor_prefix), &caveat_cbor_prefix_len)) {
+    return false;
+  }
+
   UwCryptoHmacMsg messages[] = {
-      {bstr_cbor_prefix, bstr_cbor_prefix_len},
+      {caveat_cbor_prefix, caveat_cbor_prefix_len},
       {caveat->bytes, caveat->num_bytes},
       {value_cbor_prefix, value_cbor_prefix_len},
-      {context->ble_session_id, context->ble_session_id_len},
+      {additional_value_str, additional_value_str_len},
   };
 
   return uw_crypto_hmac_(key, key_len, messages,
@@ -433,11 +474,29 @@ static bool update_delegatee_list(UwMacaroonCaveatType caveat_type,
     }
   }
 
-  if (!uw_macaroon_caveat_get_value_bstr_(
-          caveat, &(result->delegatees[result->num_delegatees].id),
-          &(result->delegatees[result->num_delegatees].id_len))) {
-    return false;
+  if (caveat_type != kUwMacaroonCaveatTypeDelegateeService) {
+    if (!uw_macaroon_caveat_get_value_bstr_(
+            caveat, &(result->delegatees[result->num_delegatees].id),
+            &(result->delegatees[result->num_delegatees].id_len))) {
+      return false;
+    }
+    result->delegatees[result->num_delegatees].service_id =
+        kUwMacaroonCaveatCloudServiceIdNotCloudRegistered;  // Default value
+
+  } else {
+    uint32_t service_id = 0;
+    if (!uw_macaroon_caveat_get_value_uint_(caveat, &service_id)) {
+      return false;
+    }
+    if (!is_valid_service_id_((UwMacaroonCaveatCloudServiceId)service_id)) {
+      return false;
+    }
+    result->delegatees[result->num_delegatees].service_id =
+        (UwMacaroonCaveatCloudServiceId)service_id;
+    result->delegatees[result->num_delegatees].id = NULL;
+    result->delegatees[result->num_delegatees].id_len = 0;
   }
+
   result->delegatees[result->num_delegatees].type = delegatee_type;
   result->delegatees[result->num_delegatees].timestamp = issued_time;
   result->num_delegatees++;
@@ -467,6 +526,7 @@ bool uw_macaroon_caveat_validate_(const UwMacaroonCaveat* caveat,
     case kUwMacaroonCaveatTypeServerAuthenticationTokenV1:
     case kUwMacaroonCaveatTypeNonce:
     case kUwMacaroonCaveatTypeBleSessionID:
+    case kUwMacaroonCaveatTypeAuthenticationChallenge:
       return true;
 
     case kUwMacaroonCaveatTypeDelegationTimestamp:
@@ -541,6 +601,7 @@ bool uw_macaroon_caveat_get_value_uint_(const UwMacaroonCaveat* caveat,
     return false;
   }
   if (type != kUwMacaroonCaveatTypeScope &&
+      type != kUwMacaroonCaveatTypeDelegateeService &&
       type != kUwMacaroonCaveatTypeExpirationAbsolute &&
       type != kUwMacaroonCaveatTypeDelegationTimestamp) {
     // Wrong type
@@ -572,7 +633,6 @@ bool uw_macaroon_caveat_get_value_bstr_(const UwMacaroonCaveat* caveat,
   if (type != kUwMacaroonCaveatTypeNonce &&
       type != kUwMacaroonCaveatTypeDelegateeUser &&
       type != kUwMacaroonCaveatTypeDelegateeApp &&
-      type != kUwMacaroonCaveatTypeDelegateeService &&
       type != kUwMacaroonCaveatTypeLanSessionID &&
       type != kUwMacaroonCaveatTypeClientAuthorizationTokenV1 &&
       type != kUwMacaroonCaveatTypeServerAuthenticationTokenV1) {

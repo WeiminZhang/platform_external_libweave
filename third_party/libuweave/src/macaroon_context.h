@@ -15,11 +15,15 @@ typedef struct {
   uint32_t current_time;  // In number of seconds since Jan 1st 2000 00:00:00
   const uint8_t* ble_session_id;  // Only for BLE
   size_t ble_session_id_len;
+  const uint8_t* auth_challenge_str;
+  size_t auth_challenge_str_len;
 } UwMacaroonContext;
 
 bool uw_macaroon_context_create_(uint32_t current_time,
                                  const uint8_t* ble_session_id,
                                  size_t ble_session_id_len,
+                                 const uint8_t* auth_challenge_str,
+                                 size_t auth_challenge_str_len,
                                  UwMacaroonContext* new_context);
 
 #endif  // LIBUWEAVE_SRC_MACAROON_CONTEXT_
