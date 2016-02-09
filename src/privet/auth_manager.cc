@@ -118,11 +118,10 @@ class AppIdCaveat : public Caveat {
 
 class ServiceCaveat : public Caveat {
  public:
-  explicit ServiceCaveat(const std::string& id)
-      : Caveat(kUwMacaroonCaveatTypeDelegateeService, id.size()) {
+  explicit ServiceCaveat(UwMacaroonCaveatCloudServiceId service_id)
+      : Caveat(kUwMacaroonCaveatTypeDelegateeService, 0) {
     CHECK(uw_macaroon_caveat_create_delegatee_service_(
-        reinterpret_cast<const uint8_t*>(id.data()), id.size(), buffer_.data(),
-        buffer_.size(), &caveat_));
+        service_id, buffer_.data(), buffer_.size(), &caveat_));
   }
 
   DISALLOW_COPY_AND_ASSIGN(ServiceCaveat);
@@ -168,7 +167,8 @@ std::vector<uint8_t> CreateMacaroonToken(
   CHECK_EQ(kSha256OutputSize, secret.size());
 
   UwMacaroonContext context{};
-  CHECK(uw_macaroon_context_create_(ToJ2000Time(time), nullptr, 0, &context));
+  CHECK(uw_macaroon_context_create_(ToJ2000Time(time), nullptr, 0, nullptr, 0,
+                                    &context));
 
   UwMacaroon macaroon{};
   CHECK(uw_macaroon_create_from_root_key_(&macaroon, secret.data(),
@@ -189,7 +189,8 @@ std::vector<uint8_t> ExtendMacaroonToken(
     const base::Time& time,
     const std::vector<const UwMacaroonCaveat*>& caveats) {
   UwMacaroonContext context{};
-  CHECK(uw_macaroon_context_create_(ToJ2000Time(time), nullptr, 0, &context));
+  CHECK(uw_macaroon_context_create_(ToJ2000Time(time), nullptr, 0, nullptr, 0,
+                                    &context));
 
   UwMacaroon prev_macaroon = macaroon;
   std::vector<uint8_t> prev_buffer(kMaxMacaroonSize);
@@ -232,7 +233,8 @@ bool VerifyMacaroon(const std::vector<uint8_t>& secret,
                     ErrorPtr* error) {
   CHECK_EQ(kSha256OutputSize, secret.size());
   UwMacaroonContext context = {};
-  CHECK(uw_macaroon_context_create_(ToJ2000Time(time), nullptr, 0, &context));
+  CHECK(uw_macaroon_context_create_(ToJ2000Time(time), nullptr, 0, nullptr, 0,
+                                    &context));
 
   if (!uw_macaroon_validate_(&macaroon, secret.data(), secret.size(), &context,
                              result)) {
@@ -432,8 +434,9 @@ std::vector<uint8_t> AuthManager::GetRootClientAuthToken(
   const base::Time now = Now();
   TimestampCaveat issued{now};
 
-  ServiceCaveat client{owner == RootClientTokenOwner::kCloud ? "google.com"
-                                                             : ""};
+  ServiceCaveat client{owner == RootClientTokenOwner::kCloud
+                           ? kUwMacaroonCaveatCloudServiceIdGoogleWeave
+                           : kUwMacaroonCaveatCloudServiceIdNotCloudRegistered};
   return CreateMacaroonToken(
       auth_secret_, now,
       {
