@@ -139,6 +139,18 @@ class CloudDelegateImpl : public CloudDelegate {
                : "";
   }
 
+  std::string GetOAuthUrl() const override {
+    return device_->GetSettings().oauth_url;
+  }
+
+  std::string GetServiceUrl() const override {
+    return device_->GetSettings().service_url;
+  }
+
+  std::string GetXmppEndpoint() const override {
+    return device_->GetSettings().xmpp_endpoint;
+  }
+
   const base::DictionaryValue& GetLegacyCommandDef() const override {
     return component_manager_->GetLegacyCommandDefinitions();
   }

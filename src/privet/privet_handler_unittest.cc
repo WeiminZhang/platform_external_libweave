@@ -219,37 +219,40 @@ TEST_F(PrivetHandlerTest, InfoMinimal) {
       .WillRepeatedly(Return(std::set<AuthType>{}));
 
   const char kExpected[] = R"({
-    'version': '3.0',
-    'id': 'TestId',
-    'name': 'TestDevice',
-    'services': [ "developmentBoard" ],
-    'modelManifestId': "ABMID",
-    'basicModelManifest': {
-      'uiDeviceKind': 'developmentBoard',
-      'oemName': 'Chromium',
-      'modelName': 'Brillo'
+    "version": "3.0",
+    "id": "TestId",
+    "name": "TestDevice",
+    "services": [ "developmentBoard" ],
+    "modelManifestId": "ABMID",
+    "basicModelManifest": {
+      "uiDeviceKind": "developmentBoard",
+      "oemName": "Chromium",
+      "modelName": "Brillo"
     },
-    'endpoints': {
-      'httpPort': 0,
-      'httpUpdatesPort': 0,
-      'httpsPort': 0,
-      'httpsUpdatesPort': 0
+    "endpoints": {
+      "httpPort": 0,
+      "httpUpdatesPort": 0,
+      "httpsPort": 0,
+      "httpsUpdatesPort": 0
     },
-    'authentication': {
-      'anonymousMaxScope': 'user',
-      'mode': [
+    "authentication": {
+      "anonymousMaxScope": "user",
+      "mode": [
       ],
-      'pairing': [
+      "pairing": [
       ],
-      'crypto': [
+      "crypto": [
       ]
     },
-    'gcd': {
-      'id': '',
-      'status': 'disabled'
+    "gcd": {
+      "id": "",
+      "oauth_url": "https://oauths/",
+      "service_url": "https://service/",
+      "status": "disabled",
+      "xmpp_endpoint": "xmpp:678"
     },
-    'time': 1410000001000.0,
-    'sessionId': 'SessionId'
+    "time": 1410000001000.0,
+    "sessionId": "SessionId"
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }
@@ -266,53 +269,56 @@ TEST_F(PrivetHandlerTest, Info) {
       .WillRepeatedly(Return("Test_device.BBABCLAprv"));
 
   const char kExpected[] = R"({
-    'version': '3.0',
-    'id': 'TestId',
-    'name': 'TestDevice',
-    'description': 'TestDescription',
-    'location': 'TestLocation',
-    'services': [ "developmentBoard" ],
-    'modelManifestId': "ABMID",
-    'basicModelManifest': {
-      'uiDeviceKind': 'developmentBoard',
-      'oemName': 'Chromium',
-      'modelName': 'Brillo'
+    "version": "3.0",
+    "id": "TestId",
+    "name": "TestDevice",
+    "description": "TestDescription",
+    "location": "TestLocation",
+    "services": [ "developmentBoard" ],
+    "modelManifestId": "ABMID",
+    "basicModelManifest": {
+      "uiDeviceKind": "developmentBoard",
+      "oemName": "Chromium",
+      "modelName": "Brillo"
     },
-    'endpoints': {
-      'httpPort': 80,
-      'httpUpdatesPort': 10080,
-      'httpsPort': 443,
-      'httpsUpdatesPort': 10443
+    "endpoints": {
+      "httpPort": 80,
+      "httpUpdatesPort": 10080,
+      "httpsPort": 443,
+      "httpsUpdatesPort": 10443
     },
-    'authentication': {
-      'anonymousMaxScope': 'none',
-      'mode': [
-        'anonymous',
-        'pairing',
-        'local'
+    "authentication": {
+      "anonymousMaxScope": "none",
+      "mode": [
+        "anonymous",
+        "pairing",
+        "local"
       ],
-      'pairing': [
-        'pinCode',
-        'embeddedCode'
+      "pairing": [
+        "pinCode",
+        "embeddedCode"
       ],
-      'crypto': [
-        'p224_spake2'
+      "crypto": [
+        "p224_spake2"
       ]
     },
-    'wifi': {
-      'capabilities': [
-        '2.4GHz'
+    "wifi": {
+      "capabilities": [
+        "2.4GHz"
       ],
-      'ssid': 'TestSsid',
-      'hostedSsid': 'Test_device.BBABCLAprv',
-      'status': 'offline'
+      "ssid": "TestSsid",
+      "hostedSsid": "Test_device.BBABCLAprv",
+      "status": "offline"
     },
-    'gcd': {
-      'id': 'TestCloudId',
-      'status': 'online'
+    "gcd": {
+      "id": "TestCloudId",
+      "oauth_url": "https://oauths/",
+      "service_url": "https://service/",
+      "status": "online",
+      "xmpp_endpoint": "xmpp:678"
     },
-    'time': 1410000001000.0,
-    'sessionId': 'SessionId'
+    "time": 1410000001000.0,
+    "sessionId": "SessionId"
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/info", "{}"));
 }
@@ -530,9 +536,12 @@ TEST_F(PrivetHandlerSetupTest, StatusGcd) {
   cloud_.setup_state_ = SetupState{SetupState::kSuccess};
 
   const char kExpected[] = R"({
-    'gcd': {
-        'id': 'TestCloudId',
-        'status': 'success'
+    "gcd": {
+        "id": "TestCloudId",
+        "oauth_url": "https://oauths/",
+        "service_url": "https://service/",
+        "status": "success",
+        "xmpp_endpoint": "xmpp:678"
      }
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/setup/status", "{}"));
@@ -653,6 +662,41 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
   cloud_.setup_state_ = SetupState{SetupState::kInProgress};
   EXPECT_CALL(cloud_, Setup(RegistrationData{"testTicket"}, _))
       .WillOnce(Return(true));
+  EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/setup/start", kInput));
+}
+
+TEST_F(PrivetHandlerSetupTest, GcdSetupWithEndpoints) {
+  const char kInput[] = R"({
+    'gcd': {
+      "api_key": "test_api_key",
+      "client_id": "test_client_id",
+      "client_secret": "test_client_secret",
+      "oauth_url": "https://oauths/",
+      "service_url": "https://service/",
+      "status": "success",
+      "xmpp_endpoint": "xmpp:678",
+      "ticketId": "testTicket",
+      "user": "testUser"
+    }
+  })";
+
+  const char kExpected[] = R"({
+    'gcd': {
+      'status': 'inProgress'
+    }
+  })";
+  cloud_.setup_state_ = SetupState{SetupState::kInProgress};
+
+  RegistrationData expected_reg_data;
+  expected_reg_data.ticket_id = "testTicket";
+  expected_reg_data.oauth_url = "https://oauths/";
+  expected_reg_data.client_id = "test_client_id";
+  expected_reg_data.client_secret = "test_client_secret";
+  expected_reg_data.api_key = "test_api_key";
+  expected_reg_data.service_url = "https://service/";
+  expected_reg_data.xmpp_endpoint = "xmpp:678";
+
+  EXPECT_CALL(cloud_, Setup(expected_reg_data, _)).WillOnce(Return(true));
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/setup/start", kInput));
 }
 

@@ -95,6 +95,11 @@ class CloudDelegate {
   // Returns cloud id if the registered device or empty string if unregistered.
   virtual std::string GetCloudId() const = 0;
 
+  // Returns currently active cloud endponts.
+  virtual std::string GetOAuthUrl() const = 0;
+  virtual std::string GetServiceUrl() const = 0;
+  virtual std::string GetXmppEndpoint() const = 0;
+
   // Returns dictionary with device state (for legacy APIs).
   virtual const base::DictionaryValue& GetLegacyState() const = 0;
 
