@@ -14,6 +14,7 @@
 #include <base/location.h>
 #include <base/strings/stringprintf.h>
 #include <base/values.h>
+#include <weave/device.h>
 #include <weave/enum_to_string.h>
 #include <weave/provider/task_runner.h>
 
@@ -98,6 +99,19 @@ const char kSetupStartSsidKey[] = "ssid";
 const char kSetupStartPassKey[] = "passphrase";
 const char kSetupStartTicketIdKey[] = "ticketId";
 const char kSetupStartUserKey[] = "user";
+const char kSetupStartClientIdKey[] = "client_id";
+const char kSetupStartClientSecretKey[] = "client_secret";
+const char kSetupStartApiKeyKey[] = "api_key";
+const char kSetupStartOAuthUrlKey[] = "oauth_url";
+const char kSetupStartServiceUrlKey[] = "service_url";
+const char kSetupStartXmppEndpointKey[] = "xmpp_endpoint";
+
+std::string oauth_url;
+std::string client_id;
+std::string client_secret;
+std::string api_key;
+std::string service_url;
+std::string xmpp_endpoint;
 
 const char kFingerprintKey[] = "fingerprint";
 const char kStateKey[] = "state";
@@ -285,10 +299,17 @@ std::unique_ptr<base::DictionaryValue> CreateWifiSection(
   return result;
 }
 
+void SetGcdProperties(const CloudDelegate& cloud, base::DictionaryValue* dict) {
+  dict->SetString(kInfoIdKey, cloud.GetCloudId());
+  dict->SetString(kSetupStartOAuthUrlKey, cloud.GetOAuthUrl());
+  dict->SetString(kSetupStartServiceUrlKey, cloud.GetServiceUrl());
+  dict->SetString(kSetupStartXmppEndpointKey, cloud.GetXmppEndpoint());
+}
+
 std::unique_ptr<base::DictionaryValue> CreateGcdSection(
     const CloudDelegate& cloud) {
   std::unique_ptr<base::DictionaryValue> gcd(new base::DictionaryValue());
-  gcd->SetString(kInfoIdKey, cloud.GetCloudId());
+  SetGcdProperties(cloud, gcd.get());
   SetStateProperties(cloud.GetConnectionState(), gcd.get());
   return gcd;
 }
@@ -756,7 +777,7 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
 
   std::string ssid;
   std::string passphrase;
-  std::string ticket;
+  RegistrationData registration_data;
   std::string user;
 
   const base::DictionaryValue* wifi = nullptr;
@@ -785,14 +806,26 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
                    "Only owner can register device");
       return ReturnError(*error, callback);
     }
-    registration->GetString(kSetupStartTicketIdKey, &ticket);
-    if (ticket.empty()) {
+    registration->GetString(kSetupStartTicketIdKey,
+                            &registration_data.ticket_id);
+    if (registration_data.ticket_id.empty()) {
       ErrorPtr error;
       Error::AddToPrintf(&error, FROM_HERE, errors::kInvalidParams,
                          kInvalidParamValueFormat, kSetupStartTicketIdKey, "");
       return ReturnError(*error, callback);
     }
     registration->GetString(kSetupStartUserKey, &user);
+    registration->GetString(kSetupStartClientIdKey,
+                            &registration_data.client_id);
+    registration->GetString(kSetupStartClientSecretKey,
+                            &registration_data.client_secret);
+    registration->GetString(kSetupStartApiKeyKey, &registration_data.api_key);
+    registration->GetString(kSetupStartOAuthUrlKey,
+                            &registration_data.oauth_url);
+    registration->GetString(kSetupStartServiceUrlKey,
+                            &registration_data.service_url);
+    registration->GetString(kSetupStartXmppEndpointKey,
+                            &registration_data.xmpp_endpoint);
   }
 
   cloud_->UpdateDeviceInfo(name, description, location);
@@ -801,7 +834,8 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
   if (!ssid.empty() && !wifi_->ConfigureCredentials(ssid, passphrase, &error))
     return ReturnError(*error, callback);
 
-  if (!ticket.empty() && !cloud_->Setup(ticket, user, &error))
+  if (!registration_data.ticket_id.empty() &&
+      !cloud_->Setup(registration_data, &error))
     return ReturnError(*error, callback);
 
   ReplyWithSetupStatus(callback);
@@ -822,8 +856,9 @@ void PrivetHandler::ReplyWithSetupStatus(
     base::DictionaryValue* gcd = new base::DictionaryValue;
     output.Set(kGcdKey, gcd);
     SetStateProperties(state, gcd);
-    if (state.IsStatusEqual(SetupState::kSuccess))
-      gcd->SetString(kInfoIdKey, cloud_->GetCloudId());
+    if (state.IsStatusEqual(SetupState::kSuccess)) {
+      SetGcdProperties(*cloud_, gcd);
+    }
   }
 
   if (wifi_) {

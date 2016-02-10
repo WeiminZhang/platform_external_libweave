@@ -12,6 +12,7 @@
 #include <base/callback.h>
 #include <base/memory/ref_counted.h>
 #include <base/observer_list.h>
+#include <weave/device.h>
 
 #include "src/privet/privet_types.h"
 #include "src/privet/security_delegate.h"
@@ -88,12 +89,16 @@ class CloudDelegate {
   virtual const SetupState& GetSetupState() const = 0;
 
   // Starts GCD setup.
-  virtual bool Setup(const std::string& ticket_id,
-                     const std::string& user,
+  virtual bool Setup(const RegistrationData& registration_data,
                      ErrorPtr* error) = 0;
 
   // Returns cloud id if the registered device or empty string if unregistered.
   virtual std::string GetCloudId() const = 0;
+
+  // Returns currently active cloud endponts.
+  virtual std::string GetOAuthUrl() const = 0;
+  virtual std::string GetServiceUrl() const = 0;
+  virtual std::string GetXmppEndpoint() const = 0;
 
   // Returns dictionary with device state (for legacy APIs).
   virtual const base::DictionaryValue& GetLegacyState() const = 0;

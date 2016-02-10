@@ -262,9 +262,9 @@ const base::DictionaryValue& DeviceManager::GetState() const {
   return component_manager_->GetLegacyState();
 }
 
-void DeviceManager::Register(const std::string& ticket_id,
+void DeviceManager::Register(const RegistrationData& registration_data,
                              const DoneCallback& callback) {
-  device_info_->RegisterDevice(ticket_id, callback);
+  device_info_->RegisterDevice(registration_data, callback);
 }
 
 void DeviceManager::AddPairingChangedCallbacks(

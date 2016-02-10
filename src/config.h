@@ -45,6 +45,7 @@ class Config final {
 
   void AddOnChangedCallback(const OnChangedCallback& callback);
   const Config::Settings& GetSettings() const;
+  const Config::Settings& GetDefaults() const;
 
   // Allows editing of config. Makes sure that callbacks were called and changes
   // were saved.
@@ -121,9 +122,9 @@ class Config final {
   };
 
  private:
-  void Load();
   void Save();
 
+  const Settings defaults_;
   Settings settings_;
   provider::ConfigStore* config_store_{nullptr};
   std::vector<OnChangedCallback> on_changed_;

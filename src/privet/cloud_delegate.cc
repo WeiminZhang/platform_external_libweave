@@ -12,6 +12,7 @@
 #include <base/memory/weak_ptr.h>
 #include <base/values.h>
 #include <weave/error.h>
+#include <weave/device.h>
 #include <weave/provider/task_runner.h>
 
 #include "src/backoff_entry.h"
@@ -109,15 +110,13 @@ class CloudDelegateImpl : public CloudDelegate {
 
   const SetupState& GetSetupState() const override { return setup_state_; }
 
-  bool Setup(const std::string& ticket_id,
-             const std::string& user,
+  bool Setup(const RegistrationData& registration_data,
              ErrorPtr* error) override {
-    VLOG(1) << "GCD Setup started. ticket_id: " << ticket_id
-            << ", user:" << user;
+    VLOG(1) << "GCD Setup started. ";
     // Set (or reset) the retry counter, since we are starting a new
     // registration process.
     registation_retry_count_ = kMaxDeviceRegistrationRetries;
-    ticket_id_ = ticket_id;
+    registration_data_ = registration_data;
     if (setup_state_.IsStatusEqual(SetupState::kInProgress)) {
       // Another registration is in progress. In case it fails, we will use
       // the new ticket ID when retrying the request.
@@ -138,6 +137,18 @@ class CloudDelegateImpl : public CloudDelegate {
     return connection_state_.status() > ConnectionState::kUnconfigured
                ? device_->GetSettings().cloud_id
                : "";
+  }
+
+  std::string GetOAuthUrl() const override {
+    return device_->GetSettings().oauth_url;
+  }
+
+  std::string GetServiceUrl() const override {
+    return device_->GetSettings().service_url;
+  }
+
+  std::string GetXmppEndpoint() const override {
+    return device_->GetSettings().xmpp_endpoint;
   }
 
   const base::DictionaryValue& GetLegacyCommandDef() const override {
@@ -273,7 +284,7 @@ class CloudDelegateImpl : public CloudDelegate {
       return;
     }
 
-    device_->RegisterDevice(ticket_id_,
+    device_->RegisterDevice(registration_data_,
                             base::Bind(&CloudDelegateImpl::RegisterDeviceDone,
                                        setup_weak_factory_.GetWeakPtr()));
   }
@@ -337,8 +348,8 @@ class CloudDelegateImpl : public CloudDelegate {
   // State of the current or last setup.
   SetupState setup_state_{SetupState::kNone};
 
-  // Ticket ID for registering the device.
-  std::string ticket_id_;
+  // Registration data for current registration process.
+  RegistrationData registration_data_;
 
   // Number of remaining retries for device registration process.
   int registation_retry_count_{0};
