@@ -64,7 +64,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   void AddGcdStateChangedCallback(
       const Device::GcdStateChangedCallback& callback);
-  void RegisterDevice(const std::string& ticket_id,
+
+  void RegisterDevice(RegistrationData registration_data,
                       const DoneCallback& callback);
 
   void UpdateDeviceInfo(const std::string& name,
@@ -73,13 +74,6 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void UpdateBaseConfig(AuthScope anonymous_access_role,
                         bool local_discovery_enabled,
                         bool local_pairing_enabled);
-  bool UpdateServiceConfig(const std::string& client_id,
-                           const std::string& client_secret,
-                           const std::string& api_key,
-                           const std::string& oauth_url,
-                           const std::string& service_url,
-                           const std::string& xmpp_endpoint,
-                           ErrorPtr* error);
 
   void GetDeviceInfo(const CloudRequestDoneCallback& callback);
 
@@ -90,21 +84,21 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // WebParamsEncode() and appended to URL as a query
   // string.
   // So, calling:
-  //    GetServiceURL("ticket", {{"key","apiKey"}})
+  //    GetServiceUrl("ticket", {{"key","apiKey"}})
   // will return something like:
   //    https://www.googleapis.com/weave/v1/ticket?key=apiKey
-  std::string GetServiceURL(const std::string& subpath = {},
+  std::string GetServiceUrl(const std::string& subpath = {},
                             const WebParamList& params = {}) const;
 
   // Returns a service URL to access the registered device on GCD server.
   // The base URL used to construct the full URL looks like this:
   //    https://www.googleapis.com/weave/v1/devices/<cloud_id>/
-  std::string GetDeviceURL(const std::string& subpath = {},
+  std::string GetDeviceUrl(const std::string& subpath = {},
                            const WebParamList& params = {}) const;
 
   // Similar to GetServiceURL, GetOAuthURL() returns a URL of OAuth 2.0 server.
   // The base URL used is https://accounts.google.com/o/oauth2/.
-  std::string GetOAuthURL(const std::string& subpath = {},
+  std::string GetOAuthUrl(const std::string& subpath = {},
                           const WebParamList& params = {}) const;
 
   // Starts GCD device if credentials available.
@@ -123,6 +117,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
  private:
   friend class DeviceRegistrationInfoTest;
+
+  const Config::Settings& GetDefaults() const { return config_->GetDefaults(); }
 
   base::WeakPtr<DeviceRegistrationInfo> AsWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -276,15 +272,17 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   void RegisterDeviceError(const DoneCallback& callback, ErrorPtr error);
   void RegisterDeviceOnTicketSent(
-      const std::string& ticket_id,
+      const RegistrationData& registration_data,
       const DoneCallback& callback,
       std::unique_ptr<provider::HttpClient::Response> response,
       ErrorPtr error);
   void RegisterDeviceOnTicketFinalized(
+      const RegistrationData& registration_data,
       const DoneCallback& callback,
       std::unique_ptr<provider::HttpClient::Response> response,
       ErrorPtr error);
   void RegisterDeviceOnAuthCodeSent(
+      const RegistrationData& registration_data,
       const std::string& cloud_id,
       const std::string& robot_account,
       const DoneCallback& callback,

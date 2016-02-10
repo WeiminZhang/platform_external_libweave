@@ -31,8 +31,8 @@ const char kVersion[] = "version";
 const char kClientId[] = "client_id";
 const char kClientSecret[] = "client_secret";
 const char kApiKey[] = "api_key";
-const char kOAuthURL[] = "oauth_url";
-const char kServiceURL[] = "service_url";
+const char kOAuthUrl[] = "oauth_url";
+const char kServiceUrl[] = "service_url";
 const char kXmppEndpoint[] = "xmpp_endpoint";
 const char kName[] = "name";
 const char kDescription[] = "description";
@@ -67,7 +67,7 @@ void MigrateFromV0(base::DictionaryValue* dict) {
     dict->Set(config_keys::kCloudId, std::move(tmp));
 }
 
-Config::Settings CreateDefaultSettings() {
+Config::Settings CreateDefaultSettings(provider::ConfigStore* config_store) {
   Config::Settings result;
   result.oauth_url = "https://accounts.google.com/o/oauth2/";
   result.service_url = kWeaveUrl;
@@ -75,6 +75,36 @@ Config::Settings CreateDefaultSettings() {
   result.local_anonymous_access_role = AuthScope::kViewer;
   result.pairing_modes.insert(PairingType::kPinCode);
   result.device_id = base::GenerateGUID();
+
+  if (!config_store)
+    return result;
+
+  // Crash on any mistakes in defaults.
+  CHECK(config_store->LoadDefaults(&result));
+
+  CHECK(!result.client_id.empty());
+  CHECK(!result.client_secret.empty());
+  CHECK(!result.api_key.empty());
+  CHECK(!result.oauth_url.empty());
+  CHECK(!result.service_url.empty());
+  CHECK(!result.xmpp_endpoint.empty());
+  CHECK(!result.oem_name.empty());
+  CHECK(!result.model_name.empty());
+  CHECK(!result.model_id.empty());
+  CHECK(!result.name.empty());
+  CHECK(!result.device_id.empty());
+  CHECK_EQ(result.embedded_code.empty(),
+           (result.pairing_modes.find(PairingType::kEmbeddedCode) ==
+            result.pairing_modes.end()));
+
+  // Values below will be generated at runtime.
+  CHECK(result.cloud_id.empty());
+  CHECK(result.refresh_token.empty());
+  CHECK(result.robot_account.empty());
+  CHECK(result.last_configured_ssid.empty());
+  CHECK(result.secret.empty());
+  CHECK(result.root_client_token_owner == RootClientTokenOwner::kNone);
+
   return result;
 }
 
@@ -91,8 +121,12 @@ LIBWEAVE_EXPORT EnumToStringMap<RootClientTokenOwner>::EnumToStringMap()
     : EnumToStringMap(kRootClientTokenOwnerMap) {}
 
 Config::Config(provider::ConfigStore* config_store)
-    : settings_{CreateDefaultSettings()}, config_store_{config_store} {
-  Load();
+    : defaults_{CreateDefaultSettings(config_store)},
+      settings_{defaults_},
+      config_store_{config_store} {
+  Transaction change{this};
+  change.save_ = false;
+  change.LoadState();
 }
 
 void Config::AddOnChangedCallback(const OnChangedCallback& callback) {
@@ -105,42 +139,8 @@ const Config::Settings& Config::GetSettings() const {
   return settings_;
 }
 
-void Config::Load() {
-  Transaction change{this};
-  change.save_ = false;
-
-  settings_ = CreateDefaultSettings();
-
-  if (!config_store_)
-    return;
-
-  // Crash on any mistakes in defaults.
-  CHECK(config_store_->LoadDefaults(&settings_));
-
-  CHECK(!settings_.client_id.empty());
-  CHECK(!settings_.client_secret.empty());
-  CHECK(!settings_.api_key.empty());
-  CHECK(!settings_.oauth_url.empty());
-  CHECK(!settings_.service_url.empty());
-  CHECK(!settings_.xmpp_endpoint.empty());
-  CHECK(!settings_.oem_name.empty());
-  CHECK(!settings_.model_name.empty());
-  CHECK(!settings_.model_id.empty());
-  CHECK(!settings_.name.empty());
-  CHECK(!settings_.device_id.empty());
-  CHECK_EQ(settings_.embedded_code.empty(),
-           (settings_.pairing_modes.find(PairingType::kEmbeddedCode) ==
-              settings_.pairing_modes.end()));
-
-  // Values below will be generated at runtime.
-  CHECK(settings_.cloud_id.empty());
-  CHECK(settings_.refresh_token.empty());
-  CHECK(settings_.robot_account.empty());
-  CHECK(settings_.last_configured_ssid.empty());
-  CHECK(settings_.secret.empty());
-  CHECK(settings_.root_client_token_owner == RootClientTokenOwner::kNone);
-
-  change.LoadState();
+const Config::Settings& Config::GetDefaults() const {
+  return defaults_;
 }
 
 void Config::Transaction::LoadState() {
@@ -185,10 +185,10 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kApiKey, &tmp))
     set_api_key(tmp);
 
-  if (dict->GetString(config_keys::kOAuthURL, &tmp))
+  if (dict->GetString(config_keys::kOAuthUrl, &tmp))
     set_oauth_url(tmp);
 
-  if (dict->GetString(config_keys::kServiceURL, &tmp)) {
+  if (dict->GetString(config_keys::kServiceUrl, &tmp)) {
     if (tmp == kDeprecatedUrl)
       tmp = kWeaveUrl;
     set_service_url(tmp);
@@ -255,8 +255,8 @@ void Config::Save() {
   dict.SetString(config_keys::kClientId, settings_.client_id);
   dict.SetString(config_keys::kClientSecret, settings_.client_secret);
   dict.SetString(config_keys::kApiKey, settings_.api_key);
-  dict.SetString(config_keys::kOAuthURL, settings_.oauth_url);
-  dict.SetString(config_keys::kServiceURL, settings_.service_url);
+  dict.SetString(config_keys::kOAuthUrl, settings_.oauth_url);
+  dict.SetString(config_keys::kServiceUrl, settings_.service_url);
   dict.SetString(config_keys::kXmppEndpoint, settings_.xmpp_endpoint);
   dict.SetString(config_keys::kRefreshToken, settings_.refresh_token);
   dict.SetString(config_keys::kCloudId, settings_.cloud_id);

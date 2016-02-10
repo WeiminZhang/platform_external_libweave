@@ -31,6 +31,31 @@ enum class GcdState {
   kInvalidCredentials,  // Our registration has been revoked.
 };
 
+struct RegistrationData {
+  explicit RegistrationData(const std::string& ticket = {})
+      : ticket_id{ticket} {}
+
+  std::string ticket_id;
+
+  std::string oauth_url;
+  std::string client_id;
+  std::string client_secret;
+  std::string api_key;
+  std::string service_url;
+  std::string xmpp_endpoint;
+};
+
+inline bool operator==(const RegistrationData& l, const RegistrationData& r) {
+  return l.ticket_id == r.ticket_id && l.oauth_url == r.oauth_url &&
+         l.client_id == r.client_id && l.client_secret == r.client_secret &&
+         l.api_key == r.api_key && l.service_url == r.service_url &&
+         l.xmpp_endpoint == r.xmpp_endpoint;
+}
+
+inline bool operator!=(const RegistrationData& l, const RegistrationData& r) {
+  return !(l == r);
+}
+
 class Device {
  public:
   virtual ~Device() {}
@@ -141,7 +166,7 @@ class Device {
 
   // Registers the device.
   // This is testing method and should not be used by applications.
-  virtual void Register(const std::string& ticket_id,
+  virtual void Register(const RegistrationData& registration_data,
                         const DoneCallback& callback) = 0;
 
   // Handler should display pin code to the user.
