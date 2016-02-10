@@ -37,15 +37,13 @@ namespace {
 
 void LoadTestJson(const std::string& test_json,
                   base::DictionaryValue* dictionary) {
-  std::string json = test_json;
-  base::ReplaceChars(json, "'", "\"", &json);
   int error = 0;
   std::string message;
   std::unique_ptr<base::Value> value(
-      base::JSONReader::ReadAndReturnError(json, base::JSON_PARSE_RFC, &error,
-                                           &message)
+      base::JSONReader::ReadAndReturnError(test_json, base::JSON_PARSE_RFC,
+                                           &error, &message)
           .release());
-  EXPECT_TRUE(value.get()) << "\nError: " << message << "\n" << json;
+  EXPECT_TRUE(value.get()) << "\nError: " << message << "\n" << test_json;
   base::DictionaryValue* dictionary_ptr = nullptr;
   if (value->GetAsDictionary(&dictionary_ptr))
     dictionary->MergeDictionary(dictionary_ptr);
@@ -59,7 +57,7 @@ struct CodeWithReason {
 };
 
 std::ostream& operator<<(std::ostream& stream, const CodeWithReason& error) {
-  return stream << "{" << error.code << ", " << error.reason << "}";
+  return stream << R"({" << error.code << ", " << error.reason << "})";
 }
 
 bool IsEqualError(const CodeWithReason& expected,
@@ -324,33 +322,34 @@ TEST_F(PrivetHandlerTest, Info) {
 }
 
 TEST_F(PrivetHandlerTest, PairingStartInvalidParams) {
-  EXPECT_PRED2(IsEqualError, CodeWithReason(400, "invalidParams"),
-               HandleRequest("/privet/v3/pairing/start",
-                             "{'pairing':'embeddedCode','crypto':'crypto'}"));
+  EXPECT_PRED2(
+      IsEqualError, CodeWithReason(400, "invalidParams"),
+      HandleRequest("/privet/v3/pairing/start",
+                    R"({"pairing":"embeddedCode","crypto":"crypto"})"));
 
   EXPECT_PRED2(IsEqualError, CodeWithReason(400, "invalidParams"),
                HandleRequest("/privet/v3/pairing/start",
-                             "{'pairing':'code','crypto':'p224_spake2'}"));
+                             R"({"pairing":"code","crypto":"p224_spake2"})"));
 }
 
 TEST_F(PrivetHandlerTest, PairingStart) {
   EXPECT_JSON_EQ(
-      "{'deviceCommitment': 'testCommitment', 'sessionId': 'testSession'}",
+      R"({"deviceCommitment": "testCommitment", "sessionId": "testSession"})",
       HandleRequest("/privet/v3/pairing/start",
-                    "{'pairing': 'embeddedCode', 'crypto': 'p224_spake2'}"));
+                    R"({"pairing": "embeddedCode", "crypto": "p224_spake2"})"));
 }
 
 TEST_F(PrivetHandlerTest, PairingConfirm) {
   EXPECT_JSON_EQ(
-      "{'certFingerprint':'testFingerprint','certSignature':'testSignature'}",
+      R"({"certFingerprint":"testFingerprint","certSignature":"testSignature"})",
       HandleRequest(
           "/privet/v3/pairing/confirm",
-          "{'sessionId':'testSession','clientCommitment':'testCommitment'}"));
+          R"({"sessionId":"testSession","clientCommitment":"testCommitment"})"));
 }
 
 TEST_F(PrivetHandlerTest, PairingCancel) {
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/pairing/cancel",
-                                     "{'sessionId': 'testSession'}"));
+                                     R"({"sessionId": "testSession"})"));
 }
 
 TEST_F(PrivetHandlerTest, AuthErrorNoType) {
@@ -360,25 +359,26 @@ TEST_F(PrivetHandlerTest, AuthErrorNoType) {
 
 TEST_F(PrivetHandlerTest, AuthErrorInvalidType) {
   EXPECT_PRED2(IsEqualError, CodeWithReason(400, "invalidAuthMode"),
-               HandleRequest("/privet/v3/auth", "{'mode':'unknown'}"));
+               HandleRequest("/privet/v3/auth", R"({"mode":"unknown"})"));
 }
 
 TEST_F(PrivetHandlerTest, AuthErrorNoScope) {
   EXPECT_PRED2(IsEqualError, CodeWithReason(400, "invalidRequestedScope"),
-               HandleRequest("/privet/v3/auth", "{'mode':'anonymous'}"));
+               HandleRequest("/privet/v3/auth", R"({"mode":"anonymous"})"));
 }
 
 TEST_F(PrivetHandlerTest, AuthErrorInvalidScope) {
   EXPECT_PRED2(
       IsEqualError, CodeWithReason(400, "invalidRequestedScope"),
       HandleRequest("/privet/v3/auth",
-                    "{'mode':'anonymous','requestedScope':'unknown'}"));
+                    R"({"mode":"anonymous","requestedScope":"unknown"})"));
 }
 
 TEST_F(PrivetHandlerTest, AuthErrorAccessDenied) {
-  EXPECT_PRED2(IsEqualError, CodeWithReason(403, "accessDenied"),
-               HandleRequest("/privet/v3/auth",
-                             "{'mode':'anonymous','requestedScope':'owner'}"));
+  EXPECT_PRED2(
+      IsEqualError, CodeWithReason(403, "accessDenied"),
+      HandleRequest("/privet/v3/auth",
+                    R"({"mode":"anonymous","requestedScope":"owner"})"));
 }
 
 TEST_F(PrivetHandlerTest, AuthErrorInvalidAuthCode) {
@@ -388,9 +388,9 @@ TEST_F(PrivetHandlerTest, AuthErrorInvalidAuthCode) {
   EXPECT_CALL(security_, CreateAccessToken(_, "testToken", _, _, _, _, _))
       .WillRepeatedly(WithArgs<6>(Invoke(set_error)));
   const char kInput[] = R"({
-    'mode': 'pairing',
-    'requestedScope': 'user',
-    'authCode': 'testToken'
+    "mode": "pairing",
+    "requestedScope": "user",
+    "authCode": "testToken"
   })";
   EXPECT_PRED2(IsEqualError, CodeWithReason(403, "invalidAuthCode"),
                HandleRequest("/privet/v3/auth", kInput));
@@ -398,14 +398,15 @@ TEST_F(PrivetHandlerTest, AuthErrorInvalidAuthCode) {
 
 TEST_F(PrivetHandlerTest, AuthAnonymous) {
   const char kExpected[] = R"({
-    'accessToken': 'GuestAccessToken',
-    'expiresIn': 15,
-    'scope': 'viewer',
-    'tokenType': 'Privet'
+    "accessToken": "GuestAccessToken",
+    "expiresIn": 15,
+    "scope": "viewer",
+    "tokenType": "Privet"
   })";
-  EXPECT_JSON_EQ(kExpected,
-                 HandleRequest("/privet/v3/auth",
-                               "{'mode':'anonymous','requestedScope':'auto'}"));
+  EXPECT_JSON_EQ(
+      kExpected,
+      HandleRequest("/privet/v3/auth",
+                    R"({"mode":"anonymous","requestedScope":"auto"})"));
 }
 
 TEST_F(PrivetHandlerTest, AuthPairing) {
@@ -415,15 +416,15 @@ TEST_F(PrivetHandlerTest, AuthPairing) {
                             SetArgPointee<5>(base::TimeDelta::FromSeconds(15)),
                             Return(true)));
   const char kInput[] = R"({
-    'mode': 'pairing',
-    'requestedScope': 'owner',
-    'authCode': 'testToken'
+    "mode": "pairing",
+    "requestedScope": "owner",
+    "authCode": "testToken"
   })";
   const char kExpected[] = R"({
-    'accessToken': 'OwnerAccessToken',
-    'expiresIn': 15,
-    'scope': 'owner',
-    'tokenType': 'Privet'
+    "accessToken": "OwnerAccessToken",
+    "expiresIn": 15,
+    "scope": "owner",
+    "tokenType": "Privet"
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
 }
@@ -435,15 +436,15 @@ TEST_F(PrivetHandlerTest, AuthLocalAuto) {
                             SetArgPointee<5>(base::TimeDelta::FromSeconds(15)),
                             Return(true)));
   const char kInput[] = R"({
-    'mode': 'local',
-    'requestedScope': 'auto',
-    'authCode': 'localAuthToken'
+    "mode": "local",
+    "requestedScope": "auto",
+    "authCode": "localAuthToken"
   })";
   const char kExpected[] = R"({
-    'accessToken': 'UserAccessToken',
-    'expiresIn': 15,
-    'scope': 'user',
-    'tokenType': 'Privet'
+    "accessToken": "UserAccessToken",
+    "expiresIn": 15,
+    "scope": "user",
+    "tokenType": "Privet"
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
 }
@@ -455,15 +456,15 @@ TEST_F(PrivetHandlerTest, AuthLocal) {
                             SetArgPointee<5>(base::TimeDelta::FromSeconds(15)),
                             Return(true)));
   const char kInput[] = R"({
-    'mode': 'local',
-    'requestedScope': 'manager',
-    'authCode': 'localAuthToken'
+    "mode": "local",
+    "requestedScope": "manager",
+    "authCode": "localAuthToken"
   })";
   const char kExpected[] = R"({
-    'accessToken': 'ManagerAccessToken',
-    'expiresIn': 15,
-    'scope': 'manager',
-    'tokenType': 'Privet'
+    "accessToken": "ManagerAccessToken",
+    "expiresIn": 15,
+    "scope": "manager",
+    "tokenType": "Privet"
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/auth", kInput));
 }
@@ -475,9 +476,9 @@ TEST_F(PrivetHandlerTest, AuthLocalHighScope) {
                             SetArgPointee<5>(base::TimeDelta::FromSeconds(1)),
                             Return(true)));
   const char kInput[] = R"({
-    'mode': 'local',
-    'requestedScope': 'manager',
-    'authCode': 'localAuthToken'
+    "mode": "local",
+    "requestedScope": "manager",
+    "authCode": "localAuthToken"
   })";
   EXPECT_PRED2(IsEqualError, CodeWithReason(403, "accessDenied"),
                HandleRequest("/privet/v3/auth", kInput));
@@ -506,9 +507,9 @@ TEST_F(PrivetHandlerSetupTest, StatusWifi) {
   wifi_.setup_state_ = SetupState{SetupState::kSuccess};
 
   const char kExpected[] = R"({
-    'wifi': {
-        'ssid': 'TestSsid',
-        'status': 'success'
+    "wifi": {
+        "ssid": "TestSsid",
+        "status": "success"
      }
   })";
   EXPECT_JSON_EQ(kExpected, HandleRequest("/privet/v3/setup/status", "{}"));
@@ -520,10 +521,10 @@ TEST_F(PrivetHandlerSetupTest, StatusWifiError) {
   wifi_.setup_state_ = SetupState{std::move(error)};
 
   const char kExpected[] = R"({
-    'wifi': {
-        'status': 'error',
-        'error': {
-          'code': 'invalidPassphrase'
+    "wifi": {
+        "status": "error",
+        "error": {
+          "code": "invalidPassphrase"
         }
      }
   })";
@@ -553,10 +554,10 @@ TEST_F(PrivetHandlerSetupTest, StatusGcdError) {
   cloud_.setup_state_ = SetupState{std::move(error)};
 
   const char kExpected[] = R"({
-    'gcd': {
-        'status': 'error',
-        'error': {
-          'code': 'invalidTicket'
+    "gcd": {
+        "status": "error",
+        "error": {
+          "code": "invalidTicket"
         }
      }
   })";
@@ -570,25 +571,25 @@ TEST_F(PrivetHandlerSetupTest, SetupNameDescriptionLocation) {
               UpdateDeviceInfo("testName", "testDescription", "testLocation"))
       .Times(1);
   const char kInput[] = R"({
-    'name': 'testName',
-    'description': 'testDescription',
-    'location': 'testLocation'
+    "name": "testName",
+    "description": "testDescription",
+    "location": "testLocation"
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/setup/start", kInput));
 }
 
 TEST_F(PrivetHandlerSetupTest, InvalidParams) {
   const char kInputWifi[] = R"({
-    'wifi': {
-      'ssid': ''
+    "wifi": {
+      "ssid": ""
     }
   })";
   EXPECT_PRED2(IsEqualError, CodeWithReason(400, "invalidParams"),
                HandleRequest("/privet/v3/setup/start", kInputWifi));
 
   const char kInputRegistration[] = R"({
-    'gcd': {
-      'ticketId': ''
+    "gcd": {
+      "ticketId": ""
     }
   })";
   EXPECT_PRED2(IsEqualError, CodeWithReason(400, "invalidParams"),
@@ -598,14 +599,14 @@ TEST_F(PrivetHandlerSetupTest, InvalidParams) {
 TEST_F(PrivetHandlerSetupTest, WifiSetupUnavailable) {
   SetNoWifiAndGcd();
   EXPECT_PRED2(IsEqualError, CodeWithReason(400, "setupUnavailable"),
-               HandleRequest("/privet/v3/setup/start", "{'wifi': {}}"));
+               HandleRequest("/privet/v3/setup/start", R"({"wifi": {}})"));
 }
 
 TEST_F(PrivetHandlerSetupTest, WifiSetup) {
   const char kInput[] = R"({
-    'wifi': {
-      'ssid': 'testSsid',
-      'passphrase': 'testPass'
+    "wifi": {
+      "ssid": "testSsid",
+      "passphrase": "testPass"
     }
   })";
   auto set_error = [](const std::string&, const std::string&, ErrorPtr* error) {
@@ -616,8 +617,8 @@ TEST_F(PrivetHandlerSetupTest, WifiSetup) {
                HandleRequest("/privet/v3/setup/start", kInput));
 
   const char kExpected[] = R"({
-    'wifi': {
-      'status': 'inProgress'
+    "wifi": {
+      "status": "inProgress"
     }
   })";
   wifi_.setup_state_ = SetupState{SetupState::kInProgress};
@@ -629,9 +630,9 @@ TEST_F(PrivetHandlerSetupTest, WifiSetup) {
 TEST_F(PrivetHandlerSetupTest, GcdSetupUnavailable) {
   SetNoWifiAndGcd();
   const char kInput[] = R"({
-    'gcd': {
-      'ticketId': 'testTicket',
-      'user': 'testUser'
+    "gcd": {
+      "ticketId": "testTicket",
+      "user": "testUser"
     }
   })";
 
@@ -641,9 +642,9 @@ TEST_F(PrivetHandlerSetupTest, GcdSetupUnavailable) {
 
 TEST_F(PrivetHandlerSetupTest, GcdSetup) {
   const char kInput[] = R"({
-    'gcd': {
-      'ticketId': 'testTicket',
-      'user': 'testUser'
+    "gcd": {
+      "ticketId": "testTicket",
+      "user": "testUser"
     }
   })";
 
@@ -655,8 +656,8 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
                HandleRequest("/privet/v3/setup/start", kInput));
 
   const char kExpected[] = R"({
-    'gcd': {
-      'status': 'inProgress'
+    "gcd": {
+      "status": "inProgress"
     }
   })";
   cloud_.setup_state_ = SetupState{SetupState::kInProgress};
@@ -667,7 +668,7 @@ TEST_F(PrivetHandlerSetupTest, GcdSetup) {
 
 TEST_F(PrivetHandlerSetupTest, GcdSetupWithEndpoints) {
   const char kInput[] = R"({
-    'gcd': {
+    "gcd": {
       "api_key": "test_api_key",
       "client_id": "test_client_id",
       "client_secret": "test_client_secret",
@@ -681,8 +682,8 @@ TEST_F(PrivetHandlerSetupTest, GcdSetupWithEndpoints) {
   })";
 
   const char kExpected[] = R"({
-    'gcd': {
-      'status': 'inProgress'
+    "gcd": {
+      "status": "inProgress"
     }
   })";
   cloud_.setup_state_ = SetupState{SetupState::kInProgress};
@@ -706,9 +707,9 @@ TEST_F(PrivetHandlerSetupTest, GcdSetupAsMaster) {
           SetArgPointee<1>(UserInfo{AuthScope::kManager, TestUserId{"1"}}),
           Return(true)));
   const char kInput[] = R"({
-    'gcd': {
-      'ticketId': 'testTicket',
-      'user': 'testUser'
+    "gcd": {
+      "ticketId": "testTicket",
+      "user": "testUser"
     }
   })";
 
@@ -717,59 +718,59 @@ TEST_F(PrivetHandlerSetupTest, GcdSetupAsMaster) {
 }
 
 TEST_F(PrivetHandlerTestWithAuth, ClaimAccessControl) {
-  EXPECT_JSON_EQ("{'clientToken': 'RootClientAuthToken'}",
+  EXPECT_JSON_EQ(R"({"clientToken": "RootClientAuthToken"})",
                  HandleRequest("/privet/v3/accessControl/claim", "{}"));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, ConfirmAccessControl) {
   EXPECT_JSON_EQ("{}",
                  HandleRequest("/privet/v3/accessControl/confirm",
-                               "{'clientToken': 'DerivedClientAuthToken'}"));
+                               R"({"clientToken": "DerivedClientAuthToken"})"));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, State) {
-  EXPECT_JSON_EQ("{'state': {'test': {}}, 'fingerprint': '1'}",
+  EXPECT_JSON_EQ(R"({"state": {"test": {}}, "fingerprint": "1"})",
                  HandleRequest("/privet/v3/state", "{}"));
 
   cloud_.NotifyOnStateChanged();
 
-  EXPECT_JSON_EQ("{'state': {'test': {}}, 'fingerprint': '2'}",
+  EXPECT_JSON_EQ(R"({"state": {"test": {}}, "fingerprint": "2"})",
                  HandleRequest("/privet/v3/state", "{}"));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, CommandsDefs) {
-  EXPECT_JSON_EQ("{'commands': {'test':{}}, 'fingerprint': '1'}",
+  EXPECT_JSON_EQ(R"({"commands": {"test":{}}, "fingerprint": "1"})",
                  HandleRequest("/privet/v3/commandDefs", "{}"));
 
   cloud_.NotifyOnTraitDefsChanged();
 
-  EXPECT_JSON_EQ("{'commands': {'test':{}}, 'fingerprint': '2'}",
+  EXPECT_JSON_EQ(R"({"commands": {"test":{}}, "fingerprint": "2"})",
                  HandleRequest("/privet/v3/commandDefs", "{}"));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, Traits) {
-  EXPECT_JSON_EQ("{'traits': {'test': {}}, 'fingerprint': '1'}",
+  EXPECT_JSON_EQ(R"({"traits": {"test": {}}, "fingerprint": "1"})",
                  HandleRequest("/privet/v3/traits", "{}"));
 
   cloud_.NotifyOnTraitDefsChanged();
 
-  EXPECT_JSON_EQ("{'traits': {'test': {}}, 'fingerprint': '2'}",
+  EXPECT_JSON_EQ(R"({"traits": {"test": {}}, "fingerprint": "2"})",
                  HandleRequest("/privet/v3/traits", "{}"));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, Components) {
-  EXPECT_JSON_EQ("{'components': {'test': {}}, 'fingerprint': '1'}",
+  EXPECT_JSON_EQ(R"({"components": {"test": {}}, "fingerprint": "1"})",
                  HandleRequest("/privet/v3/components", "{}"));
 
   cloud_.NotifyOnComponentTreeChanged();
 
-  EXPECT_JSON_EQ("{'components': {'test': {}}, 'fingerprint': '2'}",
+  EXPECT_JSON_EQ(R"({"components": {"test": {}}, "fingerprint": "2"})",
                  HandleRequest("/privet/v3/components", "{}"));
 
   // State change will also change the components fingerprint.
   cloud_.NotifyOnStateChanged();
 
-  EXPECT_JSON_EQ("{'components': {'test': {}}, 'fingerprint': '3'}",
+  EXPECT_JSON_EQ(R"({"components": {"test": {}}, "fingerprint": "3"})",
                  HandleRequest("/privet/v3/components", "{}"));
 }
 
@@ -814,7 +815,7 @@ TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
     "fingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected1, HandleRequest("/privet/v3/components",
-                                           "{'filter':['state']}"));
+                                           R"({"filter":["state"]})"));
 
   const char kExpected2[] = R"({
     "components": {
@@ -825,7 +826,7 @@ TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
     "fingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected2, HandleRequest("/privet/v3/components",
-                                           "{'filter':['traits']}"));
+                                           R"({"filter":["traits"]})"));
 
   const char kExpected3[] = R"({
     "components": {
@@ -843,7 +844,7 @@ TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
     "fingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected3, HandleRequest("/privet/v3/components",
-                                           "{'filter':['components']}"));
+                                           R"({"filter":["components"]})"));
 
   const char kExpected4[] = R"({
     "components": {
@@ -871,9 +872,10 @@ TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
     },
     "fingerprint": "1"
   })";
-  EXPECT_JSON_EQ(kExpected4,
-                 HandleRequest("/privet/v3/components",
-                               "{'filter':['traits', 'components', 'state']}"));
+  EXPECT_JSON_EQ(
+      kExpected4,
+      HandleRequest("/privet/v3/components",
+                    R"({"filter":["traits", "components", "state"]})"));
 
   const base::DictionaryValue* comp2 = nullptr;
   ASSERT_TRUE(components.GetDictionary("comp1.components.comp2", &comp2));
@@ -896,7 +898,7 @@ TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
       kExpected5,
       HandleRequest(
           "/privet/v3/components",
-          "{'path':'comp1.comp2', 'filter':['traits', 'components']}"));
+          R"({"path":"comp1.comp2", "filter":["traits", "components"]})"));
 
   auto error_handler = [](ErrorPtr* error) -> const base::DictionaryValue* {
     return Error::AddTo(error, FROM_HERE, "componentNotFound", "");
@@ -907,36 +909,36 @@ TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
   EXPECT_PRED2(
       IsEqualError, CodeWithReason(500, "componentNotFound"),
       HandleRequest("/privet/v3/components",
-                    "{'path':'comp7', 'filter':['traits', 'components']}"));
+                    R"({"path":"comp7", "filter":["traits", "components"]})"));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, CommandsExecute) {
-  const char kInput[] = "{'name': 'test'}";
+  const char kInput[] = R"({"name": "test"})";
   base::DictionaryValue command;
   LoadTestJson(kInput, &command);
-  LoadTestJson("{'id':'5'}", &command);
+  LoadTestJson(R"({"id":"5"})", &command);
   EXPECT_CALL(cloud_, AddCommand(_, _, _))
       .WillOnce(WithArgs<2>(Invoke(
           [&command](const CloudDelegate::CommandDoneCallback& callback) {
             callback.Run(command, nullptr);
           })));
 
-  EXPECT_JSON_EQ("{'name':'test', 'id':'5'}",
+  EXPECT_JSON_EQ(R"({"name":"test", "id":"5"})",
                  HandleRequest("/privet/v3/commands/execute", kInput));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, CommandsStatus) {
-  const char kInput[] = "{'id': '5'}";
+  const char kInput[] = R"({"id": "5"})";
   base::DictionaryValue command;
   LoadTestJson(kInput, &command);
-  LoadTestJson("{'name':'test'}", &command);
+  LoadTestJson(R"({"name":"test"})", &command);
   EXPECT_CALL(cloud_, GetCommand(_, _, _))
       .WillOnce(WithArgs<2>(Invoke(
           [&command](const CloudDelegate::CommandDoneCallback& callback) {
             callback.Run(command, nullptr);
           })));
 
-  EXPECT_JSON_EQ("{'name':'test', 'id':'5'}",
+  EXPECT_JSON_EQ(R"({"name":"test", "id":"5"})",
                  HandleRequest("/privet/v3/commands/status", kInput));
 
   ErrorPtr error;
@@ -948,11 +950,11 @@ TEST_F(PrivetHandlerTestWithAuth, CommandsStatus) {
           })));
 
   EXPECT_PRED2(IsEqualError, CodeWithReason(404, "notFound"),
-               HandleRequest("/privet/v3/commands/status", "{'id': '15'}"));
+               HandleRequest("/privet/v3/commands/status", R"({"id": "15"})"));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, CommandsCancel) {
-  const char kExpected[] = "{'id': '5', 'name':'test', 'state':'cancelled'}";
+  const char kExpected[] = R"({"id": "5", "name":"test", "state":"cancelled"})";
   base::DictionaryValue command;
   LoadTestJson(kExpected, &command);
   EXPECT_CALL(cloud_, CancelCommand(_, _, _))
@@ -962,7 +964,7 @@ TEST_F(PrivetHandlerTestWithAuth, CommandsCancel) {
           })));
 
   EXPECT_JSON_EQ(kExpected,
-                 HandleRequest("/privet/v3/commands/cancel", "{'id': '8'}"));
+                 HandleRequest("/privet/v3/commands/cancel", R"({"id": "8"})"));
 
   ErrorPtr error;
   Error::AddTo(&error, FROM_HERE, "notFound", "");
@@ -973,14 +975,14 @@ TEST_F(PrivetHandlerTestWithAuth, CommandsCancel) {
           })));
 
   EXPECT_PRED2(IsEqualError, CodeWithReason(404, "notFound"),
-               HandleRequest("/privet/v3/commands/cancel", "{'id': '11'}"));
+               HandleRequest("/privet/v3/commands/cancel", R"({"id": "11"})"));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, CommandsList) {
   const char kExpected[] = R"({
-    'commands' : [
-        {'id':'5', 'state':'cancelled'},
-        {'id':'15', 'state':'inProgress'}
+    "commands" : [
+        {"id":"5", "state":"cancelled"},
+        {"id":"15", "state":"inProgress"}
      ]})";
 
   base::DictionaryValue commands;
@@ -1005,10 +1007,10 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, NoInput) {
   cloud_.NotifyOnStateChanged();
   const char kInput[] = "{}";
   const char kExpected[] = R"({
-   'commandsFingerprint': '2',
-   'stateFingerprint': '2',
-   'traitsFingerprint': '2',
-   'componentsFingerprint': '3'
+   "commandsFingerprint": "2",
+   "stateFingerprint": "2",
+   "traitsFingerprint": "2",
+   "componentsFingerprint": "3"
   })";
   EXPECT_JSON_EQ(kExpected,
                  HandleRequest("/privet/v3/checkForUpdates", kInput));
@@ -1022,16 +1024,16 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, AlreadyChanged) {
   cloud_.NotifyOnComponentTreeChanged();
   cloud_.NotifyOnStateChanged();
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   const char kExpected[] = R"({
-   'commandsFingerprint': '2',
-   'stateFingerprint': '2',
-   'traitsFingerprint': '2',
-   'componentsFingerprint': '3'
+   "commandsFingerprint": "2",
+   "stateFingerprint": "2",
+   "traitsFingerprint": "2",
+   "componentsFingerprint": "3"
   })";
   EXPECT_JSON_EQ(kExpected,
                  HandleRequest("/privet/v3/checkForUpdates", kInput));
@@ -1042,20 +1044,20 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollCommands) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
   cloud_.NotifyOnTraitDefsChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '2',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '2',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "2",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "2",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -1064,20 +1066,20 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollTraits) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
   cloud_.NotifyOnTraitDefsChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '2',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '2',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "2",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "2",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -1086,20 +1088,20 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollState) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
   cloud_.NotifyOnStateChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '2',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '2'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "2",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "2"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -1108,20 +1110,20 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollComponents) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
   cloud_.NotifyOnComponentTreeChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '2'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "2"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -1130,8 +1132,8 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollIgnoreTraits) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'stateFingerprint': '1',
-   'componentsFingerprint': '1'
+   "stateFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
@@ -1140,10 +1142,10 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollIgnoreTraits) {
   cloud_.NotifyOnComponentTreeChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '2',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '2',
-   'componentsFingerprint': '2'
+   "commandsFingerprint": "2",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "2",
+   "componentsFingerprint": "2"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -1152,8 +1154,8 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollIgnoreState) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'traitsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "traitsFingerprint": "1"
   })";
   EXPECT_JSON_EQ("{}", HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(0, GetResponseCount());
@@ -1164,10 +1166,10 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, LongPollIgnoreState) {
   cloud_.NotifyOnTraitDefsChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '2',
-   'stateFingerprint': '2',
-   'traitsFingerprint': '2',
-   'componentsFingerprint': '3'
+   "commandsFingerprint": "2",
+   "stateFingerprint": "2",
+   "traitsFingerprint": "2",
+   "componentsFingerprint": "3"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -1176,17 +1178,17 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, InstantTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1',
-   'waitTimeout': 0
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1",
+   "waitTimeout": 0
   })";
   const char kExpected[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected,
                  HandleRequest("/privet/v3/checkForUpdates", kInput));
@@ -1196,11 +1198,11 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, UserTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1',
-   'waitTimeout': 3
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1",
+   "waitTimeout": 3
   })";
   base::Closure callback;
   EXPECT_CALL(device_, PostDelayedTask(_, _, base::TimeDelta::FromSeconds(3)))
@@ -1210,10 +1212,10 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, UserTimeout) {
   callback.Run();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -1222,10 +1224,10 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, ServerTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::FromMinutes(1)));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   base::Closure callback;
   EXPECT_CALL(device_, PostDelayedTask(_, _, base::TimeDelta::FromSeconds(50)))
@@ -1235,10 +1237,10 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, ServerTimeout) {
   callback.Run();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -1247,10 +1249,10 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, VeryShortServerTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::FromSeconds(5)));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ(kInput, HandleRequest("/privet/v3/checkForUpdates", kInput));
   EXPECT_EQ(1, GetResponseCount());
@@ -1260,11 +1262,11 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, ServerAndUserTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::FromMinutes(1)));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1',
-   'waitTimeout': 10
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1",
+   "waitTimeout": 10
   })";
   base::Closure callback;
   EXPECT_CALL(device_, PostDelayedTask(_, _, base::TimeDelta::FromSeconds(10)))
@@ -1274,10 +1276,10 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, ServerAndUserTimeout) {
   callback.Run();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
 }
@@ -1286,11 +1288,11 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, ChangeBeforeTimeout) {
   EXPECT_CALL(device_, GetHttpRequestTimeout())
       .WillOnce(Return(base::TimeDelta::Max()));
   const char kInput[] = R"({
-   'commandsFingerprint': '1',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '1',
-   'componentsFingerprint': '1',
-   'waitTimeout': 10
+   "commandsFingerprint": "1",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "1",
+   "componentsFingerprint": "1",
+   "waitTimeout": 10
   })";
   base::Closure callback;
   EXPECT_CALL(device_, PostDelayedTask(_, _, base::TimeDelta::FromSeconds(10)))
@@ -1300,10 +1302,10 @@ TEST_F(PrivetHandlerCheckForUpdatesTest, ChangeBeforeTimeout) {
   cloud_.NotifyOnTraitDefsChanged();
   EXPECT_EQ(1, GetResponseCount());
   const char kExpected[] = R"({
-   'commandsFingerprint': '2',
-   'stateFingerprint': '1',
-   'traitsFingerprint': '2',
-   'componentsFingerprint': '1'
+   "commandsFingerprint": "2",
+   "stateFingerprint": "1",
+   "traitsFingerprint": "2",
+   "componentsFingerprint": "1"
   })";
   EXPECT_JSON_EQ(kExpected, GetResponse());
   callback.Run();
