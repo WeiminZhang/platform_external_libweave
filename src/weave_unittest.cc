@@ -421,7 +421,8 @@ TEST_F(WeaveBasicTest, Register) {
   InitDnsSdPublishing(true, "DB");
 
   bool done = false;
-  device_->Register("TICKET_ID", base::Bind([this, &done](ErrorPtr error) {
+  device_->Register(RegistrationData{"TICKET_ID"},
+                    base::Bind([this, &done](ErrorPtr error) {
                       EXPECT_FALSE(error);
                       done = true;
                       task_runner_.Break();
@@ -431,7 +432,8 @@ TEST_F(WeaveBasicTest, Register) {
   EXPECT_TRUE(done);
 
   done = false;
-  device_->Register("TICKET_ID2", base::Bind([this, &done](ErrorPtr error) {
+  device_->Register(RegistrationData{"TICKET_ID2"},
+                    base::Bind([this, &done](ErrorPtr error) {
                       EXPECT_TRUE(error->HasError("already_registered"));
                       done = true;
                       task_runner_.Break();

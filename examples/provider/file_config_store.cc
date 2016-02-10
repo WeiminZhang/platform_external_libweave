@@ -48,6 +48,7 @@ bool FileConfigStore::LoadDefaults(Settings* settings) {
   settings->model_id = model_id_;
   settings->pairing_modes = {PairingType::kEmbeddedCode};
   settings->embedded_code = "0000";
+  settings->allow_endpoints_override = true;
 
   // Keys owners:
   //   avakulenko@google.com

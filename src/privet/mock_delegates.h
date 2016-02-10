@@ -183,8 +183,11 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_CONST_METHOD0(GetAnonymousMaxScope, AuthScope());
   MOCK_CONST_METHOD0(GetConnectionState, const ConnectionState&());
   MOCK_CONST_METHOD0(GetSetupState, const SetupState&());
-  MOCK_METHOD3(Setup, bool(const std::string&, const std::string&, ErrorPtr*));
+  MOCK_METHOD2(Setup, bool(const RegistrationData&, ErrorPtr*));
   MOCK_CONST_METHOD0(GetCloudId, std::string());
+  MOCK_CONST_METHOD0(GetOAuthUrl, std::string());
+  MOCK_CONST_METHOD0(GetServiceUrl, std::string());
+  MOCK_CONST_METHOD0(GetXmppEndpoint, std::string());
   MOCK_CONST_METHOD0(GetLegacyState, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetLegacyCommandDef, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
@@ -208,6 +211,10 @@ class MockCloudDelegate : public CloudDelegate {
 
   MockCloudDelegate() {
     EXPECT_CALL(*this, GetDeviceId()).WillRepeatedly(Return("TestId"));
+    EXPECT_CALL(*this, GetOAuthUrl()).WillRepeatedly(Return("https://oauths/"));
+    EXPECT_CALL(*this, GetServiceUrl())
+        .WillRepeatedly(Return("https://service/"));
+    EXPECT_CALL(*this, GetXmppEndpoint()).WillRepeatedly(Return("xmpp:678"));
     EXPECT_CALL(*this, GetModelId()).WillRepeatedly(Return("ABMID"));
     EXPECT_CALL(*this, GetName()).WillRepeatedly(Return("TestDevice"));
     EXPECT_CALL(*this, GetDescription()).WillRepeatedly(Return(""));

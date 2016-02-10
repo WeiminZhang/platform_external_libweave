@@ -69,7 +69,7 @@ class DeviceManager final : public Device {
                   ErrorPtr* error) override;
   Command* FindCommand(const std::string& id) override;
   void AddStateChangedCallback(const base::Closure& callback) override;
-  void Register(const std::string& ticket_id,
+  void Register(const RegistrationData& registration_data,
                 const DoneCallback& callback) override;
   GcdState GetGcdState() const override;
   void AddGcdStateChangedCallback(
