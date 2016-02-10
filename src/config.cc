@@ -31,8 +31,8 @@ const char kVersion[] = "version";
 const char kClientId[] = "client_id";
 const char kClientSecret[] = "client_secret";
 const char kApiKey[] = "api_key";
-const char kOAuthURL[] = "oauth_url";
-const char kServiceURL[] = "service_url";
+const char kOAuthUrl[] = "oauth_url";
+const char kServiceUrl[] = "service_url";
 const char kXmppEndpoint[] = "xmpp_endpoint";
 const char kName[] = "name";
 const char kDescription[] = "description";
@@ -185,10 +185,10 @@ void Config::Transaction::LoadState() {
   if (dict->GetString(config_keys::kApiKey, &tmp))
     set_api_key(tmp);
 
-  if (dict->GetString(config_keys::kOAuthURL, &tmp))
+  if (dict->GetString(config_keys::kOAuthUrl, &tmp))
     set_oauth_url(tmp);
 
-  if (dict->GetString(config_keys::kServiceURL, &tmp)) {
+  if (dict->GetString(config_keys::kServiceUrl, &tmp)) {
     if (tmp == kDeprecatedUrl)
       tmp = kWeaveUrl;
     set_service_url(tmp);
@@ -255,8 +255,8 @@ void Config::Save() {
   dict.SetString(config_keys::kClientId, settings_.client_id);
   dict.SetString(config_keys::kClientSecret, settings_.client_secret);
   dict.SetString(config_keys::kApiKey, settings_.api_key);
-  dict.SetString(config_keys::kOAuthURL, settings_.oauth_url);
-  dict.SetString(config_keys::kServiceURL, settings_.service_url);
+  dict.SetString(config_keys::kOAuthUrl, settings_.oauth_url);
+  dict.SetString(config_keys::kServiceUrl, settings_.service_url);
   dict.SetString(config_keys::kXmppEndpoint, settings_.xmpp_endpoint);
   dict.SetString(config_keys::kRefreshToken, settings_.refresh_token);
   dict.SetString(config_keys::kCloudId, settings_.cloud_id);

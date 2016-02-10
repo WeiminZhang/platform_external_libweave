@@ -84,21 +84,21 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // WebParamsEncode() and appended to URL as a query
   // string.
   // So, calling:
-  //    GetServiceURL("ticket", {{"key","apiKey"}})
+  //    GetServiceUrl("ticket", {{"key","apiKey"}})
   // will return something like:
   //    https://www.googleapis.com/weave/v1/ticket?key=apiKey
-  std::string GetServiceURL(const std::string& subpath = {},
+  std::string GetServiceUrl(const std::string& subpath = {},
                             const WebParamList& params = {}) const;
 
   // Returns a service URL to access the registered device on GCD server.
   // The base URL used to construct the full URL looks like this:
   //    https://www.googleapis.com/weave/v1/devices/<cloud_id>/
-  std::string GetDeviceURL(const std::string& subpath = {},
+  std::string GetDeviceUrl(const std::string& subpath = {},
                            const WebParamList& params = {}) const;
 
   // Similar to GetServiceURL, GetOAuthURL() returns a URL of OAuth 2.0 server.
   // The base URL used is https://accounts.google.com/o/oauth2/.
-  std::string GetOAuthURL(const std::string& subpath = {},
+  std::string GetOAuthUrl(const std::string& subpath = {},
                           const WebParamList& params = {}) const;
 
   // Starts GCD device if credentials available.

@@ -45,8 +45,8 @@ namespace {
 namespace test_data {
 
 const char kXmppEndpoint[] = "xmpp.server.com:1234";
-const char kServiceURL[] = "http://gcd.server.com/";
-const char kOAuthURL[] = "http://oauth.server.com/";
+const char kServiceUrl[] = "http://gcd.server.com/";
+const char kOAuthUrl[] = "http://oauth.server.com/";
 const char kApiKey[] = "GOadRdTf9FERf0k4w6EFOof56fUJ3kFDdFL3d7f";
 const char kClientId[] =
     "123543821385-sfjkjshdkjhfk234sdfsdfkskd"
@@ -143,8 +143,8 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
           settings->location = "Kitchen";
           settings->local_anonymous_access_role = AuthScope::kViewer;
           settings->model_id = "AAAAA";
-          settings->oauth_url = test_data::kOAuthURL;
-          settings->service_url = test_data::kServiceURL;
+          settings->oauth_url = test_data::kOAuthUrl;
+          settings->service_url = test_data::kServiceUrl;
           settings->xmpp_endpoint = test_data::kXmppEndpoint;
           settings->allow_endpoints_override = allow_endpoints_override;
           return true;
@@ -217,31 +217,31 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
   ComponentManagerImpl component_manager_{&task_runner_};
 };
 
-TEST_F(DeviceRegistrationInfoTest, GetServiceURL) {
-  EXPECT_EQ(test_data::kServiceURL, dev_reg_->GetServiceURL());
-  std::string url = test_data::kServiceURL;
+TEST_F(DeviceRegistrationInfoTest, GetServiceUrl) {
+  EXPECT_EQ(test_data::kServiceUrl, dev_reg_->GetServiceUrl());
+  std::string url = test_data::kServiceUrl;
   url += "registrationTickets";
-  EXPECT_EQ(url, dev_reg_->GetServiceURL("registrationTickets"));
+  EXPECT_EQ(url, dev_reg_->GetServiceUrl("registrationTickets"));
   url += "?key=";
   url += test_data::kApiKey;
-  EXPECT_EQ(url, dev_reg_->GetServiceURL("registrationTickets",
+  EXPECT_EQ(url, dev_reg_->GetServiceUrl("registrationTickets",
                                          {{"key", test_data::kApiKey}}));
   url += "&restart=true";
-  EXPECT_EQ(url, dev_reg_->GetServiceURL(
+  EXPECT_EQ(url, dev_reg_->GetServiceUrl(
                      "registrationTickets",
                      {
                          {"key", test_data::kApiKey}, {"restart", "true"},
                      }));
 }
 
-TEST_F(DeviceRegistrationInfoTest, GetOAuthURL) {
-  EXPECT_EQ(test_data::kOAuthURL, dev_reg_->GetOAuthURL());
-  std::string url = test_data::kOAuthURL;
+TEST_F(DeviceRegistrationInfoTest, GetOAuthUrl) {
+  EXPECT_EQ(test_data::kOAuthUrl, dev_reg_->GetOAuthUrl());
+  std::string url = test_data::kOAuthUrl;
   url += "auth?redirect_uri=urn%3Aietf%3Awg%3Aoauth%3A2.0%3Aoob&";
   url += "response_type=code&";
   url += "client_id=";
   url += test_data::kClientId;
-  EXPECT_EQ(url, dev_reg_->GetOAuthURL(
+  EXPECT_EQ(url, dev_reg_->GetOAuthUrl(
                      "auth", {{"redirect_uri", "urn:ietf:wg:oauth:2.0:oob"},
                               {"response_type", "code"},
                               {"client_id", test_data::kClientId}}));
@@ -253,7 +253,7 @@ TEST_F(DeviceRegistrationInfoTest, HaveRegistrationCredentials) {
 
   EXPECT_CALL(
       http_client_,
-      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
+      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthUrl("token"),
                   HttpClient::Headers{GetFormHeader()}, _, _))
       .WillOnce(WithArgs<3, 4>(
           Invoke([](const std::string& data,
@@ -296,7 +296,7 @@ TEST_F(DeviceRegistrationInfoTest, CheckAuthenticationFailure) {
 
   EXPECT_CALL(
       http_client_,
-      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
+      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthUrl("token"),
                   HttpClient::Headers{GetFormHeader()}, _, _))
       .WillOnce(WithArgs<3, 4>(
           Invoke([](const std::string& data,
@@ -325,7 +325,7 @@ TEST_F(DeviceRegistrationInfoTest, CheckDeregistration) {
 
   EXPECT_CALL(
       http_client_,
-      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthURL("token"),
+      SendRequest(HttpClient::Method::kPost, dev_reg_->GetOAuthUrl("token"),
                   HttpClient::Headers{GetFormHeader()}, _, _))
       .WillOnce(WithArgs<3, 4>(
           Invoke([](const std::string& data,
@@ -355,7 +355,7 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
 
   EXPECT_CALL(
       http_client_,
-      SendRequest(HttpClient::Method::kGet, dev_reg_->GetDeviceURL(),
+      SendRequest(HttpClient::Method::kGet, dev_reg_->GetDeviceUrl(),
                   HttpClient::Headers{GetAuthHeader(), GetJsonHeader()}, _, _))
       .WillOnce(WithArgs<3, 4>(
           Invoke([](const std::string& data,
@@ -625,11 +625,11 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDeviceWithDefaultEndpoints) {
   registration_data.ticket_id = "test_ticked_id";
 
   RegistrationData expected_data = registration_data;
-  expected_data.oauth_url = test_data::kOAuthURL;
+  expected_data.oauth_url = test_data::kOAuthUrl;
   expected_data.client_id = test_data::kClientId;
   expected_data.client_secret = test_data::kClientSecret;
   expected_data.api_key = test_data::kApiKey;
-  expected_data.service_url = test_data::kServiceURL;
+  expected_data.service_url = test_data::kServiceUrl;
   expected_data.xmpp_endpoint = test_data::kXmppEndpoint;
 
   RegisterDevice(registration_data, expected_data);
@@ -687,7 +687,7 @@ class DeviceRegistrationInfoUpdateCommandTest
     EXPECT_TRUE(
         component_manager_.AddComponent("", "comp", {"robot"}, nullptr));
 
-    command_url_ = dev_reg_->GetServiceURL("commands/1234");
+    command_url_ = dev_reg_->GetServiceUrl("commands/1234");
 
     auto commands_json = CreateValue(R"([{
       'name':'robot._jump',

@@ -91,7 +91,7 @@ std::string AppendQueryParams(const std::string& url,
   return url + '?' + WebParamsEncode(params);
 }
 
-std::string BuildURL(const std::string& url,
+std::string BuildUrl(const std::string& url,
                      const std::string& subpath,
                      const WebParamList& params) {
   std::string result = url;
@@ -272,24 +272,24 @@ DeviceRegistrationInfo::DeviceRegistrationInfo(
 
 DeviceRegistrationInfo::~DeviceRegistrationInfo() = default;
 
-std::string DeviceRegistrationInfo::GetServiceURL(
+std::string DeviceRegistrationInfo::GetServiceUrl(
     const std::string& subpath,
     const WebParamList& params) const {
-  return BuildURL(GetSettings().service_url, subpath, params);
+  return BuildUrl(GetSettings().service_url, subpath, params);
 }
 
-std::string DeviceRegistrationInfo::GetDeviceURL(
+std::string DeviceRegistrationInfo::GetDeviceUrl(
     const std::string& subpath,
     const WebParamList& params) const {
   CHECK(!GetSettings().cloud_id.empty()) << "Must have a valid device ID";
-  return GetServiceURL("devices/" + GetSettings().cloud_id + "/" + subpath,
+  return GetServiceUrl("devices/" + GetSettings().cloud_id + "/" + subpath,
                        params);
 }
 
-std::string DeviceRegistrationInfo::GetOAuthURL(
+std::string DeviceRegistrationInfo::GetOAuthUrl(
     const std::string& subpath,
     const WebParamList& params) const {
-  return BuildURL(GetSettings().oauth_url, subpath, params);
+  return BuildUrl(GetSettings().oauth_url, subpath, params);
 }
 
 void DeviceRegistrationInfo::Start() {
@@ -376,7 +376,7 @@ void DeviceRegistrationInfo::RefreshAccessToken(const DoneCallback& callback) {
     return;
   }
 
-  RequestSender sender{HttpClient::Method::kPost, GetOAuthURL("token"),
+  RequestSender sender{HttpClient::Method::kPost, GetOAuthUrl("token"),
                        http_client_};
   sender.SetFormData({
       {"refresh_token", GetSettings().refresh_token},
@@ -507,7 +507,7 @@ void DeviceRegistrationInfo::GetDeviceInfo(
   ErrorPtr error;
   if (!VerifyRegistrationCredentials(&error))
     return callback.Run({}, std::move(error));
-  DoCloudRequest(HttpClient::Method::kGet, GetDeviceURL(), nullptr, callback);
+  DoCloudRequest(HttpClient::Method::kGet, GetDeviceUrl(), nullptr, callback);
 }
 
 void DeviceRegistrationInfo::RegisterDeviceError(const DoneCallback& callback,
@@ -572,7 +572,7 @@ void DeviceRegistrationInfo::RegisterDevice(RegistrationData registration_data,
   req_json.SetString("oauthClientId", registration_data.client_id);
   req_json.Set("deviceDraft", device_draft.release());
 
-  auto url = BuildURL(registration_data.service_url,
+  auto url = BuildUrl(registration_data.service_url,
                       "registrationTickets/" + registration_data.ticket_id,
                       {{"key", registration_data.api_key}});
 
@@ -599,7 +599,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketSent(
     return RegisterDeviceError(callback, std::move(error));
   }
 
-  std::string url = BuildURL(
+  std::string url = BuildUrl(
       registration_data.service_url,
       "registrationTickets/" + registration_data.ticket_id + "/finalize",
       {{"key", registration_data.api_key}});
@@ -640,7 +640,7 @@ void DeviceRegistrationInfo::RegisterDeviceOnTicketFinalized(
 
   // Now get access_token and refresh_token
   RequestSender sender2{HttpClient::Method::kPost,
-                        BuildURL(registration_data.oauth_url, "token", {}),
+                        BuildUrl(registration_data.oauth_url, "token", {}),
                         http_client_};
   sender2.SetFormData({{"code", auth_code},
                        {"client_id", registration_data.client_id},
@@ -888,7 +888,7 @@ void DeviceRegistrationInfo::UpdateCommand(
     const base::DictionaryValue& command_patch,
     const DoneCallback& callback) {
   DoCloudRequest(HttpClient::Method::kPatch,
-                 GetServiceURL("commands/" + command_id), &command_patch,
+                 GetServiceUrl("commands/" + command_id), &command_patch,
                  base::Bind(&IgnoreCloudResultWithCallback, callback));
 }
 
@@ -942,7 +942,7 @@ void DeviceRegistrationInfo::StartQueuedUpdateDeviceResource() {
       BuildDeviceResource();
   CHECK(device_resource);
 
-  std::string url = GetDeviceURL(
+  std::string url = GetDeviceUrl(
       {}, {{"lastUpdateTimeMs", last_device_resource_updated_timestamp_}});
 
   DoCloudRequest(HttpClient::Method::kPut, url, device_resource.get(),
@@ -978,7 +978,7 @@ void DeviceRegistrationInfo::SendAuthInfo() {
   std::unique_ptr<base::DictionaryValue> root{new base::DictionaryValue};
   root->Set("localAuthInfo", auth.release());
 
-  std::string url = GetDeviceURL("upsertLocalAuthInfo", {});
+  std::string url = GetDeviceUrl("upsertLocalAuthInfo", {});
   DoCloudRequest(HttpClient::Method::kPost, url, root.get(),
                  base::Bind(&DeviceRegistrationInfo::OnSendAuthInfoDone,
                             AsWeakPtr(), token));
@@ -1085,7 +1085,7 @@ void DeviceRegistrationInfo::FetchCommands(
   fetch_commands_request_queued_ = false;
   DoCloudRequest(
       HttpClient::Method::kGet,
-      GetServiceURL("commands/queue",
+      GetServiceUrl("commands/queue",
                     {{"deviceId", GetSettings().cloud_id}, {"reason", reason}}),
       nullptr, base::Bind(&DeviceRegistrationInfo::OnFetchCommandsDone,
                           AsWeakPtr(), callback));
@@ -1133,7 +1133,7 @@ void DeviceRegistrationInfo::ProcessInitialCommandList(
       cmd_copy->SetString("state", "aborted");
       // TODO(wiley) We could consider handling this error case more gracefully.
       DoCloudRequest(HttpClient::Method::kPut,
-                     GetServiceURL("commands/" + command_id), cmd_copy.get(),
+                     GetServiceUrl("commands/" + command_id), cmd_copy.get(),
                      base::Bind(&IgnoreCloudResult));
     } else {
       // Normal command, publish it to local clients.
@@ -1211,7 +1211,7 @@ void DeviceRegistrationInfo::PublishStateUpdates() {
   body.Set("patches", patches.release());
 
   device_state_update_pending_ = true;
-  DoCloudRequest(HttpClient::Method::kPost, GetDeviceURL("patchState"), &body,
+  DoCloudRequest(HttpClient::Method::kPost, GetDeviceUrl("patchState"), &body,
                  base::Bind(&DeviceRegistrationInfo::OnPublishStateDone,
                             AsWeakPtr(), snapshot.update_id));
 }
