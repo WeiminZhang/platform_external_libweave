@@ -674,7 +674,6 @@ TEST_F(PrivetHandlerSetupTest, GcdSetupWithEndpoints) {
       "client_secret": "test_client_secret",
       "oauth_url": "https://oauths/",
       "service_url": "https://service/",
-      "status": "success",
       "xmpp_endpoint": "xmpp:678",
       "ticketId": "testTicket",
       "user": "testUser"
