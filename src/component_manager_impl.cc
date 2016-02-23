@@ -19,11 +19,13 @@ namespace {
 // Max of 100 state update events should be enough in the queue.
 const size_t kMaxStateChangeQueueSize = 100;
 
+const char kMinimalRole[] = "minimalRole";
+
 const EnumToStringMap<UserRole>::Map kMap[] = {
-    {UserRole::kViewer, commands::attributes::kCommand_Role_Viewer},
-    {UserRole::kUser, commands::attributes::kCommand_Role_User},
-    {UserRole::kOwner, commands::attributes::kCommand_Role_Owner},
-    {UserRole::kManager, commands::attributes::kCommand_Role_Manager},
+    {UserRole::kViewer, "viewer"},
+    {UserRole::kUser, "user"},
+    {UserRole::kOwner, "owner"},
+    {UserRole::kManager, "manager"},
 };
 }  // anonymous namespace
 
@@ -356,7 +358,7 @@ bool ComponentManagerImpl::GetMinimalRole(const std::string& command_name,
   std::string value;
   // The JSON definition has been pre-validated already in LoadCommands, so
   // just using CHECKs here.
-  CHECK(command->GetString(commands::attributes::kCommand_Role, &value));
+  CHECK(command->GetString(kMinimalRole, &value));
   CHECK(StringToEnum(value, minimal_role));
   return true;
 }
