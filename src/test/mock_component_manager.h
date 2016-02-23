@@ -11,6 +11,8 @@
 
 namespace weave {
 
+namespace test {
+
 class MockComponentManager : public ComponentManager {
  public:
   ~MockComponentManager() override {}
@@ -124,6 +126,8 @@ class MockComponentManager : public ComponentManager {
     return Token{MockAddServerStateUpdatedCallback(callback)};
   }
 };
+
+}  // namespace test
 
 }  // namespace weave
 

@@ -12,7 +12,7 @@
 
 #include "src/bind_lambda.h"
 #include "src/commands/schema_constants.h"
-#include "src/mock_component_manager.h"
+#include "src/test/mock_component_manager.h"
 #include "src/test/mock_clock.h"
 
 namespace weave {
@@ -1481,7 +1481,7 @@ TEST_F(ComponentManagerTest, GetLegacyState) {
 
 TEST_F(ComponentManagerTest, TestMockComponentManager) {
   // Check that all the virtual methods are mocked out.
-  MockComponentManager mock;
+  test::MockComponentManager mock;
 }
 
 }  // namespace weave
