@@ -9,9 +9,10 @@
 #include <weave/test/mock_device.h>
 #include <weave/test/unittest_utils.h>
 
-#include "src/component_manager_impl.h"
 #include "src/access_black_list_manager.h"
+#include "src/component_manager_impl.h"
 #include "src/data_encoding.h"
+#include "src/test/mock_black_list_manager.h"
 
 using testing::_;
 using testing::AnyOf;
@@ -21,26 +22,6 @@ using testing::StrictMock;
 using testing::WithArgs;
 
 namespace weave {
-
-class MockAccessBlackListManager : public AccessBlackListManager {
- public:
-  MOCK_METHOD1(AddEntryAddedCallback, void(const base::Closure&));
-  MOCK_METHOD4(Block,
-               void(const std::vector<uint8_t>&,
-                    const std::vector<uint8_t>&,
-                    const base::Time&,
-                    const DoneCallback&));
-  MOCK_METHOD3(Unblock,
-               void(const std::vector<uint8_t>&,
-                    const std::vector<uint8_t>&,
-                    const DoneCallback&));
-  MOCK_CONST_METHOD2(IsBlocked,
-                     bool(const std::vector<uint8_t>&,
-                          const std::vector<uint8_t>&));
-  MOCK_CONST_METHOD0(GetEntries, std::vector<Entry>());
-  MOCK_CONST_METHOD0(GetSize, size_t());
-  MOCK_CONST_METHOD0(GetCapacity, size_t());
-};
 
 class AccessApiHandlerTest : public ::testing::Test {
  protected:
@@ -104,7 +85,7 @@ class AccessApiHandlerTest : public ::testing::Test {
   StrictMock<provider::test::FakeTaskRunner> task_runner_;
   ComponentManagerImpl component_manager_{&task_runner_};
   StrictMock<test::MockDevice> device_;
-  StrictMock<MockAccessBlackListManager> access_manager_;
+  StrictMock<test::MockAccessBlackListManager> access_manager_;
   std::unique_ptr<AccessApiHandler> handler_;
 };
 
