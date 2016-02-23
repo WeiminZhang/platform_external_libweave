@@ -33,18 +33,18 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
     : config_{new Config{config_store}},
       component_manager_{new ComponentManagerImpl{task_runner}} {
   if (http_server) {
-    auth_manager_.reset(new privet::AuthManager(
-        config_.get(), http_server->GetHttpsCertificateFingerprint()));
+    black_list_manager_.reset(new AccessBlackListManagerImpl{config_store});
+    auth_manager_.reset(
+        new privet::AuthManager(config_.get(), black_list_manager_.get(),
+                                http_server->GetHttpsCertificateFingerprint()));
+    access_api_handler_.reset(
+        new AccessApiHandler{this, black_list_manager_.get()});
   }
 
   device_info_.reset(new DeviceRegistrationInfo(
       config_.get(), component_manager_.get(), task_runner, http_client,
       network, auth_manager_.get()));
   base_api_handler_.reset(new BaseApiHandler{device_info_.get(), this});
-
-  black_list_manager_.reset(new AccessBlackListManagerImpl{config_store});
-  access_api_handler_.reset(
-      new AccessApiHandler{this, black_list_manager_.get()});
 
   device_info_->Start();
 

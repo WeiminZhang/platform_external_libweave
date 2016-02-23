@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <base/gtest_prod_util.h>
+#include <base/memory/weak_ptr.h>
 #include <base/time/default_clock.h>
 #include <base/time/time.h>
 #include <weave/error.h>
@@ -18,6 +19,7 @@
 
 namespace weave {
 
+class AccessBlackListManager;
 class Config;
 enum class RootClientTokenOwner;
 
@@ -26,13 +28,15 @@ namespace privet {
 class AuthManager {
  public:
   AuthManager(Config* config,
+              AccessBlackListManager* black_list,
               const std::vector<uint8_t>& certificate_fingerprint);
 
   // Constructor for tests.
   AuthManager(const std::vector<uint8_t>& auth_secret,
               const std::vector<uint8_t>& certificate_fingerprint,
               const std::vector<uint8_t>& access_secret,
-              base::Clock* clock = nullptr);
+              base::Clock* clock = nullptr,
+              AccessBlackListManager* black_list = nullptr);
   ~AuthManager();
 
   std::vector<uint8_t> CreateAccessToken(const UserInfo& user_info,
@@ -74,12 +78,15 @@ class AuthManager {
  private:
   friend class AuthManagerTest;
 
+  void ResetAccessSecret();
+
   // Test helpers. Device does not need to implement delegation.
   std::vector<uint8_t> DelegateToUser(const std::vector<uint8_t>& token,
                                       base::TimeDelta ttl,
                                       const UserInfo& user_info) const;
 
   Config* config_{nullptr};  // Can be nullptr for tests.
+  AccessBlackListManager* black_list_{nullptr};
   base::DefaultClock default_clock_;
   base::Clock* clock_{&default_clock_};
   mutable uint32_t session_counter_{0};
@@ -91,6 +98,7 @@ class AuthManager {
   std::deque<std::pair<std::unique_ptr<AuthManager>, RootClientTokenOwner>>
       pending_claims_;
 
+  base::WeakPtrFactory<AuthManager> weak_ptr_factory_{this};
   DISALLOW_COPY_AND_ASSIGN(AuthManager);
 };
 

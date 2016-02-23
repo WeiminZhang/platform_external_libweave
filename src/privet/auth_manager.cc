@@ -6,10 +6,12 @@
 
 #include <algorithm>
 
+#include <base/bind.h>
 #include <base/guid.h>
 #include <base/rand_util.h>
 #include <base/strings/string_number_conversions.h>
 
+#include "src/access_black_list_manager.h"
 #include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/constants.h"
@@ -275,10 +277,16 @@ AuthScope FromMacaroonScope(uint32_t scope) {
 }  // namespace
 
 AuthManager::AuthManager(Config* config,
+                         AccessBlackListManager* black_list,
                          const std::vector<uint8_t>& certificate_fingerprint)
     : config_{config},
+      black_list_{black_list},
       certificate_fingerprint_{certificate_fingerprint},
       access_secret_{CreateSecret()} {
+  if (black_list_) {
+    black_list_->AddEntryAddedCallback(base::Bind(
+        &AuthManager::ResetAccessSecret, weak_ptr_factory_.GetWeakPtr()));
+  }
   if (config_) {
     SetAuthSecret(config_->GetSettings().secret,
                   config_->GetSettings().root_client_token_owner);
@@ -290,8 +298,9 @@ AuthManager::AuthManager(Config* config,
 AuthManager::AuthManager(const std::vector<uint8_t>& auth_secret,
                          const std::vector<uint8_t>& certificate_fingerprint,
                          const std::vector<uint8_t>& access_secret,
-                         base::Clock* clock)
-    : AuthManager(nullptr, certificate_fingerprint) {
+                         base::Clock* clock,
+                         AccessBlackListManager* black_list)
+    : AuthManager(nullptr, black_list, certificate_fingerprint) {
   access_secret_ = access_secret.size() == kSha256OutputSize ? access_secret
                                                              : CreateSecret();
   SetAuthSecret(auth_secret, RootClientTokenOwner::kNone);
@@ -401,7 +410,8 @@ std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
   };
 
   pending_claims_.push_back(std::make_pair(
-      std::unique_ptr<AuthManager>{new AuthManager{nullptr, {}}}, owner));
+      std::unique_ptr<AuthManager>{new AuthManager{nullptr, nullptr, {}}},
+      owner));
   if (pending_claims_.size() > kMaxPendingClaims)
     pending_claims_.pop_front();
   return pending_claims_.back().first->GetRootClientAuthToken(owner);
@@ -545,6 +555,12 @@ bool AuthManager::IsValidSessionId(const std::string& session_id) const {
   return Now() - base::TimeDelta::FromMinutes(kSessionIdTtlMinutes) <=
              ssid_time &&
          ssid_time <= Now();
+}
+
+void AuthManager::ResetAccessSecret() {
+  auto new_secret = CreateSecret();
+  CHECK(new_secret != access_secret_);
+  access_secret_.swap(new_secret);
 }
 
 std::vector<uint8_t> AuthManager::DelegateToUser(

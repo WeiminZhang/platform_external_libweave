@@ -11,12 +11,25 @@
 #include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/mock_delegates.h"
+#include "src/test/mock_black_list_manager.h"
 #include "src/test/mock_clock.h"
 
 using testing::Return;
+using testing::SaveArg;
+using testing::_;
 
 namespace weave {
 namespace privet {
+
+class MockBlackListManager : public test::MockAccessBlackListManager {
+ public:
+  MockBlackListManager() {
+    EXPECT_CALL(*this, AddEntryAddedCallback(_))
+        .WillOnce(SaveArg<0>(&changed_callback_));
+  }
+
+  base::Closure changed_callback_;
+};
 
 class AuthManagerTest : public testing::Test {
  public:
@@ -46,7 +59,8 @@ class AuthManagerTest : public testing::Test {
       60, 62, 10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85};
 
   test::MockClock clock_;
-  AuthManager auth_{kSecret1, kFingerprint, kSecret2, &clock_};
+  MockBlackListManager black_list_;
+  AuthManager auth_{kSecret1, kFingerprint, kSecret2, &clock_, &black_list_};
 };
 
 TEST_F(AuthManagerTest, RandomSecret) {
@@ -152,8 +166,9 @@ TEST_F(AuthManagerTest, CreateTokenDifferentTime) {
 TEST_F(AuthManagerTest, CreateTokenDifferentInstance) {
   EXPECT_NE(auth_.CreateAccessToken(
                 UserInfo{AuthScope::kUser, TestUserId{"123"}}, {}),
-            AuthManager({}, {}).CreateAccessToken(
-                UserInfo{AuthScope::kUser, TestUserId{"123"}}, {}));
+            AuthManager({}, nullptr, {})
+                .CreateAccessToken(
+                    UserInfo{AuthScope::kUser, TestUserId{"123"}}, {}));
 }
 
 TEST_F(AuthManagerTest, ParseAccessToken) {
@@ -187,6 +202,22 @@ TEST_F(AuthManagerTest, ParseAccessToken) {
             Return(kStartTime + base::TimeDelta::FromSeconds(i + 1)));
     EXPECT_FALSE(auth.ParseAccessToken(token, &user_info, nullptr));
   }
+}
+
+TEST_F(AuthManagerTest, AccessTokenAfterReset) {
+  UserInfo user_info;
+  auto token1 = auth_.CreateAccessToken(
+      UserInfo{AuthScope::kViewer, TestUserId{"555"}}, {});
+  EXPECT_TRUE(auth_.ParseAccessToken(token1, &user_info, nullptr));
+
+  black_list_.changed_callback_.Run();
+
+  auto token2 = auth_.CreateAccessToken(
+      UserInfo{AuthScope::kViewer, TestUserId{"555"}}, {});
+
+  EXPECT_NE(token1, token2);
+  EXPECT_FALSE(auth_.ParseAccessToken(token1, &user_info, nullptr));
+  EXPECT_TRUE(auth_.ParseAccessToken(token2, &user_info, nullptr));
 }
 
 TEST_F(AuthManagerTest, GetRootClientAuthToken) {
@@ -332,7 +363,7 @@ class AuthManagerClaimTest : public testing::Test {
 
  protected:
   Config config_{nullptr};
-  AuthManager auth_{&config_, {}};
+  AuthManager auth_{&config_, nullptr, {}};
 };
 
 TEST_F(AuthManagerClaimTest, WithPreviosOwner) {
