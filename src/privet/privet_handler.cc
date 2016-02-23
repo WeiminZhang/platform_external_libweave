@@ -421,10 +421,6 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
                    AuthScope::kManager);
   AddSecureHandler("/privet/v3/setup/status", &PrivetHandler::HandleSetupStatus,
                    AuthScope::kManager);
-  AddSecureHandler("/privet/v3/state", &PrivetHandler::HandleState,
-                   AuthScope::kViewer);
-  AddSecureHandler("/privet/v3/commandDefs", &PrivetHandler::HandleCommandDefs,
-                   AuthScope::kViewer);
   AddSecureHandler("/privet/v3/commands/execute",
                    &PrivetHandler::HandleCommandsExecute, AuthScope::kViewer);
   AddSecureHandler("/privet/v3/commands/status",
@@ -875,16 +871,6 @@ void PrivetHandler::ReplyWithSetupStatus(
   callback.Run(http::kOk, output);
 }
 
-void PrivetHandler::HandleState(const base::DictionaryValue& input,
-                                const UserInfo& user_info,
-                                const RequestCallback& callback) {
-  base::DictionaryValue output;
-  output.Set(kStateKey, cloud_->GetLegacyState().DeepCopy());
-  output.SetString(kFingerprintKey, std::to_string(state_fingerprint_));
-
-  callback.Run(http::kOk, output);
-}
-
 void PrivetHandler::HandleTraits(const base::DictionaryValue& input,
                                  const UserInfo& user_info,
                                  const RequestCallback& callback) {
@@ -927,18 +913,6 @@ void PrivetHandler::HandleComponents(const base::DictionaryValue& input,
   base::DictionaryValue output;
   output.Set(kComponentsKey, components.release());
   output.SetString(kFingerprintKey, std::to_string(components_fingerprint_));
-
-  callback.Run(http::kOk, output);
-}
-
-void PrivetHandler::HandleCommandDefs(const base::DictionaryValue& input,
-                                      const UserInfo& user_info,
-                                      const RequestCallback& callback) {
-  base::DictionaryValue output;
-  output.Set(kCommandsKey, cloud_->GetLegacyCommandDef().DeepCopy());
-  // Use traits fingerprint since right now we treat traits and command defs
-  // as being equivalent.
-  output.SetString(kFingerprintKey, std::to_string(traits_fingerprint_));
 
   callback.Run(http::kOk, output);
 }

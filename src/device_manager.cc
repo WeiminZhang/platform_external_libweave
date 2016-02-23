@@ -156,16 +156,6 @@ void DeviceManager::AddCommandHandler(const std::string& component,
   component_manager_->AddCommandHandler(component, command_name, callback);
 }
 
-void DeviceManager::AddCommandDefinitionsFromJson(const std::string& json) {
-  auto dict = LoadJsonDict(json, nullptr);
-  CHECK(dict);
-  AddCommandDefinitions(*dict);
-}
-
-void DeviceManager::AddCommandDefinitions(const base::DictionaryValue& dict) {
-  CHECK(component_manager_->AddLegacyCommandDefinitions(dict, nullptr));
-}
-
 bool DeviceManager::AddCommand(const base::DictionaryValue& command,
                                std::string* id,
                                ErrorPtr* error) {
@@ -181,85 +171,8 @@ Command* DeviceManager::FindCommand(const std::string& id) {
   return component_manager_->FindCommand(id);
 }
 
-void DeviceManager::AddCommandHandler(const std::string& command_name,
-                                      const CommandHandlerCallback& callback) {
-  if (command_name.empty())
-    return component_manager_->AddCommandHandler("", "", callback);
-
-  auto trait = SplitAtFirst(command_name, ".", true).first;
-  std::string component = component_manager_->FindComponentWithTrait(trait);
-  CHECK(!component.empty());
-  component_manager_->AddCommandHandler(component, command_name, callback);
-}
-
 void DeviceManager::AddStateChangedCallback(const base::Closure& callback) {
   component_manager_->AddStateChangedCallback(callback);
-}
-
-void DeviceManager::AddStateDefinitionsFromJson(const std::string& json) {
-  auto dict = LoadJsonDict(json, nullptr);
-  CHECK(dict);
-  AddStateDefinitions(*dict);
-}
-
-void DeviceManager::AddStateDefinitions(const base::DictionaryValue& dict) {
-  CHECK(component_manager_->AddLegacyStateDefinitions(dict, nullptr));
-}
-
-bool DeviceManager::SetStatePropertiesFromJson(const std::string& json,
-                                               ErrorPtr* error) {
-  auto dict = LoadJsonDict(json, error);
-  return dict && SetStateProperties(*dict, error);
-}
-
-bool DeviceManager::SetStateProperties(const base::DictionaryValue& dict,
-                                       ErrorPtr* error) {
-  for (base::DictionaryValue::Iterator it(dict); !it.IsAtEnd(); it.Advance()) {
-    std::string component =
-        component_manager_->FindComponentWithTrait(it.key());
-    if (component.empty()) {
-      Error::AddToPrintf(error, FROM_HERE, "unrouted_state",
-                         "Unable to set property value because there is no "
-                         "component supporting "
-                         "trait '%s'",
-                         it.key().c_str());
-      return false;
-    }
-    base::DictionaryValue trait_state;
-    trait_state.Set(it.key(), it.value().DeepCopy());
-    if (!component_manager_->SetStateProperties(component, trait_state, error))
-      return false;
-  }
-  return true;
-}
-
-const base::Value* DeviceManager::GetStateProperty(
-    const std::string& name) const {
-  auto trait = SplitAtFirst(name, ".", true).first;
-  std::string component = component_manager_->FindComponentWithTrait(trait);
-  if (component.empty())
-    return nullptr;
-  return component_manager_->GetStateProperty(component, name, nullptr);
-}
-
-bool DeviceManager::SetStateProperty(const std::string& name,
-                                     const base::Value& value,
-                                     ErrorPtr* error) {
-  auto trait = SplitAtFirst(name, ".", true).first;
-  std::string component = component_manager_->FindComponentWithTrait(trait);
-  if (component.empty()) {
-    Error::AddToPrintf(
-        error, FROM_HERE, "unrouted_state",
-        "Unable set value of state property '%s' because there is no component "
-        "supporting trait '%s'",
-        name.c_str(), trait.c_str());
-    return false;
-  }
-  return component_manager_->SetStateProperty(component, name, value, error);
-}
-
-const base::DictionaryValue& DeviceManager::GetState() const {
-  return component_manager_->GetLegacyState();
 }
 
 void DeviceManager::Register(const RegistrationData& registration_data,

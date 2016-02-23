@@ -727,26 +727,6 @@ TEST_F(PrivetHandlerTestWithAuth, ConfirmAccessControl) {
                                R"({"clientToken": "DerivedClientAuthToken"})"));
 }
 
-TEST_F(PrivetHandlerTestWithAuth, State) {
-  EXPECT_JSON_EQ(R"({"state": {"test": {}}, "fingerprint": "1"})",
-                 HandleRequest("/privet/v3/state", "{}"));
-
-  cloud_.NotifyOnStateChanged();
-
-  EXPECT_JSON_EQ(R"({"state": {"test": {}}, "fingerprint": "2"})",
-                 HandleRequest("/privet/v3/state", "{}"));
-}
-
-TEST_F(PrivetHandlerTestWithAuth, CommandsDefs) {
-  EXPECT_JSON_EQ(R"({"commands": {"test":{}}, "fingerprint": "1"})",
-                 HandleRequest("/privet/v3/commandDefs", "{}"));
-
-  cloud_.NotifyOnTraitDefsChanged();
-
-  EXPECT_JSON_EQ(R"({"commands": {"test":{}}, "fingerprint": "2"})",
-                 HandleRequest("/privet/v3/commandDefs", "{}"));
-}
-
 TEST_F(PrivetHandlerTestWithAuth, Traits) {
   EXPECT_JSON_EQ(R"({"traits": {"test": {}}, "fingerprint": "1"})",
                  HandleRequest("/privet/v3/traits", "{}"));
