@@ -19,7 +19,7 @@ const char kTraits[] = R"({
         "parameters": {
           "state": {
             "type": "string",
-            "enum": [ "on", "standby" ]
+            "enum": [ "on", "off" ]
           }
         }
       }
@@ -27,7 +27,7 @@ const char kTraits[] = R"({
     "state": {
       "state": {
         "type": "string",
-        "enum": [ "on", "standby" ],
+        "enum": [ "on", "off" ],
         "isRequired": true
       }
     }
@@ -38,23 +38,23 @@ const char kTraits[] = R"({
         "minimalRole": "user",
         "parameters": {
           "brightness": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 100
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
           }
         }
       }
     },
     "state": {
       "brightness": {
-        "type": "integer",
+        "type": "number",
         "isRequired": true,
-        "minimum": 0,
-        "maximum": 100
+        "minimum": 0.0,
+        "maximum": 1.0
       }
     }
   },
-  "colorXY": {
+  "colorXy": {
     "commands": {
       "setConfig": {
         "minimalRole": "user",
@@ -157,7 +157,7 @@ const char kTraits[] = R"({
 })";
 
 const char kDefaultState[] = R"({
-  "colorXY": {
+  "colorXy": {
     "colorSetting": {"colorX": 0, "colorY": 0},
     "colorCapRed":  {"colorX": 0.674, "colorY": 0.322},
     "colorCapGreen":{"colorX": 0.408, "colorY": 0.517},
@@ -178,7 +178,7 @@ class LightHandler {
     device_ = device;
 
     device->AddTraitDefinitionsFromJson(kTraits);
-    CHECK(device->AddComponent(kComponent, {"onOff", "brightness", "colorXY"},
+    CHECK(device->AddComponent(kComponent, {"onOff", "brightness", "colorXy"},
                                nullptr));
     CHECK(
         device->SetStatePropertiesFromJson(kComponent, kDefaultState, nullptr));
@@ -190,7 +190,7 @@ class LightHandler {
     device->AddCommandHandler(kComponent, "brightness.setConfig",
                               base::Bind(&LightHandler::OnBrightnessSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler(kComponent, "colorXY.setConfig",
+    device->AddCommandHandler(kComponent, "colorXy.setConfig",
                               base::Bind(&LightHandler::OnColorXYSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
   }
@@ -252,17 +252,17 @@ class LightHandler {
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
     const auto& params = cmd->GetParameters();
-    const base::DictionaryValue* colorXY = nullptr;
-    if (params.GetDictionary("colorSetting", &colorXY)) {
+    const base::DictionaryValue* colorXy = nullptr;
+    if (params.GetDictionary("colorSetting", &colorXy)) {
       bool updateState = false;
       double X = 0.0;
       double Y = 0.0;
-      if (colorXY->GetDouble("colorX", &X)) {
+      if (colorXy->GetDouble("colorX", &X)) {
         color_X_ = X;
         updateState = true;
       }
 
-      if (colorXY->GetDouble("colorY", &Y)) {
+      if (colorXy->GetDouble("colorY", &Y)) {
         color_Y_ = Y;
         updateState = true;
       }
@@ -282,13 +282,13 @@ class LightHandler {
 
   void UpdateLightState() {
     base::DictionaryValue state;
-    state.SetString("onOff.state", light_status_ ? "on" : "standby");
+    state.SetString("onOff.state", light_status_ ? "on" : "off");
     state.SetInteger("brightness.brightness", brightness_state_);
 
-    std::unique_ptr<base::DictionaryValue> colorXY(new base::DictionaryValue());
-    colorXY->SetDouble("colorX", color_X_);
-    colorXY->SetDouble("colorY", color_Y_);
-    state.Set("colorXY.colorSetting", colorXY.release());
+    std::unique_ptr<base::DictionaryValue> colorXy(new base::DictionaryValue());
+    colorXy->SetDouble("colorX", color_X_);
+    colorXy->SetDouble("colorY", color_Y_);
+    state.Set("colorXy.colorSetting", colorXy.release());
     device_->SetStateProperties(kComponent, state, nullptr);
   }
 
