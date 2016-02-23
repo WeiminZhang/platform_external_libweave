@@ -104,7 +104,7 @@ TEST_F(AccessApiHandlerTest, Initialization) {
           "applicationId": {
             "type": "string"
           },
-          "expirationTimeoutSec": {
+          "expirationTime": {
             "type": "integer"
           }
         }
@@ -123,6 +123,9 @@ TEST_F(AccessApiHandlerTest, Initialization) {
                 },
                 "applicationId": {
                   "type": "string"
+                },
+                "expirationTime": {
+                  "type": "integer"
                 }
               },
               "additionalProperties": false
@@ -159,7 +162,7 @@ TEST_F(AccessApiHandlerTest, Revoke) {
     'parameters': {
       'userId': 'AQID',
       'applicationId': 'AwQF',
-      'expirationTimeoutSec': 1234
+      'expirationTime': 1234
     }
   })");
 

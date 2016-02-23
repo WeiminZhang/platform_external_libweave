@@ -11,6 +11,7 @@
 #include "src/commands/schema_constants.h"
 #include "src/data_encoding.h"
 #include "src/json_error_codes.h"
+#include "src/utils.h"
 
 namespace weave {
 
@@ -21,7 +22,7 @@ const char kTrait[] = "_accessRevocationList";
 const char kStateCapacity[] = "_accessRevocationList.capacity";
 const char kUserId[] = "userId";
 const char kApplicationId[] = "applicationId";
-const char kExpirationTimeout[] = "expirationTimeoutSec";
+const char kExpirationTime[] = "expirationTime";
 const char kBlackList[] = "revocationListEntries";
 
 bool GetIds(const base::DictionaryValue& parameters,
@@ -64,7 +65,7 @@ AccessApiHandler::AccessApiHandler(Device* device,
             "applicationId": {
               "type": "string"
             },
-            "expirationTimeoutSec": {
+            "expirationTime": {
               "type": "integer"
             }
           }
@@ -83,6 +84,9 @@ AccessApiHandler::AccessApiHandler(Device* device,
                   },
                   "applicationId": {
                     "type": "string"
+                  },
+                  "expirationTime": {
+                    "type": "integer"
                   }
                 },
                 "additionalProperties": false
@@ -128,13 +132,15 @@ void AccessApiHandler::Block(const std::weak_ptr<Command>& cmd) {
     return;
   }
 
-  int timeout_sec = 0;
-  parameters.GetInteger(kExpirationTimeout, &timeout_sec);
+  int time_j2k = 0;
+  if (!parameters.GetInteger(kExpirationTime, &time_j2k)) {
+    Error::AddToPrintf(&error, FROM_HERE, errors::commands::kInvalidPropValue,
+                       "Expiration time is missing");
+    command->Abort(error.get(), nullptr);
+    return;
+  }
 
-  base::Time expiration =
-      base::Time::Now() + base::TimeDelta::FromSeconds(timeout_sec);
-
-  manager_->Block(user_id, app_id, expiration,
+  manager_->Block(user_id, app_id, FromJ2000Time(time_j2k),
                   base::Bind(&AccessApiHandler::OnCommandDone,
                              weak_ptr_factory_.GetWeakPtr(), cmd));
 }

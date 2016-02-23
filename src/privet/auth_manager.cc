@@ -17,6 +17,7 @@
 #include "src/privet/constants.h"
 #include "src/privet/openssl_utils.h"
 #include "src/string_utils.h"
+#include "src/utils.h"
 
 extern "C" {
 #include "third_party/libuweave/src/macaroon.h"
@@ -28,19 +29,10 @@ namespace privet {
 
 namespace {
 
-const time_t kJ2000ToTimeT = 946684800;
 const size_t kMaxMacaroonSize = 1024;
 const size_t kMaxPendingClaims = 10;
 const char kInvalidTokenError[] = "invalid_token";
 const int kSessionIdTtlMinutes = 1;
-
-uint32_t ToJ2000Time(const base::Time& time) {
-  return std::max(time.ToTimeT(), kJ2000ToTimeT) - kJ2000ToTimeT;
-}
-
-base::Time FromJ2000Time(uint32_t time) {
-  return base::Time::FromTimeT(time + kJ2000ToTimeT);
-}
 
 template <class T>
 void AppendToArray(T value, std::vector<uint8_t>* array) {
