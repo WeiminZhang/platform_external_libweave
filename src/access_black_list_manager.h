@@ -26,6 +26,7 @@ class AccessBlackListManager {
   };
   virtual ~AccessBlackListManager() = default;
 
+  virtual void AddEntryAddedCallback(const base::Closure& callback) = 0;
   virtual void Block(const std::vector<uint8_t>& user_id,
                      const std::vector<uint8_t>& app_id,
                      const base::Time& expiration,

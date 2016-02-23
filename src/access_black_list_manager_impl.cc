@@ -86,6 +86,11 @@ void AccessBlackListManagerImpl::RemoveExpired() {
   }
 }
 
+void AccessBlackListManagerImpl::AddEntryAddedCallback(
+    const base::Closure& callback) {
+  on_entry_added_callbacks_.push_back(callback);
+}
+
 void AccessBlackListManagerImpl::Block(const std::vector<uint8_t>& user_id,
                                        const std::vector<uint8_t>& app_id,
                                        const base::Time& expiration,
@@ -110,8 +115,12 @@ void AccessBlackListManagerImpl::Block(const std::vector<uint8_t>& user_id,
     }
     return;
   }
+
   auto& value = entries_[std::make_pair(user_id, app_id)];
   value = std::max(value, expiration);
+  for (const auto& cb : on_entry_added_callbacks_)
+    cb.Run();
+
   Save(callback);
 }
 

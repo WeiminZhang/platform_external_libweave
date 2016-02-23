@@ -66,6 +66,9 @@ TEST_F(AccessBlackListManagerImplTest, Init) {
 }
 
 TEST_F(AccessBlackListManagerImplTest, Block) {
+  bool callback_called = false;
+  manager_->AddEntryAddedCallback(
+      base::Bind([&callback_called]() { callback_called = true; }));
   EXPECT_CALL(config_store_, SaveSettings("black_list", _, _))
       .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
           [](const std::string& json, const DoneCallback& callback) {
@@ -83,6 +86,7 @@ TEST_F(AccessBlackListManagerImplTest, Block) {
               callback.Run(nullptr);
           })));
   manager_->Block({7, 7, 7}, {8, 8, 8}, base::Time::FromTimeT(1419990000), {});
+  EXPECT_TRUE(callback_called);
 }
 
 TEST_F(AccessBlackListManagerImplTest, BlockExpired) {

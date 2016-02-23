@@ -24,6 +24,7 @@ namespace weave {
 
 class MockAccessBlackListManager : public AccessBlackListManager {
  public:
+  MOCK_METHOD1(AddEntryAddedCallback, void(const base::Closure&));
   MOCK_METHOD4(Block,
                void(const std::vector<uint8_t>&,
                     const std::vector<uint8_t>&,

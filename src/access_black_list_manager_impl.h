@@ -24,6 +24,7 @@ class AccessBlackListManagerImpl : public AccessBlackListManager {
                                       base::Clock* clock = nullptr);
 
   // AccessBlackListManager implementation.
+  void AddEntryAddedCallback(const base::Closure& callback) override;
   void Block(const std::vector<uint8_t>& user_id,
              const std::vector<uint8_t>& app_id,
              const base::Time& expiration,
@@ -49,6 +50,7 @@ class AccessBlackListManagerImpl : public AccessBlackListManager {
   provider::ConfigStore* store_{nullptr};
   std::map<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>, base::Time>
       entries_;
+  std::vector<base::Closure> on_entry_added_callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN(AccessBlackListManagerImpl);
 };
