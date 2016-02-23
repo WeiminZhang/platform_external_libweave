@@ -115,23 +115,6 @@ TEST_F(AccessBlackListManagerImplTest, BlockListIsFull) {
                   }));
 }
 
-TEST_F(AccessBlackListManagerImplTest, Unblock) {
-  EXPECT_CALL(config_store_, SaveSettings("black_list", _, _))
-      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
-          [](const std::string& json, const DoneCallback& callback) {
-            EXPECT_JSON_EQ("[]", *test::CreateValue(json));
-            if (!callback.is_null())
-              callback.Run(nullptr);
-          })));
-  manager_->Unblock({1, 2, 3}, {3, 4, 5}, {});
-}
-
-TEST_F(AccessBlackListManagerImplTest, UnblockNotFound) {
-  manager_->Unblock({5, 2, 3}, {5, 4, 5}, base::Bind([](ErrorPtr error) {
-                      EXPECT_TRUE(error->HasError("entry_not_found"));
-                    }));
-}
-
 TEST_F(AccessBlackListManagerImplTest, IsBlockedFalse) {
   EXPECT_FALSE(manager_->IsBlocked({7, 7, 7}, {8, 8, 8}));
 }

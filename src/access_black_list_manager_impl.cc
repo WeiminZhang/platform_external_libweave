@@ -124,22 +124,6 @@ void AccessBlackListManagerImpl::Block(const std::vector<uint8_t>& user_id,
   Save(callback);
 }
 
-void AccessBlackListManagerImpl::Unblock(const std::vector<uint8_t>& user_id,
-                                         const std::vector<uint8_t>& app_id,
-                                         const DoneCallback& callback) {
-  if (!entries_.erase(std::make_pair(user_id, app_id))) {
-    if (!callback.is_null()) {
-      ErrorPtr error;
-      Error::AddTo(&error, FROM_HERE, "entry_not_found", "Unknown entry");
-      callback.Run(std::move(error));
-    }
-    return;
-  }
-  // Iterating is OK as Save below is more expensive.
-  RemoveExpired();
-  Save(callback);
-}
-
 bool AccessBlackListManagerImpl::IsBlocked(
     const std::vector<uint8_t>& user_id,
     const std::vector<uint8_t>& app_id) const {

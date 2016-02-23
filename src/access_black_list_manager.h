@@ -31,9 +31,6 @@ class AccessBlackListManager {
                      const std::vector<uint8_t>& app_id,
                      const base::Time& expiration,
                      const DoneCallback& callback) = 0;
-  virtual void Unblock(const std::vector<uint8_t>& user_id,
-                       const std::vector<uint8_t>& app_id,
-                       const DoneCallback& callback) = 0;
   virtual bool IsBlocked(const std::vector<uint8_t>& user_id,
                          const std::vector<uint8_t>& app_id) const = 0;
   virtual std::vector<Entry> GetEntries() const = 0;

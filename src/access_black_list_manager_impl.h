@@ -29,9 +29,6 @@ class AccessBlackListManagerImpl : public AccessBlackListManager {
              const std::vector<uint8_t>& app_id,
              const base::Time& expiration,
              const DoneCallback& callback) override;
-  void Unblock(const std::vector<uint8_t>& user_id,
-               const std::vector<uint8_t>& app_id,
-               const DoneCallback& callback) override;
   bool IsBlocked(const std::vector<uint8_t>& user_id,
                  const std::vector<uint8_t>& app_id) const override;
   std::vector<Entry> GetEntries() const override;

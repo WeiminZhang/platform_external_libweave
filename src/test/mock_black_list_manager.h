@@ -21,10 +21,6 @@ class MockAccessBlackListManager : public AccessBlackListManager {
                     const std::vector<uint8_t>&,
                     const base::Time&,
                     const DoneCallback&));
-  MOCK_METHOD3(Unblock,
-               void(const std::vector<uint8_t>&,
-                    const std::vector<uint8_t>&,
-                    const DoneCallback&));
   MOCK_CONST_METHOD2(IsBlocked,
                      bool(const std::vector<uint8_t>&,
                           const std::vector<uint8_t>&));
