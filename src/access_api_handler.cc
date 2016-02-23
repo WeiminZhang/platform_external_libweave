@@ -17,13 +17,12 @@ namespace weave {
 namespace {
 
 const char kComponent[] = "accessControl";
-const char kTrait[] = "_accessControlBlackList";
-const char kStateSize[] = "_accessControlBlackList.size";
-const char kStateCapacity[] = "_accessControlBlackList.capacity";
+const char kTrait[] = "_accessRevocationList";
+const char kStateCapacity[] = "_accessRevocationList.capacity";
 const char kUserId[] = "userId";
 const char kApplicationId[] = "applicationId";
 const char kExpirationTimeout[] = "expirationTimeoutSec";
-const char kBlackList[] = "blackList";
+const char kBlackList[] = "revocationListEntries";
 
 bool GetIds(const base::DictionaryValue& parameters,
             std::vector<uint8_t>* user_id_decoded,
@@ -54,9 +53,9 @@ AccessApiHandler::AccessApiHandler(Device* device,
                                    AccessBlackListManager* manager)
     : device_{device}, manager_{manager} {
   device_->AddTraitDefinitionsFromJson(R"({
-    "_accessControlBlackList": {
+    "_accessRevocationList": {
       "commands": {
-        "block": {
+        "revoke": {
           "minimalRole": "owner",
           "parameters": {
             "userId": {
@@ -70,22 +69,11 @@ AccessApiHandler::AccessApiHandler(Device* device,
             }
           }
         },
-        "unblock": {
-          "minimalRole": "owner",
-          "parameters": {
-            "userId": {
-              "type": "string"
-            },
-            "applicationId": {
-              "type": "string"
-            }
-          }
-        },
         "list": {
           "minimalRole": "owner",
           "parameters": {},
           "results": {
-            "blackList": {
+            "revocationEntriesList": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -104,10 +92,6 @@ AccessApiHandler::AccessApiHandler(Device* device,
         }
       },
       "state": {
-        "size": {
-          "type": "integer",
-          "isRequired": true
-        },
         "capacity": {
           "type": "integer",
           "isRequired": true
@@ -119,13 +103,10 @@ AccessApiHandler::AccessApiHandler(Device* device,
   UpdateState();
 
   device_->AddCommandHandler(
-      kComponent, "_accessControlBlackList.block",
+      kComponent, "_accessRevocationList.revoke",
       base::Bind(&AccessApiHandler::Block, weak_ptr_factory_.GetWeakPtr()));
   device_->AddCommandHandler(
-      kComponent, "_accessControlBlackList.unblock",
-      base::Bind(&AccessApiHandler::Unblock, weak_ptr_factory_.GetWeakPtr()));
-  device_->AddCommandHandler(
-      kComponent, "_accessControlBlackList.list",
+      kComponent, "_accessRevocationList.list",
       base::Bind(&AccessApiHandler::List, weak_ptr_factory_.GetWeakPtr()));
 }
 
@@ -156,29 +137,6 @@ void AccessApiHandler::Block(const std::weak_ptr<Command>& cmd) {
   manager_->Block(user_id, app_id, expiration,
                   base::Bind(&AccessApiHandler::OnCommandDone,
                              weak_ptr_factory_.GetWeakPtr(), cmd));
-}
-
-void AccessApiHandler::Unblock(const std::weak_ptr<Command>& cmd) {
-  auto command = cmd.lock();
-  if (!command)
-    return;
-
-  CHECK(command->GetState() == Command::State::kQueued)
-      << EnumToString(command->GetState());
-  command->SetProgress(base::DictionaryValue{}, nullptr);
-
-  const auto& parameters = command->GetParameters();
-  std::vector<uint8_t> user_id;
-  std::vector<uint8_t> app_id;
-  ErrorPtr error;
-  if (!GetIds(parameters, &user_id, &app_id, &error)) {
-    command->Abort(error.get(), nullptr);
-    return;
-  }
-
-  manager_->Unblock(user_id, app_id,
-                    base::Bind(&AccessApiHandler::OnCommandDone,
-                               weak_ptr_factory_.GetWeakPtr(), cmd));
 }
 
 void AccessApiHandler::List(const std::weak_ptr<Command>& cmd) {
@@ -219,7 +177,6 @@ void AccessApiHandler::OnCommandDone(const std::weak_ptr<Command>& cmd,
 
 void AccessApiHandler::UpdateState() {
   base::DictionaryValue state;
-  state.SetInteger(kStateSize, manager_->GetSize());
   state.SetInteger(kStateCapacity, manager_->GetCapacity());
   device_->SetStateProperties(kComponent, state, nullptr);
 }

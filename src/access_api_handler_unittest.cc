@@ -44,9 +44,8 @@ class AccessApiHandlerTest : public ::testing::Test {
         }));
 
     EXPECT_CALL(device_,
-                AddCommandHandler(_, AnyOf("_accessControlBlackList.block",
-                                           "_accessControlBlackList.unblock",
-                                           "_accessControlBlackList.list"),
+                AddCommandHandler(_, AnyOf("_accessRevocationList.revoke",
+                                           "_accessRevocationList.list"),
                                   _))
         .WillRepeatedly(
             Invoke(&component_manager_, &ComponentManager::AddCommandHandler));
@@ -72,13 +71,13 @@ class AccessApiHandlerTest : public ::testing::Test {
 
   std::unique_ptr<base::DictionaryValue> GetState() {
     std::string path =
-        component_manager_.FindComponentWithTrait("_accessControlBlackList");
+        component_manager_.FindComponentWithTrait("_accessRevocationList");
     EXPECT_FALSE(path.empty());
     const auto* component = component_manager_.FindComponent(path, nullptr);
     EXPECT_TRUE(component);
     const base::DictionaryValue* state = nullptr;
     EXPECT_TRUE(
-        component->GetDictionary("state._accessControlBlackList", &state));
+        component->GetDictionary("state._accessRevocationList", &state));
     return std::unique_ptr<base::DictionaryValue>{state->DeepCopy()};
   }
 
@@ -92,11 +91,11 @@ class AccessApiHandlerTest : public ::testing::Test {
 TEST_F(AccessApiHandlerTest, Initialization) {
   const base::DictionaryValue* trait = nullptr;
   ASSERT_TRUE(component_manager_.GetTraits().GetDictionary(
-      "_accessControlBlackList", &trait));
+      "_accessRevocationList", &trait));
 
   auto expected = R"({
     "commands": {
-      "block": {
+      "revoke": {
         "minimalRole": "owner",
         "parameters": {
           "userId": {
@@ -110,22 +109,11 @@ TEST_F(AccessApiHandlerTest, Initialization) {
           }
         }
       },
-      "unblock": {
-        "minimalRole": "owner",
-        "parameters": {
-          "userId": {
-            "type": "string"
-          },
-          "applicationId": {
-            "type": "string"
-          }
-        }
-      },
       "list": {
         "minimalRole": "owner",
         "parameters": {},
         "results": {
-          "blackList": {
+          "revocationEntriesList": {
             "type": "array",
             "items": {
               "type": "object",
@@ -144,10 +132,6 @@ TEST_F(AccessApiHandlerTest, Initialization) {
       }
     },
     "state": {
-      "size": {
-        "type": "integer",
-        "isRequired": true
-      },
       "capacity": {
         "type": "integer",
         "isRequired": true
@@ -157,13 +141,12 @@ TEST_F(AccessApiHandlerTest, Initialization) {
   EXPECT_JSON_EQ(expected, *trait);
 
   expected = R"({
-    "capacity": 10,
-    "size": 0
+    "capacity": 10
   })";
   EXPECT_JSON_EQ(expected, *GetState());
 }
 
-TEST_F(AccessApiHandlerTest, Block) {
+TEST_F(AccessApiHandlerTest, Revoke) {
   EXPECT_CALL(access_manager_, Block(std::vector<uint8_t>{1, 2, 3},
                                      std::vector<uint8_t>{3, 4, 5}, _, _))
       .WillOnce(WithArgs<3>(
@@ -171,7 +154,7 @@ TEST_F(AccessApiHandlerTest, Block) {
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(1));
 
   AddCommand(R"({
-    'name' : '_accessControlBlackList.block',
+    'name' : '_accessRevocationList.revoke',
     'component': 'accessControl',
     'parameters': {
       'userId': 'AQID',
@@ -181,32 +164,7 @@ TEST_F(AccessApiHandlerTest, Block) {
   })");
 
   auto expected = R"({
-    "capacity": 10,
-    "size": 1
-  })";
-  EXPECT_JSON_EQ(expected, *GetState());
-}
-
-TEST_F(AccessApiHandlerTest, Unblock) {
-  EXPECT_CALL(access_manager_, Unblock(std::vector<uint8_t>{1, 2, 3},
-                                       std::vector<uint8_t>{3, 4, 5}, _))
-      .WillOnce(WithArgs<2>(
-          Invoke([](const DoneCallback& callback) { callback.Run(nullptr); })));
-  EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(4));
-
-  AddCommand(R"({
-    'name' : '_accessControlBlackList.unblock',
-    'component': 'accessControl',
-    'parameters': {
-      'userId': 'AQID',
-      'applicationId': 'AwQF',
-      'expirationTimeoutSec': 1234
-    }
-  })");
-
-  auto expected = R"({
-    "capacity": 10,
-    "size": 4
+    "capacity": 10
   })";
   EXPECT_JSON_EQ(expected, *GetState());
 }
@@ -220,7 +178,7 @@ TEST_F(AccessApiHandlerTest, List) {
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(4));
 
   auto expected = R"({
-    "blackList": [ {
+    "revocationListEntries": [ {
       "applicationId": "FRYX",
       "userId": "CwwN"
     }, {
@@ -230,7 +188,7 @@ TEST_F(AccessApiHandlerTest, List) {
   })";
 
   const auto& results = AddCommand(R"({
-    'name' : '_accessControlBlackList.list',
+    'name' : '_accessRevocationList.list',
     'component': 'accessControl',
     'parameters': {
     }

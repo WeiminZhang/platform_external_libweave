@@ -29,7 +29,6 @@ class AccessApiHandler final {
 
  private:
   void Block(const std::weak_ptr<Command>& command);
-  void Unblock(const std::weak_ptr<Command>& command);
   void List(const std::weak_ptr<Command>& command);
   void UpdateState();
 
