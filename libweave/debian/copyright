@@ -1,9 +1,0 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: libweave
-Source: http://weave.googlesource.com
-
-Files: *
-Copyright: 2014-2016 the Weave Authors
-License: Apache-2.0
- /usr/share/common-licenses/Apache2-.0
-
