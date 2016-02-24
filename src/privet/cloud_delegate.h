@@ -100,8 +100,10 @@ class CloudDelegate {
   virtual std::string GetServiceUrl() const = 0;
   virtual std::string GetXmppEndpoint() const = 0;
 
-  // Returns dictionary with component tree.
-  virtual const base::DictionaryValue& GetComponents() const = 0;
+  // Returns dictionary with component tree. The components contain only the
+  // state visible to the given user.
+  virtual std::unique_ptr<base::DictionaryValue> GetComponentsForUser(
+      const UserInfo& user_info) const = 0;
 
   // Finds a component at the given path. Return nullptr in case of an error.
   virtual const base::DictionaryValue* FindComponent(const std::string& path,

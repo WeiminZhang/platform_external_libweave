@@ -404,7 +404,7 @@ TEST_F(ComponentManagerTest, FindCommandDefinition) {
             manager_.FindTraitDefinition("trait1.command1.parameters"));
 }
 
-TEST_F(ComponentManagerTest, GetMinimalRole) {
+TEST_F(ComponentManagerTest, GetCommandMinimalRole) {
   const char kTraits[] = R"({
     "trait1": {
       "commands": {
@@ -423,19 +423,63 @@ TEST_F(ComponentManagerTest, GetMinimalRole) {
   ASSERT_TRUE(manager_.LoadTraits(*json, nullptr));
 
   UserRole role;
-  ASSERT_TRUE(manager_.GetMinimalRole("trait1.command1", &role, nullptr));
+  ASSERT_TRUE(manager_.GetCommandMinimalRole("trait1.command1", &role,
+                                             nullptr));
   EXPECT_EQ(UserRole::kUser, role);
 
-  ASSERT_TRUE(manager_.GetMinimalRole("trait1.command2", &role, nullptr));
+  ASSERT_TRUE(manager_.GetCommandMinimalRole("trait1.command2", &role,
+                                             nullptr));
   EXPECT_EQ(UserRole::kViewer, role);
 
-  ASSERT_TRUE(manager_.GetMinimalRole("trait2.command1", &role, nullptr));
+  ASSERT_TRUE(manager_.GetCommandMinimalRole("trait2.command1", &role,
+                                             nullptr));
   EXPECT_EQ(UserRole::kManager, role);
 
-  ASSERT_TRUE(manager_.GetMinimalRole("trait2.command2", &role, nullptr));
+  ASSERT_TRUE(manager_.GetCommandMinimalRole("trait2.command2", &role,
+                                             nullptr));
   EXPECT_EQ(UserRole::kOwner, role);
 
-  EXPECT_FALSE(manager_.GetMinimalRole("trait1.command3", &role, nullptr));
+  EXPECT_FALSE(manager_.GetCommandMinimalRole("trait1.command3", &role,
+                                              nullptr));
+}
+
+TEST_F(ComponentManagerTest, GetStateMinimalRole) {
+  const char kTraits[] = R"({
+    "trait1": {
+      "state": {
+        "property1": {"type": "integer"},
+        "property2": {"type": "boolean", "minimalRole": "viewer"},
+        "property3": {"type": "integer", "minimalRole": "user"}
+      }
+    },
+    "trait2": {
+      "state": {
+        "property1": {"type": "string", "minimalRole": "manager"},
+        "property2": {"type": "integer", "minimalRole": "owner"}
+      }
+    }
+  })";
+  auto json = CreateDictionaryValue(kTraits);
+  ASSERT_TRUE(manager_.LoadTraits(*json, nullptr));
+
+  UserRole role;
+  ASSERT_TRUE(manager_.GetStateMinimalRole("trait1.property1", &role, nullptr));
+  EXPECT_EQ(UserRole::kUser, role);
+
+  ASSERT_TRUE(manager_.GetStateMinimalRole("trait1.property2", &role, nullptr));
+  EXPECT_EQ(UserRole::kViewer, role);
+
+  ASSERT_TRUE(manager_.GetStateMinimalRole("trait1.property3", &role, nullptr));
+  EXPECT_EQ(UserRole::kUser, role);
+
+  ASSERT_TRUE(manager_.GetStateMinimalRole("trait2.property1", &role, nullptr));
+  EXPECT_EQ(UserRole::kManager, role);
+
+  ASSERT_TRUE(manager_.GetStateMinimalRole("trait2.property2", &role, nullptr));
+  EXPECT_EQ(UserRole::kOwner, role);
+
+  ASSERT_FALSE(manager_.GetStateMinimalRole("trait2.property3", &role,
+                                            nullptr));
 }
 
 TEST_F(ComponentManagerTest, AddComponent) {
@@ -1265,6 +1309,218 @@ TEST_F(ComponentManagerTest, FindComponentWithTrait) {
 TEST_F(ComponentManagerTest, TestMockComponentManager) {
   // Check that all the virtual methods are mocked out.
   test::MockComponentManager mock;
+}
+
+TEST_F(ComponentManagerTest, GetComponentsForUserRole) {
+  const char kTraits[] = R"({
+    "trait1": {
+      "state": {
+        "prop1": { "type": "string", "minimalRole": "viewer" },
+        "prop2": { "type": "string", "minimalRole": "user" }
+      }
+    },
+    "trait2": {
+      "state": {
+        "prop3": { "type": "string", "minimalRole": "manager" },
+        "prop4": { "type": "string", "minimalRole": "owner" }
+      }
+    },
+    "trait3": {
+      "state": {
+        "prop5": { "type": "string" }
+      }
+    }
+  })";
+  auto json = CreateDictionaryValue(kTraits);
+  ASSERT_TRUE(manager_.LoadTraits(*json, nullptr));
+  ASSERT_TRUE(manager_.AddComponent("", "comp1", {"trait1", "trait2"},
+                                    nullptr));
+  ASSERT_TRUE(manager_.AddComponent("", "comp2", {"trait2"}, nullptr));
+  ASSERT_TRUE(manager_.AddComponentArrayItem("comp2", "comp3", {"trait3"},
+                                             nullptr));
+  ASSERT_TRUE(manager_.AddComponent("comp2", "comp4", {"trait3"}, nullptr));
+
+  const char kComp1Properties[] = R"({
+    "trait1": { "prop1": "foo", "prop2": "bar" },
+    "trait2": { "prop3": "baz", "prop4": "quux" }
+  })";
+  ASSERT_TRUE(manager_.SetStatePropertiesFromJson("comp1", kComp1Properties,
+                                                  nullptr));
+
+  const char kComp2Properties[] = R"({
+    "trait2": { "prop3": "foo", "prop4": "bar" }
+  })";
+  ASSERT_TRUE(manager_.SetStatePropertiesFromJson("comp2", kComp2Properties,
+                                                  nullptr));
+
+  const char kComp3Properties[] = R"({
+    "trait3": { "prop5": "foo" }
+  })";
+  ASSERT_TRUE(manager_.SetStatePropertiesFromJson("comp2.comp3[0]",
+                                                  kComp3Properties, nullptr));
+
+  const char kComp4Properties[] = R"({
+    "trait3": { "prop5": "bar" }
+  })";
+  ASSERT_TRUE(manager_.SetStatePropertiesFromJson("comp2.comp4",
+                                                  kComp4Properties, nullptr));
+
+  const char kExpected1[] = R"({
+    "comp1": {
+      "traits": [ "trait1", "trait2" ],
+      "state": {
+        "trait1": {
+          "prop1": "foo",
+          "prop2": "bar"
+        },
+        "trait2": {
+          "prop3": "baz",
+          "prop4": "quux"
+        }
+      }
+    },
+    "comp2": {
+      "traits": [ "trait2" ],
+      "state": {
+        "trait2": {
+          "prop3": "foo",
+          "prop4": "bar"
+        }
+      },
+      "components": {
+        "comp3": [
+          {
+            "traits": [ "trait3" ],
+            "state": {
+              "trait3": {
+                "prop5": "foo"
+              }
+            }
+          }
+        ],
+        "comp4": {
+          "traits": [ "trait3" ],
+          "state": {
+            "trait3": {
+              "prop5": "bar"
+            }
+          }
+        }
+      }
+    }
+  })";
+  EXPECT_JSON_EQ(kExpected1, manager_.GetComponents());
+
+  EXPECT_JSON_EQ(kExpected1,
+                 *manager_.GetComponentsForUserRole(UserRole::kOwner));
+
+  const char kExpected2[] = R"({
+    "comp1": {
+      "traits": [ "trait1", "trait2" ],
+      "state": {
+        "trait1": {
+          "prop1": "foo",
+          "prop2": "bar"
+        },
+        "trait2": {
+          "prop3": "baz"
+        }
+      }
+    },
+    "comp2": {
+      "traits": [ "trait2" ],
+      "state": {
+        "trait2": {
+          "prop3": "foo"
+        }
+      },
+      "components": {
+        "comp3": [
+          {
+            "traits": [ "trait3" ],
+            "state": {
+              "trait3": {
+                "prop5": "foo"
+              }
+            }
+          }
+        ],
+        "comp4": {
+          "traits": [ "trait3" ],
+          "state": {
+            "trait3": {
+              "prop5": "bar"
+            }
+          }
+        }
+      }
+    }
+  })";
+  EXPECT_JSON_EQ(kExpected2,
+                 *manager_.GetComponentsForUserRole(UserRole::kManager));
+
+  const char kExpected3[] = R"({
+    "comp1": {
+      "traits": [ "trait1", "trait2" ],
+      "state": {
+        "trait1": {
+          "prop1": "foo",
+          "prop2": "bar"
+        }
+      }
+    },
+    "comp2": {
+      "traits": [ "trait2" ],
+      "components": {
+        "comp3": [
+          {
+            "traits": [ "trait3" ],
+            "state": {
+              "trait3": {
+                "prop5": "foo"
+              }
+            }
+          }
+        ],
+        "comp4": {
+          "traits": [ "trait3" ],
+          "state": {
+            "trait3": {
+              "prop5": "bar"
+            }
+          }
+        }
+      }
+    }
+  })";
+  EXPECT_JSON_EQ(kExpected3,
+                 *manager_.GetComponentsForUserRole(UserRole::kUser));
+
+  const char kExpected4[] = R"({
+    "comp1": {
+      "traits": [ "trait1", "trait2" ],
+      "state": {
+        "trait1": {
+          "prop1": "foo"
+        }
+      }
+    },
+    "comp2": {
+      "traits": [ "trait2" ],
+      "components": {
+        "comp3": [
+          {
+            "traits": [ "trait3" ]
+          }
+        ],
+        "comp4": {
+          "traits": [ "trait3" ]
+        }
+      }
+    }
+  })";
+  EXPECT_JSON_EQ(kExpected4,
+                 *manager_.GetComponentsForUserRole(UserRole::kViewer));
 }
 
 }  // namespace weave

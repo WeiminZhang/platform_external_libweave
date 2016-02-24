@@ -906,7 +906,8 @@ void PrivetHandler::HandleComponents(const base::DictionaryValue& input,
     auto parts = Split(path, ".", true, false);
     components->Set(parts.back(), CloneComponent(*component, filter).release());
   } else {
-    components = CloneComponentTree(cloud_->GetComponents(), filter);
+    components = CloneComponentTree(*cloud_->GetComponentsForUser(user_info),
+                                    filter);
   }
   base::DictionaryValue output;
   output.Set(kComponentsKey, components.release());

@@ -188,7 +188,8 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_CONST_METHOD0(GetOAuthUrl, std::string());
   MOCK_CONST_METHOD0(GetServiceUrl, std::string());
   MOCK_CONST_METHOD0(GetXmppEndpoint, std::string());
-  MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
+  MOCK_CONST_METHOD1(MockGetComponentsForUser,
+                     const base::DictionaryValue&(const UserInfo&));
   MOCK_CONST_METHOD2(FindComponent,
                      const base::DictionaryValue*(const std::string& path,
                                                   ErrorPtr* error));
@@ -228,13 +229,21 @@ class MockCloudDelegate : public CloudDelegate {
     EXPECT_CALL(*this, GetCloudId()).WillRepeatedly(Return("TestCloudId"));
     test_dict_.Set("test", new base::DictionaryValue);
     EXPECT_CALL(*this, GetTraits()).WillRepeatedly(ReturnRef(test_dict_));
-    EXPECT_CALL(*this, GetComponents()).WillRepeatedly(ReturnRef(test_dict_));
+    EXPECT_CALL(*this, MockGetComponentsForUser(_))
+        .WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, FindComponent(_, _)).Times(0);
   }
 
   ConnectionState connection_state_{ConnectionState::kOnline};
   SetupState setup_state_{SetupState::kNone};
   base::DictionaryValue test_dict_;
+
+ private:
+  std::unique_ptr<base::DictionaryValue> GetComponentsForUser(
+      const UserInfo& user_info) const override {
+    return std::unique_ptr<base::DictionaryValue>{
+        MockGetComponentsForUser(user_info).DeepCopy()};
+  }
 };
 
 }  // namespace privet

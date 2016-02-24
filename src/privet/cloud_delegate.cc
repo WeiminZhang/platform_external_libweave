@@ -151,8 +151,12 @@ class CloudDelegateImpl : public CloudDelegate {
     return device_->GetSettings().xmpp_endpoint;
   }
 
-  const base::DictionaryValue& GetComponents() const override {
-    return component_manager_->GetComponents();
+  std::unique_ptr<base::DictionaryValue> GetComponentsForUser(
+      const UserInfo& user_info) const override {
+    UserRole role;
+    std::string str_scope = EnumToString(user_info.scope());
+    CHECK(StringToEnum(str_scope, &role));
+    return component_manager_->GetComponentsForUserRole(role);
   }
 
   const base::DictionaryValue* FindComponent(const std::string& path,
