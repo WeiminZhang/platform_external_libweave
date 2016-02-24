@@ -9,9 +9,10 @@
 #include <weave/test/mock_device.h>
 #include <weave/test/unittest_utils.h>
 
+#include "src/access_revocation_manager.h"
 #include "src/component_manager_impl.h"
-#include "src/access_black_list_manager.h"
 #include "src/data_encoding.h"
+#include "src/test/mock_access_revocation_manager.h"
 
 using testing::_;
 using testing::AnyOf;
@@ -21,25 +22,6 @@ using testing::StrictMock;
 using testing::WithArgs;
 
 namespace weave {
-
-class MockAccessBlackListManager : public AccessBlackListManager {
- public:
-  MOCK_METHOD4(Block,
-               void(const std::vector<uint8_t>&,
-                    const std::vector<uint8_t>&,
-                    const base::Time&,
-                    const DoneCallback&));
-  MOCK_METHOD3(Unblock,
-               void(const std::vector<uint8_t>&,
-                    const std::vector<uint8_t>&,
-                    const DoneCallback&));
-  MOCK_CONST_METHOD2(IsBlocked,
-                     bool(const std::vector<uint8_t>&,
-                          const std::vector<uint8_t>&));
-  MOCK_CONST_METHOD0(GetEntries, std::vector<Entry>());
-  MOCK_CONST_METHOD0(GetSize, size_t());
-  MOCK_CONST_METHOD0(GetCapacity, size_t());
-};
 
 class AccessApiHandlerTest : public ::testing::Test {
  protected:
@@ -62,9 +44,8 @@ class AccessApiHandlerTest : public ::testing::Test {
         }));
 
     EXPECT_CALL(device_,
-                AddCommandHandler(_, AnyOf("_accessControlBlackList.block",
-                                           "_accessControlBlackList.unblock",
-                                           "_accessControlBlackList.list"),
+                AddCommandHandler(_, AnyOf("_accessRevocationList.revoke",
+                                           "_accessRevocationList.list"),
                                   _))
         .WillRepeatedly(
             Invoke(&component_manager_, &ComponentManager::AddCommandHandler));
@@ -90,31 +71,31 @@ class AccessApiHandlerTest : public ::testing::Test {
 
   std::unique_ptr<base::DictionaryValue> GetState() {
     std::string path =
-        component_manager_.FindComponentWithTrait("_accessControlBlackList");
+        component_manager_.FindComponentWithTrait("_accessRevocationList");
     EXPECT_FALSE(path.empty());
     const auto* component = component_manager_.FindComponent(path, nullptr);
     EXPECT_TRUE(component);
     const base::DictionaryValue* state = nullptr;
     EXPECT_TRUE(
-        component->GetDictionary("state._accessControlBlackList", &state));
+        component->GetDictionary("state._accessRevocationList", &state));
     return std::unique_ptr<base::DictionaryValue>{state->DeepCopy()};
   }
 
   StrictMock<provider::test::FakeTaskRunner> task_runner_;
   ComponentManagerImpl component_manager_{&task_runner_};
   StrictMock<test::MockDevice> device_;
-  StrictMock<MockAccessBlackListManager> access_manager_;
+  StrictMock<test::MockAccessRevocationManager> access_manager_;
   std::unique_ptr<AccessApiHandler> handler_;
 };
 
 TEST_F(AccessApiHandlerTest, Initialization) {
   const base::DictionaryValue* trait = nullptr;
   ASSERT_TRUE(component_manager_.GetTraits().GetDictionary(
-      "_accessControlBlackList", &trait));
+      "_accessRevocationList", &trait));
 
   auto expected = R"({
     "commands": {
-      "block": {
+      "revoke": {
         "minimalRole": "owner",
         "parameters": {
           "userId": {
@@ -123,19 +104,11 @@ TEST_F(AccessApiHandlerTest, Initialization) {
           "applicationId": {
             "type": "string"
           },
-          "expirationTimeoutSec": {
+          "revocationTimestamp": {
             "type": "integer"
-          }
-        }
-      },
-      "unblock": {
-        "minimalRole": "owner",
-        "parameters": {
-          "userId": {
-            "type": "string"
           },
-          "applicationId": {
-            "type": "string"
+          "expirationTime": {
+            "type": "integer"
           }
         }
       },
@@ -143,7 +116,7 @@ TEST_F(AccessApiHandlerTest, Initialization) {
         "minimalRole": "owner",
         "parameters": {},
         "results": {
-          "blackList": {
+          "revocationEntriesList": {
             "type": "array",
             "items": {
               "type": "object",
@@ -153,6 +126,12 @@ TEST_F(AccessApiHandlerTest, Initialization) {
                 },
                 "applicationId": {
                   "type": "string"
+                },
+                "revocationTimestamp": {
+                  "type": "integer"
+                },
+                "expirationTime": {
+                  "type": "integer"
                 }
               },
               "additionalProperties": false
@@ -162,10 +141,6 @@ TEST_F(AccessApiHandlerTest, Initialization) {
       }
     },
     "state": {
-      "size": {
-        "type": "integer",
-        "isRequired": true
-      },
       "capacity": {
         "type": "integer",
         "isRequired": true
@@ -175,70 +150,56 @@ TEST_F(AccessApiHandlerTest, Initialization) {
   EXPECT_JSON_EQ(expected, *trait);
 
   expected = R"({
-    "capacity": 10,
-    "size": 0
+    "capacity": 10
   })";
   EXPECT_JSON_EQ(expected, *GetState());
 }
 
-TEST_F(AccessApiHandlerTest, Block) {
-  EXPECT_CALL(access_manager_, Block(std::vector<uint8_t>{1, 2, 3},
-                                     std::vector<uint8_t>{3, 4, 5}, _, _))
-      .WillOnce(WithArgs<3>(
+TEST_F(AccessApiHandlerTest, Revoke) {
+  EXPECT_CALL(
+      access_manager_,
+      Block(AccessRevocationManager::Entry{std::vector<uint8_t>{1, 2, 3},
+                                           std::vector<uint8_t>{3, 4, 5},
+                                           base::Time::FromTimeT(946686034),
+                                           base::Time::FromTimeT(946692690)},
+            _))
+      .WillOnce(WithArgs<1>(
           Invoke([](const DoneCallback& callback) { callback.Run(nullptr); })));
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(1));
 
   AddCommand(R"({
-    'name' : '_accessControlBlackList.block',
+    'name' : '_accessRevocationList.revoke',
     'component': 'accessControl',
     'parameters': {
       'userId': 'AQID',
       'applicationId': 'AwQF',
-      'expirationTimeoutSec': 1234
+      'expirationTime': 7890,
+      'revocationTimestamp': 1234
     }
   })");
 
   auto expected = R"({
-    "capacity": 10,
-    "size": 1
-  })";
-  EXPECT_JSON_EQ(expected, *GetState());
-}
-
-TEST_F(AccessApiHandlerTest, Unblock) {
-  EXPECT_CALL(access_manager_, Unblock(std::vector<uint8_t>{1, 2, 3},
-                                       std::vector<uint8_t>{3, 4, 5}, _))
-      .WillOnce(WithArgs<2>(
-          Invoke([](const DoneCallback& callback) { callback.Run(nullptr); })));
-  EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(4));
-
-  AddCommand(R"({
-    'name' : '_accessControlBlackList.unblock',
-    'component': 'accessControl',
-    'parameters': {
-      'userId': 'AQID',
-      'applicationId': 'AwQF',
-      'expirationTimeoutSec': 1234
-    }
-  })");
-
-  auto expected = R"({
-    "capacity": 10,
-    "size": 4
+    "capacity": 10
   })";
   EXPECT_JSON_EQ(expected, *GetState());
 }
 
 TEST_F(AccessApiHandlerTest, List) {
-  std::vector<AccessBlackListManager::Entry> entries{
-      {{11, 12, 13}, {21, 22, 23}, base::Time::FromTimeT(1410000000)},
-      {{31, 32, 33}, {41, 42, 43}, base::Time::FromTimeT(1420000000)},
+  std::vector<AccessRevocationManager::Entry> entries{
+      {{11, 12, 13},
+       {21, 22, 23},
+       base::Time::FromTimeT(1310000000),
+       base::Time::FromTimeT(1410000000)},
+      {{31, 32, 33},
+       {41, 42, 43},
+       base::Time::FromTimeT(1300000000),
+       base::Time::FromTimeT(1420000000)},
   };
   EXPECT_CALL(access_manager_, GetEntries()).WillOnce(Return(entries));
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(4));
 
   auto expected = R"({
-    "blackList": [ {
+    "revocationListEntries": [ {
       "applicationId": "FRYX",
       "userId": "CwwN"
     }, {
@@ -248,7 +209,7 @@ TEST_F(AccessApiHandlerTest, List) {
   })";
 
   const auto& results = AddCommand(R"({
-    'name' : '_accessControlBlackList.list',
+    'name' : '_accessRevocationList.list',
     'component': 'accessControl',
     'parameters': {
     }

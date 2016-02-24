@@ -26,6 +26,8 @@ const size_t kMaxStrLen = 1700;  // Log messages are limited to 2000 chars.
 const char kErrorCodeKey[] = "code";
 const char kErrorMessageKey[] = "message";
 
+const time_t kJ2000ToTimeT = 946684800;
+
 }  // anonymous namespace
 
 namespace errors {
@@ -67,6 +69,14 @@ std::unique_ptr<base::DictionaryValue> ErrorInfoToJson(const Error& error) {
   output->SetString(kErrorMessageKey, error.GetMessage());
   output->SetString(kErrorCodeKey, error.GetCode());
   return output;
+}
+
+uint32_t ToJ2000Time(const base::Time& time) {
+  return std::max(time.ToTimeT(), kJ2000ToTimeT) - kJ2000ToTimeT;
+}
+
+base::Time FromJ2000Time(uint32_t time) {
+  return base::Time::FromTimeT(time + kJ2000ToTimeT);
 }
 
 }  // namespace weave

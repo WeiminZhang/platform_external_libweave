@@ -674,7 +674,6 @@ TEST_F(PrivetHandlerSetupTest, GcdSetupWithEndpoints) {
       "client_secret": "test_client_secret",
       "oauth_url": "https://oauths/",
       "service_url": "https://service/",
-      "status": "success",
       "xmpp_endpoint": "xmpp:678",
       "ticketId": "testTicket",
       "user": "testUser"
@@ -726,26 +725,6 @@ TEST_F(PrivetHandlerTestWithAuth, ConfirmAccessControl) {
   EXPECT_JSON_EQ("{}",
                  HandleRequest("/privet/v3/accessControl/confirm",
                                R"({"clientToken": "DerivedClientAuthToken"})"));
-}
-
-TEST_F(PrivetHandlerTestWithAuth, State) {
-  EXPECT_JSON_EQ(R"({"state": {"test": {}}, "fingerprint": "1"})",
-                 HandleRequest("/privet/v3/state", "{}"));
-
-  cloud_.NotifyOnStateChanged();
-
-  EXPECT_JSON_EQ(R"({"state": {"test": {}}, "fingerprint": "2"})",
-                 HandleRequest("/privet/v3/state", "{}"));
-}
-
-TEST_F(PrivetHandlerTestWithAuth, CommandsDefs) {
-  EXPECT_JSON_EQ(R"({"commands": {"test":{}}, "fingerprint": "1"})",
-                 HandleRequest("/privet/v3/commandDefs", "{}"));
-
-  cloud_.NotifyOnTraitDefsChanged();
-
-  EXPECT_JSON_EQ(R"({"commands": {"test":{}}, "fingerprint": "2"})",
-                 HandleRequest("/privet/v3/commandDefs", "{}"));
 }
 
 TEST_F(PrivetHandlerTestWithAuth, Traits) {

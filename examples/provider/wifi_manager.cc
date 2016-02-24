@@ -46,20 +46,21 @@ int ForkCmdAndWait(const std::string& path,
   return status;
 }
 
+struct DirCloser {
+  void operator()(DIR* dir) { closedir(dir); }
+};
+
 std::string FindWirelessInterface() {
   std::string sysfs_net{"/sys/class/net"};
-  DIR* net_dir = opendir(sysfs_net.c_str());
+  std::unique_ptr<DIR, DirCloser> net_dir{opendir(sysfs_net.c_str())};
+  CHECK(net_dir);
   dirent* iface;
-  while ((iface = readdir(net_dir))) {
+  while ((iface = readdir(net_dir.get()))) {
     auto path = sysfs_net + "/" + iface->d_name + "/wireless";
-    DIR* wireless_dir = opendir(path.c_str());
-    if (wireless_dir != nullptr) {
-      closedir(net_dir);
-      closedir(wireless_dir);
+    std::unique_ptr<DIR, DirCloser> wireless_dir{opendir(path.c_str())};
+    if (wireless_dir)
       return iface->d_name;
-    }
   }
-  closedir(net_dir);
   return "";
 }
 
