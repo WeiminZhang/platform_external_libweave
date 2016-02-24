@@ -59,6 +59,7 @@
  *	4. Because of 3., we don't need a large table of powers of 10
  *		for ten-to-e (just some small tables, e.g. of 10^k
  *		for 0 <= k <= 22).
+ *	5. Fixed -Wchar-subscripts warning in "if (!hexdig['0'])"
  */
 
 /*
@@ -1572,7 +1573,7 @@ hexnan
 	CONST char *s;
 	int c1, havedig, udx0, xshift;
 
-	if (!hexdig['0'])
+	if (!hexdig[0 + '0'])
 		hexdig_init();
 	x[0] = x[1] = 0;
 	havedig = xshift = 0;
