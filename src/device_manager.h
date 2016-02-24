@@ -11,7 +11,7 @@
 namespace weave {
 
 class AccessApiHandler;
-class AccessBlackListManager;
+class AccessRevocationManager;
 class BaseApiHandler;
 class Config;
 class ComponentManager;
@@ -78,22 +78,6 @@ class DeviceManager final : public Device {
       const PairingBeginCallback& begin_callback,
       const PairingEndCallback& end_callback) override;
 
-  void AddCommandDefinitionsFromJson(const std::string& json) override;
-  void AddCommandDefinitions(const base::DictionaryValue& dict) override;
-  void AddCommandHandler(const std::string& command_name,
-                         const CommandHandlerCallback& callback) override;
-  void AddStateDefinitionsFromJson(const std::string& json) override;
-  void AddStateDefinitions(const base::DictionaryValue& dict) override;
-  bool SetStatePropertiesFromJson(const std::string& json,
-                                  ErrorPtr* error) override;
-  bool SetStateProperties(const base::DictionaryValue& dict,
-                          ErrorPtr* error) override;
-  const base::Value* GetStateProperty(const std::string& name) const override;
-  bool SetStateProperty(const std::string& name,
-                        const base::Value& value,
-                        ErrorPtr* error) override;
-  const base::DictionaryValue& GetState() const override;
-
   Config* GetConfig();
 
  private:
@@ -109,7 +93,7 @@ class DeviceManager final : public Device {
   std::unique_ptr<ComponentManager> component_manager_;
   std::unique_ptr<DeviceRegistrationInfo> device_info_;
   std::unique_ptr<BaseApiHandler> base_api_handler_;
-  std::unique_ptr<AccessBlackListManager> black_list_manager_;
+  std::unique_ptr<AccessRevocationManager> access_revocation_manager_;
   std::unique_ptr<AccessApiHandler> access_api_handler_;
   std::unique_ptr<privet::Manager> privet_;
 

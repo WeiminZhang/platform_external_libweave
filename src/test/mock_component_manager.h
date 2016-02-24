@@ -11,6 +11,8 @@
 
 namespace weave {
 
+namespace test {
+
 class MockComponentManager : public ComponentManager {
  public:
   ~MockComponentManager() override {}
@@ -95,13 +97,6 @@ class MockComponentManager : public ComponentManager {
                    const base::Callback<void(UpdateID)>& callback));
   MOCK_CONST_METHOD1(FindComponentWithTrait,
                      std::string(const std::string& trait));
-  MOCK_METHOD2(AddLegacyCommandDefinitions,
-               bool(const base::DictionaryValue& dict, ErrorPtr* error));
-  MOCK_METHOD2(AddLegacyStateDefinitions,
-               bool(const base::DictionaryValue& dict, ErrorPtr* error));
-  MOCK_CONST_METHOD0(GetLegacyState, const base::DictionaryValue&());
-  MOCK_CONST_METHOD0(GetLegacyCommandDefinitions,
-                     const base::DictionaryValue&());
 
  private:
   void AddCommand(std::unique_ptr<CommandInstance> command_instance) override {
@@ -124,6 +119,8 @@ class MockComponentManager : public ComponentManager {
     return Token{MockAddServerStateUpdatedCallback(callback)};
   }
 };
+
+}  // namespace test
 
 }  // namespace weave
 

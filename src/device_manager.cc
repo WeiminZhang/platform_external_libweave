@@ -9,7 +9,7 @@
 #include <base/bind.h>
 
 #include "src/access_api_handler.h"
-#include "src/access_black_list_manager_impl.h"
+#include "src/access_revocation_manager_impl.h"
 #include "src/base_api_handler.h"
 #include "src/commands/schema_constants.h"
 #include "src/component_manager_impl.h"
@@ -33,18 +33,19 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
     : config_{new Config{config_store}},
       component_manager_{new ComponentManagerImpl{task_runner}} {
   if (http_server) {
-    auth_manager_.reset(new privet::AuthManager(
-        config_.get(), http_server->GetHttpsCertificateFingerprint()));
+    access_revocation_manager_.reset(
+        new AccessRevocationManagerImpl{config_store});
+    auth_manager_.reset(
+        new privet::AuthManager(config_.get(), access_revocation_manager_.get(),
+                                http_server->GetHttpsCertificateFingerprint()));
+    access_api_handler_.reset(
+        new AccessApiHandler{this, access_revocation_manager_.get()});
   }
 
   device_info_.reset(new DeviceRegistrationInfo(
       config_.get(), component_manager_.get(), task_runner, http_client,
       network, auth_manager_.get()));
   base_api_handler_.reset(new BaseApiHandler{device_info_.get(), this});
-
-  black_list_manager_.reset(new AccessBlackListManagerImpl{config_store});
-  access_api_handler_.reset(
-      new AccessApiHandler{this, black_list_manager_.get()});
 
   device_info_->Start();
 
@@ -156,16 +157,6 @@ void DeviceManager::AddCommandHandler(const std::string& component,
   component_manager_->AddCommandHandler(component, command_name, callback);
 }
 
-void DeviceManager::AddCommandDefinitionsFromJson(const std::string& json) {
-  auto dict = LoadJsonDict(json, nullptr);
-  CHECK(dict);
-  AddCommandDefinitions(*dict);
-}
-
-void DeviceManager::AddCommandDefinitions(const base::DictionaryValue& dict) {
-  CHECK(component_manager_->AddLegacyCommandDefinitions(dict, nullptr));
-}
-
 bool DeviceManager::AddCommand(const base::DictionaryValue& command,
                                std::string* id,
                                ErrorPtr* error) {
@@ -181,85 +172,8 @@ Command* DeviceManager::FindCommand(const std::string& id) {
   return component_manager_->FindCommand(id);
 }
 
-void DeviceManager::AddCommandHandler(const std::string& command_name,
-                                      const CommandHandlerCallback& callback) {
-  if (command_name.empty())
-    return component_manager_->AddCommandHandler("", "", callback);
-
-  auto trait = SplitAtFirst(command_name, ".", true).first;
-  std::string component = component_manager_->FindComponentWithTrait(trait);
-  CHECK(!component.empty());
-  component_manager_->AddCommandHandler(component, command_name, callback);
-}
-
 void DeviceManager::AddStateChangedCallback(const base::Closure& callback) {
   component_manager_->AddStateChangedCallback(callback);
-}
-
-void DeviceManager::AddStateDefinitionsFromJson(const std::string& json) {
-  auto dict = LoadJsonDict(json, nullptr);
-  CHECK(dict);
-  AddStateDefinitions(*dict);
-}
-
-void DeviceManager::AddStateDefinitions(const base::DictionaryValue& dict) {
-  CHECK(component_manager_->AddLegacyStateDefinitions(dict, nullptr));
-}
-
-bool DeviceManager::SetStatePropertiesFromJson(const std::string& json,
-                                               ErrorPtr* error) {
-  auto dict = LoadJsonDict(json, error);
-  return dict && SetStateProperties(*dict, error);
-}
-
-bool DeviceManager::SetStateProperties(const base::DictionaryValue& dict,
-                                       ErrorPtr* error) {
-  for (base::DictionaryValue::Iterator it(dict); !it.IsAtEnd(); it.Advance()) {
-    std::string component =
-        component_manager_->FindComponentWithTrait(it.key());
-    if (component.empty()) {
-      Error::AddToPrintf(error, FROM_HERE, "unrouted_state",
-                         "Unable to set property value because there is no "
-                         "component supporting "
-                         "trait '%s'",
-                         it.key().c_str());
-      return false;
-    }
-    base::DictionaryValue trait_state;
-    trait_state.Set(it.key(), it.value().DeepCopy());
-    if (!component_manager_->SetStateProperties(component, trait_state, error))
-      return false;
-  }
-  return true;
-}
-
-const base::Value* DeviceManager::GetStateProperty(
-    const std::string& name) const {
-  auto trait = SplitAtFirst(name, ".", true).first;
-  std::string component = component_manager_->FindComponentWithTrait(trait);
-  if (component.empty())
-    return nullptr;
-  return component_manager_->GetStateProperty(component, name, nullptr);
-}
-
-bool DeviceManager::SetStateProperty(const std::string& name,
-                                     const base::Value& value,
-                                     ErrorPtr* error) {
-  auto trait = SplitAtFirst(name, ".", true).first;
-  std::string component = component_manager_->FindComponentWithTrait(trait);
-  if (component.empty()) {
-    Error::AddToPrintf(
-        error, FROM_HERE, "unrouted_state",
-        "Unable set value of state property '%s' because there is no component "
-        "supporting trait '%s'",
-        name.c_str(), trait.c_str());
-    return false;
-  }
-  return component_manager_->SetStateProperty(component, name, value, error);
-}
-
-const base::DictionaryValue& DeviceManager::GetState() const {
-  return component_manager_->GetLegacyState();
 }
 
 void DeviceManager::Register(const RegistrationData& registration_data,

@@ -34,12 +34,6 @@ extern const char kCommand_Results[];
 extern const char kCommand_State[];
 extern const char kCommand_Error[];
 
-extern const char kCommand_Role[];
-extern const char kCommand_Role_Manager[];
-extern const char kCommand_Role_Owner[];
-extern const char kCommand_Role_User[];
-extern const char kCommand_Role_Viewer[];
-
 }  // namespace attributes
 }  // namespace commands
 

@@ -92,16 +92,18 @@ class Daemon {
                                     http_client_.get(), network_.get(),
                                     dns_sd_.get(), http_server_.get(),
                                     wifi_.get(), bluetooth_.get());
-
     if (!opts.registration_ticket.empty()) {
-      weave::RegistrationData data;
-      data.ticket_id = opts.registration_ticket;
-      data.service_url = opts.service_url;
-      device_->Register(data, base::Bind(&OnRegisterDeviceDone, device_.get()));
+      registration_data_.ticket_id = opts.registration_ticket;
+      registration_data_.service_url = opts.service_url;
     }
   }
 
-  void Run() { task_runner_->Run(); }
+  void Run() {
+    if (!registration_data_.ticket_id.empty()) {
+      device_->Register(registration_data_, base::Bind(&OnRegisterDeviceDone, device_.get()));
+    }
+    task_runner_->Run();
+  }
 
   weave::Device* GetDevice() const { return device_.get(); }
 
@@ -127,4 +129,5 @@ class Daemon {
   std::unique_ptr<weave::examples::HttpServerImpl> http_server_;
   std::unique_ptr<weave::examples::WifiImpl> wifi_;
   std::unique_ptr<weave::Device> device_;
+  weave::RegistrationData registration_data_;
 };

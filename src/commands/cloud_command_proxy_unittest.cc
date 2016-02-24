@@ -14,7 +14,7 @@
 #include <weave/test/unittest_utils.h>
 
 #include "src/commands/command_instance.h"
-#include "src/mock_component_manager.h"
+#include "src/test/mock_component_manager.h"
 
 using testing::_;
 using testing::AnyNumber;
@@ -141,7 +141,7 @@ class CloudCommandProxyTest : public ::testing::Test {
   ComponentManager::UpdateID current_state_update_id_{0};
   base::CallbackList<void(ComponentManager::UpdateID)> callbacks_;
   testing::StrictMock<MockCloudCommandUpdateInterface> cloud_updater_;
-  testing::StrictMock<MockComponentManager> component_manager_;
+  testing::StrictMock<test::MockComponentManager> component_manager_;
   testing::StrictMock<provider::test::FakeTaskRunner> task_runner_;
   std::queue<base::Closure> task_queue_;
   std::unique_ptr<CommandInstance> command_instance_;

@@ -294,7 +294,6 @@ class WeaveTest : public ::testing::Test {
                   "/privet/v3/accessControl/confirm",
                   "/privet/v3/auth",
                   "/privet/v3/checkForUpdates",
-                  "/privet/v3/commandDefs",
                   "/privet/v3/commands/cancel",
                   "/privet/v3/commands/execute",
                   "/privet/v3/commands/list",
@@ -305,7 +304,6 @@ class WeaveTest : public ::testing::Test {
                   "/privet/v3/pairing/start",
                   "/privet/v3/setup/start",
                   "/privet/v3/setup/status",
-                  "/privet/v3/state",
                   "/privet/v3/traits",
                   // clang-format on
               }),
