@@ -20,15 +20,12 @@ include $(LOCAL_PATH)/file_lists.mk
 # ========================================================
 
 libweaveCommonCppExtension := .cc
-libweaveCommonCFlags := -Wall -Werror \
-	-Wno-char-subscripts -Wno-missing-field-initializers \
-	-Wno-unused-function -Wno-unused-parameter
+libweaveCommonCFlags := \
+	-Wall -Wextra -Werror \
+	-Wno-missing-field-initializers \
+	-Wno-unused-parameter \
 
-libweaveCommonCppFlags := \
-	-Wno-deprecated-register \
-	-Wno-sign-compare \
-	-Wno-sign-promo \
-	-Wno-non-virtual-dtor \
+libweaveCommonCppFlags :=
 
 libweaveCommonCIncludes := \
 	$(LOCAL_PATH)/.. \
