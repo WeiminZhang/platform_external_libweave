@@ -11,7 +11,7 @@
 #include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/mock_delegates.h"
-#include "src/test/mock_black_list_manager.h"
+#include "src/test/mock_access_revocation_manager.h"
 #include "src/test/mock_clock.h"
 
 using testing::_;
@@ -22,9 +22,9 @@ using testing::StrictMock;
 namespace weave {
 namespace privet {
 
-class MockBlackListManager : public test::MockAccessBlackListManager {
+class MockAccessRevocationManager : public test::MockAccessRevocationManager {
  public:
-  MockBlackListManager() {
+  MockAccessRevocationManager() {
     EXPECT_CALL(*this, AddEntryAddedCallback(_))
         .WillOnce(SaveArg<0>(&changed_callback_));
     EXPECT_CALL(*this, IsBlocked(_, _, _)).WillRepeatedly(Return(false));
@@ -61,7 +61,7 @@ class AuthManagerTest : public testing::Test {
       60, 62, 10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85};
 
   test::MockClock clock_;
-  StrictMock<MockBlackListManager> black_list_;
+  StrictMock<MockAccessRevocationManager> black_list_;
   AuthManager auth_{kSecret1, kFingerprint, kSecret2, &clock_, &black_list_};
 };
 

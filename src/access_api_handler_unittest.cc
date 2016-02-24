@@ -9,10 +9,10 @@
 #include <weave/test/mock_device.h>
 #include <weave/test/unittest_utils.h>
 
-#include "src/access_black_list_manager.h"
+#include "src/access_revocation_manager.h"
 #include "src/component_manager_impl.h"
 #include "src/data_encoding.h"
-#include "src/test/mock_black_list_manager.h"
+#include "src/test/mock_access_revocation_manager.h"
 
 using testing::_;
 using testing::AnyOf;
@@ -84,7 +84,7 @@ class AccessApiHandlerTest : public ::testing::Test {
   StrictMock<provider::test::FakeTaskRunner> task_runner_;
   ComponentManagerImpl component_manager_{&task_runner_};
   StrictMock<test::MockDevice> device_;
-  StrictMock<test::MockAccessBlackListManager> access_manager_;
+  StrictMock<test::MockAccessRevocationManager> access_manager_;
   std::unique_ptr<AccessApiHandler> handler_;
 };
 
@@ -158,10 +158,10 @@ TEST_F(AccessApiHandlerTest, Initialization) {
 TEST_F(AccessApiHandlerTest, Revoke) {
   EXPECT_CALL(
       access_manager_,
-      Block(AccessBlackListManager::Entry{std::vector<uint8_t>{1, 2, 3},
-                                          std::vector<uint8_t>{3, 4, 5},
-                                          base::Time::FromTimeT(946686034),
-                                          base::Time::FromTimeT(946692690)},
+      Block(AccessRevocationManager::Entry{std::vector<uint8_t>{1, 2, 3},
+                                           std::vector<uint8_t>{3, 4, 5},
+                                           base::Time::FromTimeT(946686034),
+                                           base::Time::FromTimeT(946692690)},
             _))
       .WillOnce(WithArgs<1>(
           Invoke([](const DoneCallback& callback) { callback.Run(nullptr); })));
@@ -185,7 +185,7 @@ TEST_F(AccessApiHandlerTest, Revoke) {
 }
 
 TEST_F(AccessApiHandlerTest, List) {
-  std::vector<AccessBlackListManager::Entry> entries{
+  std::vector<AccessRevocationManager::Entry> entries{
       {{11, 12, 13},
        {21, 22, 23},
        base::Time::FromTimeT(1310000000),

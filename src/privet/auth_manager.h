@@ -19,7 +19,7 @@
 
 namespace weave {
 
-class AccessBlackListManager;
+class AccessRevocationManager;
 class Config;
 enum class RootClientTokenOwner;
 
@@ -28,7 +28,7 @@ namespace privet {
 class AuthManager {
  public:
   AuthManager(Config* config,
-              AccessBlackListManager* black_list,
+              AccessRevocationManager* black_list,
               const std::vector<uint8_t>& certificate_fingerprint);
 
   // Constructor for tests.
@@ -36,7 +36,7 @@ class AuthManager {
               const std::vector<uint8_t>& certificate_fingerprint,
               const std::vector<uint8_t>& access_secret,
               base::Clock* clock = nullptr,
-              AccessBlackListManager* black_list = nullptr);
+              AccessRevocationManager* black_list = nullptr);
   ~AuthManager();
 
   std::vector<uint8_t> CreateAccessToken(const UserInfo& user_info,
@@ -86,7 +86,7 @@ class AuthManager {
                                       const UserInfo& user_info) const;
 
   Config* config_{nullptr};  // Can be nullptr for tests.
-  AccessBlackListManager* black_list_{nullptr};
+  AccessRevocationManager* black_list_{nullptr};
   base::DefaultClock default_clock_;
   base::Clock* clock_{&default_clock_};
   mutable uint32_t session_counter_{0};

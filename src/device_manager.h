@@ -11,7 +11,7 @@
 namespace weave {
 
 class AccessApiHandler;
-class AccessBlackListManager;
+class AccessRevocationManager;
 class BaseApiHandler;
 class Config;
 class ComponentManager;
@@ -93,7 +93,7 @@ class DeviceManager final : public Device {
   std::unique_ptr<ComponentManager> component_manager_;
   std::unique_ptr<DeviceRegistrationInfo> device_info_;
   std::unique_ptr<BaseApiHandler> base_api_handler_;
-  std::unique_ptr<AccessBlackListManager> black_list_manager_;
+  std::unique_ptr<AccessRevocationManager> access_revocation_manager_;
   std::unique_ptr<AccessApiHandler> access_api_handler_;
   std::unique_ptr<privet::Manager> privet_;
 

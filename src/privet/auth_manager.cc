@@ -11,7 +11,7 @@
 #include <base/rand_util.h>
 #include <base/strings/string_number_conversions.h>
 
-#include "src/access_black_list_manager.h"
+#include "src/access_revocation_manager.h"
 #include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/constants.h"
@@ -269,7 +269,7 @@ AuthScope FromMacaroonScope(uint32_t scope) {
 }  // namespace
 
 AuthManager::AuthManager(Config* config,
-                         AccessBlackListManager* black_list,
+                         AccessRevocationManager* black_list,
                          const std::vector<uint8_t>& certificate_fingerprint)
     : config_{config},
       black_list_{black_list},
@@ -291,7 +291,7 @@ AuthManager::AuthManager(const std::vector<uint8_t>& auth_secret,
                          const std::vector<uint8_t>& certificate_fingerprint,
                          const std::vector<uint8_t>& access_secret,
                          base::Clock* clock,
-                         AccessBlackListManager* black_list)
+                         AccessRevocationManager* black_list)
     : AuthManager(nullptr, black_list, certificate_fingerprint) {
   access_secret_ = access_secret.size() == kSha256OutputSize ? access_secret
                                                              : CreateSecret();

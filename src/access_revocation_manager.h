@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_SRC_ACCESS_BLACK_LIST_H_
-#define LIBWEAVE_SRC_ACCESS_BLACK_LIST_H_
+#ifndef LIBWEAVE_SRC_ACCESS_REVOCATION_MANAGER_H_
+#define LIBWEAVE_SRC_ACCESS_REVOCATION_MANAGER_H_
 
 #include <vector>
 
@@ -11,7 +11,7 @@
 
 namespace weave {
 
-class AccessBlackListManager {
+class AccessRevocationManager {
  public:
   struct Entry {
     Entry() = default;
@@ -38,7 +38,7 @@ class AccessBlackListManager {
     // Time after which to discard the rule.
     base::Time expiration;
   };
-  virtual ~AccessBlackListManager() = default;
+  virtual ~AccessRevocationManager() = default;
 
   virtual void AddEntryAddedCallback(const base::Closure& callback) = 0;
   virtual void Block(const Entry& entry, const DoneCallback& callback) = 0;
@@ -50,17 +50,17 @@ class AccessBlackListManager {
   virtual size_t GetCapacity() const = 0;
 };
 
-inline bool operator==(const AccessBlackListManager::Entry& l,
-                       const AccessBlackListManager::Entry& r) {
+inline bool operator==(const AccessRevocationManager::Entry& l,
+                       const AccessRevocationManager::Entry& r) {
   return l.revocation == r.revocation && l.expiration == r.expiration &&
          l.user_id == r.user_id && l.app_id == r.app_id;
 }
 
-inline bool operator!=(const AccessBlackListManager::Entry& l,
-                       const AccessBlackListManager::Entry& r) {
+inline bool operator!=(const AccessRevocationManager::Entry& l,
+                       const AccessRevocationManager::Entry& r) {
   return !(l == r);
 }
 
 }  // namespace weave
 
-#endif  // LIBWEAVE_SRC_ACCESS_BLACK_LIST_H_
+#endif  // LIBWEAVE_SRC_ACCESS_REVOCATION_MANAGER_H_

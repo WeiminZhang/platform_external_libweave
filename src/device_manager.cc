@@ -9,7 +9,7 @@
 #include <base/bind.h>
 
 #include "src/access_api_handler.h"
-#include "src/access_black_list_manager_impl.h"
+#include "src/access_revocation_manager_impl.h"
 #include "src/base_api_handler.h"
 #include "src/commands/schema_constants.h"
 #include "src/component_manager_impl.h"
@@ -33,12 +33,13 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
     : config_{new Config{config_store}},
       component_manager_{new ComponentManagerImpl{task_runner}} {
   if (http_server) {
-    black_list_manager_.reset(new AccessBlackListManagerImpl{config_store});
+    access_revocation_manager_.reset(
+        new AccessRevocationManagerImpl{config_store});
     auth_manager_.reset(
-        new privet::AuthManager(config_.get(), black_list_manager_.get(),
+        new privet::AuthManager(config_.get(), access_revocation_manager_.get(),
                                 http_server->GetHttpsCertificateFingerprint()));
     access_api_handler_.reset(
-        new AccessApiHandler{this, black_list_manager_.get()});
+        new AccessApiHandler{this, access_revocation_manager_.get()});
   }
 
   device_info_.reset(new DeviceRegistrationInfo(

@@ -7,7 +7,7 @@
 #include <base/bind.h>
 #include <weave/device.h>
 
-#include "src/access_black_list_manager.h"
+#include "src/access_revocation_manager.h"
 #include "src/commands/schema_constants.h"
 #include "src/data_encoding.h"
 #include "src/json_error_codes.h"
@@ -24,7 +24,7 @@ const char kUserId[] = "userId";
 const char kApplicationId[] = "applicationId";
 const char kExpirationTime[] = "expirationTime";
 const char kRevocationTimestamp[] = "revocationTimestamp";
-const char kBlackList[] = "revocationListEntries";
+const char kRevocationList[] = "revocationListEntries";
 
 bool GetIds(const base::DictionaryValue& parameters,
             std::vector<uint8_t>* user_id_decoded,
@@ -52,7 +52,7 @@ bool GetIds(const base::DictionaryValue& parameters,
 }  // namespace
 
 AccessApiHandler::AccessApiHandler(Device* device,
-                                   AccessBlackListManager* manager)
+                                   AccessRevocationManager* manager)
     : device_{device}, manager_{manager} {
   device_->AddTraitDefinitionsFromJson(R"({
     "_accessRevocationList": {
@@ -155,9 +155,9 @@ void AccessApiHandler::Block(const std::weak_ptr<Command>& cmd) {
     return;
   }
 
-  manager_->Block(AccessBlackListManager::Entry{user_id, app_id,
-                                                FromJ2000Time(revocation_j2k),
-                                                FromJ2000Time(expiration_j2k)},
+  manager_->Block(AccessRevocationManager::Entry{user_id, app_id,
+                                                 FromJ2000Time(revocation_j2k),
+                                                 FromJ2000Time(expiration_j2k)},
                   base::Bind(&AccessApiHandler::OnCommandDone,
                              weak_ptr_factory_.GetWeakPtr(), cmd));
 }
@@ -180,7 +180,7 @@ void AccessApiHandler::List(const std::weak_ptr<Command>& cmd) {
   }
 
   base::DictionaryValue result;
-  result.Set(kBlackList, entries.release());
+  result.Set(kRevocationList, entries.release());
 
   command->Complete(result, nullptr);
 }

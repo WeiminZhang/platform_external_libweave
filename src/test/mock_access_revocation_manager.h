@@ -2,18 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_SRC_MOCK_BLACK_LIST_MANAGER_H_
-#define LIBWEAVE_SRC_MOCK_BLACK_LIST_MANAGER_H_
+#ifndef LIBWEAVE_SRC_MOCK_ACCESS_REVOCATION_MANAGER_H_
+#define LIBWEAVE_SRC_MOCK_ACCESS_REVOCATION_MANAGER_H_
 
 #include <gmock/gmock.h>
 
-#include "src/access_black_list_manager.h"
+#include "src/access_revocation_manager.h"
 
 namespace weave {
 
 namespace test {
 
-class MockAccessBlackListManager : public AccessBlackListManager {
+class MockAccessRevocationManager : public AccessRevocationManager {
  public:
   MOCK_METHOD1(AddEntryAddedCallback, void(const base::Closure&));
   MOCK_METHOD2(Block, void(const Entry&, const DoneCallback&));
@@ -30,4 +30,4 @@ class MockAccessBlackListManager : public AccessBlackListManager {
 
 }  // namespace weave
 
-#endif  // LIBWEAVE_SRC_MOCK_BLACK_LIST_MANAGER_H_
+#endif  // LIBWEAVE_SRC_MOCK_ACCESS_REVOCATION_MANAGER_H_

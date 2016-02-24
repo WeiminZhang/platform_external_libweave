@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/access_black_list_manager_impl.h"
+#include "src/access_revocation_manager_impl.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -18,7 +18,7 @@ using testing::StrictMock;
 
 namespace weave {
 
-class AccessBlackListManagerImplTest : public testing::Test {
+class AccessRevocationManagerImplTest : public testing::Test {
  protected:
   void SetUp() {
     std::string to_load = R"([{
@@ -52,17 +52,18 @@ class AccessBlackListManagerImplTest : public testing::Test {
 
     EXPECT_CALL(clock_, Now())
         .WillRepeatedly(Return(base::Time::FromTimeT(1412121212)));
-    manager_.reset(new AccessBlackListManagerImpl{&config_store_, 10, &clock_});
+    manager_.reset(
+        new AccessRevocationManagerImpl{&config_store_, 10, &clock_});
   }
   StrictMock<test::MockClock> clock_;
   StrictMock<provider::test::MockConfigStore> config_store_{false};
-  std::unique_ptr<AccessBlackListManagerImpl> manager_;
+  std::unique_ptr<AccessRevocationManagerImpl> manager_;
 };
 
-TEST_F(AccessBlackListManagerImplTest, Init) {
+TEST_F(AccessRevocationManagerImplTest, Init) {
   EXPECT_EQ(1u, manager_->GetSize());
   EXPECT_EQ(10u, manager_->GetCapacity());
-  EXPECT_EQ((std::vector<AccessBlackListManagerImpl::Entry>{{
+  EXPECT_EQ((std::vector<AccessRevocationManagerImpl::Entry>{{
                 {1, 2, 3},
                 {3, 4, 5},
                 base::Time::FromTimeT(1419997999),
@@ -71,7 +72,7 @@ TEST_F(AccessBlackListManagerImplTest, Init) {
             manager_->GetEntries());
 }
 
-TEST_F(AccessBlackListManagerImplTest, Block) {
+TEST_F(AccessRevocationManagerImplTest, Block) {
   bool callback_called = false;
   manager_->AddEntryAddedCallback(
       base::Bind([&callback_called]() { callback_called = true; }));
@@ -101,7 +102,7 @@ TEST_F(AccessBlackListManagerImplTest, Block) {
   EXPECT_TRUE(callback_called);
 }
 
-TEST_F(AccessBlackListManagerImplTest, BlockExpired) {
+TEST_F(AccessRevocationManagerImplTest, BlockExpired) {
   manager_->Block({{},
                    {},
                    base::Time::FromTimeT(1300000000),
@@ -111,7 +112,7 @@ TEST_F(AccessBlackListManagerImplTest, BlockExpired) {
                   }));
 }
 
-TEST_F(AccessBlackListManagerImplTest, BlockListIsFull) {
+TEST_F(AccessRevocationManagerImplTest, BlockListIsFull) {
   EXPECT_CALL(config_store_, SaveSettings("black_list", _, _))
       .WillRepeatedly(testing::WithArgs<1, 2>(testing::Invoke(
           [](const std::string& json, const DoneCallback& callback) {
@@ -136,23 +137,23 @@ TEST_F(AccessBlackListManagerImplTest, BlockListIsFull) {
                   }));
 }
 
-TEST_F(AccessBlackListManagerImplTest, IsBlockedIdsNotMacth) {
+TEST_F(AccessRevocationManagerImplTest, IsBlockedIdsNotMacth) {
   EXPECT_FALSE(manager_->IsBlocked({7, 7, 7}, {8, 8, 8}, {}));
 }
 
-TEST_F(AccessBlackListManagerImplTest, IsBlockedRevocationIsOld) {
+TEST_F(AccessRevocationManagerImplTest, IsBlockedRevocationIsOld) {
   // Ids match but delegation time is newer than revocation time.
   EXPECT_FALSE(manager_->IsBlocked({1, 2, 3}, {3, 4, 5},
                                    base::Time::FromTimeT(1429997999)));
 }
 
-class AccessBlackListManagerImplIsBlockedTest
-    : public AccessBlackListManagerImplTest,
+class AccessRevocationManagerImplIsBlockedTest
+    : public AccessRevocationManagerImplTest,
       public testing::WithParamInterface<
           std::tuple<std::vector<uint8_t>, std::vector<uint8_t>>> {
  public:
   void SetUp() override {
-    AccessBlackListManagerImplTest::SetUp();
+    AccessRevocationManagerImplTest::SetUp();
     EXPECT_CALL(config_store_, SaveSettings("black_list", _, _))
         .WillOnce(testing::WithArgs<2>(
             testing::Invoke([](const DoneCallback& callback) {
@@ -167,13 +168,13 @@ class AccessBlackListManagerImplIsBlockedTest
   }
 };
 
-TEST_P(AccessBlackListManagerImplIsBlockedTest, IsBlocked) {
+TEST_P(AccessRevocationManagerImplIsBlockedTest, IsBlocked) {
   EXPECT_TRUE(manager_->IsBlocked({7, 7, 7}, {8, 8, 8}, {}));
 }
 
 INSTANTIATE_TEST_CASE_P(
     Filters,
-    AccessBlackListManagerImplIsBlockedTest,
+    AccessRevocationManagerImplIsBlockedTest,
     testing::Combine(testing::Values(std::vector<uint8_t>{},
                                      std::vector<uint8_t>{7, 7, 7}),
                      testing::Values(std::vector<uint8_t>{},

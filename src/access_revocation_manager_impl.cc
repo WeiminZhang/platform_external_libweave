@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/access_black_list_manager_impl.h"
+#include "src/access_revocation_manager_impl.h"
 
 #include <base/json/json_reader.h>
 #include <base/json/json_writer.h>
@@ -23,7 +23,7 @@ const char kExpiration[] = "expiration";
 const char kRevocation[] = "revocation";
 }
 
-AccessBlackListManagerImpl::AccessBlackListManagerImpl(
+AccessRevocationManagerImpl::AccessRevocationManagerImpl(
     provider::ConfigStore* store,
     size_t capacity,
     base::Clock* clock)
@@ -31,7 +31,7 @@ AccessBlackListManagerImpl::AccessBlackListManagerImpl(
   Load();
 }
 
-void AccessBlackListManagerImpl::Load() {
+void AccessRevocationManagerImpl::Load() {
   if (!store_)
     return;
   if (auto list = base::ListValue::From(
@@ -61,7 +61,7 @@ void AccessBlackListManagerImpl::Load() {
   }
 }
 
-void AccessBlackListManagerImpl::Save(const DoneCallback& callback) {
+void AccessRevocationManagerImpl::Save(const DoneCallback& callback) {
   if (!store_) {
     if (!callback.is_null())
       callback.Run(nullptr);
@@ -83,7 +83,7 @@ void AccessBlackListManagerImpl::Save(const DoneCallback& callback) {
   store_->SaveSettings(kConfigFileName, json, callback);
 }
 
-void AccessBlackListManagerImpl::RemoveExpired() {
+void AccessRevocationManagerImpl::RemoveExpired() {
   for (auto i = begin(entries_); i != end(entries_);) {
     if (i->expiration <= clock_->Now())
       i = entries_.erase(i);
@@ -92,13 +92,13 @@ void AccessBlackListManagerImpl::RemoveExpired() {
   }
 }
 
-void AccessBlackListManagerImpl::AddEntryAddedCallback(
+void AccessRevocationManagerImpl::AddEntryAddedCallback(
     const base::Closure& callback) {
   on_entry_added_callbacks_.push_back(callback);
 }
 
-void AccessBlackListManagerImpl::Block(const Entry& entry,
-                                       const DoneCallback& callback) {
+void AccessRevocationManagerImpl::Block(const Entry& entry,
+                                        const DoneCallback& callback) {
   // Iterating is OK as Save below is more expensive.
   RemoveExpired();
   if (entry.expiration <= clock_->Now()) {
@@ -137,9 +137,9 @@ void AccessBlackListManagerImpl::Block(const Entry& entry,
   Save(callback);
 }
 
-bool AccessBlackListManagerImpl::IsBlocked(const std::vector<uint8_t>& user_id,
-                                           const std::vector<uint8_t>& app_id,
-                                           base::Time timestamp) const {
+bool AccessRevocationManagerImpl::IsBlocked(const std::vector<uint8_t>& user_id,
+                                            const std::vector<uint8_t>& app_id,
+                                            base::Time timestamp) const {
   Entry entry_to_find;
   for (const auto& user : {{}, user_id}) {
     for (const auto& app : {{}, app_id}) {
@@ -155,16 +155,16 @@ bool AccessBlackListManagerImpl::IsBlocked(const std::vector<uint8_t>& user_id,
   return false;
 }
 
-std::vector<AccessBlackListManager::Entry>
-AccessBlackListManagerImpl::GetEntries() const {
+std::vector<AccessRevocationManager::Entry>
+AccessRevocationManagerImpl::GetEntries() const {
   return {begin(entries_), end(entries_)};
 }
 
-size_t AccessBlackListManagerImpl::GetSize() const {
+size_t AccessRevocationManagerImpl::GetSize() const {
   return entries_.size();
 }
 
-size_t AccessBlackListManagerImpl::GetCapacity() const {
+size_t AccessRevocationManagerImpl::GetCapacity() const {
   return capacity_;
 }
 

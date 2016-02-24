@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIBWEAVE_SRC_ACCESS_BLACK_LIST_IMPL_H_
-#define LIBWEAVE_SRC_ACCESS_BLACK_LIST_IMPL_H_
+#ifndef LIBWEAVE_SRC_ACCESS_REVOCATION_MANAGER_IMPL_H_
+#define LIBWEAVE_SRC_ACCESS_REVOCATION_MANAGER_IMPL_H_
 
 #include <set>
 #include <utility>
@@ -13,17 +13,17 @@
 #include <weave/error.h>
 #include <weave/provider/config_store.h>
 
-#include "src/access_black_list_manager.h"
+#include "src/access_revocation_manager.h"
 
 namespace weave {
 
-class AccessBlackListManagerImpl : public AccessBlackListManager {
+class AccessRevocationManagerImpl : public AccessRevocationManager {
  public:
-  explicit AccessBlackListManagerImpl(provider::ConfigStore* store,
-                                      size_t capacity = 1024,
-                                      base::Clock* clock = nullptr);
+  explicit AccessRevocationManagerImpl(provider::ConfigStore* store,
+                                       size_t capacity = 1024,
+                                       base::Clock* clock = nullptr);
 
-  // AccessBlackListManager implementation.
+  // AccessRevocationManager implementation.
   void AddEntryAddedCallback(const base::Closure& callback) override;
   void Block(const Entry& entry, const DoneCallback& callback) override;
   bool IsBlocked(const std::vector<uint8_t>& user_id,
@@ -56,9 +56,9 @@ class AccessBlackListManagerImpl : public AccessBlackListManager {
   std::set<Entry, EntryIdsLess> entries_;
   std::vector<base::Closure> on_entry_added_callbacks_;
 
-  DISALLOW_COPY_AND_ASSIGN(AccessBlackListManagerImpl);
+  DISALLOW_COPY_AND_ASSIGN(AccessRevocationManagerImpl);
 };
 
 }  // namespace weave
 
-#endif  // LIBWEAVE_SRC_ACCESS_BLACK_LIST_IMPL_H_
+#endif  // LIBWEAVE_SRC_ACCESS_REVOCATION_MANAGER_IMPL_H_
