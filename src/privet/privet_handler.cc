@@ -114,8 +114,6 @@ std::string service_url;
 std::string xmpp_endpoint;
 
 const char kFingerprintKey[] = "fingerprint";
-const char kStateKey[] = "state";
-const char kCommandsKey[] = "commands";
 const char kTraitsKey[] = "traits";
 const char kComponentsKey[] = "components";
 const char kCommandsIdKey[] = "id";
