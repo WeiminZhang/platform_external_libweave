@@ -151,14 +151,6 @@ class CloudDelegateImpl : public CloudDelegate {
     return device_->GetSettings().xmpp_endpoint;
   }
 
-  const base::DictionaryValue& GetLegacyCommandDef() const override {
-    return component_manager_->GetLegacyCommandDefinitions();
-  }
-
-  const base::DictionaryValue& GetLegacyState() const override {
-    return component_manager_->GetLegacyState();
-  }
-
   const base::DictionaryValue& GetComponents() const override {
     return component_manager_->GetComponents();
   }

@@ -100,12 +100,6 @@ class CloudDelegate {
   virtual std::string GetServiceUrl() const = 0;
   virtual std::string GetXmppEndpoint() const = 0;
 
-  // Returns dictionary with device state (for legacy APIs).
-  virtual const base::DictionaryValue& GetLegacyState() const = 0;
-
-  // Returns dictionary with commands definitions (for legacy APIs).
-  virtual const base::DictionaryValue& GetLegacyCommandDef() const = 0;
-
   // Returns dictionary with component tree.
   virtual const base::DictionaryValue& GetComponents() const = 0;
 

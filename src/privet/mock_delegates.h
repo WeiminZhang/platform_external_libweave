@@ -188,8 +188,6 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_CONST_METHOD0(GetOAuthUrl, std::string());
   MOCK_CONST_METHOD0(GetServiceUrl, std::string());
   MOCK_CONST_METHOD0(GetXmppEndpoint, std::string());
-  MOCK_CONST_METHOD0(GetLegacyState, const base::DictionaryValue&());
-  MOCK_CONST_METHOD0(GetLegacyCommandDef, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
   MOCK_CONST_METHOD2(FindComponent,
                      const base::DictionaryValue*(const std::string& path,
@@ -229,9 +227,6 @@ class MockCloudDelegate : public CloudDelegate {
     EXPECT_CALL(*this, GetSetupState()).WillRepeatedly(ReturnRef(setup_state_));
     EXPECT_CALL(*this, GetCloudId()).WillRepeatedly(Return("TestCloudId"));
     test_dict_.Set("test", new base::DictionaryValue);
-    EXPECT_CALL(*this, GetLegacyState()).WillRepeatedly(ReturnRef(test_dict_));
-    EXPECT_CALL(*this, GetLegacyCommandDef())
-        .WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, GetTraits()).WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, GetComponents()).WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, FindComponent(_, _)).Times(0);

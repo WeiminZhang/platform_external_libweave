@@ -6,15 +6,18 @@
 
 #include <algorithm>
 
+#include <base/bind.h>
 #include <base/guid.h>
 #include <base/rand_util.h>
 #include <base/strings/string_number_conversions.h>
 
+#include "src/access_revocation_manager.h"
 #include "src/config.h"
 #include "src/data_encoding.h"
 #include "src/privet/constants.h"
 #include "src/privet/openssl_utils.h"
 #include "src/string_utils.h"
+#include "src/utils.h"
 
 extern "C" {
 #include "third_party/libuweave/src/macaroon.h"
@@ -26,19 +29,10 @@ namespace privet {
 
 namespace {
 
-const time_t kJ2000ToTimeT = 946684800;
 const size_t kMaxMacaroonSize = 1024;
 const size_t kMaxPendingClaims = 10;
 const char kInvalidTokenError[] = "invalid_token";
 const int kSessionIdTtlMinutes = 1;
-
-uint32_t ToJ2000Time(const base::Time& time) {
-  return std::max(time.ToTimeT(), kJ2000ToTimeT) - kJ2000ToTimeT;
-}
-
-base::Time FromJ2000Time(uint32_t time) {
-  return base::Time::FromTimeT(time + kJ2000ToTimeT);
-}
 
 template <class T>
 void AppendToArray(T value, std::vector<uint8_t>* array) {
@@ -275,10 +269,16 @@ AuthScope FromMacaroonScope(uint32_t scope) {
 }  // namespace
 
 AuthManager::AuthManager(Config* config,
+                         AccessRevocationManager* black_list,
                          const std::vector<uint8_t>& certificate_fingerprint)
     : config_{config},
+      black_list_{black_list},
       certificate_fingerprint_{certificate_fingerprint},
       access_secret_{CreateSecret()} {
+  if (black_list_) {
+    black_list_->AddEntryAddedCallback(base::Bind(
+        &AuthManager::ResetAccessSecret, weak_ptr_factory_.GetWeakPtr()));
+  }
   if (config_) {
     SetAuthSecret(config_->GetSettings().secret,
                   config_->GetSettings().root_client_token_owner);
@@ -290,8 +290,9 @@ AuthManager::AuthManager(Config* config,
 AuthManager::AuthManager(const std::vector<uint8_t>& auth_secret,
                          const std::vector<uint8_t>& certificate_fingerprint,
                          const std::vector<uint8_t>& access_secret,
-                         base::Clock* clock)
-    : AuthManager(nullptr, certificate_fingerprint) {
+                         base::Clock* clock,
+                         AccessRevocationManager* black_list)
+    : AuthManager(nullptr, black_list, certificate_fingerprint) {
   access_secret_ = access_secret.size() == kSha256OutputSize ? access_secret
                                                              : CreateSecret();
   SetAuthSecret(auth_secret, RootClientTokenOwner::kNone);
@@ -401,7 +402,8 @@ std::vector<uint8_t> AuthManager::ClaimRootClientAuthToken(
   };
 
   pending_claims_.push_back(std::make_pair(
-      std::unique_ptr<AuthManager>{new AuthManager{nullptr, {}}}, owner));
+      std::unique_ptr<AuthManager>{new AuthManager{nullptr, nullptr, {}}},
+      owner));
   if (pending_claims_.size() > kMaxPendingClaims)
     pending_claims_.pop_front();
   return pending_claims_.back().first->GetRootClientAuthToken(owner);
@@ -511,6 +513,28 @@ bool AuthManager::CreateAccessTokenFromAuth(
                         "Invalid session id");
   }
 
+  if (black_list_) {
+    std::vector<uint8_t> user_id;
+    std::vector<uint8_t> app_id;
+    for (size_t i = 0; i < result.num_delegatees; ++i) {
+      if (result.delegatees[i].type == kUwMacaroonDelegateeTypeUser) {
+        user_id.assign(result.delegatees[i].id,
+                       result.delegatees[i].id + result.delegatees[i].id_len);
+      } else if (result.delegatees[i].type == kUwMacaroonDelegateeTypeApp) {
+        app_id.assign(result.delegatees[i].id,
+                      result.delegatees[i].id + result.delegatees[i].id_len);
+      } else {
+        // Do not block by other types of delegatees.
+        continue;
+      }
+      if (black_list_->IsBlocked(
+              user_id, app_id, FromJ2000Time(result.delegatees[i].timestamp))) {
+        return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode,
+                            "Auth token is revoked");
+      }
+    }
+  }
+
   CHECK_GE(FromJ2000Time(result.expiration_time), now);
 
   if (!access_token)
@@ -545,6 +569,12 @@ bool AuthManager::IsValidSessionId(const std::string& session_id) const {
   return Now() - base::TimeDelta::FromMinutes(kSessionIdTtlMinutes) <=
              ssid_time &&
          ssid_time <= Now();
+}
+
+void AuthManager::ResetAccessSecret() {
+  auto new_secret = CreateSecret();
+  CHECK(new_secret != access_secret_);
+  access_secret_.swap(new_secret);
 }
 
 std::vector<uint8_t> AuthManager::DelegateToUser(

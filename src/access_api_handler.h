@@ -12,31 +12,29 @@
 
 namespace weave {
 
-class AccessBlackListManager;
+class AccessRevocationManager;
 class Command;
 class Device;
 
-// Handles commands for 'accessControlBlackList' trait.
+// Handles commands for '_accessRevocationList' trait.
 // Objects of the class subscribe for notification from CommandManager and
 // execute incoming commands.
 // Handled commands:
-//  accessControlBlackList.block
-//  accessControlBlackList.unblock
-//  accessControlBlackList.list
+//  _accessRevocationList.revoke
+//  _accessRevocationList.list
 class AccessApiHandler final {
  public:
-  AccessApiHandler(Device* device, AccessBlackListManager* manager);
+  AccessApiHandler(Device* device, AccessRevocationManager* manager);
 
  private:
   void Block(const std::weak_ptr<Command>& command);
-  void Unblock(const std::weak_ptr<Command>& command);
   void List(const std::weak_ptr<Command>& command);
   void UpdateState();
 
   void OnCommandDone(const std::weak_ptr<Command>& command, ErrorPtr error);
 
   Device* device_{nullptr};
-  AccessBlackListManager* manager_{nullptr};
+  AccessRevocationManager* manager_{nullptr};
 
   base::WeakPtrFactory<AccessApiHandler> weak_ptr_factory_{this};
   DISALLOW_COPY_AND_ASSIGN(AccessApiHandler);

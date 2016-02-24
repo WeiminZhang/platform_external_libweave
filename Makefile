@@ -28,13 +28,8 @@ CFLAGS := \
 	-Wextra \
 	-Wformat=2 \
 	-Wl,--exclude-libs,ALL \
-	-Wno-char-subscripts \
 	-Wno-missing-field-initializers \
-	-Wno-unused-local-typedefs \
 	-Wno-unused-parameter \
-	-Wpacked \
-	-Wpointer-arith \
-	-Wwrite-strings
 
 CFLAGS_Debug := \
 	-O0 \
@@ -56,7 +51,6 @@ ifeq (1, $(CLANG))
   CFLAGS := $(filter-out -Wl$(comma)--exclude-libs$(comma)ALL,$(CFLAGS))
   CFLAGS += \
     -fno-omit-frame-pointer \
-    -Wno-deprecated-register \
     -Wno-inconsistent-missing-override
   ifeq (Debug, $(BUILD_MODE))
     CFLAGS += \

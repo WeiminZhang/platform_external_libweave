@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include <base/time/time.h>
 #include <base/values.h>
 #include <weave/error.h>
 
@@ -30,6 +31,9 @@ std::unique_ptr<base::DictionaryValue> LoadJsonDict(
     ErrorPtr* error);
 
 std::unique_ptr<base::DictionaryValue> ErrorInfoToJson(const Error& error);
+
+uint32_t ToJ2000Time(const base::Time& time);
+base::Time FromJ2000Time(uint32_t time);
 
 }  // namespace weave
 
