@@ -16,14 +16,11 @@ namespace test {
 class MockAccessBlackListManager : public AccessBlackListManager {
  public:
   MOCK_METHOD1(AddEntryAddedCallback, void(const base::Closure&));
-  MOCK_METHOD4(Block,
-               void(const std::vector<uint8_t>&,
-                    const std::vector<uint8_t>&,
-                    const base::Time&,
-                    const DoneCallback&));
-  MOCK_CONST_METHOD2(IsBlocked,
+  MOCK_METHOD2(Block, void(const Entry&, const DoneCallback&));
+  MOCK_CONST_METHOD3(IsBlocked,
                      bool(const std::vector<uint8_t>&,
-                          const std::vector<uint8_t>&));
+                          const std::vector<uint8_t>&,
+                          base::Time));
   MOCK_CONST_METHOD0(GetEntries, std::vector<Entry>());
   MOCK_CONST_METHOD0(GetSize, size_t());
   MOCK_CONST_METHOD0(GetCapacity, size_t());

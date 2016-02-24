@@ -5,7 +5,7 @@
 #ifndef LIBWEAVE_SRC_ACCESS_BLACK_LIST_IMPL_H_
 #define LIBWEAVE_SRC_ACCESS_BLACK_LIST_IMPL_H_
 
-#include <map>
+#include <set>
 #include <utility>
 
 #include <base/time/default_clock.h>
@@ -25,12 +25,10 @@ class AccessBlackListManagerImpl : public AccessBlackListManager {
 
   // AccessBlackListManager implementation.
   void AddEntryAddedCallback(const base::Closure& callback) override;
-  void Block(const std::vector<uint8_t>& user_id,
-             const std::vector<uint8_t>& app_id,
-             const base::Time& expiration,
-             const DoneCallback& callback) override;
+  void Block(const Entry& entry, const DoneCallback& callback) override;
   bool IsBlocked(const std::vector<uint8_t>& user_id,
-                 const std::vector<uint8_t>& app_id) const override;
+                 const std::vector<uint8_t>& app_id,
+                 base::Time timestamp) const override;
   std::vector<Entry> GetEntries() const override;
   size_t GetSize() const override;
   size_t GetCapacity() const override;
@@ -40,13 +38,22 @@ class AccessBlackListManagerImpl : public AccessBlackListManager {
   void Save(const DoneCallback& callback);
   void RemoveExpired();
 
+  struct EntryIdsLess {
+    bool operator()(const Entry& l, const Entry& r) const {
+      if (l.user_id < r.user_id)
+        return true;
+      if (l.user_id > r.user_id)
+        return false;
+      return l.app_id < r.app_id;
+    }
+  };
+
   const size_t capacity_{0};
   base::DefaultClock default_clock_;
   base::Clock* clock_{&default_clock_};
 
   provider::ConfigStore* store_{nullptr};
-  std::map<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>, base::Time>
-      entries_;
+  std::set<Entry, EntryIdsLess> entries_;
   std::vector<base::Closure> on_entry_added_callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN(AccessBlackListManagerImpl);

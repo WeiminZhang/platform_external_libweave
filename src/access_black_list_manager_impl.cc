@@ -10,6 +10,7 @@
 
 #include "src/commands/schema_constants.h"
 #include "src/data_encoding.h"
+#include "src/utils.h"
 
 namespace weave {
 
@@ -19,6 +20,7 @@ const char kConfigFileName[] = "black_list";
 const char kUser[] = "user";
 const char kApp[] = "app";
 const char kExpiration[] = "expiration";
+const char kRevocation[] = "revocation";
 }
 
 AccessBlackListManagerImpl::AccessBlackListManagerImpl(
@@ -34,19 +36,22 @@ void AccessBlackListManagerImpl::Load() {
     return;
   if (auto list = base::ListValue::From(
           base::JSONReader::Read(store_->LoadSettings(kConfigFileName)))) {
-    for (const auto& e : *list) {
+    for (const auto& value : *list) {
       const base::DictionaryValue* entry{nullptr};
       std::string user;
       std::string app;
-      decltype(entries_)::key_type key;
-      int expiration;
-      if (e->GetAsDictionary(&entry) && entry->GetString(kUser, &user) &&
-          Base64Decode(user, &key.first) && entry->GetString(kApp, &app) &&
-          Base64Decode(app, &key.second) &&
+      Entry e;
+      int revocation = 0;
+      int expiration = 0;
+      if (value->GetAsDictionary(&entry) && entry->GetString(kUser, &user) &&
+          Base64Decode(user, &e.user_id) && entry->GetString(kApp, &app) &&
+          Base64Decode(app, &e.app_id) &&
+          entry->GetInteger(kRevocation, &revocation) &&
           entry->GetInteger(kExpiration, &expiration)) {
-        base::Time expiration_time = base::Time::FromTimeT(expiration);
-        if (expiration_time > clock_->Now())
-          entries_[key] = expiration_time;
+        e.revocation = FromJ2000Time(revocation);
+        e.expiration = FromJ2000Time(expiration);
+        if (e.expiration > clock_->Now())
+          entries_.insert(e);
       }
     }
     if (entries_.size() < list->GetSize()) {
@@ -66,9 +71,10 @@ void AccessBlackListManagerImpl::Save(const DoneCallback& callback) {
   base::ListValue list;
   for (const auto& e : entries_) {
     scoped_ptr<base::DictionaryValue> entry{new base::DictionaryValue};
-    entry->SetString(kUser, Base64Encode(e.first.first));
-    entry->SetString(kApp, Base64Encode(e.first.second));
-    entry->SetInteger(kExpiration, e.second.ToTimeT());
+    entry->SetString(kUser, Base64Encode(e.user_id));
+    entry->SetString(kApp, Base64Encode(e.app_id));
+    entry->SetInteger(kRevocation, ToJ2000Time(e.revocation));
+    entry->SetInteger(kExpiration, ToJ2000Time(e.expiration));
     list.Append(std::move(entry));
   }
 
@@ -79,7 +85,7 @@ void AccessBlackListManagerImpl::Save(const DoneCallback& callback) {
 
 void AccessBlackListManagerImpl::RemoveExpired() {
   for (auto i = begin(entries_); i != end(entries_);) {
-    if (i->second <= clock_->Now())
+    if (i->expiration <= clock_->Now())
       i = entries_.erase(i);
     else
       ++i;
@@ -91,13 +97,11 @@ void AccessBlackListManagerImpl::AddEntryAddedCallback(
   on_entry_added_callbacks_.push_back(callback);
 }
 
-void AccessBlackListManagerImpl::Block(const std::vector<uint8_t>& user_id,
-                                       const std::vector<uint8_t>& app_id,
-                                       const base::Time& expiration,
+void AccessBlackListManagerImpl::Block(const Entry& entry,
                                        const DoneCallback& callback) {
   // Iterating is OK as Save below is more expensive.
   RemoveExpired();
-  if (expiration <= clock_->Now()) {
+  if (entry.expiration <= clock_->Now()) {
     if (!callback.is_null()) {
       ErrorPtr error;
       Error::AddTo(&error, FROM_HERE, "aleady_expired",
@@ -116,22 +120,36 @@ void AccessBlackListManagerImpl::Block(const std::vector<uint8_t>& user_id,
     return;
   }
 
-  auto& value = entries_[std::make_pair(user_id, app_id)];
-  value = std::max(value, expiration);
+  auto existing = entries_.find(entry);
+  if (existing != entries_.end()) {
+    Entry new_entry = entry;
+    new_entry.expiration = std::max(entry.expiration, existing->expiration);
+    new_entry.revocation = std::max(entry.revocation, existing->revocation);
+    entries_.erase(existing);
+    entries_.insert(new_entry);
+  } else {
+    entries_.insert(entry);
+  }
+
   for (const auto& cb : on_entry_added_callbacks_)
     cb.Run();
 
   Save(callback);
 }
 
-bool AccessBlackListManagerImpl::IsBlocked(
-    const std::vector<uint8_t>& user_id,
-    const std::vector<uint8_t>& app_id) const {
+bool AccessBlackListManagerImpl::IsBlocked(const std::vector<uint8_t>& user_id,
+                                           const std::vector<uint8_t>& app_id,
+                                           base::Time timestamp) const {
+  Entry entry_to_find;
   for (const auto& user : {{}, user_id}) {
     for (const auto& app : {{}, app_id}) {
-      auto both = entries_.find(std::make_pair(user, app));
-      if (both != end(entries_) && both->second > clock_->Now())
+      entry_to_find.user_id = user;
+      entry_to_find.app_id = app;
+      auto match = entries_.find(entry_to_find);
+      if (match != end(entries_) && match->expiration > clock_->Now() &&
+          match->revocation >= timestamp) {
         return true;
+      }
     }
   }
   return false;
@@ -139,10 +157,7 @@ bool AccessBlackListManagerImpl::IsBlocked(
 
 std::vector<AccessBlackListManager::Entry>
 AccessBlackListManagerImpl::GetEntries() const {
-  std::vector<Entry> result;
-  for (const auto& e : entries_)
-    result.push_back({e.first.first, e.first.second, e.second});
-  return result;
+  return {begin(entries_), end(entries_)};
 }
 
 size_t AccessBlackListManagerImpl::GetSize() const {

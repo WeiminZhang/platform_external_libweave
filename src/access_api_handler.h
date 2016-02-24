@@ -20,8 +20,7 @@ class Device;
 // Objects of the class subscribe for notification from CommandManager and
 // execute incoming commands.
 // Handled commands:
-//  accessControlBlackList.block
-//  accessControlBlackList.unblock
+//  accessControlBlackList.revoke
 //  accessControlBlackList.list
 class AccessApiHandler final {
  public:

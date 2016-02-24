@@ -14,6 +14,16 @@ namespace weave {
 class AccessBlackListManager {
  public:
   struct Entry {
+    Entry() = default;
+
+    Entry(const std::vector<uint8_t>& user,
+          const std::vector<uint8_t>& app,
+          base::Time revocation_ts,
+          base::Time expiration_ts)
+        : user_id{user},
+          app_id{app},
+          revocation{revocation_ts},
+          expiration{expiration_ts} {}
     // user_id is empty, app_id is empty: block everything.
     // user_id is not empty, app_id is empty: block if user_id matches.
     // user_id is empty, app_id is not empty: block if app_id matches.
@@ -21,18 +31,20 @@ class AccessBlackListManager {
     std::vector<uint8_t> user_id;
     std::vector<uint8_t> app_id;
 
+    // Revoke matching entries if |revocation| is not less than
+    // delegation timestamp.
+    base::Time revocation;
+
     // Time after which to discard the rule.
     base::Time expiration;
   };
   virtual ~AccessBlackListManager() = default;
 
   virtual void AddEntryAddedCallback(const base::Closure& callback) = 0;
-  virtual void Block(const std::vector<uint8_t>& user_id,
-                     const std::vector<uint8_t>& app_id,
-                     const base::Time& expiration,
-                     const DoneCallback& callback) = 0;
+  virtual void Block(const Entry& entry, const DoneCallback& callback) = 0;
   virtual bool IsBlocked(const std::vector<uint8_t>& user_id,
-                         const std::vector<uint8_t>& app_id) const = 0;
+                         const std::vector<uint8_t>& app_id,
+                         base::Time timestamp) const = 0;
   virtual std::vector<Entry> GetEntries() const = 0;
   virtual size_t GetSize() const = 0;
   virtual size_t GetCapacity() const = 0;
@@ -40,8 +52,8 @@ class AccessBlackListManager {
 
 inline bool operator==(const AccessBlackListManager::Entry& l,
                        const AccessBlackListManager::Entry& r) {
-  return l.user_id == r.user_id && l.app_id == r.app_id &&
-         l.expiration == r.expiration;
+  return l.revocation == r.revocation && l.expiration == r.expiration &&
+         l.user_id == r.user_id && l.app_id == r.app_id;
 }
 
 inline bool operator!=(const AccessBlackListManager::Entry& l,

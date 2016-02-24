@@ -104,6 +104,9 @@ TEST_F(AccessApiHandlerTest, Initialization) {
           "applicationId": {
             "type": "string"
           },
+          "revocationTimestamp": {
+            "type": "integer"
+          },
           "expirationTime": {
             "type": "integer"
           }
@@ -123,6 +126,9 @@ TEST_F(AccessApiHandlerTest, Initialization) {
                 },
                 "applicationId": {
                   "type": "string"
+                },
+                "revocationTimestamp": {
+                  "type": "integer"
                 },
                 "expirationTime": {
                   "type": "integer"
@@ -150,9 +156,14 @@ TEST_F(AccessApiHandlerTest, Initialization) {
 }
 
 TEST_F(AccessApiHandlerTest, Revoke) {
-  EXPECT_CALL(access_manager_, Block(std::vector<uint8_t>{1, 2, 3},
-                                     std::vector<uint8_t>{3, 4, 5}, _, _))
-      .WillOnce(WithArgs<3>(
+  EXPECT_CALL(
+      access_manager_,
+      Block(AccessBlackListManager::Entry{std::vector<uint8_t>{1, 2, 3},
+                                          std::vector<uint8_t>{3, 4, 5},
+                                          base::Time::FromTimeT(946686034),
+                                          base::Time::FromTimeT(946692690)},
+            _))
+      .WillOnce(WithArgs<1>(
           Invoke([](const DoneCallback& callback) { callback.Run(nullptr); })));
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(1));
 
@@ -162,7 +173,8 @@ TEST_F(AccessApiHandlerTest, Revoke) {
     'parameters': {
       'userId': 'AQID',
       'applicationId': 'AwQF',
-      'expirationTime': 1234
+      'expirationTime': 7890,
+      'revocationTimestamp': 1234
     }
   })");
 
@@ -174,8 +186,14 @@ TEST_F(AccessApiHandlerTest, Revoke) {
 
 TEST_F(AccessApiHandlerTest, List) {
   std::vector<AccessBlackListManager::Entry> entries{
-      {{11, 12, 13}, {21, 22, 23}, base::Time::FromTimeT(1410000000)},
-      {{31, 32, 33}, {41, 42, 43}, base::Time::FromTimeT(1420000000)},
+      {{11, 12, 13},
+       {21, 22, 23},
+       base::Time::FromTimeT(1310000000),
+       base::Time::FromTimeT(1410000000)},
+      {{31, 32, 33},
+       {41, 42, 43},
+       base::Time::FromTimeT(1300000000),
+       base::Time::FromTimeT(1420000000)},
   };
   EXPECT_CALL(access_manager_, GetEntries()).WillOnce(Return(entries));
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(4));

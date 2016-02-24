@@ -23,6 +23,7 @@ const char kStateCapacity[] = "_accessRevocationList.capacity";
 const char kUserId[] = "userId";
 const char kApplicationId[] = "applicationId";
 const char kExpirationTime[] = "expirationTime";
+const char kRevocationTimestamp[] = "revocationTimestamp";
 const char kBlackList[] = "revocationListEntries";
 
 bool GetIds(const base::DictionaryValue& parameters,
@@ -65,6 +66,9 @@ AccessApiHandler::AccessApiHandler(Device* device,
             "applicationId": {
               "type": "string"
             },
+            "revocationTimestamp": {
+              "type": "integer"
+            },
             "expirationTime": {
               "type": "integer"
             }
@@ -84,6 +88,9 @@ AccessApiHandler::AccessApiHandler(Device* device,
                   },
                   "applicationId": {
                     "type": "string"
+                  },
+                  "revocationTimestamp": {
+                    "type": "integer"
                   },
                   "expirationTime": {
                     "type": "integer"
@@ -132,15 +139,25 @@ void AccessApiHandler::Block(const std::weak_ptr<Command>& cmd) {
     return;
   }
 
-  int time_j2k = 0;
-  if (!parameters.GetInteger(kExpirationTime, &time_j2k)) {
+  int expiration_j2k = 0;
+  if (!parameters.GetInteger(kExpirationTime, &expiration_j2k)) {
     Error::AddToPrintf(&error, FROM_HERE, errors::commands::kInvalidPropValue,
                        "Expiration time is missing");
     command->Abort(error.get(), nullptr);
     return;
   }
 
-  manager_->Block(user_id, app_id, FromJ2000Time(time_j2k),
+  int revocation_j2k = 0;
+  if (!parameters.GetInteger(kRevocationTimestamp, &revocation_j2k)) {
+    Error::AddToPrintf(&error, FROM_HERE, errors::commands::kInvalidPropValue,
+                       "Revocation timestamp is missing");
+    command->Abort(error.get(), nullptr);
+    return;
+  }
+
+  manager_->Block(AccessBlackListManager::Entry{user_id, app_id,
+                                                FromJ2000Time(revocation_j2k),
+                                                FromJ2000Time(expiration_j2k)},
                   base::Bind(&AccessApiHandler::OnCommandDone,
                              weak_ptr_factory_.GetWeakPtr(), cmd));
 }

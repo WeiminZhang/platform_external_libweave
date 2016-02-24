@@ -24,11 +24,13 @@ class AccessBlackListManagerImplTest : public testing::Test {
     std::string to_load = R"([{
       "user": "BQID",
       "app": "BwQF",
-      "expiration": 1410000000
+      "expiration": 463315200,
+      "revocation": 463314200
     }, {
       "user": "AQID",
       "app": "AwQF",
-      "expiration": 1419999999
+      "expiration": 473315199,
+      "revocation": 473313199
     }])";
 
     EXPECT_CALL(config_store_, LoadSettings("black_list"))
@@ -40,7 +42,8 @@ class AccessBlackListManagerImplTest : public testing::Test {
               std::string to_save = R"([{
                 "user": "AQID",
                 "app": "AwQF",
-                "expiration": 1419999999
+                "expiration": 473315199,
+                "revocation": 473313199
               }])";
               EXPECT_JSON_EQ(to_save, *test::CreateValue(json));
               if (!callback.is_null())
@@ -60,7 +63,10 @@ TEST_F(AccessBlackListManagerImplTest, Init) {
   EXPECT_EQ(1u, manager_->GetSize());
   EXPECT_EQ(10u, manager_->GetCapacity());
   EXPECT_EQ((std::vector<AccessBlackListManagerImpl::Entry>{{
-                {1, 2, 3}, {3, 4, 5}, base::Time::FromTimeT(1419999999),
+                {1, 2, 3},
+                {3, 4, 5},
+                base::Time::FromTimeT(1419997999),
+                base::Time::FromTimeT(1419999999),
             }}),
             manager_->GetEntries());
 }
@@ -75,22 +81,31 @@ TEST_F(AccessBlackListManagerImplTest, Block) {
             std::string to_save = R"([{
                 "user": "AQID",
                 "app": "AwQF",
-                "expiration": 1419999999
+                "expiration": 473315199,
+                "revocation": 473313199
               }, {
                 "app": "CAgI",
                 "user": "BwcH",
-                "expiration": 1419990000
+                "expiration": 473305200,
+                "revocation": 473295200
               }])";
             EXPECT_JSON_EQ(to_save, *test::CreateValue(json));
             if (!callback.is_null())
               callback.Run(nullptr);
           })));
-  manager_->Block({7, 7, 7}, {8, 8, 8}, base::Time::FromTimeT(1419990000), {});
+  manager_->Block({{7, 7, 7},
+                   {8, 8, 8},
+                   base::Time::FromTimeT(1419980000),
+                   base::Time::FromTimeT(1419990000)},
+                  {});
   EXPECT_TRUE(callback_called);
 }
 
 TEST_F(AccessBlackListManagerImplTest, BlockExpired) {
-  manager_->Block({}, {}, base::Time::FromTimeT(1400000000),
+  manager_->Block({{},
+                   {},
+                   base::Time::FromTimeT(1300000000),
+                   base::Time::FromTimeT(1400000000)},
                   base::Bind([](ErrorPtr error) {
                     EXPECT_TRUE(error->HasError("aleady_expired"));
                   }));
@@ -105,18 +120,30 @@ TEST_F(AccessBlackListManagerImplTest, BlockListIsFull) {
           })));
   for (size_t i = manager_->GetSize(); i < manager_->GetCapacity(); ++i) {
     manager_->Block(
-        {99, static_cast<uint8_t>(i / 256), static_cast<uint8_t>(i % 256)},
-        {8, 8, 8}, base::Time::FromTimeT(1419990000), {});
+        {{99, static_cast<uint8_t>(i / 256), static_cast<uint8_t>(i % 256)},
+         {8, 8, 8},
+         base::Time::FromTimeT(1419970000),
+         base::Time::FromTimeT(1419990000)},
+        {});
     EXPECT_EQ(i + 1, manager_->GetSize());
   }
-  manager_->Block({99}, {8, 8, 8}, base::Time::FromTimeT(1419990000),
+  manager_->Block({{99},
+                   {8, 8, 8},
+                   base::Time::FromTimeT(1419970000),
+                   base::Time::FromTimeT(1419990000)},
                   base::Bind([](ErrorPtr error) {
                     EXPECT_TRUE(error->HasError("blacklist_is_full"));
                   }));
 }
 
-TEST_F(AccessBlackListManagerImplTest, IsBlockedFalse) {
-  EXPECT_FALSE(manager_->IsBlocked({7, 7, 7}, {8, 8, 8}));
+TEST_F(AccessBlackListManagerImplTest, IsBlockedIdsNotMacth) {
+  EXPECT_FALSE(manager_->IsBlocked({7, 7, 7}, {8, 8, 8}, {}));
+}
+
+TEST_F(AccessBlackListManagerImplTest, IsBlockedRevocationIsOld) {
+  // Ids match but delegation time is newer than revocation time.
+  EXPECT_FALSE(manager_->IsBlocked({1, 2, 3}, {3, 4, 5},
+                                   base::Time::FromTimeT(1429997999)));
 }
 
 class AccessBlackListManagerImplIsBlockedTest
@@ -132,13 +159,16 @@ class AccessBlackListManagerImplIsBlockedTest
               if (!callback.is_null())
                 callback.Run(nullptr);
             })));
-    manager_->Block(std::get<0>(GetParam()), std::get<1>(GetParam()),
-                    base::Time::FromTimeT(1419990000), {});
+    manager_->Block({std::get<0>(GetParam()),
+                     std::get<1>(GetParam()),
+                     {},
+                     base::Time::FromTimeT(1419990000)},
+                    {});
   }
 };
 
 TEST_P(AccessBlackListManagerImplIsBlockedTest, IsBlocked) {
-  EXPECT_TRUE(manager_->IsBlocked({7, 7, 7}, {8, 8, 8}));
+  EXPECT_TRUE(manager_->IsBlocked({7, 7, 7}, {8, 8, 8}, {}));
 }
 
 INSTANTIATE_TEST_CASE_P(
