@@ -40,11 +40,10 @@ class AccessRevocationManagerImpl : public AccessRevocationManager {
 
   struct EntryIdsLess {
     bool operator()(const Entry& l, const Entry& r) const {
-      if (l.user_id < r.user_id)
-        return true;
-      if (l.user_id > r.user_id)
-        return false;
-      return l.app_id < r.app_id;
+      auto make_tuple = [](const AccessRevocationManager::Entry& e) {
+        return std::tie(e.user_id, e.app_id);
+      };
+      return make_tuple(l) < make_tuple(r);
     }
   };
 
