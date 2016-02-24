@@ -14,9 +14,10 @@
 #include "src/test/mock_black_list_manager.h"
 #include "src/test/mock_clock.h"
 
+using testing::_;
 using testing::Return;
 using testing::SaveArg;
-using testing::_;
+using testing::StrictMock;
 
 namespace weave {
 namespace privet {
@@ -26,6 +27,7 @@ class MockBlackListManager : public test::MockAccessBlackListManager {
   MockBlackListManager() {
     EXPECT_CALL(*this, AddEntryAddedCallback(_))
         .WillOnce(SaveArg<0>(&changed_callback_));
+    EXPECT_CALL(*this, IsBlocked(_, _, _)).WillRepeatedly(Return(false));
   }
 
   base::Closure changed_callback_;
@@ -59,7 +61,7 @@ class AuthManagerTest : public testing::Test {
       60, 62, 10, 18, 82, 35, 88, 100, 30, 45, 7, 46, 67, 84, 58, 85};
 
   test::MockClock clock_;
-  MockBlackListManager black_list_;
+  StrictMock<MockBlackListManager> black_list_;
   AuthManager auth_{kSecret1, kFingerprint, kSecret2, &clock_, &black_list_};
 };
 
@@ -344,6 +346,21 @@ TEST_F(AuthManagerTest, CreateAccessTokenFromAuthExpiredSessionid) {
   // session_id_expiration < new_time < token_expiration.
   auto new_time = clock_.Now() + base::TimeDelta::FromSeconds(200);
   EXPECT_CALL(clock_, Now()).WillRepeatedly(Return(new_time));
+  EXPECT_FALSE(
+      auth_.CreateAccessTokenFromAuth(extended, base::TimeDelta::FromDays(1),
+                                      nullptr, nullptr, nullptr, &error));
+  EXPECT_TRUE(error->HasError("invalidAuthCode"));
+}
+
+TEST_F(AuthManagerTest, CreateAccessTokenFromAuthRevoked) {
+  TestUserId user{"234"};
+  EXPECT_CALL(black_list_, IsBlocked(user.user, _, clock_.Now()))
+      .WillOnce(Return(true));
+  std::vector<uint8_t> access_token;
+  auto root = auth_.GetRootClientAuthToken(RootClientTokenOwner::kCloud);
+  auto extended = DelegateToUser(root, base::TimeDelta::FromSeconds(1000),
+                                 UserInfo{AuthScope::kUser, user});
+  ErrorPtr error;
   EXPECT_FALSE(
       auth_.CreateAccessTokenFromAuth(extended, base::TimeDelta::FromDays(1),
                                       nullptr, nullptr, nullptr, &error));

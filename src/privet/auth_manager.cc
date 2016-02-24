@@ -513,6 +513,28 @@ bool AuthManager::CreateAccessTokenFromAuth(
                         "Invalid session id");
   }
 
+  if (black_list_) {
+    std::vector<uint8_t> user_id;
+    std::vector<uint8_t> app_id;
+    for (size_t i = 0; i < result.num_delegatees; ++i) {
+      if (result.delegatees[i].type == kUwMacaroonDelegateeTypeUser) {
+        user_id.assign(result.delegatees[i].id,
+                       result.delegatees[i].id + result.delegatees[i].id_len);
+      } else if (result.delegatees[i].type == kUwMacaroonDelegateeTypeApp) {
+        app_id.assign(result.delegatees[i].id,
+                      result.delegatees[i].id + result.delegatees[i].id_len);
+      } else {
+        // Do not block by other types of delegatees.
+        continue;
+      }
+      if (black_list_->IsBlocked(
+              user_id, app_id, FromJ2000Time(result.delegatees[i].timestamp))) {
+        return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthCode,
+                            "Auth token is revoked");
+      }
+    }
+  }
+
   CHECK_GE(FromJ2000Time(result.expiration_time), now);
 
   if (!access_token)
