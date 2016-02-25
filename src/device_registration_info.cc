@@ -425,7 +425,12 @@ void DeviceRegistrationInfo::OnRefreshAccessTokenDone(
     StartNotificationChannel();
   }
 
-  SendAuthInfo();
+  if (GetSettings().root_client_token_owner != RootClientTokenOwner::kCloud) {
+    // Avoid re-claiming if device is already claimed by the Cloud. Cloud is
+    // allowed to re-claim device at any time. However this will invalidate all
+    // issued tokens.
+    SendAuthInfo();
+  }
 
   callback.Run(nullptr);
 }
@@ -954,12 +959,7 @@ void DeviceRegistrationInfo::SendAuthInfo() {
   if (!auth_manager_ || auth_info_update_inprogress_)
     return;
 
-  if (GetSettings().root_client_token_owner == RootClientTokenOwner::kCloud) {
-    // Avoid re-claiming if device is already claimed by the Cloud. Cloud is
-    // allowed to re-claim device at any time. However this will invalidate all
-    // issued tokens.
-    return;
-  }
+  LOG(INFO) << "Updating local auth info";
 
   auth_info_update_inprogress_ = true;
 
@@ -1028,6 +1028,18 @@ void DeviceRegistrationInfo::OnUpdateDeviceResourceDone(
   if (error)
     return OnUpdateDeviceResourceError(std::move(error));
   UpdateDeviceInfoTimestamp(device_info);
+
+  if (auth_manager_) {
+    std::string fingerprint_base64;
+    std::vector<uint8_t> fingerprint;
+    if (!device_info.GetString("certFingerprint", &fingerprint_base64) ||
+        !Base64Decode(fingerprint_base64, &fingerprint) ||
+        fingerprint != auth_manager_->GetCertificateFingerprint()) {
+      LOG(WARNING) << "Local auth info from server is invalid";
+      SendAuthInfo();
+    }
+  }
+
   // Make a copy of the callback list so that if the callback triggers another
   // call to UpdateDeviceResource(), we do not modify the list we are iterating
   // over.
