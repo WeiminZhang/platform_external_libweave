@@ -31,6 +31,9 @@ class Wifi {
   virtual bool IsWifi24Supported() const = 0;
   virtual bool IsWifi50Supported() const = 0;
 
+  // Get SSID of the network device is connected.
+  virtual std::string GetConnectedSsid() const = 0;
+
  protected:
   virtual ~Wifi() {}
 };

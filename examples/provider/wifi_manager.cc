@@ -64,11 +64,51 @@ std::string FindWirelessInterface() {
   return "";
 }
 
+std::string GetSsid(const std::string& interface) {
+  int sockf_d = socket(AF_INET, SOCK_DGRAM, 0);
+  CHECK_GE(sockf_d, 0) << strerror(errno);
+  iwreq wreq = {};
+  CHECK_LE(interface.size(), sizeof(wreq.ifr_name));
+  strncpy(wreq.ifr_name, interface.c_str(), sizeof(wreq.ifr_name));
+  std::string essid(' ', IW_ESSID_MAX_SIZE + 1);
+  wreq.u.essid.pointer = &essid[0];
+  wreq.u.essid.length = essid.size();
+  CHECK_GE(ioctl(sockf_d, SIOCGIWESSID, &wreq), 0) << strerror(errno);
+  essid.resize(wreq.u.essid.length);
+  close(sockf_d);
+  return essid;
+}
+
+bool CheckFreq(const std::string& interface, double start, double end) {
+  int sockf_d = socket(AF_INET, SOCK_DGRAM, 0);
+  CHECK_GE(sockf_d, 0) << strerror(errno);
+  iwreq wreq = {};
+  CHECK_LE(interface.size(), sizeof(wreq.ifr_name));
+  strncpy(wreq.ifr_name, interface.c_str(), sizeof(wreq.ifr_name));
+
+  iw_range range = {};
+  wreq.u.data.pointer = &range;
+  wreq.u.data.length = sizeof(range);
+
+  CHECK_GE(ioctl(sockf_d, SIOCGIWRANGE, &wreq), 0) << strerror(errno);
+
+  bool result = false;
+  for (size_t i = 0; !result && i < range.num_frequency; ++i) {
+    double freq = range.freq[i].m * std::pow(10., range.freq[i].e);
+    if (start <= freq && freq <= end)
+      result = true;
+  }
+
+  close(sockf_d);
+  return result;
+}
+
 }  // namespace
 
 WifiImpl::WifiImpl(provider::TaskRunner* task_runner, EventNetworkImpl* network)
   : task_runner_{task_runner}, network_{network}, iface_{FindWirelessInterface()} {
   CHECK(!iface_.empty()) <<  "WiFi interface not found";
+  CHECK(IsWifi24Supported() || IsWifi50Supported());
   CHECK_EQ(0u, getuid())
       << "\nWiFi manager expects root access to control WiFi capabilities";
   StopAccessPoint();
@@ -85,19 +125,7 @@ void WifiImpl::TryToConnect(const std::string& ssid,
   if (pid) {
     int status = 0;
     if (pid == waitpid(pid, &status, WNOWAIT)) {
-      int sockf_d = socket(AF_INET, SOCK_DGRAM, 0);
-      CHECK_GE(sockf_d, 0) << strerror(errno);
-
-      iwreq wreq = {};
-      strncpy(wreq.ifr_name, iface_.c_str(), sizeof(wreq.ifr_name));
-      std::string essid(' ', IW_ESSID_MAX_SIZE + 1);
-      wreq.u.essid.pointer = &essid[0];
-      wreq.u.essid.length = essid.size();
-      CHECK_GE(ioctl(sockf_d, SIOCGIWESSID, &wreq), 0) << strerror(errno);
-      essid.resize(wreq.u.essid.length);
-      close(sockf_d);
-
-      if (ssid == essid)
+      if (ssid == GetSsid(iface_))
         return task_runner_->PostDelayedTask(FROM_HERE,
                                              base::Bind(callback, nullptr), {});
       pid = 0;  // Try again.
@@ -129,8 +157,7 @@ void WifiImpl::Connect(const std::string& ssid,
                        const std::string& passphrase,
                        const DoneCallback& callback) {
   network_->SetSimulateOffline(false);
-  CHECK(!hostapd_started_);
-  if (hostapd_started_) {
+  if (!hostapd_ssid_.empty()) {
     ErrorPtr error;
     Error::AddTo(&error, FROM_HERE, "busy", "Running Access Point.");
     task_runner_->PostDelayedTask(
@@ -143,8 +170,7 @@ void WifiImpl::Connect(const std::string& ssid,
 }
 
 void WifiImpl::StartAccessPoint(const std::string& ssid) {
-  if (hostapd_started_)
-    return;
+  CHECK(hostapd_ssid_.empty());
 
   // Release wifi interface.
   CHECK_EQ(0, ForkCmdAndWait("nmcli", {"nm", "wifi",  "off"}));
@@ -160,7 +186,7 @@ void WifiImpl::StartAccessPoint(const std::string& ssid) {
   }
 
   CHECK_EQ(0, ForkCmdAndWait("hostapd", {"-B", "-K", hostapd_conf}));
-  hostapd_started_ = true;
+  hostapd_ssid_ = ssid;
 
   for (size_t i = 0; i < 10; ++i) {
     if (0 == ForkCmdAndWait("ifconfig", {iface_, "192.168.76.1/24"}))
@@ -186,11 +212,23 @@ void WifiImpl::StopAccessPoint() {
   base::IgnoreResult(ForkCmdAndWait("pkill", {"-f", "dnsmasq.*/tmp/weave"}));
   base::IgnoreResult(ForkCmdAndWait("pkill", {"-f", "hostapd.*/tmp/weave"}));
   CHECK_EQ(0, ForkCmdAndWait("nmcli", {"nm", "wifi", "on"}));
-  hostapd_started_ = false;
+  hostapd_ssid_.clear();
 }
 
 bool WifiImpl::HasWifiCapability() {
   return !FindWirelessInterface().empty();
+}
+
+bool WifiImpl::IsWifi24Supported() const {
+  return CheckFreq(iface_, 2.4e9, 2.5e9);
+};
+
+bool WifiImpl::IsWifi50Supported() const {
+  return CheckFreq(iface_, 4.9e9, 5.9e9);
+};
+
+std::string WifiImpl::GetConnectedSsid() const {
+  return GetSsid(iface_);
 }
 
 }  // namespace examples
