@@ -30,8 +30,7 @@ std::string GetSslError() {
 class HttpServerImpl::RequestImpl : public Request {
  public:
   RequestImpl(EventPtr<evhtp_request_t> req) : req_(std::move(req)) {
-    evbuf_t* input_buffer =
-        bufferevent_get_input(evhtp_request_get_bev(req_.get()));
+    evbuf_t* input_buffer = req_.get()->buffer_in;
     data_.resize(evbuffer_get_length(input_buffer));
     evbuffer_remove(input_buffer, &data_[0], data_.size());
   }
@@ -56,6 +55,9 @@ class HttpServerImpl::RequestImpl : public Request {
     evbuffer_add(buf.get(), data.data(), data.size());
     evhtp_header_key_add(req_->headers_out, "Content-Type", 0);
     evhtp_header_val_add(req_->headers_out, mime_type.c_str(), 1);
+    evhtp_header_key_add(req_->headers_out, "Content-Length", 0);
+    std::string content_length = std::to_string(evbuffer_get_length(buf.get()));
+    evhtp_header_val_add(req_->headers_out, content_length.c_str(), 1);
     evhtp_send_reply_start(req_.get(), status_code);
     evhtp_send_reply_body(req_.get(), buf.get());
     evhtp_send_reply_end(req_.get());
