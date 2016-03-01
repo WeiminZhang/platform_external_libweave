@@ -73,8 +73,10 @@ std::string GetSsid(const std::string& interface) {
   std::string essid(' ', IW_ESSID_MAX_SIZE + 1);
   wreq.u.essid.pointer = &essid[0];
   wreq.u.essid.length = essid.size();
-  CHECK_GE(ioctl(sockf_d, SIOCGIWESSID, &wreq), 0) << strerror(errno);
-  essid.resize(wreq.u.essid.length);
+  if (ioctl(sockf_d, SIOCGIWESSID, &wreq) >= 0)
+    essid.resize(wreq.u.essid.length);
+  else
+    essid.clear();
   close(sockf_d);
   return essid;
 }
@@ -90,13 +92,13 @@ bool CheckFreq(const std::string& interface, double start, double end) {
   wreq.u.data.pointer = &range;
   wreq.u.data.length = sizeof(range);
 
-  CHECK_GE(ioctl(sockf_d, SIOCGIWRANGE, &wreq), 0) << strerror(errno);
-
   bool result = false;
-  for (size_t i = 0; !result && i < range.num_frequency; ++i) {
-    double freq = range.freq[i].m * std::pow(10., range.freq[i].e);
-    if (start <= freq && freq <= end)
-      result = true;
+  if (ioctl(sockf_d, SIOCGIWRANGE, &wreq) >= 0) {
+    for (size_t i = 0; !result && i < range.num_frequency; ++i) {
+      double freq = range.freq[i].m * std::pow(10., range.freq[i].e);
+      if (start <= freq && freq <= end)
+        result = true;
+    }
   }
 
   close(sockf_d);
