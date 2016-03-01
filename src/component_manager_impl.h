@@ -127,8 +127,8 @@ class ComponentManagerImpl final : public ComponentManager {
 
   // Checks the minimum required user role for a given state.
   bool GetStateMinimalRole(const std::string& state_property_name,
-                             UserRole* minimal_role,
-                             ErrorPtr* error) const override;
+                           UserRole* minimal_role,
+                           ErrorPtr* error) const override;
 
   // Returns the full JSON dictionary containing trait definitions.
   const base::DictionaryValue& GetTraits() const override { return traits_; }

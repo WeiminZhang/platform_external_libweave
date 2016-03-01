@@ -77,9 +77,7 @@ class CloudCommandProxyWrapper : public CloudCommandProxy {
                           task_runner},
         destruct_callback_{destruct_callback} {}
 
-  ~CloudCommandProxyWrapper() {
-    destruct_callback_.Run();
-  }
+  ~CloudCommandProxyWrapper() { destruct_callback_.Run(); }
 
  private:
   base::Closure destruct_callback_;

@@ -423,24 +423,24 @@ TEST_F(ComponentManagerTest, GetCommandMinimalRole) {
   ASSERT_TRUE(manager_.LoadTraits(*json, nullptr));
 
   UserRole role;
-  ASSERT_TRUE(manager_.GetCommandMinimalRole("trait1.command1", &role,
-                                             nullptr));
+  ASSERT_TRUE(
+      manager_.GetCommandMinimalRole("trait1.command1", &role, nullptr));
   EXPECT_EQ(UserRole::kUser, role);
 
-  ASSERT_TRUE(manager_.GetCommandMinimalRole("trait1.command2", &role,
-                                             nullptr));
+  ASSERT_TRUE(
+      manager_.GetCommandMinimalRole("trait1.command2", &role, nullptr));
   EXPECT_EQ(UserRole::kViewer, role);
 
-  ASSERT_TRUE(manager_.GetCommandMinimalRole("trait2.command1", &role,
-                                             nullptr));
+  ASSERT_TRUE(
+      manager_.GetCommandMinimalRole("trait2.command1", &role, nullptr));
   EXPECT_EQ(UserRole::kManager, role);
 
-  ASSERT_TRUE(manager_.GetCommandMinimalRole("trait2.command2", &role,
-                                             nullptr));
+  ASSERT_TRUE(
+      manager_.GetCommandMinimalRole("trait2.command2", &role, nullptr));
   EXPECT_EQ(UserRole::kOwner, role);
 
-  EXPECT_FALSE(manager_.GetCommandMinimalRole("trait1.command3", &role,
-                                              nullptr));
+  EXPECT_FALSE(
+      manager_.GetCommandMinimalRole("trait1.command3", &role, nullptr));
 }
 
 TEST_F(ComponentManagerTest, GetStateMinimalRole) {
@@ -478,8 +478,8 @@ TEST_F(ComponentManagerTest, GetStateMinimalRole) {
   ASSERT_TRUE(manager_.GetStateMinimalRole("trait2.property2", &role, nullptr));
   EXPECT_EQ(UserRole::kOwner, role);
 
-  ASSERT_FALSE(manager_.GetStateMinimalRole("trait2.property3", &role,
-                                            nullptr));
+  ASSERT_FALSE(
+      manager_.GetStateMinimalRole("trait2.property3", &role, nullptr));
 }
 
 TEST_F(ComponentManagerTest, AddComponent) {
@@ -572,8 +572,8 @@ TEST_F(ComponentManagerTest, AddComponentArrayItem) {
 
 TEST_F(ComponentManagerTest, RemoveComponent) {
   CreateTestComponentTree(&manager_);
-  EXPECT_TRUE(manager_.RemoveComponent("comp1.comp2[1].comp3", "comp4",
-                                       nullptr));
+  EXPECT_TRUE(
+      manager_.RemoveComponent("comp1.comp2[1].comp3", "comp4", nullptr));
   const char kExpected1[] = R"({
     "comp1": {
       "traits": [ "t1" ],
@@ -1333,25 +1333,25 @@ TEST_F(ComponentManagerTest, GetComponentsForUserRole) {
   })";
   auto json = CreateDictionaryValue(kTraits);
   ASSERT_TRUE(manager_.LoadTraits(*json, nullptr));
-  ASSERT_TRUE(manager_.AddComponent("", "comp1", {"trait1", "trait2"},
-                                    nullptr));
+  ASSERT_TRUE(
+      manager_.AddComponent("", "comp1", {"trait1", "trait2"}, nullptr));
   ASSERT_TRUE(manager_.AddComponent("", "comp2", {"trait2"}, nullptr));
-  ASSERT_TRUE(manager_.AddComponentArrayItem("comp2", "comp3", {"trait3"},
-                                             nullptr));
+  ASSERT_TRUE(
+      manager_.AddComponentArrayItem("comp2", "comp3", {"trait3"}, nullptr));
   ASSERT_TRUE(manager_.AddComponent("comp2", "comp4", {"trait3"}, nullptr));
 
   const char kComp1Properties[] = R"({
     "trait1": { "prop1": "foo", "prop2": "bar" },
     "trait2": { "prop3": "baz", "prop4": "quux" }
   })";
-  ASSERT_TRUE(manager_.SetStatePropertiesFromJson("comp1", kComp1Properties,
-                                                  nullptr));
+  ASSERT_TRUE(
+      manager_.SetStatePropertiesFromJson("comp1", kComp1Properties, nullptr));
 
   const char kComp2Properties[] = R"({
     "trait2": { "prop3": "foo", "prop4": "bar" }
   })";
-  ASSERT_TRUE(manager_.SetStatePropertiesFromJson("comp2", kComp2Properties,
-                                                  nullptr));
+  ASSERT_TRUE(
+      manager_.SetStatePropertiesFromJson("comp2", kComp2Properties, nullptr));
 
   const char kComp3Properties[] = R"({
     "trait3": { "prop5": "foo" }

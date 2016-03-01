@@ -34,15 +34,14 @@ void RemoveInaccessibleState(const ComponentManagerImpl* manager,
   std::vector<std::string> state_props_to_remove;
   base::DictionaryValue* state = nullptr;
   if (component->GetDictionary("state", &state)) {
-    for (base::DictionaryValue::Iterator it_trait(*state);
-          !it_trait.IsAtEnd(); it_trait.Advance()) {
+    for (base::DictionaryValue::Iterator it_trait(*state); !it_trait.IsAtEnd();
+         it_trait.Advance()) {
       const base::DictionaryValue* trait = nullptr;
       CHECK(it_trait.value().GetAsDictionary(&trait));
-      for (base::DictionaryValue::Iterator it_prop(*trait);
-            !it_prop.IsAtEnd(); it_prop.Advance()) {
-        std::string prop_name = base::StringPrintf("%s.%s",
-                                                    it_trait.key().c_str(),
-                                                    it_prop.key().c_str());
+      for (base::DictionaryValue::Iterator it_prop(*trait); !it_prop.IsAtEnd();
+           it_prop.Advance()) {
+        std::string prop_name = base::StringPrintf(
+            "%s.%s", it_trait.key().c_str(), it_prop.key().c_str());
         UserRole minimal_role;
         if (manager->GetStateMinimalRole(prop_name, &minimal_role, nullptr) &&
             minimal_role > role) {
@@ -438,9 +437,9 @@ bool ComponentManagerImpl::GetStateMinimalRole(
     ErrorPtr* error) const {
   const base::DictionaryValue* state = FindStateDefinition(state_property_name);
   if (!state) {
-    return Error::AddToPrintf(
-        error, FROM_HERE, errors::commands::kInvalidState,
-        "State definition for '%s' not found", state_property_name.c_str());
+    return Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidState,
+                              "State definition for '%s' not found",
+                              state_property_name.c_str());
   }
   std::string value;
   if (state->GetString(kMinimalRole, &value)) {
