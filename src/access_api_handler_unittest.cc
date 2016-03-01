@@ -44,7 +44,7 @@ class AccessApiHandlerTest : public ::testing::Test {
         }));
 
     EXPECT_CALL(device_,
-                AddCommandHandler(_, AnyOf("_accessRevocationList.revoke",
+                AddCommandHandler(_, AnyOf("_accessRevocationList.add",
                                            "_accessRevocationList.list"),
                                   _))
         .WillRepeatedly(
@@ -95,7 +95,7 @@ TEST_F(AccessApiHandlerTest, Initialization) {
 
   auto expected = R"({
     "commands": {
-      "revoke": {
+      "add": {
         "minimalRole": "owner",
         "parameters": {
           "userId": {
@@ -116,7 +116,7 @@ TEST_F(AccessApiHandlerTest, Initialization) {
         "minimalRole": "owner",
         "parameters": {},
         "results": {
-          "revocationEntriesList": {
+          "revocationList": {
             "type": "array",
             "items": {
               "type": "object",
@@ -168,7 +168,7 @@ TEST_F(AccessApiHandlerTest, Revoke) {
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(1));
 
   AddCommand(R"({
-    'name' : '_accessRevocationList.revoke',
+    'name' : '_accessRevocationList.add',
     'component': 'accessControl',
     'parameters': {
       'userId': 'AQID',
@@ -199,7 +199,7 @@ TEST_F(AccessApiHandlerTest, List) {
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(4));
 
   auto expected = R"({
-    "revocationListEntries": [ {
+    "revocationList": [ {
       "applicationId": "FRYX",
       "userId": "CwwN"
     }, {

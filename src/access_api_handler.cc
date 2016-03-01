@@ -24,7 +24,7 @@ const char kUserId[] = "userId";
 const char kApplicationId[] = "applicationId";
 const char kExpirationTime[] = "expirationTime";
 const char kRevocationTimestamp[] = "revocationTimestamp";
-const char kRevocationList[] = "revocationListEntries";
+const char kRevocationList[] = "revocationList";
 
 bool GetIds(const base::DictionaryValue& parameters,
             std::vector<uint8_t>* user_id_decoded,
@@ -57,7 +57,7 @@ AccessApiHandler::AccessApiHandler(Device* device,
   device_->AddTraitDefinitionsFromJson(R"({
     "_accessRevocationList": {
       "commands": {
-        "revoke": {
+        "add": {
           "minimalRole": "owner",
           "parameters": {
             "userId": {
@@ -78,7 +78,7 @@ AccessApiHandler::AccessApiHandler(Device* device,
           "minimalRole": "owner",
           "parameters": {},
           "results": {
-            "revocationEntriesList": {
+            "revocationList": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -114,7 +114,7 @@ AccessApiHandler::AccessApiHandler(Device* device,
   UpdateState();
 
   device_->AddCommandHandler(
-      kComponent, "_accessRevocationList.revoke",
+      kComponent, "_accessRevocationList.add",
       base::Bind(&AccessApiHandler::Block, weak_ptr_factory_.GetWeakPtr()));
   device_->AddCommandHandler(
       kComponent, "_accessRevocationList.list",
