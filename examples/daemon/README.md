@@ -66,29 +66,31 @@ sudo service avahi-daemon restart
 
 ```
         Publishing service
-        Saving settings to /var/lib/weave/weave_settings.json
+        Saving settings to /var/lib/weave/weave_settings_[XXXXX]_config.json
 ```
 
 - Note: in second and future runs, --registration_ticket options is not necessary anymore
 - Get your device id with
 
 ```
-        sudo cat /var/lib/weave/weave_settings.json
+        sudo grep "cloud_id" /var/lib/weave/weave_settings_[XXXXX]_config.json
 ```
 
-- See something like:
+- See a field called cloud_id like:
 
 ```
         ...
-        "device_id": 0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
+        "cloud_id": 0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
         ...
 ```
 
-- Use this device_id for future communication with your device. It does not expire.
+- Use this cloud_id for future communication with your device as its deviceId.
+It does not expire.
 - Verify device is up with Weave Device Managers on
 [Android](https://play.google.com/apps/testing/com.google.android.apps.weave.management),
 [Chrome](https://chrome.google.com/webstore/detail/weave-device-manager/pcdgflbjckpjmlofgopidgdfonmnodfm)
-or [Weave Developpers Console](https://weave.google.com/console/)
+or [Weave Developpers Console](https://weave.google.com/console/), where you
+see this id listed right below the device name in device details section.
 
 ### Send Command to the Daemon
 
