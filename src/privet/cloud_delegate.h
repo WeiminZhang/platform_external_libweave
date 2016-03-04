@@ -47,7 +47,6 @@ class CloudDelegate {
    public:
     virtual ~Observer() {}
 
-    virtual void OnDeviceInfoChanged() {}
     virtual void OnTraitDefsChanged() {}
     virtual void OnStateChanged() {}
     virtual void OnComponentTreeChanged() {}
@@ -136,7 +135,6 @@ class CloudDelegate {
     observer_list_.RemoveObserver(observer);
   }
 
-  void NotifyOnDeviceInfoChanged();
   void NotifyOnTraitDefsChanged();
   void NotifyOnStateChanged();
   void NotifyOnComponentTreeChanged();

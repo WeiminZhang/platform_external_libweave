@@ -46,8 +46,6 @@ class CloudDelegateImpl : public CloudDelegate {
       : task_runner_{task_runner},
         device_{device},
         component_manager_{component_manager} {
-    device_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
-        &CloudDelegateImpl::OnConfigChanged, weak_factory_.GetWeakPtr()));
     device_->AddGcdStateChangedCallback(base::Bind(
         &CloudDelegateImpl::OnRegistrationChanged, weak_factory_.GetWeakPtr()));
 
@@ -244,8 +242,6 @@ class CloudDelegateImpl : public CloudDelegate {
     CHECK(command_owners_.erase(command->GetID()));
   }
 
-  void OnConfigChanged(const Settings&) { NotifyOnDeviceInfoChanged(); }
-
   void OnRegistrationChanged(GcdState status) {
     if (status == GcdState::kUnconfigured ||
         status == GcdState::kInvalidCredentials) {
@@ -262,7 +258,6 @@ class CloudDelegateImpl : public CloudDelegate {
                          EnumToString(status).c_str());
       connection_state_ = ConnectionState{std::move(error)};
     }
-    NotifyOnDeviceInfoChanged();
   }
 
   void OnRegisterSuccess(const std::string& cloud_id) {
@@ -376,10 +371,6 @@ std::unique_ptr<CloudDelegate> CloudDelegate::CreateDefault(
     ComponentManager* component_manager) {
   return std::unique_ptr<CloudDelegateImpl>{
       new CloudDelegateImpl{task_runner, device, component_manager}};
-}
-
-void CloudDelegate::NotifyOnDeviceInfoChanged() {
-  FOR_EACH_OBSERVER(Observer, observer_list_, OnDeviceInfoChanged());
 }
 
 void CloudDelegate::NotifyOnTraitDefsChanged() {

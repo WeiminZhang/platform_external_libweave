@@ -11,7 +11,6 @@
 #include <vector>
 
 #include <base/memory/weak_ptr.h>
-#include <base/scoped_observer.h>
 #include <weave/device.h>
 
 #include "src/privet/cloud_delegate.h"
@@ -41,10 +40,10 @@ class PrivetHandler;
 class Publisher;
 class SecurityManager;
 
-class Manager : public CloudDelegate::Observer {
+class Manager {
  public:
   explicit Manager(provider::TaskRunner* task_runner);
-  ~Manager() override;
+  ~Manager();
 
   void Start(provider::Network* network,
              provider::DnsServiceDiscovery* dns_sd,
@@ -61,8 +60,7 @@ class Manager : public CloudDelegate::Observer {
       const Device::PairingEndCallback& end_callback);
 
  private:
-  // CloudDelegate::Observer
-  void OnDeviceInfoChanged() override;
+  void OnDeviceInfoChanged(const weave::Settings&);
 
   void PrivetRequestHandler(
       std::unique_ptr<provider::HttpServer::Request> request);
@@ -86,8 +84,6 @@ class Manager : public CloudDelegate::Observer {
   std::unique_ptr<WifiBootstrapManager> wifi_bootstrap_manager_;
   std::unique_ptr<Publisher> publisher_;
   std::unique_ptr<PrivetHandler> privet_handler_;
-
-  ScopedObserver<CloudDelegate, CloudDelegate::Observer> cloud_observer_{this};
 
   base::WeakPtrFactory<Manager> weak_ptr_factory_{this};
   DISALLOW_COPY_AND_ASSIGN(Manager);
