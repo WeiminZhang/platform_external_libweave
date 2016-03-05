@@ -78,6 +78,7 @@ class Manager {
   void OnConnectivityChanged();
 
   provider::TaskRunner* task_runner_{nullptr};
+  provider::HttpServer* http_server_{nullptr};
   std::unique_ptr<CloudDelegate> cloud_;
   std::unique_ptr<DeviceDelegate> device_;
   std::unique_ptr<SecurityManager> security_;

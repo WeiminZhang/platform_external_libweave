@@ -263,6 +263,14 @@ class WeaveTest : public ::testing::Test {
                    const provider::HttpServer::RequestHandlerCallback& cb) {
               https_handlers_[path_prefix] = cb;
             }));
+    EXPECT_CALL(http_server_, RemoveHttpRequestHandler(_))
+        .WillRepeatedly(Invoke([this](const std::string& path_prefix) {
+          http_handlers_.erase(path_prefix);
+        }));
+    EXPECT_CALL(http_server_, RemoveHttpsRequestHandler(_))
+        .WillRepeatedly(Invoke([this](const std::string& path_prefix) {
+          https_handlers_.erase(path_prefix);
+        }));
   }
 
   void InitDefaultExpectations() {

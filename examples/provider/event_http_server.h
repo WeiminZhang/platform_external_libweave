@@ -33,6 +33,8 @@ class HttpServerImpl : public provider::HttpServer {
                              const RequestHandlerCallback& callback) override;
   void AddHttpsRequestHandler(const std::string& path_prefix,
                               const RequestHandlerCallback& callback) override;
+  void RemoveHttpRequestHandler(const std::string& path) override;
+  void RemoveHttpsRequestHandler(const std::string& path) override;
   uint16_t GetHttpPort() const override;
   uint16_t GetHttpsPort() const override;
   base::TimeDelta GetRequestTimeout() const override;
@@ -48,7 +50,8 @@ class HttpServerImpl : public provider::HttpServer {
                     const std::string& mime_type);
   void NotFound(evhtp_request_t* req);
 
-  std::map<std::string, RequestHandlerCallback> handlers_;
+  std::map<std::pair<std::string, const evhtp_t*>, RequestHandlerCallback>
+      handlers_;
 
   std::vector<uint8_t> cert_fingerprint_;
   EventTaskRunner* task_runner_{nullptr};

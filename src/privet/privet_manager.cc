@@ -40,7 +40,17 @@ using provider::Wifi;
 
 Manager::Manager(TaskRunner* task_runner) : task_runner_{task_runner} {}
 
-Manager::~Manager() {}
+Manager::~Manager() {
+  if (privet_handler_) {
+    for (const auto& path : privet_handler_->GetHttpsPaths()) {
+      http_server_->RemoveHttpsRequestHandler(path);
+    }
+
+    for (const auto& path : privet_handler_->GetHttpPaths()) {
+      http_server_->RemoveHttpRequestHandler(path);
+    }
+  }
+}
 
 void Manager::Start(Network* network,
                     DnsServiceDiscovery* dns_sd,
@@ -49,6 +59,8 @@ void Manager::Start(Network* network,
                     AuthManager* auth_manager,
                     DeviceRegistrationInfo* device,
                     ComponentManager* component_manager) {
+  http_server_ = http_server;
+  CHECK(http_server_);
   CHECK(auth_manager);
   CHECK(device);
 

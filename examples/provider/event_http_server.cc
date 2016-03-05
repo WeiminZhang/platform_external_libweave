@@ -143,7 +143,7 @@ void HttpServerImpl::NotFound(evhtp_request_t* req) {
 void HttpServerImpl::ProcessRequest(evhtp_request_t* req) {
   std::unique_ptr<RequestImpl> request{new RequestImpl{EventPtr<evhtp_request_t>{req}}};
   std::string path = request->GetPath();
-  auto it = handlers_.find(path);
+  auto it = handlers_.find(std::make_pair(path, req->htp));
   if (it != handlers_.end()) {
     return it->second.Run(std::move(request));
   }
@@ -157,15 +157,25 @@ void HttpServerImpl::ProcessRequestCallback(evhtp_request_t* req, void* arg) {
 void HttpServerImpl::AddHttpRequestHandler(
     const std::string& path,
     const RequestHandlerCallback& callback) {
-  handlers_.insert(std::make_pair(path, callback));
+  handlers_[std::make_pair(path, httpd_.get())] = callback;
   evhtp_set_cb(httpd_.get(), path.c_str(), &ProcessRequestCallback, this);
 }
 
 void HttpServerImpl::AddHttpsRequestHandler(
     const std::string& path,
     const RequestHandlerCallback& callback) {
-  handlers_.insert(std::make_pair(path, callback));
+  handlers_[std::make_pair(path, httpsd_.get())] = callback;
   evhtp_set_cb(httpsd_.get(), path.c_str(), &ProcessRequestCallback, this);
+}
+
+void HttpServerImpl::RemoveHttpRequestHandler(const std::string& path) {
+  handlers_.erase(std::make_pair(path, httpd_.get()));
+  evhtp_set_cb(httpd_.get(), path.c_str(), nullptr, nullptr);
+}
+
+void HttpServerImpl::RemoveHttpsRequestHandler(const std::string& path) {
+  handlers_.erase(std::make_pair(path, httpsd_.get()));
+  evhtp_set_cb(httpsd_.get(), path.c_str(), nullptr, nullptr);
 }
 
 void HttpServerImpl::ProcessReply(std::shared_ptr<RequestImpl> request,
