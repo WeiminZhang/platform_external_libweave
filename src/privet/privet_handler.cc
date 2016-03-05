@@ -398,7 +398,13 @@ PrivetHandler::PrivetHandler(CloudDelegate* cloud,
   CHECK(device_);
   CHECK(security_);
   CHECK(clock_);
-  cloud_observer_.Add(cloud_);
+
+  cloud_->AddOnTraitsChangedCallback(base::Bind(
+      &PrivetHandler::OnTraitDefsChanged, weak_ptr_factory_.GetWeakPtr()));
+  cloud_->AddOnStateChangedCallback(base::Bind(&PrivetHandler::OnStateChanged,
+                                               weak_ptr_factory_.GetWeakPtr()));
+  cloud_->AddOnComponentsChangeCallback(base::Bind(
+      &PrivetHandler::OnComponentTreeChanged, weak_ptr_factory_.GetWeakPtr()));
 
   AddHandler("/privet/info", &PrivetHandler::HandleInfo, AuthScope::kNone);
   AddHandler("/privet/v3/pairing/start", &PrivetHandler::HandlePairingStart,

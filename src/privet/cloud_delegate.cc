@@ -49,18 +49,10 @@ class CloudDelegateImpl : public CloudDelegate {
     device_->AddGcdStateChangedCallback(base::Bind(
         &CloudDelegateImpl::OnRegistrationChanged, weak_factory_.GetWeakPtr()));
 
-    component_manager_->AddTraitDefChangedCallback(
-        base::Bind(&CloudDelegateImpl::NotifyOnTraitDefsChanged,
-                   weak_factory_.GetWeakPtr()));
     component_manager_->AddCommandAddedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandAdded, weak_factory_.GetWeakPtr()));
     component_manager_->AddCommandRemovedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandRemoved, weak_factory_.GetWeakPtr()));
-    component_manager_->AddStateChangedCallback(base::Bind(
-        &CloudDelegateImpl::NotifyOnStateChanged, weak_factory_.GetWeakPtr()));
-    component_manager_->AddComponentTreeChangedCallback(
-        base::Bind(&CloudDelegateImpl::NotifyOnComponentTreeChanged,
-                   weak_factory_.GetWeakPtr()));
   }
 
   ~CloudDelegateImpl() override = default;
@@ -232,6 +224,18 @@ class CloudDelegateImpl : public CloudDelegate {
     callback.Run(commands_json, nullptr);
   }
 
+  void AddOnTraitsChangedCallback(const base::Closure& callback) override {
+    component_manager_->AddTraitDefChangedCallback(callback);
+  }
+
+  void AddOnStateChangedCallback(const base::Closure& callback) override {
+    component_manager_->AddStateChangedCallback(callback);
+  }
+
+  void AddOnComponentsChangeCallback(const base::Closure& callback) override {
+    component_manager_->AddComponentTreeChangedCallback(callback);
+  }
+
  private:
   void OnCommandAdded(Command* command) {
     // Set to "" for any new unknown command.
@@ -371,18 +375,6 @@ std::unique_ptr<CloudDelegate> CloudDelegate::CreateDefault(
     ComponentManager* component_manager) {
   return std::unique_ptr<CloudDelegateImpl>{
       new CloudDelegateImpl{task_runner, device, component_manager}};
-}
-
-void CloudDelegate::NotifyOnTraitDefsChanged() {
-  FOR_EACH_OBSERVER(Observer, observer_list_, OnTraitDefsChanged());
-}
-
-void CloudDelegate::NotifyOnComponentTreeChanged() {
-  FOR_EACH_OBSERVER(Observer, observer_list_, OnComponentTreeChanged());
-}
-
-void CloudDelegate::NotifyOnStateChanged() {
-  FOR_EACH_OBSERVER(Observer, observer_list_, OnStateChanged());
 }
 
 }  // namespace privet
