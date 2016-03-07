@@ -23,6 +23,25 @@
 
 namespace weave {
 
+// This interface defines interactions with a Weave device.  Implemented in
+// weave::DeviceManager.  The general use of this class is to:
+// - Define the traits for the Weave schema the device is
+//    interested in using the AddTraitDefinitions() and
+//    AddTraitDefinitionsFromJson() functions.
+// - Define the components for the Weave schema the device is
+//    interested in using the AddComponent() function.
+// - Set the initial/default values of "state" portions of the schema using
+//    the SetStatePropertiesFromJson() and SetStateProperties() functions.
+// - Specify callback functions when a command (defined in the Weave schema)
+//    is received by the device using the AddCommandHandler() function.
+//
+// A daemon will typically create one instance of a class implementing
+// Device and will retain it for the life of the daemon using the Create()
+// function.
+//
+// For detailed examples of the usage of this class, see the examples/daemon
+// directory.
+
 // States of Gcd connection.
 enum class GcdState {
   kUnconfigured,        // Device was not registered.
