@@ -103,6 +103,7 @@ TEST(CommandInstanceTest, FromJson_ParamsNotObject) {
 
 TEST(CommandInstanceTest, ToJson) {
   auto json = CreateDictionaryValue(R"({
+    'component': 'testComponent',
     'name': 'robot.jump',
     'parameters': {
       'height': 53,
@@ -121,6 +122,7 @@ TEST(CommandInstanceTest, ToJson) {
                                  nullptr));
 
   json->MergeDictionary(CreateDictionaryValue(R"({
+    'component': 'testComponent',
     'id': 'testId',
     'progress': {'progress': 15},
     'state': 'done',
@@ -135,6 +137,7 @@ TEST(CommandInstanceTest, ToJson) {
 
 TEST(CommandInstanceTest, ToJsonError) {
   auto json = CreateDictionaryValue(R"({
+    'component': 'testComponent',
     'name': 'base.reboot',
     'parameters': {}
   })");
@@ -147,6 +150,7 @@ TEST(CommandInstanceTest, ToJsonError) {
   instance->Abort(error.get(), nullptr);
 
   json->MergeDictionary(CreateDictionaryValue(R"({
+    'component': 'testComponent',
     'id': 'testId',
     'state': 'aborted',
     'progress': {},

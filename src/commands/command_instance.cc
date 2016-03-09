@@ -220,6 +220,7 @@ std::unique_ptr<base::DictionaryValue> CommandInstance::ToJson() const {
 
   json->SetString(commands::attributes::kCommand_Id, id_);
   json->SetString(commands::attributes::kCommand_Name, name_);
+  json->SetString(commands::attributes::kCommand_Component, component_);
   json->Set(commands::attributes::kCommand_Parameters, parameters_.DeepCopy());
   json->Set(commands::attributes::kCommand_Progress, progress_.DeepCopy());
   json->Set(commands::attributes::kCommand_Results, results_.DeepCopy());
