@@ -36,7 +36,7 @@ class AccessRevocationManagerImpl : public AccessRevocationManager {
  private:
   void Load();
   void Save(const DoneCallback& callback);
-  void RemoveExpired();
+  void Shrink();
 
   struct EntryIdsLess {
     bool operator()(const Entry& l, const Entry& r) const {
