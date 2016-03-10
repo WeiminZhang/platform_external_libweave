@@ -837,8 +837,9 @@ void PrivetHandler::HandleSetupStart(const base::DictionaryValue& input,
     return ReturnError(*error, callback);
 
   if (!registration_data.ticket_id.empty() &&
-      !cloud_->Setup(registration_data, &error))
+      !cloud_->Setup(registration_data, &error)) {
     return ReturnError(*error, callback);
+  }
 
   ReplyWithSetupStatus(callback);
 }

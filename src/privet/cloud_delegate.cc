@@ -26,6 +26,8 @@ namespace privet {
 
 namespace {
 
+const char kErrorAlreayRegistered[] = "already_registered";
+
 const BackoffEntry::Policy register_backoff_policy = {0,    1000, 2.0,  0.2,
                                                       5000, -1,   false};
 
@@ -103,6 +105,12 @@ class CloudDelegateImpl : public CloudDelegate {
   bool Setup(const RegistrationData& registration_data,
              ErrorPtr* error) override {
     VLOG(1) << "GCD Setup started. ";
+    if (device_->HaveRegistrationCredentials()) {
+      Error::AddTo(error, FROM_HERE, kErrorAlreayRegistered,
+                   "Unable to register already registered device");
+      return false;
+    }
+
     // Set (or reset) the retry counter, since we are starting a new
     // registration process.
     registation_retry_count_ = kMaxDeviceRegistrationRetries;
