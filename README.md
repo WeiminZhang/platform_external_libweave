@@ -18,7 +18,8 @@ mkdir ~/bin
 PATH=~/bin:$PATH
 ```
 
-Download the Repo tool and ensure that it is executable:
+Download the [Repo tool](https://gerrit.googlesource.com/git-repo) and ensure
+that it is executable:
 
 ```
 curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
@@ -103,7 +104,7 @@ which happens to be the same as
 
 ```
 make all -j
-````
+```
 
 ### Build library
 
@@ -136,6 +137,10 @@ make testall
 
 # Making changes
 
+The [Android Developing site](https://source.android.com/source/developing.html)
+has a lot of good tips for working with git and repo in general.  The tips below
+are meant as a quick cheat sheet rather than diving deep into relevant topics.
+
 ### Configure git
 Make sure to have correct user in local or global config e.g.:
 
@@ -164,4 +169,4 @@ repo upload .
 
 ### Request code review
 
-Go to the url from the output of "repo upload" and add reviewers.
+Go to the url from the output of `repo upload` and add reviewers.
