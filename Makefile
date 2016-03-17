@@ -16,6 +16,8 @@ INCLUDES := \
 	-Iinclude \
 	-Ithird_party/chromium \
 	-Ithird_party/include \
+	-Ithird_party/googletest/googletest/include \
+	-Ithird_party/googletest/googlemock/include \
 	-Ithird_party/libuweave \
 	-Ithird_party/modp_b64/modp_b64
 
@@ -90,7 +92,10 @@ out/$(BUILD_MODE)/libweave_common.a : $(weave_obj_files) $(third_party_chromium_
 	rm -f $@
 	$(AR) crsT $@ $^
 
-all : out/$(BUILD_MODE)/libweave.so all-examples out/$(BUILD_MODE)/libweave_exports_testrunner out/$(BUILD_MODE)/libweave_testrunner
+all-libs : out/$(BUILD_MODE)/libweave.so
+all-tests : out/$(BUILD_MODE)/libweave_exports_testrunner out/$(BUILD_MODE)/libweave_testrunner
+
+all : all-libs all-examples all-tests
 
 clean :
 	rm -rf out

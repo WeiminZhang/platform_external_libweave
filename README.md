@@ -78,8 +78,8 @@ sudo apt-get install \
 ### For tests
 
   - cmake
-  - gtest (included; see third_party/get_gtest.sh)
-  - gmock (included; see third_party/get_gtest.sh)
+  - gtest (included; see third_party/googletest/googletest/)
+  - gmock (included; see third_party/googletest/googlemock/)
 
 ### For examples
 
