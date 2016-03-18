@@ -15,7 +15,6 @@ INCLUDES := \
 	-I. \
 	-Iinclude \
 	-Ithird_party/chromium \
-	-Ithird_party/include \
 	-Ithird_party/googletest/googletest/include \
 	-Ithird_party/googletest/googlemock/include \
 	-Ithird_party/libuweave \

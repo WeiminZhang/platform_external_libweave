@@ -10,9 +10,15 @@ examples_provider_obj_files := $(EXAMPLES_PROVIDER_SRC_FILES:%.cc=out/$(BUILD_MO
 USE_INTERNAL_LIBEVHTP ?= 1
 
 ifeq (1, $(USE_INTERNAL_LIBEVHTP))
-$(examples_provider_obj_files) : third_party/include/evhtp.h
+LIBEVHTP_INCLUDES = -Ithird_party/libevhtp -I$(dir $(third_party_libevhtp_header))
+LIBEVHTP_HEADERS = $(third_party_libevhtp_header)
+else
+LIBEVHTP_INCLUDES =
+LIBEVHTP_HEADERS =
 endif
 
+$(examples_provider_obj_files) : $(LIBEVHTP_HEADERS)
+$(examples_provider_obj_files) : INCLUDES += $(LIBEVHTP_INCLUDES)
 $(examples_provider_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
@@ -31,17 +37,14 @@ EXAMPLES_DAEMON_SRC_FILES := \
 
 examples_daemon_obj_files := $(EXAMPLES_DAEMON_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-ifeq (1, $(USE_INTERNAL_LIBEVHTP))
-$(examples_daemon_obj_files) : third_party/include/evhtp.h
-endif
-
+$(examples_daemon_obj_files) : $(LIBEVHTP_HEADERS)
+$(examples_daemon_obj_files) : INCLUDES += $(LIBEVHTP_INCLUDES)
 $(examples_daemon_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
 daemon_common_flags := \
 	-Wl,-rpath=out/$(BUILD_MODE)/ \
-	-Lthird_party/lib \
 	-levent \
 	-levent_openssl \
 	-lpthread \
@@ -55,7 +58,7 @@ daemon_common_flags := \
 daemon_deps := out/$(BUILD_MODE)/examples_provider.a out/$(BUILD_MODE)/libweave.so
 
 ifeq (1, $(USE_INTERNAL_LIBEVHTP))
-daemon_deps += third_party/lib/libevhtp.a
+daemon_deps += $(third_party_libevhtp_lib)
 else
 daemon_common_flags += -levhtp
 endif

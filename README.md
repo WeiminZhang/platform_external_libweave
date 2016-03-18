@@ -88,7 +88,7 @@ sudo apt-get install \
   - hostapd
   - libavahi-client-dev
   - libcurl4-openssl-dev
-  - libevhtp (included; see third_party/get_libevhtp.sh)
+  - libevhtp (included; see third_party/libevhtp/)
   - libevent-dev
 
 

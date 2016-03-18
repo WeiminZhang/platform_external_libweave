@@ -79,15 +79,18 @@ clean-gtest :
 		$(third_party_gtest_all) $(third_party_gmock_all)
 
 ###
-# libevhtp (third_party, downloaded on build)
+# libevhtp (third_party)
 
-third_party/lib/libevhtp.a : third_party/include/evhtp.h
-third_party/include/evhtp.h :
-	@echo Downloading and building libevhtp...
-	third_party/get_libevhtp.sh
-	@echo Finished downloading and building libevhtp.
+third_party_libevhtp = out/$(BUILD_MODE)/third_party/libevhtp
+third_party_libevhtp_lib = $(third_party_libevhtp)/libevhtp.a
+third_party_libevhtp_header = $(third_party_libevhtp)/evhtp-config.h
+
+$(third_party_libevhtp_header) :
+	mkdir -p $(dir $@)
+	cd $(dir $@) && cmake -D EVHTP_DISABLE_REGEX:BOOL=ON $(PWD)/third_party/libevhtp
+
+$(third_party_libevhtp_lib) : $(third_party_libevhtp_header)
+	$(MAKE) -C $(third_party_libevhtp)
 
 clean-libevhtp :
-	rm -rf third_party/include/evhtp.h third_party/include/evhtp-config.h third_party/include/evthr.h third_party/include/htparse.h
-	rm -rf third_party/lib/libevhtp.a
-	rm -rf third_party/libevhtp
+	rm -rf $(third_party_libevhtp)

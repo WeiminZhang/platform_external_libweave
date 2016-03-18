@@ -37,7 +37,7 @@ out/$(BUILD_MODE)/libweave_testrunner : \
 	out/$(BUILD_MODE)/libweave-test.a \
 	$(third_party_gtest_lib) \
 	$(third_party_gmock_lib)
-	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lpthread -lrt -Lthird_party/lib
+	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lpthread -lrt
 
 test : out/$(BUILD_MODE)/libweave_testrunner
 	$(TEST_ENV) $< $(TEST_FLAGS)
@@ -58,7 +58,7 @@ out/$(BUILD_MODE)/libweave_exports_testrunner : \
 	out/$(BUILD_MODE)/src/test/weave_testrunner.o \
 	$(third_party_gtest_lib) \
 	$(third_party_gmock_lib)
-	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lpthread -lrt -Lthird_party/lib -Wl,-rpath=out/$(BUILD_MODE)/
+	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lpthread -lrt -Wl,-rpath=out/$(BUILD_MODE)/
 
 export-test : out/$(BUILD_MODE)/libweave_exports_testrunner
 	$(TEST_ENV) $< $(TEST_FLAGS)
