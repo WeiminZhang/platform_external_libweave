@@ -1,124 +1,93 @@
-# Overview
+# libweave daemon examples
 
-The wrapper implements OS dependent services for libweave
+This directory contains examples implementation of `libweave` device daemons.
 
-# Building
+## Build
 
-### Build daemon examples
-
-The example binaries land in the out/Debug/ directory build all of them at once:
+- build all examples
 
 ```
 make all-examples
 ```
 
-...or one at a time.
+- build only the light daemon
 
 ```
 make out/Debug/weave_daemon_light
 ```
 
-# Prepare Host OS
+## Pre-requisites
 
-### Enable user-service-publishing in avahi daemon
-Set disable-user-service-publishing=no in /etc/avahi/avahi-daemon.conf
+- enable user-service-publishing in avahi daemon
 
-#### restart avahi
+set `disable-user-service-publishing=no` in `/etc/avahi/avahi-daemon.conf`
+
+- restart avahi daemon
+
 ```
 sudo service avahi-daemon restart
 ```
 
-# Control device with the cloud
+## Provisioning
 
-### Generate registration ticket
-- Go to [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
-- "Step 1": Paste https://www.googleapis.com/auth/clouddevices and click to "Authorize APIs"
-- "Step 2": Click "Exchange authorization code for tokens"
-- "Step 3": Fill the form:
-    * HTTP Method: POST
-    * Request URI: https://www.googleapis.com/weave/v1/registrationTickets
-    * Enter request body: ```{"userEmail": "me"}```
-    * Click "Send the request", a ticket id will be returned in
-
-```
-            {
-              "userEmail": "user@google.com",
-              "kind": "weave#registrationTicket",
-              "expirationTimeMs": "1443204934855",
-              "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
-              "creationTimeMs": "1443204694855",
-              "id": "93019287-6b26-04a0-22ee-d55ad23a4226"
-            }
-```
-- Note: the ticket "id" is not used within 240 sec, it will be expired.
-
-
-### Register device to cloud
-
-- Copy the ticket "id" generated above: ```93019287-6b26-04a0-22ee-d55ad23a4226```
-- Go to terminal, register and start the daemon with
+### Generate registration tickets
+- go to the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
+  - `Step 1`: enter the Weave API scope `https://www.googleapis.com/auth/weave.app` and click to `Authorize APIs`
+  - `Step 2`: click `Exchange authorization code for tokens`
+  - `Step 3`:
+    - set `HTTP Method`: `POST`
+    - set `Request URI`: `https://www.googleapis.com/weave/v1/registrationTickets`
+    - click `Enter request body`: `{"userEmail": "me"}`
+    - click `Send the request`
+  - The `Response` contains a new `registrationTicket` resource.
 
 ```
-        sudo out/Debug/weave_daemon_sample --registration_ticket=93019287-6b26-04a0-22ee-d55ad23a4226
+{
+  "userEmail": "user@google.com",
+  "kind": "weave#registrationTicket",
+  "expirationTimeMs": "1443204934855",
+  "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
+  "creationTimeMs": "1443204694855",
+   "id": "93019287-6b26-04a0-22ee-d55ad23a4226"
+}
 ```
 
-- See something like:
+- Note: the ticket expires after a few minutes
+
+### Provision the device
+
+- start the daemon with the `registrationTicket` id.
 
 ```
-        Publishing service
-        Saving settings to /var/lib/weave/weave_settings_[XXXXX]_config.json
+sudo out/Debug/weave_daemon_sample --registration_ticket=93019287-6b26-04a0-22ee-d55ad23a4226
 ```
 
-- Note: in second and future runs, --registration_ticket options is not necessary anymore
-- Get your device id with
+- the daemon outputs the path to its configuration file and its deviceId
 
 ```
-        sudo grep "cloud_id" /var/lib/weave/weave_settings_[XXXXX]_config.json
+Saving settings to /var/lib/weave/weave_settings_XXXXX_config.json
+Device registered: 0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
 ```
 
-- See a field called cloud_id like:
+- the device id matches the `cloud_id` in the configuration
 
 ```
-        ...
-        "cloud_id": 0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
-        ...
+$ sudo grep "cloud_id" /var/lib/weave/weave_settings_[XXXXX]_config.json
+  "cloud_id": 0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
 ```
 
-- Use this cloud_id for future communication with your device as its deviceId.
-It does not expire.
-- Verify device is up with Weave Device Managers on
-[Android](https://play.google.com/apps/testing/com.google.android.apps.weave.management),
-[Chrome](https://chrome.google.com/webstore/detail/weave-device-manager/pcdgflbjckpjmlofgopidgdfonmnodfm)
-or [Weave Developpers Console](https://weave.google.com/console/), where you
-see this id listed right below the device name in device details section.
+- verify that that the device is online in the
+  [Weave Developers Console](https://weave.google.com/console/),
+  the [Weave Android app](https://play.google.com/apps/testing/com.google.android.apps.weave.management)
+  or
+  the [Weave Chrome app](https://chrome.google.com/webstore/detail/weave-device-manager/pcdgflbjckpjmlofgopidgdfonmnodfm).
 
-### Send Command to the Daemon
+### Send Commands
 
-- Go to [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
-- "Step 1": Paste https://www.googleapis.com/auth/clouddevices and click to "Authorize APIs"
-- "Step 2": Click "Exchange authorization code for tokens"
-- "Step 3": Fill the form:
-    * HTTP Method: POST
-    * Request URI: https://www.googleapis.com/weave/v1/commands
-    * Enter request body:
-
-```
-        {
-          "deviceId": "0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d",
-          "name": "_sample.hello",
-          "component": "sample",
-          "parameters": { "name": "cloud user" }
-        }
-
-```
-
-- "Send the request", you command will be "queued" as its "state"
-- Verify the command execution observing daemon console logs
-- Verify the command usign [Weave Developpers Console](https://weave.google.com/console/)
-- Verify the command history with [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
-- "Step 1": Paste https://www.googleapis.com/auth/clouddevices and click to "Authorize APIs"
-- "Step 2": Click "Exchange authorization code for tokens"
-- "Step 3": Fill the form:
-    * HTTP Method: GET
-    * Request URI: https://www.googleapis.com/weave/v1/commands?deviceId=0f8a5ff5-1ef0-ec39-f9d8-66d1caeb9e3d
-    * Click "Send the request", you get all of the commands executed on your device.
+- go to the [Weave Developers Console](https://weave.google.com/console/),
+- click `Your devices`
+- select your device to show the `Device details` page.
+- in the `Available commands` click `_sample.hello`
+- set command parameters
+- click `RUN COMMAND`
+- verify the command is handled correctly by looking at the daemon logs.
