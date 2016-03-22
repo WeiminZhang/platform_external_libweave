@@ -77,7 +77,7 @@ DEFS_TEST := \
 out/$(BUILD_MODE)/libweave.so : out/$(BUILD_MODE)/libweave_common.a
 	$(CXX) -shared -Wl,-soname=libweave.so -o $@ -Wl,--whole-archive $^ -Wl,--no-whole-archive -lcrypto -lexpat -lpthread -lrt
 
-include file_lists.mk third_party/third_party.mk examples/examples.mk tests.mk
+include cross.mk file_lists.mk third_party/third_party.mk examples/examples.mk tests.mk
 
 ###
 # src/

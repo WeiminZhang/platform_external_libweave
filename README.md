@@ -120,6 +120,24 @@ make all-examples
 
 See [the examples README](/examples/daemon/README.md) for details.
 
+### Cross-compiling
+
+The build supports transparently downloading & using a few cross-compilers.
+Just add `cross-<arch>` to the command line in addition to the target you
+want to actually build.
+
+This will cross-compile for an armv7 (hard float) target:
+
+```
+make cross-arm all-libs
+```
+
+This will cross-compile for a mips (little endian) target:
+
+```
+make cross-mipsel all-libs
+```
+
 # Testing
 
 ### Run tests
@@ -133,6 +151,16 @@ or
 
 ```
 make testall
+```
+
+### Cross-testing
+
+The build supports using qemu to run non-native tests.
+
+This will run armv7 tests through qemu:
+
+```
+make cross-arm testall
 ```
 
 # Making changes

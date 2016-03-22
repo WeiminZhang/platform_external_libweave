@@ -12,6 +12,7 @@ TEST_ENV ?=
 ifeq (1, $(CLANG))
   TEST_ENV += ASAN_SYMBOLIZER_PATH=$(shell which llvm-symbolizer-3.6)
 endif
+TEST_ENV += $(QEMU)
 
 weave_test_obj_files := $(WEAVE_TEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 

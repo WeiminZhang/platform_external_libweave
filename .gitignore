@@ -1,5 +1,6 @@
 *~
 /out/
+/third_party/cross
 /third_party/include
 /third_party/lib
 /third_party/libevhtp
