@@ -64,6 +64,7 @@ export-test : out/$(BUILD_MODE)/libweave_exports_testrunner
 	$(TEST_ENV) $< $(TEST_FLAGS)
 
 testall : test export-test
+check : testall
 
 ###
 # coverage
@@ -81,5 +82,4 @@ run_coverage: test
 
 coverage: run_coverage
 
-.PHONY : coverage run_coverage test export-test testall
-
+.PHONY : check coverage run_coverage test export-test testall
