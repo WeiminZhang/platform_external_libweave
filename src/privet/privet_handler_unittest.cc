@@ -41,8 +41,7 @@ void LoadTestJson(const std::string& test_json,
   std::string message;
   std::unique_ptr<base::Value> value(
       base::JSONReader::ReadAndReturnError(test_json, base::JSON_PARSE_RFC,
-                                           &error, &message)
-          .release());
+                                           &error, &message));
   EXPECT_TRUE(value.get()) << "\nError: " << message << "\n" << test_json;
   base::DictionaryValue* dictionary_ptr = nullptr;
   if (value->GetAsDictionary(&dictionary_ptr))
@@ -75,7 +74,7 @@ bool IsEqualError(const CodeWithReason& expected,
 std::unique_ptr<base::DictionaryValue> StripDebugErrorDetails(
     const std::string& path_to_error_object,
     const base::DictionaryValue& value) {
-  std::unique_ptr<base::DictionaryValue> result{value.DeepCopy()};
+  auto result = value.CreateDeepCopy();
   base::DictionaryValue* error_dict = nullptr;
   EXPECT_TRUE(result->GetDictionary(path_to_error_object, &error_dict));
   scoped_ptr<base::Value> dummy;

@@ -263,8 +263,7 @@ class MockCloudDelegate : public CloudDelegate {
  private:
   std::unique_ptr<base::DictionaryValue> GetComponentsForUser(
       const UserInfo& user_info) const override {
-    return std::unique_ptr<base::DictionaryValue>{
-        MockGetComponentsForUser(user_info).DeepCopy()};
+    return MockGetComponentsForUser(user_info).CreateDeepCopy();
   }
 };
 

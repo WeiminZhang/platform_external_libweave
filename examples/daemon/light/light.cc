@@ -288,7 +288,7 @@ class LightHandler {
     std::unique_ptr<base::DictionaryValue> colorXy(new base::DictionaryValue());
     colorXy->SetDouble("colorX", color_X_);
     colorXy->SetDouble("colorY", color_Y_);
-    state.Set("colorXy.colorSetting", colorXy.release());
+    state.Set("colorXy.colorSetting", std::move(colorXy));
     device_->SetStateProperties(kComponent, state, nullptr);
   }
 

@@ -177,9 +177,9 @@ std::unique_ptr<base::DictionaryValue> ErrorToJson(const Error& error) {
                                        it->GetLocation().file_name.c_str(),
                                        it->GetLocation().line_number, nullptr};
     inner->SetString(kErrorDebugInfoKey, location.ToString());
-    errors->Append(inner.release());
+    errors->Append(std::move(inner));
   }
-  output->Set(kErrorDebugInfoKey, errors.release());
+  output->Set(kErrorDebugInfoKey, std::move(errors));
   return output;
 }
 
@@ -190,7 +190,7 @@ void SetStateProperties(const T& state, base::DictionaryValue* parent) {
     return;
   }
   parent->SetString(kStatusKey, kStatusErrorValue);
-  parent->Set(kErrorKey, ErrorToJson(*state.error()).release());
+  parent->Set(kErrorKey, ErrorToJson(*state.error()));
 }
 
 void ReturnError(const Error& error,
@@ -203,7 +203,7 @@ void ReturnError(const Error& error,
     }
   }
   std::unique_ptr<base::DictionaryValue> output{new base::DictionaryValue};
-  output->Set(kErrorKey, ErrorToJson(error).release());
+  output->Set(kErrorKey, ErrorToJson(error));
   callback.Run(code, *output);
 }
 
@@ -260,17 +260,17 @@ std::unique_ptr<base::DictionaryValue> CreateInfoAuthSection(
   std::unique_ptr<base::ListValue> pairing_types(new base::ListValue());
   for (PairingType type : security.GetPairingTypes())
     pairing_types->AppendString(EnumToString(type));
-  auth->Set(kPairingKey, pairing_types.release());
+  auth->Set(kPairingKey, std::move(pairing_types));
 
   std::unique_ptr<base::ListValue> auth_types(new base::ListValue());
   for (AuthType type : security.GetAuthTypes())
     auth_types->AppendString(EnumToString(type));
-  auth->Set(kAuthModeKey, auth_types.release());
+  auth->Set(kAuthModeKey, std::move(auth_types));
 
   std::unique_ptr<base::ListValue> crypto_types(new base::ListValue());
   for (CryptoType type : security.GetCryptoTypes())
     crypto_types->AppendString(EnumToString(type));
-  auth->Set(kCryptoKey, crypto_types.release());
+  auth->Set(kCryptoKey, std::move(crypto_types));
 
   return auth;
 }
@@ -282,7 +282,7 @@ std::unique_ptr<base::DictionaryValue> CreateWifiSection(
   std::unique_ptr<base::ListValue> capabilities(new base::ListValue());
   for (WifiType type : wifi.GetTypes())
     capabilities->AppendString(EnumToString(type));
-  result->Set(kInfoWifiCapabilitiesKey, capabilities.release());
+  result->Set(kInfoWifiCapabilitiesKey, std::move(capabilities));
 
   result->SetString(kInfoWifiSsidKey, wifi.GetCurrentlyConnectedSsid());
 
@@ -340,9 +340,9 @@ std::unique_ptr<base::DictionaryValue> CloneComponent(
         const base::DictionaryValue* sub_components = nullptr;
         CHECK(it.value().GetAsDictionary(&sub_components));
         clone->SetWithoutPathExpansion(
-            it.key(), CloneComponentTree(*sub_components, filter).release());
+            it.key(), CloneComponentTree(*sub_components, filter));
       } else {
-        clone->SetWithoutPathExpansion(it.key(), it.value().DeepCopy());
+        clone->SetWithoutPathExpansion(it.key(), it.value().CreateDeepCopy());
       }
     }
   }
@@ -350,8 +350,8 @@ std::unique_ptr<base::DictionaryValue> CloneComponent(
 }
 
 // Clones a dictionary containing a bunch of component JSON objects in a manner
-// similar to that of DeepCopy(). Calls CloneComponent() on each instance of
-// the component sub-object.
+// similar to that of CreateDeepCopy(). Calls CloneComponent() on each instance
+// of the component sub-object.
 std::unique_ptr<base::DictionaryValue> CloneComponentTree(
     const base::DictionaryValue& parent,
     const std::set<std::string>& filter) {
@@ -361,7 +361,7 @@ std::unique_ptr<base::DictionaryValue> CloneComponentTree(
     const base::DictionaryValue* component = nullptr;
     CHECK(it.value().GetAsDictionary(&component));
     clone->SetWithoutPathExpansion(
-        it.key(), CloneComponent(*component, filter).release());
+        it.key(), CloneComponent(*component, filter));
   }
   return clone;
 }
@@ -565,23 +565,21 @@ void PrivetHandler::HandleInfo(const base::DictionaryValue&,
     output.SetString(kLocationKey, location);
 
   output.SetString(kInfoModelIdKey, model_id);
-  output.Set(kInfoModelManifestKey, CreateManifestSection(*cloud_).release());
+  output.Set(kInfoModelManifestKey, CreateManifestSection(*cloud_));
   output.Set(
       kInfoServicesKey,
-      ToValue(std::vector<std::string>{GetDeviceUiKind(cloud_->GetModelId())})
-          .release());
+      ToValue(std::vector<std::string>{GetDeviceUiKind(cloud_->GetModelId())}));
 
   output.Set(
       kInfoAuthenticationKey,
-      CreateInfoAuthSection(*security_, GetAnonymousMaxScope(*cloud_, wifi_))
-          .release());
+      CreateInfoAuthSection(*security_, GetAnonymousMaxScope(*cloud_, wifi_)));
 
-  output.Set(kInfoEndpointsKey, CreateEndpointsSection(*device_).release());
+  output.Set(kInfoEndpointsKey, CreateEndpointsSection(*device_));
 
   if (wifi_)
-    output.Set(kWifiKey, CreateWifiSection(*wifi_).release());
+    output.Set(kWifiKey, CreateWifiSection(*wifi_));
 
-  output.Set(kGcdKey, CreateGcdSection(*cloud_).release());
+  output.Set(kGcdKey, CreateGcdSection(*cloud_));
 
   output.SetDouble(kInfoTimeKey, clock_->Now().ToJsTime());
   output.SetString(kInfoSessionIdKey, security_->CreateSessionId());
@@ -882,7 +880,7 @@ void PrivetHandler::HandleTraits(const base::DictionaryValue& input,
                                  const UserInfo& user_info,
                                  const RequestCallback& callback) {
   base::DictionaryValue output;
-  output.Set(kTraitsKey, cloud_->GetTraits().DeepCopy());
+  output.Set(kTraitsKey, cloud_->GetTraits().CreateDeepCopy());
   output.SetString(kFingerprintKey, std::to_string(traits_fingerprint_));
 
   callback.Run(http::kOk, output);
@@ -913,13 +911,13 @@ void PrivetHandler::HandleComponents(const base::DictionaryValue& input,
     components.reset(new base::DictionaryValue);
     // Get the last element of the path and use it as a dictionary key here.
     auto parts = Split(path, ".", true, false);
-    components->Set(parts.back(), CloneComponent(*component, filter).release());
+    components->Set(parts.back(), CloneComponent(*component, filter));
   } else {
     components =
         CloneComponentTree(*cloud_->GetComponentsForUser(user_info), filter);
   }
   base::DictionaryValue output;
-  output.Set(kComponentsKey, components.release());
+  output.Set(kComponentsKey, std::move(components));
   output.SetString(kFingerprintKey, std::to_string(components_fingerprint_));
 
   callback.Run(http::kOk, output);

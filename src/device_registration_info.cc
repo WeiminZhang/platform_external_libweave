@@ -212,17 +212,13 @@ std::unique_ptr<base::DictionaryValue> ParseJsonResponse(
                        error_message.c_str(), json.c_str());
     return std::unique_ptr<base::DictionaryValue>();
   }
-  base::DictionaryValue* dict_value = nullptr;
-  if (!value->GetAsDictionary(&dict_value)) {
+  auto dict_value = base::DictionaryValue::From(std::move(value));
+  if (!dict_value) {
     Error::AddToPrintf(error, FROM_HERE, errors::json::kObjectExpected,
                        "Response is not a valid JSON object: '%s'",
                        json.c_str());
-    return std::unique_ptr<base::DictionaryValue>();
-  } else {
-    // |value| is now owned by |dict_value|, so release the scoped_ptr now.
-    base::IgnoreResult(value.release());
   }
-  return std::unique_ptr<base::DictionaryValue>(dict_value);
+  return dict_value;
 }
 
 bool IsSuccessful(const HttpClient::Response& response) {
@@ -500,9 +496,10 @@ DeviceRegistrationInfo::BuildDeviceResource() const {
   } else {
     channel->SetString("supportedType", "pull");
   }
-  resource->Set("channel", channel.release());
-  resource->Set("traits", component_manager_->GetTraits().DeepCopy());
-  resource->Set("components", component_manager_->GetComponents().DeepCopy());
+  resource->Set("channel", std::move(channel));
+  resource->Set("traits", component_manager_->GetTraits().CreateDeepCopy());
+  resource->Set("components",
+                component_manager_->GetComponents().CreateDeepCopy());
 
   return resource;
 }
@@ -575,7 +572,7 @@ void DeviceRegistrationInfo::RegisterDevice(RegistrationData registration_data,
   base::DictionaryValue req_json;
   req_json.SetString("id", registration_data.ticket_id);
   req_json.SetString("oauthClientId", registration_data.client_id);
-  req_json.Set("deviceDraft", device_draft.release());
+  req_json.Set("deviceDraft", std::move(device_draft));
 
   auto url = BuildUrl(registration_data.service_url,
                       "registrationTickets/" + registration_data.ticket_id,
@@ -904,7 +901,7 @@ void DeviceRegistrationInfo::NotifyCommandAborted(const std::string& command_id,
                           EnumToString(Command::State::kAborted));
   if (error) {
     command_patch.Set(commands::attributes::kCommand_Error,
-                      ErrorInfoToJson(*error).release());
+                      ErrorInfoToJson(*error));
   }
   UpdateCommand(command_id, command_patch, base::Bind(&IgnoreCloudError));
 }
@@ -976,7 +973,7 @@ void DeviceRegistrationInfo::SendAuthInfo() {
   auth->SetString("clientToken", token_base64);
   auth->SetString("certFingerprint", fingerprint);
   std::unique_ptr<base::DictionaryValue> root{new base::DictionaryValue};
-  root->Set("localAuthInfo", auth.release());
+  root->Set("localAuthInfo", std::move(auth));
 
   std::string url = GetDeviceUrl("upsertLocalAuthInfo", {});
   DoCloudRequest(HttpClient::Method::kPost, url, root.get(),
@@ -1141,7 +1138,7 @@ void DeviceRegistrationInfo::ProcessInitialCommandList(
         continue;
       }
 
-      std::unique_ptr<base::DictionaryValue> cmd_copy{command_dict->DeepCopy()};
+      auto cmd_copy = command_dict->CreateDeepCopy();
       cmd_copy->SetString("state", "aborted");
       // TODO(wiley) We could consider handling this error case more gracefully.
       DoCloudRequest(HttpClient::Method::kPut,
@@ -1213,14 +1210,14 @@ void DeviceRegistrationInfo::PublishStateUpdates() {
     patch->SetString("timeMs",
                      std::to_string(state_change.timestamp.ToJavaTime()));
     patch->SetString("component", state_change.component);
-    patch->Set("patch", state_change.changed_properties.release());
-    patches->Append(patch.release());
+    patch->Set("patch", std::move(state_change.changed_properties));
+    patches->Append(std::move(patch));
   }
 
   base::DictionaryValue body;
   body.SetString("requestTimeMs",
                  std::to_string(base::Time::Now().ToJavaTime()));
-  body.Set("patches", patches.release());
+  body.Set("patches", std::move(patches));
 
   device_state_update_pending_ = true;
   DoCloudRequest(HttpClient::Method::kPost, GetDeviceUrl("patchState"), &body,

@@ -78,7 +78,7 @@ class AccessApiHandlerTest : public ::testing::Test {
     const base::DictionaryValue* state = nullptr;
     EXPECT_TRUE(
         component->GetDictionary("state._accessRevocationList", &state));
-    return std::unique_ptr<base::DictionaryValue>{state->DeepCopy()};
+    return state->CreateDeepCopy();
   }
 
   StrictMock<provider::test::FakeTaskRunner> task_runner_;

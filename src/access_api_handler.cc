@@ -176,11 +176,11 @@ void AccessApiHandler::List(const std::weak_ptr<Command>& cmd) {
     std::unique_ptr<base::DictionaryValue> entry{new base::DictionaryValue};
     entry->SetString(kUserId, Base64Encode(e.user_id));
     entry->SetString(kApplicationId, Base64Encode(e.app_id));
-    entries->Append(entry.release());
+    entries->Append(std::move(entry));
   }
 
   base::DictionaryValue result;
-  result.Set(kRevocationList, entries.release());
+  result.Set(kRevocationList, std::move(entries));
 
   command->Complete(result, nullptr);
 }

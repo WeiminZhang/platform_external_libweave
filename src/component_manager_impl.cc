@@ -120,8 +120,8 @@ bool ComponentManagerImpl::AddComponent(const std::string& path,
   std::unique_ptr<base::DictionaryValue> dict{new base::DictionaryValue};
   std::unique_ptr<base::ListValue> traits_list{new base::ListValue};
   traits_list->AppendStrings(traits);
-  dict->Set("traits", traits_list.release());
-  root->SetWithoutPathExpansion(name, dict.release());
+  dict->Set("traits", std::move(traits_list));
+  root->SetWithoutPathExpansion(name, std::move(dict));
   for (const auto& cb : on_componet_tree_changed_)
     cb.Run();
   return true;
@@ -146,8 +146,8 @@ bool ComponentManagerImpl::AddComponentArrayItem(
   std::unique_ptr<base::DictionaryValue> dict{new base::DictionaryValue};
   std::unique_ptr<base::ListValue> traits_list{new base::ListValue};
   traits_list->AppendStrings(traits);
-  dict->Set("traits", traits_list.release());
-  array_value->Append(dict.release());
+  dict->Set("traits", std::move(traits_list));
+  array_value->Append(std::move(dict));
   for (const auto& cb : on_componet_tree_changed_)
     cb.Run();
   return true;
@@ -233,7 +233,7 @@ bool ComponentManagerImpl::LoadTraits(const base::DictionaryValue& dict,
         break;
       }
     } else {
-      traits_.Set(it.key(), it.value().DeepCopy());
+      traits_.Set(it.key(), it.value().CreateDeepCopy());
       modified = true;
     }
   }
@@ -458,7 +458,7 @@ void ComponentManagerImpl::AddStateChangedCallback(
 
 std::unique_ptr<base::DictionaryValue>
 ComponentManagerImpl::GetComponentsForUserRole(UserRole role) const {
-  std::unique_ptr<base::DictionaryValue> components{components_.DeepCopy()};
+  auto components = components_.CreateDeepCopy();
   // Build a list of all state properties that are inaccessible to the given
   // user. These properties will be removed from the components collection
   // returned from this method.
@@ -550,7 +550,7 @@ bool ComponentManagerImpl::SetStateProperty(const std::string& component_path,
         error, FROM_HERE, errors::commands::kPropertyMissing,
         "State property name not specified in '%s'", name.c_str());
   }
-  dict.Set(name, value.DeepCopy());
+  dict.Set(name, value.CreateDeepCopy());
   return SetStateProperties(component_path, dict, error);
 }
 
@@ -587,7 +587,7 @@ ComponentManager::Token ComponentManagerImpl::AddServerStateUpdatedCallback(
     const base::Callback<void(UpdateID)>& callback) {
   if (state_change_queues_.empty())
     callback.Run(GetLastStateChangeId());
-  return Token{on_server_state_updated_.Add(callback).release()};
+  return Token{on_server_state_updated_.Add(callback)};
 }
 
 std::string ComponentManagerImpl::FindComponentWithTrait(

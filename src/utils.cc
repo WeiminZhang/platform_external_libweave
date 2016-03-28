@@ -52,17 +52,12 @@ std::unique_ptr<base::DictionaryValue> LoadJsonDict(
                        json_string.size(), error_message.c_str());
     return result;
   }
-  base::DictionaryValue* dict_value = nullptr;
-  if (!value->GetAsDictionary(&dict_value)) {
+  result = base::DictionaryValue::From(std::move(value));
+  if (!result) {
     Error::AddToPrintf(error, FROM_HERE, errors::json::kObjectExpected,
                        "JSON string '%s' is not a JSON object",
                        LimitString(json_string, kMaxStrLen).c_str());
-    return result;
-  } else {
-    // |value| is now owned by |dict_value|.
-    base::IgnoreResult(value.release());
   }
-  result.reset(dict_value);
   return result;
 }
 

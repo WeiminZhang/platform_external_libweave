@@ -220,14 +220,12 @@ class CloudDelegateImpl : public CloudDelegate {
     base::ListValue list_value;
 
     for (const auto& it : command_owners_) {
-      if (CanAccessCommand(it.second, user_info, nullptr)) {
-        list_value.Append(
-            component_manager_->FindCommand(it.first)->ToJson().release());
-      }
+      if (CanAccessCommand(it.second, user_info, nullptr))
+        list_value.Append(component_manager_->FindCommand(it.first)->ToJson());
     }
 
     base::DictionaryValue commands_json;
-    commands_json.Set("commands", list_value.DeepCopy());
+    commands_json.Set("commands", list_value.CreateDeepCopy());
 
     callback.Run(commands_json, nullptr);
   }
