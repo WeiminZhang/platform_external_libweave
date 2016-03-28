@@ -76,7 +76,7 @@ DEFS_TEST := \
 out/$(BUILD_MODE)/libweave.so : out/$(BUILD_MODE)/libweave_common.a
 	$(CXX) -shared -Wl,-soname=libweave.so -o $@ -Wl,--whole-archive $^ -Wl,--no-whole-archive -lcrypto -lexpat -lpthread -lrt
 
-include cross.mk file_lists.mk third_party/third_party.mk examples/examples.mk tests.mk
+include cross.mk file_lists.mk third_party/third_party.mk examples/examples.mk tests.mk tests_schema/tests_schema.mk
 
 ###
 # src/
@@ -94,7 +94,7 @@ out/$(BUILD_MODE)/libweave_common.a : $(weave_obj_files) $(third_party_chromium_
 all-libs : out/$(BUILD_MODE)/libweave.so
 all-tests : out/$(BUILD_MODE)/libweave_exports_testrunner out/$(BUILD_MODE)/libweave_testrunner
 
-all : all-libs all-examples all-tests
+all : all-libs all-examples all-tests all-testdevices
 
 clean :
 	rm -rf out
