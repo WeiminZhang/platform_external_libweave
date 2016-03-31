@@ -29,11 +29,15 @@ chmod a+x ~/bin/repo
 # Checkout code
 
 ```
+mkdir ~/weave
+cd ~/weave
 repo init -u https://weave.googlesource.com/weave/manifest
 repo sync
 ```
 
-# Directory structure
+This checks out libweave and its dependencies into the ~/weave directory.
+
+# libweave Directory structure
 
 | Path                     | Description                        |
 |--------------------------|------------------------------------|
@@ -93,6 +97,8 @@ sudo apt-get install \
 
 
 # Compiling
+
+From the `libweave` directory:
 
 The `make --jobs/-j` flag is encouraged, to speed up build time. For example
 
