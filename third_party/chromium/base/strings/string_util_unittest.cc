@@ -147,4 +147,39 @@ TEST(StringUtilTest, ReplaceChars) {
   }
 }
 
+class WriteIntoTest : public testing::Test {
+ protected:
+  static void WritesCorrectly(size_t num_chars) {
+    std::string buffer;
+    char kOriginal[] = "supercali";
+    strncpy(WriteInto(&buffer, num_chars + 1), kOriginal, num_chars);
+    // Using std::string(buffer.c_str()) instead of |buffer| truncates the
+    // string at the first \0.
+    EXPECT_EQ(std::string(kOriginal,
+                          std::min(num_chars, arraysize(kOriginal) - 1)),
+              std::string(buffer.c_str()));
+    EXPECT_EQ(num_chars, buffer.size());
+  }
+};
+
+TEST_F(WriteIntoTest, WriteInto) {
+  // Validate that WriteInto reserves enough space and
+  // sizes a string correctly.
+  WritesCorrectly(1);
+  WritesCorrectly(2);
+  WritesCorrectly(5000);
+
+  // Validate that WriteInto doesn't modify other strings
+  // when using a Copy-on-Write implementation.
+  const char kLive[] = "live";
+  const char kDead[] = "dead";
+  const std::string live = kLive;
+  std::string dead = live;
+  strncpy(WriteInto(&dead, 5), kDead, 4);
+  EXPECT_EQ(kDead, dead);
+  EXPECT_EQ(4u, dead.size());
+  EXPECT_EQ(kLive, live);
+  EXPECT_EQ(4u, live.size());
+}
+
 }  // namespace base

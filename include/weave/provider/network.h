@@ -14,6 +14,28 @@
 namespace weave {
 namespace provider {
 
+// This interface should be implemented by the user of libweave and
+// provided during device creation in Device::Create(...)
+// libweave will use this interface to create and interact with network
+// sockets, implementing XMPP push notifications channel.
+//
+// There are 2 main parts of this interface. One part is used to check network
+// connection status and signup for notification if connection status changes.
+// Implementation of GetConnectionState() should return current network
+// connection state (enum Network::State).
+// Implementation of AddConnectionChangedCallback() should remember callback
+// and invoke it network connection status changes.
+//
+// Second part of the interface is used to create new secure (SSL) socket and
+// provide functionality to read/write data into sockets.
+// Implementation of OpenSslSocket() should create SSL socket using whatever
+// underlying mechanism is available on the current platform. It should also
+// wrap read / write / disconnect functionality into Stream interface
+// (include/weave/stream.h) and call OpenSslSocketCallback() callback
+// with pointer to the Stream interface implementation.
+// Reading data from the socket will be done through InputStream::Read()
+// function. Writing to socket - through OutputStream::Write().
+
 // Interface with methods to detect network connectivity and opening network
 // connections.
 class Network {

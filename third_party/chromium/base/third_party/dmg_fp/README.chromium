@@ -18,3 +18,5 @@ List of changes made to original code:
   - crash fix for running with reduced CPU float precision, see
     float_precision_crash.patch and crbug.com/123157
   - fixed warnings under msvc, see msvc_warnings.patch
+  - fixed -Wchar-subscripts warning in "if (!hexdig['0'])" in dtoa.cc
+  - removed the use of 'register' keyword from g_fmt.cc

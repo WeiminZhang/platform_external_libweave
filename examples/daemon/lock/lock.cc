@@ -38,7 +38,7 @@ const char kTraits[] = R"({
             "enum": [ "locked", "unlocked" ]
           }
         },
-        "errors": ["batteryTooLow", "jammed", "lockingNotSupported"]
+        "errors": [ "jammed", "lockingNotSupported" ]
       }
     },
     "state": {

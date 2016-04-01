@@ -21,7 +21,7 @@ bool StateChangeQueue::NotifyPropertiesUpdated(
   if (stored_changes)
     stored_changes->MergeDictionary(&changed_properties);
   else
-    stored_changes.reset(changed_properties.DeepCopy());
+    stored_changes = changed_properties.CreateDeepCopy();
 
   while (state_changes_.size() > max_queue_size_) {
     // Queue is full.

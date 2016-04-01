@@ -27,6 +27,59 @@ const EnumToStringMap<UserRole>::Map kMap[] = {
     {UserRole::kOwner, "owner"},
     {UserRole::kManager, "manager"},
 };
+
+void RemoveInaccessibleState(const ComponentManagerImpl* manager,
+                             base::DictionaryValue* component,
+                             UserRole role) {
+  std::vector<std::string> state_props_to_remove;
+  base::DictionaryValue* state = nullptr;
+  if (component->GetDictionary("state", &state)) {
+    for (base::DictionaryValue::Iterator it_trait(*state); !it_trait.IsAtEnd();
+         it_trait.Advance()) {
+      const base::DictionaryValue* trait = nullptr;
+      CHECK(it_trait.value().GetAsDictionary(&trait));
+      for (base::DictionaryValue::Iterator it_prop(*trait); !it_prop.IsAtEnd();
+           it_prop.Advance()) {
+        std::string prop_name = base::StringPrintf(
+            "%s.%s", it_trait.key().c_str(), it_prop.key().c_str());
+        UserRole minimal_role;
+        if (manager->GetStateMinimalRole(prop_name, &minimal_role, nullptr) &&
+            minimal_role > role) {
+          state_props_to_remove.push_back(prop_name);
+        }
+      }
+    }
+  }
+  // Now remove any inaccessible properties from the state collection.
+  for (const std::string& path : state_props_to_remove) {
+    // Remove starting from component level in order for "state" to be removed
+    // if no sub-properties remain.
+    CHECK(component->RemovePath(base::StringPrintf("state.%s", path.c_str()),
+                                nullptr));
+  }
+
+  // If this component has any sub-components, filter them too.
+  base::DictionaryValue* sub_components = nullptr;
+  if (component->GetDictionary("components", &sub_components)) {
+    for (base::DictionaryValue::Iterator it_component(*sub_components);
+         !it_component.IsAtEnd(); it_component.Advance()) {
+      base::Value* sub_component = nullptr;
+      CHECK(sub_components->Get(it_component.key(), &sub_component));
+      if (sub_component->GetType() == base::Value::TYPE_LIST) {
+        base::ListValue* component_array = nullptr;
+        CHECK(sub_component->GetAsList(&component_array));
+        for (base::Value* item : *component_array) {
+          CHECK(item->GetAsDictionary(&component));
+          RemoveInaccessibleState(manager, component, role);
+        }
+      } else if (sub_component->GetType() == base::Value::TYPE_DICTIONARY) {
+        CHECK(sub_component->GetAsDictionary(&component));
+        RemoveInaccessibleState(manager, component, role);
+      }
+    }
+  }
+}
+
 }  // anonymous namespace
 
 template <>
@@ -67,8 +120,8 @@ bool ComponentManagerImpl::AddComponent(const std::string& path,
   std::unique_ptr<base::DictionaryValue> dict{new base::DictionaryValue};
   std::unique_ptr<base::ListValue> traits_list{new base::ListValue};
   traits_list->AppendStrings(traits);
-  dict->Set("traits", traits_list.release());
-  root->SetWithoutPathExpansion(name, dict.release());
+  dict->Set("traits", std::move(traits_list));
+  root->SetWithoutPathExpansion(name, std::move(dict));
   for (const auto& cb : on_componet_tree_changed_)
     cb.Run();
   return true;
@@ -93,8 +146,8 @@ bool ComponentManagerImpl::AddComponentArrayItem(
   std::unique_ptr<base::DictionaryValue> dict{new base::DictionaryValue};
   std::unique_ptr<base::ListValue> traits_list{new base::ListValue};
   traits_list->AppendStrings(traits);
-  dict->Set("traits", traits_list.release());
-  array_value->Append(dict.release());
+  dict->Set("traits", std::move(traits_list));
+  array_value->Append(std::move(dict));
   for (const auto& cb : on_componet_tree_changed_)
     cb.Run();
   return true;
@@ -180,7 +233,7 @@ bool ComponentManagerImpl::LoadTraits(const base::DictionaryValue& dict,
         break;
       }
     } else {
-      traits_.Set(it.key(), it.value().DeepCopy());
+      traits_.Set(it.key(), it.value().CreateDeepCopy());
       modified = true;
     }
   }
@@ -230,7 +283,7 @@ std::unique_ptr<CommandInstance> ComponentManagerImpl::ParseCommandInstance(
     return nullptr;
 
   UserRole minimal_role;
-  if (!GetMinimalRole(command_instance->GetName(), &minimal_role, error))
+  if (!GetCommandMinimalRole(command_instance->GetName(), &minimal_role, error))
     return nullptr;
 
   if (role < minimal_role) {
@@ -346,9 +399,24 @@ const base::DictionaryValue* ComponentManagerImpl::FindCommandDefinition(
   return definition;
 }
 
-bool ComponentManagerImpl::GetMinimalRole(const std::string& command_name,
-                                          UserRole* minimal_role,
-                                          ErrorPtr* error) const {
+const base::DictionaryValue* ComponentManagerImpl::FindStateDefinition(
+    const std::string& state_property_name) const {
+  const base::DictionaryValue* definition = nullptr;
+  std::vector<std::string> components =
+      Split(state_property_name, ".", true, false);
+  // Make sure the |state_property_name| came in form of trait_name.state_name.
+  if (components.size() != 2)
+    return definition;
+  std::string key = base::StringPrintf("%s.state.%s", components[0].c_str(),
+                                       components[1].c_str());
+  traits_.GetDictionary(key, &definition);
+  return definition;
+}
+
+bool ComponentManagerImpl::GetCommandMinimalRole(
+    const std::string& command_name,
+    UserRole* minimal_role,
+    ErrorPtr* error) const {
   const base::DictionaryValue* command = FindCommandDefinition(command_name);
   if (!command) {
     return Error::AddToPrintf(
@@ -363,10 +431,45 @@ bool ComponentManagerImpl::GetMinimalRole(const std::string& command_name,
   return true;
 }
 
+bool ComponentManagerImpl::GetStateMinimalRole(
+    const std::string& state_property_name,
+    UserRole* minimal_role,
+    ErrorPtr* error) const {
+  const base::DictionaryValue* state = FindStateDefinition(state_property_name);
+  if (!state) {
+    return Error::AddToPrintf(error, FROM_HERE, errors::commands::kInvalidState,
+                              "State definition for '%s' not found",
+                              state_property_name.c_str());
+  }
+  std::string value;
+  if (state->GetString(kMinimalRole, &value)) {
+    CHECK(StringToEnum(value, minimal_role));
+  } else {
+    *minimal_role = UserRole::kUser;
+  }
+  return true;
+}
+
 void ComponentManagerImpl::AddStateChangedCallback(
     const base::Closure& callback) {
   on_state_changed_.push_back(callback);
   callback.Run();  // Force to read current state.
+}
+
+std::unique_ptr<base::DictionaryValue>
+ComponentManagerImpl::GetComponentsForUserRole(UserRole role) const {
+  auto components = components_.CreateDeepCopy();
+  // Build a list of all state properties that are inaccessible to the given
+  // user. These properties will be removed from the components collection
+  // returned from this method.
+  for (base::DictionaryValue::Iterator it_component(components_);
+       !it_component.IsAtEnd(); it_component.Advance()) {
+    base::DictionaryValue* component = nullptr;
+    CHECK(components->GetDictionary(it_component.key(), &component));
+    RemoveInaccessibleState(this, component, role);
+  }
+
+  return components;
 }
 
 bool ComponentManagerImpl::SetStateProperties(const std::string& component_path,
@@ -447,7 +550,7 @@ bool ComponentManagerImpl::SetStateProperty(const std::string& component_path,
         error, FROM_HERE, errors::commands::kPropertyMissing,
         "State property name not specified in '%s'", name.c_str());
   }
-  dict.Set(name, value.DeepCopy());
+  dict.Set(name, value.CreateDeepCopy());
   return SetStateProperties(component_path, dict, error);
 }
 
@@ -484,7 +587,7 @@ ComponentManager::Token ComponentManagerImpl::AddServerStateUpdatedCallback(
     const base::Callback<void(UpdateID)>& callback) {
   if (state_change_queues_.empty())
     callback.Run(GetLastStateChangeId());
-  return Token{on_server_state_updated_.Add(callback).release()};
+  return Token{on_server_state_updated_.Add(callback)};
 }
 
 std::string ComponentManagerImpl::FindComponentWithTrait(

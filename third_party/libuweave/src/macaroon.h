@@ -8,11 +8,15 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "src/macaroon_caveat.h"
 #include "src/macaroon_context.h"
 
 #define UW_MACAROON_MAC_LEN 16
+
+// Jan 1st 2000 00:00:00 in unix epoch seconds.
+#define J2000_EPOCH_OFFSET 946684800
 
 // Note: If we are looking to make memory savings on MCUs,
 // at the cost of a little extra processing, we can make
@@ -44,8 +48,8 @@ typedef struct {
 
 typedef struct {
   UwMacaroonCaveatScopeType granted_scope;
-  uint32_t expiration_time;
-  bool weave_app_restricted;
+  uint32_t expiration_time;  // In number of seconds since Jan 1st 2000 00:00:00
+  bool app_commands_only;
   const uint8_t* lan_session_id;
   size_t lan_session_id_len;
   UwMacaroonDelegateeInfo delegatees[MAX_NUM_DELEGATEES];
@@ -59,7 +63,10 @@ bool uw_macaroon_create_from_root_key_(UwMacaroon* new_macaroon,
                                        const UwMacaroonCaveat* const caveats[],
                                        size_t num_caveats);
 
-/** Creates a new macaroon with a new caveat. */
+/**
+ * Creates a new macaroon with a new caveat. The buffer must be large enough to
+ * hold the count of caveats in the old_macaroon plus one.
+ */
 bool uw_macaroon_extend_(const UwMacaroon* old_macaroon,
                          UwMacaroon* new_macaroon,
                          const UwMacaroonContext* context,
@@ -96,5 +103,22 @@ bool uw_macaroon_deserialize_(const uint8_t* in,
                               uint8_t* buffer,
                               size_t buffer_size,
                               UwMacaroon* new_macaroon);
+
+/** Converts a j2000 timestamp to a unix timestamp. */
+static inline time_t uw_macaroon_j2000_to_unix_epoch(time_t j2000) {
+  return j2000 + J2000_EPOCH_OFFSET;
+}
+
+/** Converts a unix timestamp to a j2000 timestamp. */
+static inline time_t uw_macaroon_unix_epoch_to_j2000(time_t unix) {
+  return unix - J2000_EPOCH_OFFSET;
+}
+
+/**
+ * Gets the expiration time of the macaroon as the number of seconds since the
+ * unix epoch. A value of 0 means no expiration.
+ */
+time_t uw_macaroon_get_expiration_unix_epoch_time_(
+    UwMacaroonValidationResult* result);
 
 #endif  // LIBUWEAVE_SRC_MACAROON_H_

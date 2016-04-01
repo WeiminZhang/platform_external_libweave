@@ -349,8 +349,7 @@ bool uw_macaroon_caveat_sign_(const uint8_t* key,
   }
 
   UwMacaroonCaveatType caveat_type;
-  if (!uw_macaroon_caveat_get_type_(caveat, &caveat_type) ||
-      !is_valid_caveat_type_(caveat_type)) {
+  if (!uw_macaroon_caveat_get_type_(caveat, &caveat_type)) {
     return false;
   }
 
@@ -407,7 +406,7 @@ bool uw_macaroon_caveat_sign_(const uint8_t* key,
   }
 
   // The length here includes: 1. the header for the whole byte string; 2. the
-  // header for the addtional value part; 3. the additional value part.
+  // header for the additional value part; 3. the additional value part.
   size_t total_length =
       caveat->num_bytes + value_cbor_prefix_len + additional_value_str_len;
   if (!uw_macaroon_encoding_encode_byte_str_len_(
@@ -579,7 +578,7 @@ bool uw_macaroon_caveat_validate_(const UwMacaroonCaveat* caveat,
       return true;
 
     case kUwMacaroonCaveatTypeAppCommandsOnly:
-      result->weave_app_restricted = true;
+      result->app_commands_only = true;
       return true;
 
     case kUwMacaroonCaveatTypeLanSessionID:

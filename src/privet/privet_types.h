@@ -62,6 +62,14 @@ class UserInfo {
   AuthScope scope() const { return scope_; }
   const UserAppId& id() const { return id_; }
 
+  bool operator==(const UserInfo& rhs) const {
+    return scope_ == rhs.scope_ && id_ == rhs.id_;
+  }
+
+  bool operator!=(const UserInfo& rhs) const {
+    return scope_ != rhs.scope_ || id_ != rhs.id_;
+  }
+
  private:
   AuthScope scope_;
   UserAppId id_;

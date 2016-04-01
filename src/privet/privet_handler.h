@@ -11,7 +11,6 @@
 
 #include <base/macros.h>
 #include <base/memory/weak_ptr.h>
-#include <base/scoped_observer.h>
 #include <base/time/default_clock.h>
 
 #include "src/privet/cloud_delegate.h"
@@ -31,7 +30,7 @@ class WifiDelegate;
 
 // Privet V3 HTTP/HTTPS requests handler.
 // API details at https://developers.google.com/cloud-devices/
-class PrivetHandler : public CloudDelegate::Observer {
+class PrivetHandler {
  public:
   // Callback to handle requests asynchronously.
   // |status| is HTTP status code.
@@ -45,11 +44,7 @@ class PrivetHandler : public CloudDelegate::Observer {
                 SecurityDelegate* pairing,
                 WifiDelegate* wifi,
                 base::Clock* clock = nullptr);
-  ~PrivetHandler() override;
-
-  void OnTraitDefsChanged() override;
-  void OnStateChanged() override;
-  void OnComponentTreeChanged() override;
+  ~PrivetHandler();
 
   std::vector<std::string> GetHttpPaths() const;
   std::vector<std::string> GetHttpsPaths() const;
@@ -138,6 +133,10 @@ class PrivetHandler : public CloudDelegate::Observer {
   void ReplyToUpdateRequest(const RequestCallback& callback) const;
   void OnUpdateRequestTimeout(int update_request_id);
 
+  void OnTraitDefsChanged();
+  void OnStateChanged();
+  void OnComponentTreeChanged();
+
   CloudDelegate* cloud_{nullptr};
   DeviceDelegate* device_{nullptr};
   SecurityDelegate* security_{nullptr};
@@ -165,7 +164,6 @@ class PrivetHandler : public CloudDelegate::Observer {
   uint64_t state_fingerprint_{1};
   uint64_t traits_fingerprint_{1};
   uint64_t components_fingerprint_{1};
-  ScopedObserver<CloudDelegate, CloudDelegate::Observer> cloud_observer_{this};
 
   base::WeakPtrFactory<PrivetHandler> weak_ptr_factory_{this};
 

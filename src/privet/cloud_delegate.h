@@ -11,7 +11,6 @@
 
 #include <base/callback.h>
 #include <base/memory/ref_counted.h>
-#include <base/observer_list.h>
 #include <weave/device.h>
 
 #include "src/privet/privet_types.h"
@@ -42,16 +41,6 @@ class CloudDelegate {
   using CommandDoneCallback =
       base::Callback<void(const base::DictionaryValue& commands,
                           ErrorPtr error)>;
-
-  class Observer {
-   public:
-    virtual ~Observer() {}
-
-    virtual void OnDeviceInfoChanged() {}
-    virtual void OnTraitDefsChanged() {}
-    virtual void OnStateChanged() {}
-    virtual void OnComponentTreeChanged() {}
-  };
 
   // Returns the ID of the device.
   virtual std::string GetDeviceId() const = 0;
@@ -100,8 +89,10 @@ class CloudDelegate {
   virtual std::string GetServiceUrl() const = 0;
   virtual std::string GetXmppEndpoint() const = 0;
 
-  // Returns dictionary with component tree.
-  virtual const base::DictionaryValue& GetComponents() const = 0;
+  // Returns dictionary with component tree. The components contain only the
+  // state visible to the given user.
+  virtual std::unique_ptr<base::DictionaryValue> GetComponentsForUser(
+      const UserInfo& user_info) const = 0;
 
   // Finds a component at the given path. Return nullptr in case of an error.
   virtual const base::DictionaryValue* FindComponent(const std::string& path,
@@ -129,24 +120,15 @@ class CloudDelegate {
   virtual void ListCommands(const UserInfo& user_info,
                             const CommandDoneCallback& callback) = 0;
 
-  void AddObserver(Observer* observer) { observer_list_.AddObserver(observer); }
-  void RemoveObserver(Observer* observer) {
-    observer_list_.RemoveObserver(observer);
-  }
-
-  void NotifyOnDeviceInfoChanged();
-  void NotifyOnTraitDefsChanged();
-  void NotifyOnStateChanged();
-  void NotifyOnComponentTreeChanged();
+  virtual void AddOnTraitsChangedCallback(const base::Closure& callback) = 0;
+  virtual void AddOnStateChangedCallback(const base::Closure& callback) = 0;
+  virtual void AddOnComponentsChangeCallback(const base::Closure& callback) = 0;
 
   // Create default instance.
   static std::unique_ptr<CloudDelegate> CreateDefault(
       provider::TaskRunner* task_runner,
       DeviceRegistrationInfo* device,
       ComponentManager* component_manager);
-
- private:
-  base::ObserverList<Observer> observer_list_;
 };
 
 }  // namespace privet

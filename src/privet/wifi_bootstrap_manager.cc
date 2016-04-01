@@ -195,8 +195,7 @@ bool WifiBootstrapManager::ConfigureCredentials(const std::string& ssid,
 }
 
 std::string WifiBootstrapManager::GetCurrentlyConnectedSsid() const {
-  // TODO(vitalybuka): Get from shill, if possible.
-  return config_->GetSettings().last_configured_ssid;
+  return wifi_->GetConnectedSsid();
 }
 
 std::string WifiBootstrapManager::GetHostedSsid() const {

@@ -12,7 +12,6 @@
 #include <base/json/json_reader.h>
 #include <base/json/json_writer.h>
 #include <base/memory/weak_ptr.h>
-#include <base/scoped_observer.h>
 #include <base/strings/string_number_conversions.h>
 #include <base/values.h>
 #include <weave/provider/network.h>
@@ -41,7 +40,17 @@ using provider::Wifi;
 
 Manager::Manager(TaskRunner* task_runner) : task_runner_{task_runner} {}
 
-Manager::~Manager() {}
+Manager::~Manager() {
+  if (privet_handler_) {
+    for (const auto& path : privet_handler_->GetHttpsPaths()) {
+      http_server_->RemoveHttpsRequestHandler(path);
+    }
+
+    for (const auto& path : privet_handler_->GetHttpPaths()) {
+      http_server_->RemoveHttpRequestHandler(path);
+    }
+  }
+}
 
 void Manager::Start(Network* network,
                     DnsServiceDiscovery* dns_sd,
@@ -50,6 +59,8 @@ void Manager::Start(Network* network,
                     AuthManager* auth_manager,
                     DeviceRegistrationInfo* device,
                     ComponentManager* component_manager) {
+  http_server_ = http_server;
+  CHECK(http_server_);
   CHECK(auth_manager);
   CHECK(device);
 
@@ -58,7 +69,6 @@ void Manager::Start(Network* network,
       http_server->GetRequestTimeout());
   cloud_ =
       CloudDelegate::CreateDefault(task_runner_, device, component_manager);
-  cloud_observer_.Add(cloud_.get());
 
   security_.reset(new SecurityManager(device->GetMutableConfig(), auth_manager,
                                       task_runner_));
@@ -92,6 +102,9 @@ void Manager::Start(Network* network,
         path, base::Bind(&Manager::PrivetRequestHandler,
                          weak_ptr_factory_.GetWeakPtr()));
   }
+
+  device->GetMutableConfig()->AddOnChangedCallback(base::Bind(
+      &Manager::OnDeviceInfoChanged, weak_ptr_factory_.GetWeakPtr()));
 }
 
 std::string Manager::GetCurrentlyConnectedSsid() const {
@@ -106,7 +119,7 @@ void Manager::AddOnPairingChangedCallbacks(
   security_->RegisterPairingListeners(on_start, on_end);
 }
 
-void Manager::OnDeviceInfoChanged() {
+void Manager::OnDeviceInfoChanged(const weave::Settings&) {
   OnChanged();
 }
 
