@@ -4,6 +4,8 @@
 
 #include <weave/test/unittest_utils.h>
 
+#include <algorithm>
+
 #include <base/json/json_reader.h>
 #include <base/json/json_writer.h>
 #include <base/logging.h>
@@ -19,8 +21,7 @@ std::unique_ptr<base::Value> CreateValue(const std::string& json) {
   std::string message;
   std::unique_ptr<base::Value> value{
       base::JSONReader::ReadAndReturnError(json2, base::JSON_PARSE_RFC, &error,
-                                           &message)
-          .release()};
+                                           &message)};
   CHECK(value) << "Failed to load JSON: " << message << ", " << json;
   return value;
 }
@@ -34,12 +35,10 @@ std::string ValueToString(const base::Value& value) {
 
 std::unique_ptr<base::DictionaryValue> CreateDictionaryValue(
     const std::string& json) {
-  std::unique_ptr<base::Value> value = CreateValue(json);
-  base::DictionaryValue* dict = nullptr;
-  value->GetAsDictionary(&dict);
+  std::unique_ptr<base::DictionaryValue> dict =
+      base::DictionaryValue::From(CreateValue(json));
   CHECK(dict) << "Value is not dictionary: " << json;
-  value.release();
-  return std::unique_ptr<base::DictionaryValue>(dict);
+  return dict;
 }
 
 }  // namespace test

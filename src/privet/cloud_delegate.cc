@@ -26,6 +26,8 @@ namespace privet {
 
 namespace {
 
+const char kErrorAlreayRegistered[] = "already_registered";
+
 const BackoffEntry::Policy register_backoff_policy = {0,    1000, 2.0,  0.2,
                                                       5000, -1,   false};
 
@@ -46,23 +48,13 @@ class CloudDelegateImpl : public CloudDelegate {
       : task_runner_{task_runner},
         device_{device},
         component_manager_{component_manager} {
-    device_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
-        &CloudDelegateImpl::OnConfigChanged, weak_factory_.GetWeakPtr()));
     device_->AddGcdStateChangedCallback(base::Bind(
         &CloudDelegateImpl::OnRegistrationChanged, weak_factory_.GetWeakPtr()));
 
-    component_manager_->AddTraitDefChangedCallback(
-        base::Bind(&CloudDelegateImpl::NotifyOnTraitDefsChanged,
-                   weak_factory_.GetWeakPtr()));
     component_manager_->AddCommandAddedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandAdded, weak_factory_.GetWeakPtr()));
     component_manager_->AddCommandRemovedCallback(base::Bind(
         &CloudDelegateImpl::OnCommandRemoved, weak_factory_.GetWeakPtr()));
-    component_manager_->AddStateChangedCallback(base::Bind(
-        &CloudDelegateImpl::NotifyOnStateChanged, weak_factory_.GetWeakPtr()));
-    component_manager_->AddComponentTreeChangedCallback(
-        base::Bind(&CloudDelegateImpl::NotifyOnComponentTreeChanged,
-                   weak_factory_.GetWeakPtr()));
   }
 
   ~CloudDelegateImpl() override = default;
@@ -113,6 +105,12 @@ class CloudDelegateImpl : public CloudDelegate {
   bool Setup(const RegistrationData& registration_data,
              ErrorPtr* error) override {
     VLOG(1) << "GCD Setup started. ";
+    if (device_->HaveRegistrationCredentials()) {
+      Error::AddTo(error, FROM_HERE, kErrorAlreayRegistered,
+                   "Unable to register already registered device");
+      return false;
+    }
+
     // Set (or reset) the retry counter, since we are starting a new
     // registration process.
     registation_retry_count_ = kMaxDeviceRegistrationRetries;
@@ -151,8 +149,12 @@ class CloudDelegateImpl : public CloudDelegate {
     return device_->GetSettings().xmpp_endpoint;
   }
 
-  const base::DictionaryValue& GetComponents() const override {
-    return component_manager_->GetComponents();
+  std::unique_ptr<base::DictionaryValue> GetComponentsForUser(
+      const UserInfo& user_info) const override {
+    UserRole role;
+    std::string str_scope = EnumToString(user_info.scope());
+    CHECK(StringToEnum(str_scope, &role));
+    return component_manager_->GetComponentsForUserRole(role);
   }
 
   const base::DictionaryValue* FindComponent(const std::string& path,
@@ -218,16 +220,26 @@ class CloudDelegateImpl : public CloudDelegate {
     base::ListValue list_value;
 
     for (const auto& it : command_owners_) {
-      if (CanAccessCommand(it.second, user_info, nullptr)) {
-        list_value.Append(
-            component_manager_->FindCommand(it.first)->ToJson().release());
-      }
+      if (CanAccessCommand(it.second, user_info, nullptr))
+        list_value.Append(component_manager_->FindCommand(it.first)->ToJson());
     }
 
     base::DictionaryValue commands_json;
-    commands_json.Set("commands", list_value.DeepCopy());
+    commands_json.Set("commands", list_value.CreateDeepCopy());
 
     callback.Run(commands_json, nullptr);
+  }
+
+  void AddOnTraitsChangedCallback(const base::Closure& callback) override {
+    component_manager_->AddTraitDefChangedCallback(callback);
+  }
+
+  void AddOnStateChangedCallback(const base::Closure& callback) override {
+    component_manager_->AddStateChangedCallback(callback);
+  }
+
+  void AddOnComponentsChangeCallback(const base::Closure& callback) override {
+    component_manager_->AddComponentTreeChangedCallback(callback);
   }
 
  private:
@@ -239,8 +251,6 @@ class CloudDelegateImpl : public CloudDelegate {
   void OnCommandRemoved(Command* command) {
     CHECK(command_owners_.erase(command->GetID()));
   }
-
-  void OnConfigChanged(const Settings&) { NotifyOnDeviceInfoChanged(); }
 
   void OnRegistrationChanged(GcdState status) {
     if (status == GcdState::kUnconfigured ||
@@ -258,7 +268,6 @@ class CloudDelegateImpl : public CloudDelegate {
                          EnumToString(status).c_str());
       connection_state_ = ConnectionState{std::move(error)};
     }
-    NotifyOnDeviceInfoChanged();
   }
 
   void OnRegisterSuccess(const std::string& cloud_id) {
@@ -372,22 +381,6 @@ std::unique_ptr<CloudDelegate> CloudDelegate::CreateDefault(
     ComponentManager* component_manager) {
   return std::unique_ptr<CloudDelegateImpl>{
       new CloudDelegateImpl{task_runner, device, component_manager}};
-}
-
-void CloudDelegate::NotifyOnDeviceInfoChanged() {
-  FOR_EACH_OBSERVER(Observer, observer_list_, OnDeviceInfoChanged());
-}
-
-void CloudDelegate::NotifyOnTraitDefsChanged() {
-  FOR_EACH_OBSERVER(Observer, observer_list_, OnTraitDefsChanged());
-}
-
-void CloudDelegate::NotifyOnComponentTreeChanged() {
-  FOR_EACH_OBSERVER(Observer, observer_list_, OnComponentTreeChanged());
-}
-
-void CloudDelegate::NotifyOnStateChanged() {
-  FOR_EACH_OBSERVER(Observer, observer_list_, OnStateChanged());
 }
 
 }  // namespace privet

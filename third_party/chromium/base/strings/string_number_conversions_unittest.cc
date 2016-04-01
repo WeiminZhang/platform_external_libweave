@@ -133,7 +133,7 @@ TEST(StringNumberConversionsTest, StringToInt) {
   };
 
   for (size_t i = 0; i < arraysize(cases); ++i) {
-    int output = 0;
+    int output = cases[i].output ^ 1;  // Ensure StringToInt wrote something.
     EXPECT_EQ(cases[i].success, StringToInt(cases[i].input, &output));
     EXPECT_EQ(cases[i].output, output);
   }
@@ -182,7 +182,8 @@ TEST(StringNumberConversionsTest, StringToUint) {
   };
 
   for (size_t i = 0; i < arraysize(cases); ++i) {
-    unsigned output = 0;
+    unsigned output =
+        cases[i].output ^ 1;  // Ensure StringToUint wrote something.
     EXPECT_EQ(cases[i].success, StringToUint(cases[i].input, &output));
     EXPECT_EQ(cases[i].output, output);
   }

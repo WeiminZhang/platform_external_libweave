@@ -447,7 +447,14 @@ std::vector<uint8_t> AuthManager::GetRootClientAuthToken(
 }
 
 base::Time AuthManager::Now() const {
-  return clock_->Now();
+  base::Time now = clock_->Now();
+  static const base::Time k2010 = base::Time::FromTimeT(1262304000);
+  if (now >= k2010)
+    return now;
+  // Slowdown time before 1 Jan 2010. This will increase expiration time of
+  // access tokens but allow to handle dates which can not be handled by
+  // macaroon library.
+  return k2010 - base::TimeDelta::FromSeconds((k2010 - now).InSeconds() / 10);
 }
 
 bool AuthManager::IsValidAuthToken(const std::vector<uint8_t>& token,

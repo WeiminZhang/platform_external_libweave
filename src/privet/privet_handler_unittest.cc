@@ -41,8 +41,7 @@ void LoadTestJson(const std::string& test_json,
   std::string message;
   std::unique_ptr<base::Value> value(
       base::JSONReader::ReadAndReturnError(test_json, base::JSON_PARSE_RFC,
-                                           &error, &message)
-          .release());
+                                           &error, &message));
   EXPECT_TRUE(value.get()) << "\nError: " << message << "\n" << test_json;
   base::DictionaryValue* dictionary_ptr = nullptr;
   if (value->GetAsDictionary(&dictionary_ptr))
@@ -75,7 +74,7 @@ bool IsEqualError(const CodeWithReason& expected,
 std::unique_ptr<base::DictionaryValue> StripDebugErrorDetails(
     const std::string& path_to_error_object,
     const base::DictionaryValue& value) {
-  std::unique_ptr<base::DictionaryValue> result{value.DeepCopy()};
+  auto result = value.CreateDeepCopy();
   base::DictionaryValue* error_dict = nullptr;
   EXPECT_TRUE(result->GetDictionary(path_to_error_object, &error_dict));
   scoped_ptr<base::Value> dummy;
@@ -484,6 +483,40 @@ TEST_F(PrivetHandlerTest, AuthLocalHighScope) {
                HandleRequest("/privet/v3/auth", kInput));
 }
 
+TEST_F(PrivetHandlerTest, ComponentsForUser) {
+  auth_header_ = "Privet 123";
+  const UserInfo kOwner{AuthScope::kOwner, TestUserId{"1"}};
+  const UserInfo kManager{AuthScope::kManager, TestUserId{"2"}};
+  const UserInfo kUser{AuthScope::kUser, TestUserId{"3"}};
+  const UserInfo kViewer{AuthScope::kViewer, TestUserId{"4"}};
+  const base::DictionaryValue components;
+  const std::string expected = R"({"components": {}, "fingerprint": "1"})";
+
+  EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+      .WillOnce(DoAll(SetArgPointee<1>(kOwner), Return(true)));
+  EXPECT_CALL(cloud_, MockGetComponentsForUser(kOwner))
+      .WillOnce(ReturnRef(components));
+  EXPECT_JSON_EQ(expected, HandleRequest("/privet/v3/components", "{}"));
+
+  EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+      .WillOnce(DoAll(SetArgPointee<1>(kManager), Return(true)));
+  EXPECT_CALL(cloud_, MockGetComponentsForUser(kManager))
+      .WillOnce(ReturnRef(components));
+  EXPECT_JSON_EQ(expected, HandleRequest("/privet/v3/components", "{}"));
+
+  EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+      .WillOnce(DoAll(SetArgPointee<1>(kUser), Return(true)));
+  EXPECT_CALL(cloud_, MockGetComponentsForUser(kUser))
+      .WillOnce(ReturnRef(components));
+  EXPECT_JSON_EQ(expected, HandleRequest("/privet/v3/components", "{}"));
+
+  EXPECT_CALL(security_, ParseAccessToken(_, _, _))
+      .WillOnce(DoAll(SetArgPointee<1>(kViewer), Return(true)));
+  EXPECT_CALL(cloud_, MockGetComponentsForUser(kViewer))
+      .WillOnce(ReturnRef(components));
+  EXPECT_JSON_EQ(expected, HandleRequest("/privet/v3/components", "{}"));
+}
+
 class PrivetHandlerTestWithAuth : public PrivetHandlerTest {
  public:
   void SetUp() override {
@@ -780,7 +813,8 @@ TEST_F(PrivetHandlerTestWithAuth, ComponentsWithFiltersAndPaths) {
   base::DictionaryValue components;
   LoadTestJson(kComponents, &components);
   EXPECT_CALL(cloud_, FindComponent(_, _)).WillRepeatedly(Return(nullptr));
-  EXPECT_CALL(cloud_, GetComponents()).WillRepeatedly(ReturnRef(components));
+  EXPECT_CALL(cloud_, MockGetComponentsForUser(_))
+      .WillRepeatedly(ReturnRef(components));
   const char kExpected1[] = R"({
     "components": {
       "comp1": {

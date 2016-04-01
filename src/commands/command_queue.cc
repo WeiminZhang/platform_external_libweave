@@ -124,9 +124,8 @@ void CommandQueue::Cleanup(const base::Time& cutoff_time) {
 
 void CommandQueue::ScheduleCleanup(base::TimeDelta delay) {
   task_runner_->PostDelayedTask(
-      FROM_HERE,
-      base::Bind(&CommandQueue::PerformScheduledCleanup,
-                 weak_ptr_factory_.GetWeakPtr()),
+      FROM_HERE, base::Bind(&CommandQueue::PerformScheduledCleanup,
+                            weak_ptr_factory_.GetWeakPtr()),
       delay);
 }
 

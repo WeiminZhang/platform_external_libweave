@@ -115,10 +115,20 @@ class ComponentManagerImpl final : public ComponentManager {
   const base::DictionaryValue* FindCommandDefinition(
       const std::string& command_name) const override;
 
+  // Finds a state definition, where |state_property_name| is in the form of
+  // "trait.state".
+  const base::DictionaryValue* FindStateDefinition(
+      const std::string& state_property_name) const;
+
   // Checks the minimum required user role for a given command.
-  bool GetMinimalRole(const std::string& command_name,
-                      UserRole* minimal_role,
-                      ErrorPtr* error) const override;
+  bool GetCommandMinimalRole(const std::string& command_name,
+                             UserRole* minimal_role,
+                             ErrorPtr* error) const override;
+
+  // Checks the minimum required user role for a given state.
+  bool GetStateMinimalRole(const std::string& state_property_name,
+                           UserRole* minimal_role,
+                           ErrorPtr* error) const override;
 
   // Returns the full JSON dictionary containing trait definitions.
   const base::DictionaryValue& GetTraits() const override { return traits_; }
@@ -127,6 +137,11 @@ class ComponentManagerImpl final : public ComponentManager {
   const base::DictionaryValue& GetComponents() const override {
     return components_;
   }
+
+  // Returns a JSON dictionary containing component instances with state
+  // properties visible to a user of the given |role|.
+  std::unique_ptr<base::DictionaryValue> GetComponentsForUserRole(
+      UserRole role) const override;
 
   // Component state manipulation methods.
   bool SetStateProperties(const std::string& component_path,

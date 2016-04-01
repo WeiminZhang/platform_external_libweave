@@ -12,45 +12,32 @@
 #include <bitset>
 
 namespace {
-// Supported LED count on this device
 const size_t kLedCount = 3;
 
 const char kTraits[] = R"({
-  "_ledflasher": {
+  "onOff": {
     "commands": {
-      "set": {
+      "setConfig": {
         "minimalRole": "user",
         "parameters": {
-          "led": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 3
-          },
-          "on": { "type": "boolean" }
-        }
-      },
-      "toggle": {
-        "minimalRole": "user",
-        "parameters": {
-          "led": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 3
+          "state": {
+            "type": "string",
+            "enum": [ "on", "off" ]
           }
         }
       }
     },
     "state": {
-      "leds": {
-        "type": "array",
-        "items": { "type": "boolean" }
+      "state": {
+        "isRequired": true,
+        "type": "string",
+        "enum": [ "on", "off" ]
       }
     }
   }
 })";
 
-const char kComponent[] = "ledflasher";
-
+const char kLedComponentPrefix[] = "led";
 }  // namespace
 
 // LedFlasherHandler is a complete command handler example that shows
@@ -62,41 +49,38 @@ class LedFlasherHandler {
     device_ = device;
 
     device->AddTraitDefinitionsFromJson(kTraits);
-    CHECK(device->AddComponent(kComponent, {"_ledflasher"}, nullptr));
-    UpdateLedState();
-
-    device->AddCommandHandler(
-        kComponent, "_ledflasher.toggle",
-        base::Bind(&LedFlasherHandler::OnFlasherToggleCommand,
-                   weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler(
-        kComponent, "_ledflasher.set",
-        base::Bind(&LedFlasherHandler::OnFlasherSetCommand,
-                   weak_ptr_factory_.GetWeakPtr()));
+    for (size_t led_index = 0; led_index < led_states_.size(); led_index++) {
+      std::string component_name =
+          kLedComponentPrefix + std::to_string(led_index + 1);
+      CHECK(device->AddComponent(component_name, {"onOff"}, nullptr));
+      device->AddCommandHandler(
+          component_name, "onOff.setConfig",
+          base::Bind(&LedFlasherHandler::OnOnOffSetConfig,
+                     weak_ptr_factory_.GetWeakPtr(), led_index));
+      device->SetStateProperty(
+          component_name, "onOff.state",
+          base::StringValue{led_states_[led_index] ? "on" : "off"}, nullptr);
+    }
   }
 
  private:
-  void OnFlasherSetCommand(const std::weak_ptr<weave::Command>& command) {
+  void OnOnOffSetConfig(size_t led_index,
+                        const std::weak_ptr<weave::Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
       return;
     LOG(INFO) << "received command: " << cmd->GetName();
-    int32_t led_index = 0;
     const auto& params = cmd->GetParameters();
-    bool cmd_value = false;
-    if (params.GetInteger("_led", &led_index) &&
-        params.GetBoolean("_on", &cmd_value)) {
-      // Display this command in terminal
-      LOG(INFO) << cmd->GetName() << " _led: " << led_index
-                << ", _on: " << (cmd_value ? "true" : "false");
-
-      led_index--;
-      int new_state = cmd_value ? 1 : 0;
-      int cur_state = led_status_[led_index];
-      led_status_[led_index] = new_state;
-
-      if (cmd_value != cur_state) {
-        UpdateLedState();
+    std::string state;
+    if (params.GetString("state", &state)) {
+      LOG(INFO) << cmd->GetName() << " led: " << led_index
+                << " state: " << state;
+      int current_state = led_states_[led_index];
+      int new_state = (state == "on") ? 1 : 0;
+      led_states_[led_index] = new_state;
+      if (new_state != current_state) {
+        device_->SetStateProperty(cmd->GetComponent(), "onOff.State",
+                                  base::StringValue{state}, nullptr);
       }
       cmd->Complete({}, nullptr);
       return;
@@ -107,41 +91,9 @@ class LedFlasherHandler {
     cmd->Abort(error.get(), nullptr);
   }
 
-  void OnFlasherToggleCommand(const std::weak_ptr<weave::Command>& command) {
-    auto cmd = command.lock();
-    if (!cmd)
-      return;
-    LOG(INFO) << "received command: " << cmd->GetName();
-    const auto& params = cmd->GetParameters();
-    int32_t led_index = 0;
-    if (params.GetInteger("_led", &led_index)) {
-      LOG(INFO) << cmd->GetName() << " _led: " << led_index;
-      led_index--;
-      led_status_[led_index] = ~led_status_[led_index];
-
-      UpdateLedState();
-      cmd->Complete({}, nullptr);
-      return;
-    }
-    weave::ErrorPtr error;
-    weave::Error::AddTo(&error, FROM_HERE, "invalid_parameter_value",
-                        "Invalid parameters");
-    cmd->Abort(error.get(), nullptr);
-  }
-
-  void UpdateLedState() {
-    base::ListValue list;
-    for (uint32_t i = 0; i < led_status_.size(); i++)
-      list.AppendBoolean(led_status_[i] ? true : false);
-
-    device_->SetStateProperty(kComponent, "_ledflasher.leds", list, nullptr);
-  }
-
   weave::Device* device_{nullptr};
 
-  // Simulate LED status on this device so client app could explore
-  // Each bit represents one device, indexing from LSB
-  std::bitset<kLedCount> led_status_{0};
+  std::bitset<kLedCount> led_states_{0};
   base::WeakPtrFactory<LedFlasherHandler> weak_ptr_factory_{this};
 };
 
