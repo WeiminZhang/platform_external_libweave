@@ -44,8 +44,7 @@ class AccessApiHandlerTest : public ::testing::Test {
         }));
 
     EXPECT_CALL(device_,
-                AddCommandHandler(_, AnyOf("_accessRevocationList.add",
-                                           "_accessRevocationList.list"),
+                AddCommandHandler(_, AnyOf("blacklist.add", "blacklist.list"),
                                   _))
         .WillRepeatedly(
             Invoke(&component_manager_, &ComponentManager::AddCommandHandler));
@@ -71,13 +70,13 @@ class AccessApiHandlerTest : public ::testing::Test {
 
   std::unique_ptr<base::DictionaryValue> GetState() {
     std::string path =
-        component_manager_.FindComponentWithTrait("_accessRevocationList");
+        component_manager_.FindComponentWithTrait("blacklist");
     EXPECT_FALSE(path.empty());
     const auto* component = component_manager_.FindComponent(path, nullptr);
     EXPECT_TRUE(component);
     const base::DictionaryValue* state = nullptr;
     EXPECT_TRUE(
-        component->GetDictionary("state._accessRevocationList", &state));
+        component->GetDictionary("state.blacklist", &state));
     return state->CreateDeepCopy();
   }
 
@@ -91,7 +90,7 @@ class AccessApiHandlerTest : public ::testing::Test {
 TEST_F(AccessApiHandlerTest, Initialization) {
   const base::DictionaryValue* trait = nullptr;
   ASSERT_TRUE(component_manager_.GetTraits().GetDictionary(
-      "_accessRevocationList", &trait));
+      "blacklist", &trait));
 
   auto expected = R"({
     "commands": {
@@ -116,7 +115,7 @@ TEST_F(AccessApiHandlerTest, Initialization) {
         "minimalRole": "owner",
         "parameters": {},
         "results": {
-          "revocationList": {
+          "blacklistEntries": {
             "type": "array",
             "items": {
               "type": "object",
@@ -168,7 +167,7 @@ TEST_F(AccessApiHandlerTest, Revoke) {
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(1));
 
   AddCommand(R"({
-    'name' : '_accessRevocationList.add',
+    'name' : 'blacklist.add',
     'component': 'accessControl',
     'parameters': {
       'userId': 'AQID',
@@ -199,7 +198,7 @@ TEST_F(AccessApiHandlerTest, List) {
   EXPECT_CALL(access_manager_, GetSize()).WillRepeatedly(Return(4));
 
   auto expected = R"({
-    "revocationList": [ {
+    "blacklistEntries": [ {
       "applicationId": "FRYX",
       "userId": "CwwN"
     }, {
@@ -209,7 +208,7 @@ TEST_F(AccessApiHandlerTest, List) {
   })";
 
   const auto& results = AddCommand(R"({
-    'name' : '_accessRevocationList.list',
+    'name' : 'blacklist.list',
     'component': 'accessControl',
     'parameters': {
     }
