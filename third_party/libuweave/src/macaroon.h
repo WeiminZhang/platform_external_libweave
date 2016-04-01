@@ -110,8 +110,8 @@ static inline time_t uw_macaroon_j2000_to_unix_epoch(time_t j2000) {
 }
 
 /** Converts a unix timestamp to a j2000 timestamp. */
-static inline time_t uw_macaroon_unix_epoch_to_j2000(time_t unix) {
-  return unix - J2000_EPOCH_OFFSET;
+static inline time_t uw_macaroon_unix_epoch_to_j2000(time_t unix_timestamp) {
+  return unix_timestamp - J2000_EPOCH_OFFSET;
 }
 
 /**
