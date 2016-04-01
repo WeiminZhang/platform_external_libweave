@@ -222,6 +222,15 @@ TEST_F(AuthManagerTest, AccessTokenAfterReset) {
   EXPECT_TRUE(auth_.ParseAccessToken(token2, &user_info, nullptr));
 }
 
+TEST_F(AuthManagerTest, AccessTokenBeforeJ2000) {
+  EXPECT_CALL(clock_, Now())
+      .WillRepeatedly(Return(base::Time::FromTimeT(5678)));
+  UserInfo user_info;
+  auto token1 = auth_.CreateAccessToken(
+      UserInfo{AuthScope::kViewer, TestUserId{"555"}}, {});
+  EXPECT_TRUE(auth_.ParseAccessToken(token1, &user_info, nullptr));
+}
+
 TEST_F(AuthManagerTest, GetRootClientAuthToken) {
   EXPECT_EQ("WCCDQxkgAUYIGhudoQBCDABQX3fPR5zsPnrs9aOSvS7/eQ==",
             Base64Encode(

@@ -6,6 +6,7 @@
 #define BASE_NUMERICS_SAFE_MATH_H_
 
 #include <stddef.h>
+#include <type_traits>
 
 #include "base/numerics/safe_math_impl.h"
 

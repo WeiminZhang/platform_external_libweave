@@ -154,15 +154,25 @@ class ComponentManager {
       const std::string& command_name) const = 0;
 
   // Checks the minimum required user role for a given command.
-  virtual bool GetMinimalRole(const std::string& command_name,
-                              UserRole* minimal_role,
-                              ErrorPtr* error) const = 0;
+  virtual bool GetCommandMinimalRole(const std::string& command_name,
+                                     UserRole* minimal_role,
+                                     ErrorPtr* error) const = 0;
+
+  // Checks the minimum required user role for a given state property.
+  virtual bool GetStateMinimalRole(const std::string& state_property_name,
+                                   UserRole* minimal_role,
+                                   ErrorPtr* error) const = 0;
 
   // Returns the full JSON dictionary containing trait definitions.
   virtual const base::DictionaryValue& GetTraits() const = 0;
 
   // Returns the full JSON dictionary containing component instances.
   virtual const base::DictionaryValue& GetComponents() const = 0;
+
+  // Returns a JSON dictionary containing component instances with state
+  // properties visible to a user of the given |role|.
+  virtual std::unique_ptr<base::DictionaryValue> GetComponentsForUserRole(
+      UserRole role) const = 0;
 
   // Component state manipulation methods.
   virtual bool SetStateProperties(const std::string& component_path,

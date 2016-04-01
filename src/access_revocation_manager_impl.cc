@@ -83,12 +83,37 @@ void AccessRevocationManagerImpl::Save(const DoneCallback& callback) {
   store_->SaveSettings(kConfigFileName, json, callback);
 }
 
-void AccessRevocationManagerImpl::RemoveExpired() {
+void AccessRevocationManagerImpl::Shrink() {
+  base::Time oldest[2] = {base::Time::Max(), base::Time::Max()};
   for (auto i = begin(entries_); i != end(entries_);) {
     if (i->expiration <= clock_->Now())
       i = entries_.erase(i);
-    else
+    else {
+      // Non-strict comparison to ensure counting same timestamps as different.
+      if (i->revocation <= oldest[0]) {
+        oldest[1] = oldest[0];
+        oldest[0] = i->revocation;
+      } else {
+        oldest[1] = std::min(oldest[1], i->revocation);
+      }
       ++i;
+    }
+  }
+  CHECK_GT(capacity_, 1u);
+  if (entries_.size() >= capacity_) {
+    // List is full so we are going to remove oldest entries from the list.
+    for (auto i = begin(entries_); i != end(entries_);) {
+      if (i->revocation <= oldest[1])
+        i = entries_.erase(i);
+      else {
+        ++i;
+      }
+    }
+    // And replace with a single rule to block everything older.
+    Entry all_blocking_entry;
+    all_blocking_entry.expiration = base::Time::Max();
+    all_blocking_entry.revocation = oldest[1];
+    entries_.insert(all_blocking_entry);
   }
 }
 
@@ -99,8 +124,6 @@ void AccessRevocationManagerImpl::AddEntryAddedCallback(
 
 void AccessRevocationManagerImpl::Block(const Entry& entry,
                                         const DoneCallback& callback) {
-  // Iterating is OK as Save below is more expensive.
-  RemoveExpired();
   if (entry.expiration <= clock_->Now()) {
     if (!callback.is_null()) {
       ErrorPtr error;
@@ -110,15 +133,10 @@ void AccessRevocationManagerImpl::Block(const Entry& entry,
     }
     return;
   }
-  if (entries_.size() >= capacity_) {
-    if (!callback.is_null()) {
-      ErrorPtr error;
-      Error::AddTo(&error, FROM_HERE, "blacklist_is_full",
-                   "Unable to store more entries");
-      callback.Run(std::move(error));
-    }
-    return;
-  }
+
+  // Iterating is OK as Save below is more expensive.
+  Shrink();
+  CHECK_LT(entries_.size(), capacity_);
 
   auto existing = entries_.find(entry);
   if (existing != entries_.end()) {

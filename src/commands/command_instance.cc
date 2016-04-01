@@ -156,7 +156,7 @@ std::unique_ptr<base::DictionaryValue> GetCommandParameters(
                                 "Property '%s' must be a JSON object",
                                 commands::attributes::kCommand_Parameters);
     }
-    params.reset(params_dict->DeepCopy());
+    params = params_dict->CreateDeepCopy();
   } else {
     // "parameters" are not specified. Assume empty param list.
     params.reset(new base::DictionaryValue);
@@ -220,14 +220,15 @@ std::unique_ptr<base::DictionaryValue> CommandInstance::ToJson() const {
 
   json->SetString(commands::attributes::kCommand_Id, id_);
   json->SetString(commands::attributes::kCommand_Name, name_);
-  json->Set(commands::attributes::kCommand_Parameters, parameters_.DeepCopy());
-  json->Set(commands::attributes::kCommand_Progress, progress_.DeepCopy());
-  json->Set(commands::attributes::kCommand_Results, results_.DeepCopy());
+  json->SetString(commands::attributes::kCommand_Component, component_);
+  json->Set(commands::attributes::kCommand_Parameters,
+            parameters_.CreateDeepCopy());
+  json->Set(commands::attributes::kCommand_Progress,
+            progress_.CreateDeepCopy());
+  json->Set(commands::attributes::kCommand_Results, results_.CreateDeepCopy());
   json->SetString(commands::attributes::kCommand_State, EnumToString(state_));
-  if (error_) {
-    json->Set(commands::attributes::kCommand_Error,
-              ErrorInfoToJson(*error_).release());
-  }
+  if (error_)
+    json->Set(commands::attributes::kCommand_Error, ErrorInfoToJson(*error_));
 
   return json;
 }

@@ -132,6 +132,9 @@ class HttpServer {
       const std::string& path,
       const RequestHandlerCallback& callback) = 0;
 
+  virtual void RemoveHttpRequestHandler(const std::string& path) = 0;
+  virtual void RemoveHttpsRequestHandler(const std::string& path) = 0;
+
   virtual uint16_t GetHttpPort() const = 0;
   virtual uint16_t GetHttpsPort() const = 0;
   virtual std::vector<uint8_t> GetHttpsCertificateFingerprint() const = 0;

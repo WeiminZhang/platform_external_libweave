@@ -84,7 +84,7 @@ class BaseApiHandlerTest : public ::testing::Test {
     CHECK(component);
     const base::DictionaryValue* base_state = nullptr;
     if (component->GetDictionary("state.base", &base_state))
-      state.reset(base_state->DeepCopy());
+      state = base_state->CreateDeepCopy();
     else
       state.reset(new base::DictionaryValue);
     return state;

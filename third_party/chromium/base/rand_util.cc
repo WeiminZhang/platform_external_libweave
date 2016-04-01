@@ -68,8 +68,8 @@ uint64_t RandGenerator(uint64_t range) {
 
 std::string RandBytesAsString(size_t length) {
   DCHECK_GT(length, 0u);
-  std::string result(length, ' ');
-  RandBytes(&result[0], length);
+  std::string result;
+  RandBytes(WriteInto(&result, length + 1), length);
   return result;
 }
 

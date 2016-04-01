@@ -15,7 +15,8 @@ INCLUDES := \
 	-I. \
 	-Iinclude \
 	-Ithird_party/chromium \
-	-Ithird_party/include \
+	-Ithird_party/googletest/googletest/include \
+	-Ithird_party/googletest/googlemock/include \
 	-Ithird_party/libuweave \
 	-Ithird_party/modp_b64/modp_b64
 
@@ -75,7 +76,7 @@ DEFS_TEST := \
 out/$(BUILD_MODE)/libweave.so : out/$(BUILD_MODE)/libweave_common.a
 	$(CXX) -shared -Wl,-soname=libweave.so -o $@ -Wl,--whole-archive $^ -Wl,--no-whole-archive -lcrypto -lexpat -lpthread -lrt
 
-include file_lists.mk third_party/third_party.mk examples/examples.mk tests.mk
+include cross.mk file_lists.mk third_party/third_party.mk examples/examples.mk tests.mk
 
 ###
 # src/
@@ -90,7 +91,10 @@ out/$(BUILD_MODE)/libweave_common.a : $(weave_obj_files) $(third_party_chromium_
 	rm -f $@
 	$(AR) crsT $@ $^
 
-all : out/$(BUILD_MODE)/libweave.so all-examples out/$(BUILD_MODE)/libweave_exports_testrunner out/$(BUILD_MODE)/libweave_testrunner
+all-libs : out/$(BUILD_MODE)/libweave.so
+all-tests : out/$(BUILD_MODE)/libweave_exports_testrunner out/$(BUILD_MODE)/libweave_testrunner
+
+all : all-libs all-examples all-tests
 
 clean :
 	rm -rf out

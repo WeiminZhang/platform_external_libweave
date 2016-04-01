@@ -25,9 +25,7 @@ const char kConfigName[] = "config";
 
 class ConfigTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    Reload();
-  }
+  void SetUp() override { Reload(); }
 
   void Reload() {
     EXPECT_CALL(*this, OnConfigChanged(_)).Times(1);

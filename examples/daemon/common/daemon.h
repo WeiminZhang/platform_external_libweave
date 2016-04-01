@@ -114,10 +114,8 @@ class Daemon {
  private:
   static void OnRegisterDeviceDone(weave::Device* device,
                                    weave::ErrorPtr error) {
-    if (error)
-      LOG(ERROR) << "Fail to register device: " << error->GetMessage();
-    else
-      LOG(INFO) << "Device registered: " << device->GetSettings().cloud_id;
+    CHECK(!error) << "Registration failed device: " << error->GetMessage();
+    LOG(INFO) << "Device registered: " << device->GetSettings().cloud_id;
   }
 
   std::unique_ptr<weave::examples::EventTaskRunner> task_runner_;

@@ -52,8 +52,10 @@ class AccessRevocationManager {
 
 inline bool operator==(const AccessRevocationManager::Entry& l,
                        const AccessRevocationManager::Entry& r) {
-  return l.revocation == r.revocation && l.expiration == r.expiration &&
-         l.user_id == r.user_id && l.app_id == r.app_id;
+  auto make_tuple = [](const AccessRevocationManager::Entry& e) {
+    return std::tie(e.revocation, e.expiration, e.user_id, e.app_id);
+  };
+  return make_tuple(l) == make_tuple(r);
 }
 
 inline bool operator!=(const AccessRevocationManager::Entry& l,

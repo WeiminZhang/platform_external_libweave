@@ -35,8 +35,9 @@ class WifiImpl : public provider::Wifi {
                const DoneCallback& callback) override;
   void StartAccessPoint(const std::string& ssid) override;
   void StopAccessPoint() override;
-  bool IsWifi24Supported() const override {return true;};
-  bool IsWifi50Supported() const override {return false;};
+  bool IsWifi24Supported() const override;
+  bool IsWifi50Supported() const override;
+  std::string GetConnectedSsid() const override;
 
   static bool HasWifiCapability();
 
@@ -46,7 +47,7 @@ class WifiImpl : public provider::Wifi {
                     int pid,
                     base::Time until,
                     const DoneCallback& callback);
-  bool hostapd_started_{false};
+  std::string hostapd_ssid_;
   provider::TaskRunner* task_runner_{nullptr};
   EventNetworkImpl* network_{nullptr};
   base::WeakPtrFactory<WifiImpl> weak_ptr_factory_{this};

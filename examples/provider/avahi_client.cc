@@ -75,10 +75,10 @@ void AvahiClient::PublishService(const std::string& service_type,
         service_type.c_str(), nullptr, txt_list.get());
     CHECK_GE(ret, 0) << avahi_strerror(ret);
   } else {
+    avahi_entry_group_reset(group_.get());
     prev_port_ = port;
     prev_type_ = service_type;
 
-    avahi_entry_group_reset(group_.get());
     CHECK(avahi_entry_group_is_empty(group_.get()));
 
     ret = avahi_entry_group_add_service_strlst(
@@ -91,6 +91,9 @@ void AvahiClient::PublishService(const std::string& service_type,
 }
 
 void AvahiClient::StopPublishing(const std::string& service_name) {
+  prev_port_ = 0;
+  prev_type_.clear();
+
   CHECK(group_);
   avahi_entry_group_reset(group_.get());
 }

@@ -4,6 +4,8 @@
 
 #include "src/utils.h"
 
+#include <limits>
+
 #include <base/bind_helpers.h>
 #include <base/json/json_reader.h>
 
@@ -50,17 +52,12 @@ std::unique_ptr<base::DictionaryValue> LoadJsonDict(
                        json_string.size(), error_message.c_str());
     return result;
   }
-  base::DictionaryValue* dict_value = nullptr;
-  if (!value->GetAsDictionary(&dict_value)) {
+  result = base::DictionaryValue::From(std::move(value));
+  if (!result) {
     Error::AddToPrintf(error, FROM_HERE, errors::json::kObjectExpected,
                        "JSON string '%s' is not a JSON object",
                        LimitString(json_string, kMaxStrLen).c_str());
-    return result;
-  } else {
-    // |value| is now owned by |dict_value|.
-    base::IgnoreResult(value.release());
   }
-  result.reset(dict_value);
   return result;
 }
 
@@ -72,10 +69,14 @@ std::unique_ptr<base::DictionaryValue> ErrorInfoToJson(const Error& error) {
 }
 
 uint32_t ToJ2000Time(const base::Time& time) {
-  return std::max(time.ToTimeT(), kJ2000ToTimeT) - kJ2000ToTimeT;
+  return std::min<int64_t>(
+      std::numeric_limits<int32_t>::max(),
+      std::max<int64_t>(kJ2000ToTimeT, time.ToTimeT()) - kJ2000ToTimeT);
 }
 
 base::Time FromJ2000Time(uint32_t time) {
+  if (time >= static_cast<uint32_t>(std::numeric_limits<int32_t>::max()))
+    return base::Time::Max();
   return base::Time::FromTimeT(time + kJ2000ToTimeT);
 }
 
