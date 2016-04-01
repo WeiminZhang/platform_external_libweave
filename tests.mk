@@ -12,10 +12,11 @@ TEST_ENV ?=
 ifeq (1, $(CLANG))
   TEST_ENV += ASAN_SYMBOLIZER_PATH=$(shell which llvm-symbolizer-3.6)
 endif
+TEST_ENV += $(QEMU)
 
 weave_test_obj_files := $(WEAVE_TEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-$(weave_test_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
+$(weave_test_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -24,7 +25,7 @@ out/$(BUILD_MODE)/libweave-test.a : $(weave_test_obj_files)
 
 weave_unittest_obj_files := $(WEAVE_UNITTEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-$(weave_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
+$(weave_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_TEST) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -34,9 +35,9 @@ out/$(BUILD_MODE)/libweave_testrunner : \
 	$(third_party_chromium_base_unittest_obj_files) \
 	out/$(BUILD_MODE)/libweave_common.a \
 	out/$(BUILD_MODE)/libweave-test.a \
-	third_party/lib/gmock.a \
-	third_party/lib/gtest.a
-	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lpthread -lrt -Lthird_party/lib
+	$(third_party_gtest_lib) \
+	$(third_party_gmock_lib)
+	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lpthread -lrt
 
 test : out/$(BUILD_MODE)/libweave_testrunner
 	$(TEST_ENV) $< $(TEST_FLAGS)
@@ -46,7 +47,7 @@ test : out/$(BUILD_MODE)/libweave_testrunner
 
 weave_exports_unittest_obj_files := $(WEAVE_EXPORTS_UNITTEST_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-$(weave_exports_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc third_party/include/gtest/gtest.h
+$(weave_exports_unittest_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_TEST) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
@@ -55,9 +56,9 @@ out/$(BUILD_MODE)/libweave_exports_testrunner : \
 	out/$(BUILD_MODE)/libweave.so \
 	out/$(BUILD_MODE)/libweave-test.a \
 	out/$(BUILD_MODE)/src/test/weave_testrunner.o \
-	third_party/lib/gmock.a \
-	third_party/lib/gtest.a
-	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lpthread -lrt -Lthird_party/lib -Wl,-rpath=out/$(BUILD_MODE)/
+	$(third_party_gtest_lib) \
+	$(third_party_gmock_lib)
+	$(CXX) -o $@ $^ $(CFLAGS) -lcrypto -lexpat -lpthread -lrt -Wl,-rpath=out/$(BUILD_MODE)/
 
 export-test : out/$(BUILD_MODE)/libweave_exports_testrunner
 	$(TEST_ENV) $< $(TEST_FLAGS)

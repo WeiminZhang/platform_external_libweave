@@ -31,15 +31,15 @@ static bool create_mac_tag_(const uint8_t* key,
 
   // Compute the first tag by using the key
   if (!uw_macaroon_caveat_sign_(key, key_len, context, caveats[0], mac_tag_buff,
-                                UW_MACAROON_MAC_LEN)) {
+                                sizeof(mac_tag_buff))) {
     return false;
   }
 
   // Compute the rest of the tags by using the tag as the key
   for (size_t i = 1; i < num_caveats; i++) {
-    if (!uw_macaroon_caveat_sign_(mac_tag_buff, UW_MACAROON_MAC_LEN, context,
+    if (!uw_macaroon_caveat_sign_(mac_tag_buff, sizeof(mac_tag_buff), context,
                                   caveats[i], mac_tag_buff,
-                                  UW_MACAROON_MAC_LEN)) {
+                                  sizeof(mac_tag_buff))) {
       return false;
     }
   }
@@ -100,25 +100,32 @@ bool uw_macaroon_extend_(const UwMacaroon* old_macaroon,
       additional_caveat == NULL || buffer == NULL || buffer_size == 0) {
     return false;
   }
+  // If we update the same macaroon in-place, do not zero it.
+  if (new_macaroon != old_macaroon) {
+    *new_macaroon = (UwMacaroon){};
+  }
 
-  new_macaroon->num_caveats = old_macaroon->num_caveats + 1;
+  const size_t old_count = old_macaroon->num_caveats;
+  const size_t new_count = old_count + 1;
+
+  new_macaroon->num_caveats = new_count;
 
   // Extend the caveat pointer list
-  if ((new_macaroon->num_caveats) * sizeof(UwMacaroonCaveat*) > buffer_size) {
+  if (new_count * sizeof(new_macaroon->caveats[0]) > buffer_size) {
     // Not enough memory to store the extended caveat pointer list
     return false;
   }
   const UwMacaroonCaveat** extended_list = (const UwMacaroonCaveat**)buffer;
-  if (new_macaroon->caveats != old_macaroon->caveats) {
+  if (extended_list != old_macaroon->caveats) {
     memcpy(extended_list, old_macaroon->caveats,
-           old_macaroon->num_caveats * sizeof(old_macaroon->caveats[0]));
+           old_count * sizeof(old_macaroon->caveats[0]));
   }
-  extended_list[old_macaroon->num_caveats] = additional_caveat;
+  extended_list[old_count] = additional_caveat;
   new_macaroon->caveats = (const UwMacaroonCaveat* const*)extended_list;
 
   // Compute the new MAC tag
   return create_mac_tag_(old_macaroon->mac_tag, UW_MACAROON_MAC_LEN, context,
-                         new_macaroon->caveats + old_macaroon->num_caveats, 1,
+                         new_macaroon->caveats + old_count, 1,
                          new_macaroon->mac_tag);
 }
 
@@ -133,7 +140,7 @@ static void init_validation_result(UwMacaroonValidationResult* result) {
 /** Reset the result object to the lowest scope when encountering errors */
 static void reset_validation_result(UwMacaroonValidationResult* result) {
   *result = (UwMacaroonValidationResult){
-      .weave_app_restricted = true,
+      .app_commands_only = true,
       .granted_scope = UW_MACAROON_CAVEAT_SCOPE_LOWEST_POSSIBLE};
 }
 
@@ -317,4 +324,13 @@ bool uw_macaroon_deserialize_(const uint8_t* in,
   memcpy(macaroon->mac_tag, tag, UW_MACAROON_MAC_LEN);
 
   return true;
+}
+
+time_t uw_macaroon_get_expiration_unix_epoch_time_(
+    UwMacaroonValidationResult* result) {
+  // Expiration times of 0 and UINT32_MAX both mean no expiration.
+  if (result->expiration_time == 0 || result->expiration_time == UINT32_MAX) {
+    return 0;
+  }
+  return uw_macaroon_j2000_to_unix_epoch(result->expiration_time);
 }

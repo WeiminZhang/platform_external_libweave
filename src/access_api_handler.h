@@ -16,12 +16,12 @@ class AccessRevocationManager;
 class Command;
 class Device;
 
-// Handles commands for '_accessRevocationList' trait.
+// Handles commands for 'blacklist' trait.
 // Objects of the class subscribe for notification from CommandManager and
 // execute incoming commands.
 // Handled commands:
-//  _accessRevocationList.revoke
-//  _accessRevocationList.list
+//  blacklist.add
+//  blacklist.list
 class AccessApiHandler final {
  public:
   AccessApiHandler(Device* device, AccessRevocationManager* manager);

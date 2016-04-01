@@ -81,12 +81,15 @@ class DeviceManager final : public Device {
   Config* GetConfig();
 
  private:
-  void StartPrivet(provider::TaskRunner* task_runner,
-                   provider::Network* network,
-                   provider::DnsServiceDiscovery* dns_sd,
-                   provider::HttpServer* http_server,
-                   provider::Wifi* wifi,
-                   provider::Bluetooth* bluetooth);
+  void StartPrivet();
+  void StopPrivet();
+  void OnSettingsChanged(const Settings& settings);
+
+  provider::TaskRunner* task_runner_{nullptr};
+  provider::Network* network_{nullptr};
+  provider::DnsServiceDiscovery* dns_sd_{nullptr};
+  provider::HttpServer* http_server_{nullptr};
+  provider::Wifi* wifi_{nullptr};
 
   std::unique_ptr<Config> config_;
   std::unique_ptr<privet::AuthManager> auth_manager_;

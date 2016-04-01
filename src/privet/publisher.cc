@@ -65,6 +65,10 @@ void Publisher::ExposeService() {
       {"flags=" + WifiSsidGenerator{cloud_, wifi_}.GenerateFlags()},
   };
 
+  if (device_->GetHttpsEnpoint().first > 0)
+    txt_record.emplace_back("https=" +
+                            std::to_string(device_->GetHttpsEnpoint().first));
+
   if (!cloud_->GetCloudId().empty())
     txt_record.emplace_back("gcd_id=" + cloud_->GetCloudId());
 

@@ -13,7 +13,6 @@
 #include "base/compiler_specific.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/numerics/safe_math.h"
-#include "base/template_util.h"
 
 using std::numeric_limits;
 using base::CheckedNumeric;

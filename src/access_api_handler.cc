@@ -18,13 +18,13 @@ namespace weave {
 namespace {
 
 const char kComponent[] = "accessControl";
-const char kTrait[] = "_accessRevocationList";
-const char kStateCapacity[] = "_accessRevocationList.capacity";
+const char kTrait[] = "blacklist";
+const char kStateCapacity[] = "blacklist.capacity";
 const char kUserId[] = "userId";
 const char kApplicationId[] = "applicationId";
 const char kExpirationTime[] = "expirationTime";
 const char kRevocationTimestamp[] = "revocationTimestamp";
-const char kRevocationList[] = "revocationListEntries";
+const char kBlacklistEntries[] = "blacklistEntries";
 
 bool GetIds(const base::DictionaryValue& parameters,
             std::vector<uint8_t>* user_id_decoded,
@@ -55,9 +55,9 @@ AccessApiHandler::AccessApiHandler(Device* device,
                                    AccessRevocationManager* manager)
     : device_{device}, manager_{manager} {
   device_->AddTraitDefinitionsFromJson(R"({
-    "_accessRevocationList": {
+    "blacklist": {
       "commands": {
-        "revoke": {
+        "add": {
           "minimalRole": "owner",
           "parameters": {
             "userId": {
@@ -78,7 +78,7 @@ AccessApiHandler::AccessApiHandler(Device* device,
           "minimalRole": "owner",
           "parameters": {},
           "results": {
-            "revocationEntriesList": {
+            "blacklistEntries": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -114,10 +114,10 @@ AccessApiHandler::AccessApiHandler(Device* device,
   UpdateState();
 
   device_->AddCommandHandler(
-      kComponent, "_accessRevocationList.revoke",
+      kComponent, "blacklist.add",
       base::Bind(&AccessApiHandler::Block, weak_ptr_factory_.GetWeakPtr()));
   device_->AddCommandHandler(
-      kComponent, "_accessRevocationList.list",
+      kComponent, "blacklist.list",
       base::Bind(&AccessApiHandler::List, weak_ptr_factory_.GetWeakPtr()));
 }
 
@@ -176,11 +176,11 @@ void AccessApiHandler::List(const std::weak_ptr<Command>& cmd) {
     std::unique_ptr<base::DictionaryValue> entry{new base::DictionaryValue};
     entry->SetString(kUserId, Base64Encode(e.user_id));
     entry->SetString(kApplicationId, Base64Encode(e.app_id));
-    entries->Append(entry.release());
+    entries->Append(std::move(entry));
   }
 
   base::DictionaryValue result;
-  result.Set(kRevocationList, entries.release());
+  result.Set(kBlacklistEntries, std::move(entries));
 
   command->Complete(result, nullptr);
 }

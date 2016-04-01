@@ -30,7 +30,12 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
                              provider::HttpServer* http_server,
                              provider::Wifi* wifi,
                              provider::Bluetooth* bluetooth)
-    : config_{new Config{config_store}},
+    : task_runner_{task_runner},
+      network_{network},
+      dns_sd_{dns_sd},
+      http_server_{http_server},
+      wifi_{wifi},
+      config_{new Config{config_store}},
       component_manager_{new ComponentManagerImpl{task_runner}} {
   if (http_server) {
     access_revocation_manager_.reset(
@@ -50,7 +55,9 @@ DeviceManager::DeviceManager(provider::ConfigStore* config_store,
   device_info_->Start();
 
   if (http_server) {
-    StartPrivet(task_runner, network, dns_sd, http_server, wifi, bluetooth);
+    StartPrivet();
+    AddSettingsChangedCallback(base::Bind(&DeviceManager::OnSettingsChanged,
+                                          weak_ptr_factory_.GetWeakPtr()));
   } else {
     CHECK(!dns_sd);
   }
@@ -71,15 +78,16 @@ Config* DeviceManager::GetConfig() {
   return device_info_->GetMutableConfig();
 }
 
-void DeviceManager::StartPrivet(provider::TaskRunner* task_runner,
-                                provider::Network* network,
-                                provider::DnsServiceDiscovery* dns_sd,
-                                provider::HttpServer* http_server,
-                                provider::Wifi* wifi,
-                                provider::Bluetooth* bluetooth) {
-  privet_.reset(new privet::Manager{task_runner});
-  privet_->Start(network, dns_sd, http_server, wifi, auth_manager_.get(),
+void DeviceManager::StartPrivet() {
+  if (privet_)
+    return;
+  privet_.reset(new privet::Manager{task_runner_});
+  privet_->Start(network_, dns_sd_, http_server_, wifi_, auth_manager_.get(),
                  device_info_.get(), component_manager_.get());
+}
+
+void DeviceManager::StopPrivet() {
+  privet_.reset();
 }
 
 GcdState DeviceManager::GetGcdState() const {
@@ -186,6 +194,14 @@ void DeviceManager::AddPairingChangedCallbacks(
     const PairingEndCallback& end_callback) {
   if (privet_)
     privet_->AddOnPairingChangedCallbacks(begin_callback, end_callback);
+}
+
+void DeviceManager::OnSettingsChanged(const Settings& settings) {
+  if (settings.local_discovery_enabled && http_server_) {
+    StartPrivet();
+  } else {
+    StopPrivet();
+  }
 }
 
 std::unique_ptr<Device> Device::Create(provider::ConfigStore* config_store,
