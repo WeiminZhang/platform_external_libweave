@@ -35,8 +35,8 @@ void CloudCommandProxy::OnErrorChanged() {
   std::unique_ptr<base::DictionaryValue> patch{new base::DictionaryValue};
   patch->Set(commands::attributes::kCommand_Error,
              command_instance_->GetError()
-                 ? ErrorInfoToJson(*command_instance_->GetError()).release()
-                 : base::Value::CreateNullValue().release());
+                 ? ErrorInfoToJson(*command_instance_->GetError())
+                 : base::Value::CreateNullValue());
   QueueCommandUpdate(std::move(patch));
 }
 

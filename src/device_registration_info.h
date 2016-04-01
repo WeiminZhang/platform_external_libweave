@@ -115,6 +115,9 @@ class DeviceRegistrationInfo : public NotificationDelegate,
 
   GcdState GetGcdState() const { return gcd_state_; }
 
+  // Checks whether we have credentials generated during registration.
+  bool HaveRegistrationCredentials() const;
+
  private:
   friend class DeviceRegistrationInfoTest;
 
@@ -124,8 +127,6 @@ class DeviceRegistrationInfo : public NotificationDelegate,
     return weak_factory_.GetWeakPtr();
   }
 
-  // Checks whether we have credentials generated during registration.
-  bool HaveRegistrationCredentials() const;
   // Calls HaveRegistrationCredentials() and logs an error if no credentials
   // are available.
   bool VerifyRegistrationCredentials(ErrorPtr* error) const;

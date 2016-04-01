@@ -227,11 +227,13 @@ class OvenHandler {
 
     state.SetString("temperatureSensor.units", units_);
     state.SetDouble("temperatureSensor.value", current_temperature_);
-    state.Set("temperatureSensor.supportedUnits", supportedUnits.DeepCopy());
+    state.Set("temperatureSensor.supportedUnits",
+              supportedUnits.CreateDeepCopy());
 
     state.SetString("temperatureSetting.units", units_);
     state.SetDouble("temperatureSetting.tempSetting", target_temperature_);
-    state.Set("temperatureSetting.supportedUnits", supportedUnits.DeepCopy());
+    state.Set("temperatureSetting.supportedUnits",
+              supportedUnits.CreateDeepCopy());
     state.SetDouble("temperatureSetting.maxTempSetting", kMaxTemp);
     state.SetDouble("temperatureSetting.minTempSetting", kMinTemp);
 

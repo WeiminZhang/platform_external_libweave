@@ -173,6 +173,28 @@ TrimPositions TrimWhitespaceASCII(const std::string& input,
 bool IsStringUTF8(const StringPiece& str);
 bool IsStringASCII(const StringPiece& str);
 
+// Reserves enough memory in |str| to accommodate |length_with_null| characters,
+// sets the size of |str| to |length_with_null - 1| characters, and returns a
+// pointer to the underlying contiguous array of characters.  This is typically
+// used when calling a function that writes results into a character array, but
+// the caller wants the data to be managed by a string-like object.  It is
+// convenient in that is can be used inline in the call, and fast in that it
+// avoids copying the results of the call from a char* into a string.
+//
+// |length_with_null| must be at least 2, since otherwise the underlying string
+// would have size 0, and trying to access &((*str)[0]) in that case can result
+// in a number of problems.
+//
+// Internally, this takes linear time because the resize() call 0-fills the
+// underlying array for potentially all
+// (|length_with_null - 1| * sizeof(string_type::value_type)) bytes.  Ideally we
+// could avoid this aspect of the resize() call, as we expect the caller to
+// immediately write over this memory, but there is no other way to set the size
+// of the string, and not doing that will mean people who access |str| rather
+// than str.c_str() will get back a string of whatever size |str| had on entry
+// to this function (probably 0).
+char* WriteInto(std::string* str, size_t length_with_null);
+
 }  // namespace base
 
 #if defined(OS_WIN)

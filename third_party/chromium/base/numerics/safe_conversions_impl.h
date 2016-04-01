@@ -8,8 +8,6 @@
 #include <limits.h>
 #include <stdint.h>
 
-#include <limits>
-
 namespace base {
 namespace internal {
 

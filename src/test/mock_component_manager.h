@@ -65,12 +65,18 @@ class MockComponentManager : public ComponentManager {
   MOCK_CONST_METHOD1(
       FindCommandDefinition,
       const base::DictionaryValue*(const std::string& command_name));
-  MOCK_CONST_METHOD3(GetMinimalRole,
+  MOCK_CONST_METHOD3(GetCommandMinimalRole,
                      bool(const std::string& command_name,
+                          UserRole* minimal_role,
+                          ErrorPtr* error));
+  MOCK_CONST_METHOD3(GetStateMinimalRole,
+                     bool(const std::string& state_property_name,
                           UserRole* minimal_role,
                           ErrorPtr* error));
   MOCK_CONST_METHOD0(GetTraits, const base::DictionaryValue&());
   MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
+  MOCK_CONST_METHOD1(MockGetComponentsForUserRole,
+                     base::DictionaryValue*(UserRole));
   MOCK_METHOD3(SetStateProperties,
                bool(const std::string& component_path,
                     const base::DictionaryValue& dict,
@@ -117,6 +123,11 @@ class MockComponentManager : public ComponentManager {
   Token AddServerStateUpdatedCallback(
       const base::Callback<void(UpdateID)>& callback) override {
     return Token{MockAddServerStateUpdatedCallback(callback)};
+  }
+  std::unique_ptr<base::DictionaryValue> GetComponentsForUserRole(
+      UserRole role) const override {
+    return std::unique_ptr<base::DictionaryValue>{
+        MockGetComponentsForUserRole(role)};
   }
 };
 

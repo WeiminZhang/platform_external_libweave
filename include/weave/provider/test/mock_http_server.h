@@ -22,6 +22,8 @@ class MockHttpServer : public HttpServer {
                void(const std::string&, const RequestHandlerCallback&));
   MOCK_METHOD2(AddHttpsRequestHandler,
                void(const std::string&, const RequestHandlerCallback&));
+  MOCK_METHOD1(RemoveHttpRequestHandler, void(const std::string&));
+  MOCK_METHOD1(RemoveHttpsRequestHandler, void(const std::string&));
   MOCK_CONST_METHOD0(GetHttpPort, uint16_t());
   MOCK_CONST_METHOD0(GetHttpsPort, uint16_t());
   MOCK_CONST_METHOD0(GetHttpsCertificateFingerprint, std::vector<uint8_t>());

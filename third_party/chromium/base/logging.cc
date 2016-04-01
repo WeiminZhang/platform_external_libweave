@@ -233,7 +233,7 @@ void LogMessage::Init(const char* file, int line) {
 }
 
 void RawLog(int level, const char* message) {
-  if (level >= g_min_log_level) {
+  if (level >= g_min_log_level && message) {
     size_t bytes_written = 0;
     const size_t message_len = strlen(message);
     int rv;

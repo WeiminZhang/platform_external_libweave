@@ -20,8 +20,10 @@
 #include "src/privet/wifi_delegate.h"
 
 using testing::_;
+using testing::AtLeast;
 using testing::Return;
 using testing::ReturnRef;
+using testing::SaveArg;
 using testing::SetArgPointee;
 
 namespace weave {
@@ -188,7 +190,8 @@ class MockCloudDelegate : public CloudDelegate {
   MOCK_CONST_METHOD0(GetOAuthUrl, std::string());
   MOCK_CONST_METHOD0(GetServiceUrl, std::string());
   MOCK_CONST_METHOD0(GetXmppEndpoint, std::string());
-  MOCK_CONST_METHOD0(GetComponents, const base::DictionaryValue&());
+  MOCK_CONST_METHOD1(MockGetComponentsForUser,
+                     const base::DictionaryValue&(const UserInfo&));
   MOCK_CONST_METHOD2(FindComponent,
                      const base::DictionaryValue*(const std::string& path,
                                                   ErrorPtr* error));
@@ -206,6 +209,9 @@ class MockCloudDelegate : public CloudDelegate {
                     const UserInfo&,
                     const CommandDoneCallback&));
   MOCK_METHOD2(ListCommands, void(const UserInfo&, const CommandDoneCallback&));
+  MOCK_METHOD1(AddOnTraitsChangedCallback, void(const base::Closure&));
+  MOCK_METHOD1(AddOnStateChangedCallback, void(const base::Closure&));
+  MOCK_METHOD1(AddOnComponentsChangeCallback, void(const base::Closure&));
 
   MockCloudDelegate() {
     EXPECT_CALL(*this, GetDeviceId()).WillRepeatedly(Return("TestId"));
@@ -228,13 +234,37 @@ class MockCloudDelegate : public CloudDelegate {
     EXPECT_CALL(*this, GetCloudId()).WillRepeatedly(Return("TestCloudId"));
     test_dict_.Set("test", new base::DictionaryValue);
     EXPECT_CALL(*this, GetTraits()).WillRepeatedly(ReturnRef(test_dict_));
-    EXPECT_CALL(*this, GetComponents()).WillRepeatedly(ReturnRef(test_dict_));
+    EXPECT_CALL(*this, MockGetComponentsForUser(_))
+        .WillRepeatedly(ReturnRef(test_dict_));
     EXPECT_CALL(*this, FindComponent(_, _)).Times(0);
+
+    EXPECT_CALL(*this, AddOnTraitsChangedCallback(_))
+        .WillRepeatedly(SaveArg<0>(&on_traits_changed_));
+    EXPECT_CALL(*this, AddOnStateChangedCallback(_))
+        .WillRepeatedly(SaveArg<0>(&on_state_changed_));
+    EXPECT_CALL(*this, AddOnComponentsChangeCallback(_))
+        .WillRepeatedly(SaveArg<0>(&on_components_changed_));
   }
+
+  void NotifyOnTraitDefsChanged() { on_traits_changed_.Run(); }
+
+  void NotifyOnComponentTreeChanged() { on_components_changed_.Run(); }
+
+  void NotifyOnStateChanged() { on_state_changed_.Run(); }
 
   ConnectionState connection_state_{ConnectionState::kOnline};
   SetupState setup_state_{SetupState::kNone};
   base::DictionaryValue test_dict_;
+
+  base::Closure on_traits_changed_;
+  base::Closure on_state_changed_;
+  base::Closure on_components_changed_;
+
+ private:
+  std::unique_ptr<base::DictionaryValue> GetComponentsForUser(
+      const UserInfo& user_info) const override {
+    return MockGetComponentsForUser(user_info).CreateDeepCopy();
+  }
 };
 
 }  // namespace privet

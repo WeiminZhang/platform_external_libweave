@@ -144,9 +144,11 @@ bool SecurityManager::CreateAccessTokenImpl(
         return disabled_mode(error);
       const base::TimeDelta kTtl =
           base::TimeDelta::FromSeconds(kAccessTokenExpirationSeconds);
-      return auth_manager_->CreateAccessTokenFromAuth(
+      bool result = auth_manager_->CreateAccessTokenFromAuth(
           auth_code, kTtl, access_token, access_token_scope, access_token_ttl,
           error);
+      *access_token_scope = std::min(*access_token_scope, desired_scope);
+      return result;
   }
 
   return Error::AddTo(error, FROM_HERE, errors::kInvalidAuthMode,

@@ -19,7 +19,7 @@ const char kTraits[] = R"({
         "parameters": {
           "state": {
             "type": "string",
-            "enum": [ "on", "standby" ]
+            "enum": [ "on", "off" ]
           }
         }
       }
@@ -27,7 +27,7 @@ const char kTraits[] = R"({
     "state": {
       "state": {
         "type": "string",
-        "enum": [ "on", "standby" ],
+        "enum": [ "on", "off" ],
         "isRequired": true
       }
     }
@@ -149,7 +149,7 @@ class SpeakerHandler {
 
   void UpdateSpeakerState() {
     base::DictionaryValue state;
-    state.SetString("onOff.state", speaker_status_ ? "on" : "standby");
+    state.SetString("onOff.state", speaker_status_ ? "on" : "off");
     state.SetBoolean("volume.isMuted", isMuted_status_);
     state.SetInteger("volume.volume", volume_value_);
     device_->SetStateProperties(kComponent, state, nullptr);

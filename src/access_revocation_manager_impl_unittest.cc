@@ -112,29 +112,46 @@ TEST_F(AccessRevocationManagerImplTest, BlockExpired) {
                   }));
 }
 
-TEST_F(AccessRevocationManagerImplTest, BlockListIsFull) {
+TEST_F(AccessRevocationManagerImplTest, BlockListOverflow) {
+  EXPECT_CALL(config_store_, LoadSettings("black_list")).WillOnce(Return(""));
+  manager_.reset(new AccessRevocationManagerImpl{&config_store_, 10, &clock_});
+
   EXPECT_CALL(config_store_, SaveSettings("black_list", _, _))
       .WillRepeatedly(testing::WithArgs<1, 2>(testing::Invoke(
           [](const std::string& json, const DoneCallback& callback) {
             if (!callback.is_null())
               callback.Run(nullptr);
           })));
-  for (size_t i = manager_->GetSize(); i < manager_->GetCapacity(); ++i) {
-    manager_->Block(
-        {{99, static_cast<uint8_t>(i / 256), static_cast<uint8_t>(i % 256)},
-         {8, 8, 8},
-         base::Time::FromTimeT(1419970000),
-         base::Time::FromTimeT(1419990000)},
-        {});
-    EXPECT_EQ(i + 1, manager_->GetSize());
+
+  EXPECT_EQ(0u, manager_->GetSize());
+
+  // Trigger overflow several times.
+  for (size_t i = 0; i < manager_->GetCapacity() + 3; ++i) {
+    bool callback_called = false;
+    manager_->Block({{99, static_cast<uint8_t>(i), static_cast<uint8_t>(i)},
+                     {8, 8, 8},
+                     base::Time::FromTimeT(1419970000 + i),
+                     base::Time::FromTimeT(1419990000)},
+                    base::Bind([&callback_called](ErrorPtr error) {
+                      callback_called = true;
+                      EXPECT_FALSE(error);
+                    }));
+    EXPECT_TRUE(callback_called);
   }
-  manager_->Block({{99},
-                   {8, 8, 8},
-                   base::Time::FromTimeT(1419970000),
-                   base::Time::FromTimeT(1419990000)},
-                  base::Bind([](ErrorPtr error) {
-                    EXPECT_TRUE(error->HasError("blacklist_is_full"));
-                  }));
+  EXPECT_EQ(manager_->GetCapacity(), manager_->GetSize());
+
+  // We didn't block these ids, so we can use this to check if all_blocking
+  // issue is set for correct revocation time.
+  EXPECT_TRUE(manager_->IsBlocked({1}, {2}, base::Time::FromTimeT(1419970003)));
+  EXPECT_FALSE(
+      manager_->IsBlocked({1}, {2}, base::Time::FromTimeT(1419970004)));
+
+  // Check if all blocking rules still work.
+  for (size_t i = 0; i < manager_->GetCapacity() + 3; ++i) {
+    EXPECT_TRUE(manager_->IsBlocked(
+        {99, static_cast<uint8_t>(i), static_cast<uint8_t>(i)}, {8, 8, 8},
+        base::Time::FromTimeT(1419970000 + i)));
+  }
 }
 
 TEST_F(AccessRevocationManagerImplTest, IsBlockedIdsNotMacth) {
