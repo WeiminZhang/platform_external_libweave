@@ -2,6 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Disable all builtin rules first as we don't use any of them (we define all
+# rules/targets ourselves, nor do we want to rely on them.
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
 # Run make with BUILD_MODE=Release for release.
 BUILD_MODE ?= Debug
 
