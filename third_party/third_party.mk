@@ -94,3 +94,14 @@ $(third_party_libevhtp_lib) : $(third_party_libevhtp_header)
 
 clean-libevhtp :
 	rm -rf $(third_party_libevhtp)
+
+# These settings are exported for other code to use as needed.
+USE_INTERNAL_LIBEVHTP ?= 1
+
+ifeq (1, $(USE_INTERNAL_LIBEVHTP))
+LIBEVHTP_INCLUDES = -Ithird_party/libevhtp -I$(dir $(third_party_libevhtp_header))
+LIBEVHTP_HEADERS = $(third_party_libevhtp_header)
+else
+LIBEVHTP_INCLUDES =
+LIBEVHTP_HEADERS =
+endif
