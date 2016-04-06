@@ -82,11 +82,8 @@ class Config final {
     void set_local_anonymous_access_role(AuthScope role) {
       settings_->local_anonymous_access_role = role;
     }
-    void set_local_discovery_enabled(bool enabled) {
-      settings_->local_discovery_enabled = enabled;
-    }
-    void set_local_pairing_enabled(bool enabled) {
-      settings_->local_pairing_enabled = enabled;
+    void set_local_access_enabled(bool enabled) {
+      settings_->local_access_enabled = enabled;
     }
     void set_cloud_id(const std::string& id) { settings_->cloud_id = id; }
     void set_refresh_token(const std::string& token) {

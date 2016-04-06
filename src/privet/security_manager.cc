@@ -438,7 +438,7 @@ bool SecurityManager::IsAnonymousAuthSupported() const {
 }
 
 bool SecurityManager::IsPairingAuthSupported() const {
-  return GetSettings().local_pairing_enabled;
+  return GetSettings().local_access_enabled;
 }
 
 bool SecurityManager::IsLocalAuthSupported() const {

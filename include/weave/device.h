@@ -152,7 +152,7 @@ class Device {
   // |component| is the name of the component for which commands should be
   // handled.
   // |command_name| is the full command name of the command to handle. e.g.
-  // "base.reboot". Each command can have no more than one handler.
+  // "device.setConfig". Each command can have no more than one handler.
   // Empty |component| and |command_name| sets default handler for all unhanded
   // commands.
   // No new command handlers can be set after default handler was set.

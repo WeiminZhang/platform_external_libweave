@@ -66,6 +66,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().model_id);
   EXPECT_FALSE(GetSettings().device_id.empty());
   EXPECT_EQ("", GetSettings().firmware_version);
+  EXPECT_EQ("", GetSettings().serial_number);
   EXPECT_TRUE(GetSettings().wifi_auto_setup_enabled);
   EXPECT_EQ("", GetSettings().test_privet_ssid);
   EXPECT_EQ(std::set<PairingType>{PairingType::kPinCode},
@@ -75,8 +76,7 @@ TEST_F(ConfigTest, Defaults) {
   EXPECT_EQ("", GetSettings().description);
   EXPECT_EQ("", GetSettings().location);
   EXPECT_EQ(AuthScope::kViewer, GetSettings().local_anonymous_access_role);
-  EXPECT_TRUE(GetSettings().local_pairing_enabled);
-  EXPECT_TRUE(GetSettings().local_discovery_enabled);
+  EXPECT_TRUE(GetSettings().local_access_enabled);
   EXPECT_EQ("", GetSettings().cloud_id);
   EXPECT_EQ("", GetSettings().refresh_token);
   EXPECT_EQ("", GetSettings().robot_account);
@@ -127,7 +127,7 @@ TEST_F(ConfigTest, LoadStateNamed) {
 
 TEST_F(ConfigTest, LoadState) {
   auto state = R"({
-    "version": 1,
+    "version": 2,
     "api_key": "state_api_key",
     "client_id": "state_client_id",
     "client_secret": "state_client_secret",
@@ -137,8 +137,7 @@ TEST_F(ConfigTest, LoadState) {
     "last_configured_ssid": "state_last_configured_ssid",
     "local_anonymous_access_role": "user",
     "root_client_token_owner": "client",
-    "local_discovery_enabled": false,
-    "local_pairing_enabled": false,
+    "local_access_enabled": false,
     "location": "state_location",
     "name": "state_name",
     "oauth_url": "state_oauth_url",
@@ -172,8 +171,7 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ("state_description", GetSettings().description);
   EXPECT_EQ("state_location", GetSettings().location);
   EXPECT_EQ(AuthScope::kUser, GetSettings().local_anonymous_access_role);
-  EXPECT_FALSE(GetSettings().local_pairing_enabled);
-  EXPECT_FALSE(GetSettings().local_discovery_enabled);
+  EXPECT_FALSE(GetSettings().local_access_enabled);
   EXPECT_EQ("state_cloud_id", GetSettings().cloud_id);
   EXPECT_EQ("state_refresh_token", GetSettings().refresh_token);
   EXPECT_EQ("state_robot_account", GetSettings().robot_account);
@@ -181,6 +179,44 @@ TEST_F(ConfigTest, LoadState) {
   EXPECT_EQ("c3RhdGVfc2VjcmV0", Base64Encode(GetSettings().secret));
   EXPECT_EQ(RootClientTokenOwner::kClient,
             GetSettings().root_client_token_owner);
+}
+
+TEST_F(ConfigTest, LoadStateV1) {
+  auto state = R"({
+    "version": 1,
+    "local_discovery_enabled": false,
+    "local_pairing_enabled": false
+  })";
+  EXPECT_CALL(config_store_, LoadSettings(kConfigName)).WillOnce(Return(state));
+  Reload();
+  EXPECT_FALSE(GetSettings().local_access_enabled);
+
+  state = R"({
+    "version": 1,
+    "local_discovery_enabled": true,
+    "local_pairing_enabled": false
+  })";
+  EXPECT_CALL(config_store_, LoadSettings(kConfigName)).WillOnce(Return(state));
+  Reload();
+  EXPECT_TRUE(GetSettings().local_access_enabled);
+
+  state = R"({
+    "version": 1,
+    "local_discovery_enabled": false,
+    "local_pairing_enabled": true
+  })";
+  EXPECT_CALL(config_store_, LoadSettings(kConfigName)).WillOnce(Return(state));
+  Reload();
+  EXPECT_FALSE(GetSettings().local_access_enabled);
+
+  state = R"({
+    "version": 1,
+    "local_discovery_enabled": true,
+    "local_pairing_enabled": true
+  })";
+  EXPECT_CALL(config_store_, LoadSettings(kConfigName)).WillOnce(Return(state));
+  Reload();
+  EXPECT_TRUE(GetSettings().local_access_enabled);
 }
 
 TEST_F(ConfigTest, Setters) {
@@ -222,17 +258,11 @@ TEST_F(ConfigTest, Setters) {
   change.set_local_anonymous_access_role(AuthScope::kUser);
   EXPECT_EQ(AuthScope::kUser, GetSettings().local_anonymous_access_role);
 
-  change.set_local_discovery_enabled(false);
-  EXPECT_FALSE(GetSettings().local_discovery_enabled);
+  change.set_local_access_enabled(false);
+  EXPECT_FALSE(GetSettings().local_access_enabled);
 
-  change.set_local_pairing_enabled(false);
-  EXPECT_FALSE(GetSettings().local_pairing_enabled);
-
-  change.set_local_discovery_enabled(true);
-  EXPECT_TRUE(GetSettings().local_discovery_enabled);
-
-  change.set_local_pairing_enabled(true);
-  EXPECT_TRUE(GetSettings().local_pairing_enabled);
+  change.set_local_access_enabled(true);
+  EXPECT_TRUE(GetSettings().local_access_enabled);
 
   change.set_cloud_id("set_cloud_id");
   EXPECT_EQ("set_cloud_id", GetSettings().cloud_id);
@@ -263,7 +293,7 @@ TEST_F(ConfigTest, Setters) {
       .WillOnce(WithArgs<1, 2>(
           Invoke([](const std::string& json, const DoneCallback& callback) {
             auto expected = R"({
-              'version': 1,
+              'version': 2,
               'api_key': 'set_api_key',
               'client_id': 'set_client_id',
               'client_secret': 'set_client_secret',
@@ -273,8 +303,7 @@ TEST_F(ConfigTest, Setters) {
               'last_configured_ssid': 'set_last_configured_ssid',
               'local_anonymous_access_role': 'user',
               'root_client_token_owner': 'cloud',
-              'local_discovery_enabled': true,
-              'local_pairing_enabled': true,
+              'local_access_enabled': true,
               'location': 'set_location',
               'name': 'set_name',
               'oauth_url': 'set_oauth_url',

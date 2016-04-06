@@ -77,9 +77,8 @@ std::unique_ptr<base::DictionaryValue> StripDebugErrorDetails(
   auto result = value.CreateDeepCopy();
   base::DictionaryValue* error_dict = nullptr;
   EXPECT_TRUE(result->GetDictionary(path_to_error_object, &error_dict));
-  scoped_ptr<base::Value> dummy;
-  error_dict->RemovePath("error.debugInfo", &dummy);
-  error_dict->RemovePath("error.message", &dummy);
+  error_dict->RemovePath("error.debugInfo", nullptr);
+  error_dict->RemovePath("error.message", nullptr);
   return result;
 }
 
