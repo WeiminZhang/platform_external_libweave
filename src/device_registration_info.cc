@@ -1331,13 +1331,6 @@ void DeviceRegistrationInfo::OnCommandCreated(
 
   VLOG(1) << "Command notification received: " << command;
 
-  if (!command.empty()) {
-    // GCD spec indicates that the command parameter in notification object
-    // "may be empty if command size is too big".
-    PublishCommand(command);
-    return;
-  }
-
   // If the command was too big to be delivered over a notification channel,
   // or OnCommandCreated() was initiated from the Pull notification,
   // perform a manual command fetch from the server here.
