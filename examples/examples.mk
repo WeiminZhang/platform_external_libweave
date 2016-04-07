@@ -7,16 +7,6 @@
 
 examples_provider_obj_files := $(EXAMPLES_PROVIDER_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
-USE_INTERNAL_LIBEVHTP ?= 1
-
-ifeq (1, $(USE_INTERNAL_LIBEVHTP))
-LIBEVHTP_INCLUDES = -Ithird_party/libevhtp -I$(dir $(third_party_libevhtp_header))
-LIBEVHTP_HEADERS = $(third_party_libevhtp_header)
-else
-LIBEVHTP_INCLUDES =
-LIBEVHTP_HEADERS =
-endif
-
 $(examples_provider_obj_files) : $(LIBEVHTP_HEADERS)
 $(examples_provider_obj_files) : INCLUDES += $(LIBEVHTP_INCLUDES)
 $(examples_provider_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
@@ -43,7 +33,7 @@ $(examples_daemon_obj_files) : out/$(BUILD_MODE)/%.o : %.cc
 	mkdir -p $(dir $@)
 	$(CXX) $(DEFS_$(BUILD_MODE)) $(INCLUDES) $(CFLAGS) $(CFLAGS_$(BUILD_MODE)) $(CFLAGS_CC) -c -o $@ $<
 
-daemon_common_flags := \
+example_daemon_common_flags := \
 	-Wl,-rpath=out/$(BUILD_MODE)/ \
 	-levent \
 	-levent_openssl \
@@ -55,31 +45,31 @@ daemon_common_flags := \
 	-lssl \
 	-lcrypto
 
-daemon_deps := out/$(BUILD_MODE)/examples_provider.a out/$(BUILD_MODE)/libweave.so
+example_daemon_deps := out/$(BUILD_MODE)/examples_provider.a out/$(BUILD_MODE)/libweave.so
 
 ifeq (1, $(USE_INTERNAL_LIBEVHTP))
-daemon_deps += $(third_party_libevhtp_lib)
+example_daemon_deps += $(third_party_libevhtp_lib)
 else
-daemon_common_flags += -levhtp
+example_daemon_common_flags += -levhtp
 endif
 
-out/$(BUILD_MODE)/weave_daemon_ledflasher : out/$(BUILD_MODE)/examples/daemon/ledflasher/ledflasher.o $(daemon_deps)
-	$(CXX) -o $@ $^ $(CFLAGS) $(daemon_common_flags)
+out/$(BUILD_MODE)/weave_daemon_ledflasher : out/$(BUILD_MODE)/examples/daemon/ledflasher/ledflasher.o $(example_daemon_deps)
+	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
 
-out/$(BUILD_MODE)/weave_daemon_light : out/$(BUILD_MODE)/examples/daemon/light/light.o $(daemon_deps)
-	$(CXX) -o $@ $^ $(CFLAGS) $(daemon_common_flags)
+out/$(BUILD_MODE)/weave_daemon_light : out/$(BUILD_MODE)/examples/daemon/light/light.o $(example_daemon_deps)
+	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
 
-out/$(BUILD_MODE)/weave_daemon_lock : out/$(BUILD_MODE)/examples/daemon/lock/lock.o $(daemon_deps)
-	$(CXX) -o $@ $^ $(CFLAGS) $(daemon_common_flags)
+out/$(BUILD_MODE)/weave_daemon_lock : out/$(BUILD_MODE)/examples/daemon/lock/lock.o $(example_daemon_deps)
+	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
 
-out/$(BUILD_MODE)/weave_daemon_oven : out/$(BUILD_MODE)/examples/daemon/oven/oven.o $(daemon_deps)
-	$(CXX) -o $@ $^ $(CFLAGS) $(daemon_common_flags)
+out/$(BUILD_MODE)/weave_daemon_oven : out/$(BUILD_MODE)/examples/daemon/oven/oven.o $(example_daemon_deps)
+	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
 
-out/$(BUILD_MODE)/weave_daemon_sample : out/$(BUILD_MODE)/examples/daemon/sample/sample.o $(daemon_deps)
-	$(CXX) -o $@ $^ $(CFLAGS) $(daemon_common_flags)
+out/$(BUILD_MODE)/weave_daemon_sample : out/$(BUILD_MODE)/examples/daemon/sample/sample.o $(example_daemon_deps)
+	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
 
-out/$(BUILD_MODE)/weave_daemon_speaker : out/$(BUILD_MODE)/examples/daemon/speaker/speaker.o $(daemon_deps)
-	$(CXX) -o $@ $^ $(CFLAGS) $(daemon_common_flags)
+out/$(BUILD_MODE)/weave_daemon_speaker : out/$(BUILD_MODE)/examples/daemon/speaker/speaker.o $(example_daemon_deps)
+	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
 
 all-examples : out/$(BUILD_MODE)/weave_daemon_ledflasher out/$(BUILD_MODE)/weave_daemon_light out/$(BUILD_MODE)/weave_daemon_lock out/$(BUILD_MODE)/weave_daemon_oven out/$(BUILD_MODE)/weave_daemon_sample out/$(BUILD_MODE)/weave_daemon_speaker
 
