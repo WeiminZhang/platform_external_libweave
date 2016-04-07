@@ -39,7 +39,6 @@ const char kErrorAlreayRegistered[] = "already_registered";
 namespace {
 
 const int kPollingPeriodSeconds = 7;
-const int kBackupPollingPeriodMinutes = 30;
 
 namespace fetch_reason {
 
