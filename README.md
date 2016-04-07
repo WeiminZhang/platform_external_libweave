@@ -128,6 +128,29 @@ See [the examples README](/examples/daemon/README.md) for details.
 
 ### Cross-compiling
 
+#### libweave users
+
+In order to cross-compile, all you need to configure is CC/CXX/AR.
+
+```
+make CC=your-cc CXX=your-cxx AR=your-ar
+```
+
+So if you have a toolchain in a path like `/opt/vendor/bin/arm-linux-gcc`, do:
+
+```
+make \
+  CC=/opt/vendor/bin/arm-linux-gcc \
+  CXX=/opt/vendor/bin/arm-linux-g++ \
+  AR=/opt/vendor/bin/arm-linux-ar
+```
+
+#### libweave developers
+
+*** note
+**Note:** This is only for developers who are hacking on libweave itself.
+***
+
 The build supports transparently downloading & using a few cross-compilers.
 Just add `cross-<arch>` to the command line in addition to the target you
 want to actually build.
