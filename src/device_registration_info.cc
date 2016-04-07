@@ -46,7 +46,6 @@ namespace fetch_reason {
 const char kDeviceStart[] = "device_start";  // Initial queue fetch at startup.
 const char kRegularPull[] = "regular_pull";  // Regular fetch before XMPP is up.
 const char kNewCommand[] = "new_command";    // A new command is available.
-const char kJustInCase[] = "just_in_case";   // Backup fetch when XMPP is live.
 
 }  // namespace fetch_reason
 
@@ -452,8 +451,17 @@ void DeviceRegistrationInfo::StartNotificationChannel() {
   // Start with just regular polling at the pre-configured polling interval.
   // Once the primary notification channel is connected successfully, it will
   // call back to OnConnected() and at that time we'll switch to use the
-  // primary channel and switch periodic poll into much more infrequent backup
-  // poll mode.
+  // primary channel and turn off the periodic polling.
+  StartPullChannel();
+
+  notification_channel_starting_ = true;
+  primary_notification_channel_.reset(
+      new XmppChannel{GetSettings().robot_account, access_token_,
+                      GetSettings().xmpp_endpoint, task_runner_, network_});
+  primary_notification_channel_->Start(this);
+}
+
+void DeviceRegistrationInfo::StartPullChannel() {
   const base::TimeDelta pull_interval =
       base::TimeDelta::FromSeconds(kPollingPeriodSeconds);
   if (!pull_channel_) {
@@ -463,12 +471,12 @@ void DeviceRegistrationInfo::StartNotificationChannel() {
     pull_channel_->UpdatePullInterval(pull_interval);
   }
   current_notification_channel_ = pull_channel_.get();
+}
 
-  notification_channel_starting_ = true;
-  primary_notification_channel_.reset(
-      new XmppChannel{GetSettings().robot_account, access_token_,
-                      GetSettings().xmpp_endpoint, task_runner_, network_});
-  primary_notification_channel_->Start(this);
+void DeviceRegistrationInfo::StopPullChannel() {
+  pull_channel_->Stop();
+  pull_channel_.reset();
+  current_notification_channel_ = nullptr;
 }
 
 void DeviceRegistrationInfo::AddGcdStateChangedCallback(
@@ -1278,8 +1286,7 @@ void DeviceRegistrationInfo::OnConnected(const std::string& channel_name) {
             << channel_name;
   CHECK_EQ(primary_notification_channel_->GetName(), channel_name);
   notification_channel_starting_ = false;
-  pull_channel_->UpdatePullInterval(
-      base::TimeDelta::FromMinutes(kBackupPollingPeriodMinutes));
+  StopPullChannel();
   current_notification_channel_ = primary_notification_channel_.get();
 
   // If we have not successfully connected to the cloud server and we have not
@@ -1304,9 +1311,8 @@ void DeviceRegistrationInfo::OnDisconnected() {
   if (!HaveRegistrationCredentials() || !connected_to_cloud_)
     return;
 
-  pull_channel_->UpdatePullInterval(
-      base::TimeDelta::FromSeconds(kPollingPeriodSeconds));
-  current_notification_channel_ = pull_channel_.get();
+  // Restart polling.
+  StartPullChannel();
   UpdateDeviceResource(base::Bind(&IgnoreCloudError));
 }
 
@@ -1319,7 +1325,7 @@ void DeviceRegistrationInfo::OnPermanentFailure() {
 
 void DeviceRegistrationInfo::OnCommandCreated(
     const base::DictionaryValue& command,
-    const std::string& channel_name) {
+    const std::string& /* channel_name */) {
   if (!connected_to_cloud_)
     return;
 
@@ -1332,20 +1338,10 @@ void DeviceRegistrationInfo::OnCommandCreated(
     return;
   }
 
-  // If this request comes from a Pull channel while the primary notification
-  // channel (XMPP) is active, we are doing a backup poll, so mark the request
-  // appropriately.
-  bool just_in_case =
-      (channel_name == kPullChannelName) &&
-      (current_notification_channel_ == primary_notification_channel_.get());
-
-  std::string reason =
-      just_in_case ? fetch_reason::kJustInCase : fetch_reason::kNewCommand;
-
   // If the command was too big to be delivered over a notification channel,
   // or OnCommandCreated() was initiated from the Pull notification,
   // perform a manual command fetch from the server here.
-  FetchAndPublishCommands(reason);
+  FetchAndPublishCommands(fetch_reason::kNewCommand);
 }
 
 void DeviceRegistrationInfo::OnDeviceDeleted(const std::string& cloud_id) {
@@ -1378,10 +1374,7 @@ void DeviceRegistrationInfo::RemoveCredentials() {
     primary_notification_channel_->Stop();
     primary_notification_channel_.reset();
   }
-  if (pull_channel_) {
-    pull_channel_->Stop();
-    pull_channel_.reset();
-  }
+  StopPullChannel();
   notification_channel_starting_ = false;
   SetGcdState(GcdState::kInvalidCredentials);
 }
