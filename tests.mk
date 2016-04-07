@@ -64,6 +64,22 @@ export-test : out/$(BUILD_MODE)/libweave_exports_testrunner
 	$(TEST_ENV) $< $(TEST_FLAGS)
 
 testall : test export-test
+check : testall
 
-.PHONY : test export-test testall
+###
+# coverage
+# This runs coverage against unit tests, invoke with "make coverage".
+# Output "homepage" is out/$(BUILD_MODE)/coverage_html/index.html
+# Running a mode other than Debug will result in incorrect coverage data.
+# https://gcc.gnu.org/onlinedocs/gcc/Gcov-and-Optimization.html
 
+coverage: CFLAGS+=--coverage
+
+run_coverage: test
+	lcov --capture --directory out/$(BUILD_MODE) --output-file out/$(BUILD_MODE)/coverage.info
+	lcov -b . --remove out/$(BUILD_MODE)/coverage.info "*third_party*" "/usr/include/*" "*/include/weave/test/*" "*/src/test/*" "*/include/weave/provider/test/*" -o out/$(BUILD_MODE)/coverage_filtered.info
+	genhtml out/$(BUILD_MODE)/coverage_filtered.info --output-directory out/$(BUILD_MODE)/coverage_html
+
+coverage: run_coverage
+
+.PHONY : check coverage run_coverage test export-test testall

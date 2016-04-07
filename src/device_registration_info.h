@@ -161,6 +161,10 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   // restarted anytime the access_token is refreshed.
   void StartNotificationChannel();
 
+  // Helpers to start and stop pull notification channel.
+  void StartPullChannel();
+  void StopPullChannel();
+
   // Do a HTTPS request to cloud services.
   // Handles many cases like reauthorization, 5xx HTTP response codes
   // and device removal.  It is a recommended way to do cloud API
