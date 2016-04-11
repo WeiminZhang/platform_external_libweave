@@ -1330,9 +1330,7 @@ void DeviceRegistrationInfo::OnCommandCreated(
 
   VLOG(1) << "Command notification received: " << command;
 
-  // If the command was too big to be delivered over a notification channel,
-  // or OnCommandCreated() was initiated from the Pull notification,
-  // perform a manual command fetch from the server here.
+  // Manually fetch the command queue whenever a new command is received.
   FetchAndPublishCommands(fetch_reason::kNewCommand);
 }
 
