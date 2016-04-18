@@ -105,8 +105,6 @@ class WifiBootstrapManager : public WifiDelegate {
   provider::Wifi* wifi_{nullptr};
   WifiSsidGenerator ssid_generator_;
   base::Time monitor_until_;
-
-  bool currently_online_{false};
   std::string privet_ssid_;
 
   // Helps to reset irrelevant tasks switching state.
