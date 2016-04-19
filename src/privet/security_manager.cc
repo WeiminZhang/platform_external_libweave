@@ -251,7 +251,7 @@ bool SecurityManager::IsValidPairingCode(
       return true;
     }
   }
-  LOG(ERROR) << "Attempt to authenticate with invalide code.";
+  LOG(ERROR) << "Attempt to authenticate with invalid code.";
   return false;
 }
 

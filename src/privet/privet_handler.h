@@ -101,12 +101,6 @@ class PrivetHandler {
   void HandleSetupStatus(const base::DictionaryValue&,
                          const UserInfo& user_info,
                          const RequestCallback& callback);
-  void HandleState(const base::DictionaryValue& input,
-                   const UserInfo& user_info,
-                   const RequestCallback& callback);
-  void HandleCommandDefs(const base::DictionaryValue& input,
-                         const UserInfo& user_info,
-                         const RequestCallback& callback);
   void HandleCommandsExecute(const base::DictionaryValue& input,
                              const UserInfo& user_info,
                              const RequestCallback& callback);

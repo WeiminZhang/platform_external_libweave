@@ -263,27 +263,27 @@ TEST_F(ConfigTest, Setters) {
       .WillOnce(WithArgs<1, 2>(
           Invoke([](const std::string& json, const DoneCallback& callback) {
             auto expected = R"({
-          'version': 1,
-          'api_key': 'set_api_key',
-          'client_id': 'set_client_id',
-          'client_secret': 'set_client_secret',
-          'cloud_id': 'set_cloud_id',
-          'description': 'set_description',
-          'device_id': 'set_device_id',
-          'last_configured_ssid': 'set_last_configured_ssid',
-          'local_anonymous_access_role': 'user',
-          'root_client_token_owner': 'cloud',
-          'local_discovery_enabled': true,
-          'local_pairing_enabled': true,
-          'location': 'set_location',
-          'name': 'set_name',
-          'oauth_url': 'set_oauth_url',
-          'refresh_token': 'set_token',
-          'robot_account': 'set_account',
-          'secret': 'AQIDBAU=',
-          'service_url': 'set_service_url',
-          'xmpp_endpoint': 'set_xmpp_endpoint'
-        })";
+              'version': 1,
+              'api_key': 'set_api_key',
+              'client_id': 'set_client_id',
+              'client_secret': 'set_client_secret',
+              'cloud_id': 'set_cloud_id',
+              'description': 'set_description',
+              'device_id': 'set_device_id',
+              'last_configured_ssid': 'set_last_configured_ssid',
+              'local_anonymous_access_role': 'user',
+              'root_client_token_owner': 'cloud',
+              'local_discovery_enabled': true,
+              'local_pairing_enabled': true,
+              'location': 'set_location',
+              'name': 'set_name',
+              'oauth_url': 'set_oauth_url',
+              'refresh_token': 'set_token',
+              'robot_account': 'set_account',
+              'secret': 'AQIDBAU=',
+              'service_url': 'set_service_url',
+              'xmpp_endpoint': 'set_xmpp_endpoint'
+            })";
             EXPECT_JSON_EQ(expected, *test::CreateValue(json));
             callback.Run(nullptr);
           })));
