@@ -7,7 +7,6 @@
 
 namespace weave {
 namespace privet {
-
 namespace errors {
 
 extern const char kInvalidClientCommitment[];
@@ -31,6 +30,7 @@ extern const char kInvalidPassphrase[];
 extern const char kNotFound[];
 extern const char kNotImplemented[];
 extern const char kAlreadyClaimed[];
+
 }  // namespace errors
 }  // namespace privet
 }  // namespace weave

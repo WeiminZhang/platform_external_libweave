@@ -197,7 +197,7 @@ void DeviceManager::AddPairingChangedCallbacks(
 }
 
 void DeviceManager::OnSettingsChanged(const Settings& settings) {
-  if (settings.local_discovery_enabled && http_server_) {
+  if (settings.local_access_enabled && http_server_) {
     StartPrivet();
   } else {
     StopPrivet();

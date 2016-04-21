@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-namespace standardtraits {
+namespace standard_traits {
 const char kTraits[] = R"({
   "lock": {
     "commands": {
@@ -213,4 +213,4 @@ const char kDefaultState[] = R"({
 })";
 
 const char kComponent[] = "testdevice";
-}  // namespace jsontraits
+}  // namespace standard_traits
