@@ -20,7 +20,7 @@ namespace provider {
 // sockets, implementing XMPP push notifications channel.
 //
 // There are 2 main parts of this interface. One part is used to check network
-// connection status and signup for notification if connection status changes.
+// connection status and sign up for notification if connection status changes.
 // Implementation of GetConnectionState() should return current network
 // connection state (enum Network::State).
 // Implementation of AddConnectionChangedCallback() should remember callback

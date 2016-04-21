@@ -48,7 +48,7 @@ namespace provider {
 // request is complete), callback should be invokes on the same thread.
 // Callback should never be called before SendRequest(...) returns.
 //
-// When invoking callback function, user should privide implementation
+// When invoking callback function, user should provide implementation
 // of the Response interface. For example, the following could be used as a
 // simple implementation:
 //   struct ResponseImpl : public provider::HttpClient::Response {
