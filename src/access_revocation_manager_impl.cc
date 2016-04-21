@@ -159,8 +159,9 @@ bool AccessRevocationManagerImpl::IsBlocked(const std::vector<uint8_t>& user_id,
                                             const std::vector<uint8_t>& app_id,
                                             base::Time timestamp) const {
   Entry entry_to_find;
-  for (const auto& user : {{}, user_id}) {
-    for (const auto& app : {{}, app_id}) {
+  const std::vector<uint8_t> no_id;
+  for (const auto& user : {no_id, user_id}) {
+    for (const auto& app : {no_id, app_id}) {
       entry_to_find.user_id = user;
       entry_to_find.app_id = app;
       auto match = entries_.find(entry_to_find);

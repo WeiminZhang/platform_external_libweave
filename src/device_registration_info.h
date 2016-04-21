@@ -71,9 +71,8 @@ class DeviceRegistrationInfo : public NotificationDelegate,
   void UpdateDeviceInfo(const std::string& name,
                         const std::string& description,
                         const std::string& location);
-  void UpdateBaseConfig(AuthScope anonymous_access_role,
-                        bool local_discovery_enabled,
-                        bool local_pairing_enabled);
+  void UpdatePrivetConfig(AuthScope anonymous_access_role,
+                          bool local_access_enabled);
 
   void GetDeviceInfo(const CloudRequestDoneCallback& callback);
 

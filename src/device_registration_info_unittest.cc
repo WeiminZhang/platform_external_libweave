@@ -408,7 +408,7 @@ void DeviceRegistrationInfoTest::RegisterDevice(
     const RegistrationData registration_data,
     const RegistrationData& expected_data) {
   auto json_traits = CreateDictionaryValue(R"({
-    'base': {
+    '_foo': {
       'commands': {
         'reboot': {
           'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
@@ -419,9 +419,9 @@ void DeviceRegistrationInfoTest::RegisterDevice(
         'firmwareVersion': {'type': 'string'}
       }
     },
-    'robot': {
+    '_robot': {
       'commands': {
-        '_jump': {
+        'jump': {
           'parameters': {'_height': {'type': 'integer'}},
           'minimalRole': 'user'
         }
@@ -430,10 +430,10 @@ void DeviceRegistrationInfoTest::RegisterDevice(
   })");
   EXPECT_TRUE(component_manager_.LoadTraits(*json_traits, nullptr));
   EXPECT_TRUE(
-      component_manager_.AddComponent("", "comp", {"base", "robot"}, nullptr));
+      component_manager_.AddComponent("", "comp", {"_foo", "_robot"}, nullptr));
   base::StringValue ver{"1.0"};
   EXPECT_TRUE(component_manager_.SetStateProperty(
-      "comp", "base.firmwareVersion", ver, nullptr));
+      "comp", "_foo.firmwareVersion", ver, nullptr));
 
   std::string ticket_url = expected_data.service_url + "registrationTickets/" +
                            expected_data.ticket_id;
@@ -454,20 +454,17 @@ void DeviceRegistrationInfoTest::RegisterDevice(
             EXPECT_EQ("pull", value);
             EXPECT_TRUE(json->GetString("oauthClientId", &value));
             EXPECT_EQ(expected_data.client_id, value);
-            EXPECT_TRUE(json->GetString("deviceDraft.description", &value));
-            EXPECT_EQ("Easy to clean", value);
-            EXPECT_TRUE(json->GetString("deviceDraft.location", &value));
-            EXPECT_EQ("Kitchen", value);
+            EXPECT_FALSE(json->GetString("deviceDraft.description", &value));
+            EXPECT_FALSE(json->GetString("deviceDraft.location", &value));
             EXPECT_TRUE(json->GetString("deviceDraft.modelManifestId", &value));
             EXPECT_EQ("AAAAA", value);
-            EXPECT_TRUE(json->GetString("deviceDraft.name", &value));
-            EXPECT_EQ("Coffee Pot", value);
+            EXPECT_FALSE(json->GetString("deviceDraft.name", &value));
             base::DictionaryValue* dict = nullptr;
             EXPECT_FALSE(json->GetDictionary("deviceDraft.commandDefs", &dict));
             EXPECT_FALSE(json->GetDictionary("deviceDraft.state", &dict));
             EXPECT_TRUE(json->GetDictionary("deviceDraft.traits", &dict));
             auto expectedTraits = R"({
-              'base': {
+              '_foo': {
                 'commands': {
                   'reboot': {
                     'parameters': {'delay': {'minimum': 10, 'type': 'integer'}},
@@ -478,9 +475,9 @@ void DeviceRegistrationInfoTest::RegisterDevice(
                   'firmwareVersion': {'type': 'string'}
                 }
               },
-              'robot': {
+              '_robot': {
                 'commands': {
-                  '_jump': {
+                  'jump': {
                     'parameters': {'_height': {'type': 'integer'}},
                     'minimalRole': 'user'
                   }
@@ -492,9 +489,9 @@ void DeviceRegistrationInfoTest::RegisterDevice(
             EXPECT_TRUE(json->GetDictionary("deviceDraft.components", &dict));
             auto expectedComponents = R"({
               'comp': {
-                'traits': ['base', 'robot'],
+                'traits': ['_foo', '_robot'],
                 'state': {
-                  'base': { 'firmwareVersion': '1.0' }
+                  '_foo': { 'firmwareVersion': '1.0' }
                 }
               }
             })";

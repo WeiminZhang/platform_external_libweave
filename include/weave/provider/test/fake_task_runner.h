@@ -34,10 +34,6 @@ class FakeTaskRunner : public TaskRunner {
   size_t GetTaskQueueSize() const;
 
  private:
-  void SaveTask(const tracked_objects::Location& from_here,
-                const base::Closure& task,
-                base::TimeDelta delay);
-
   using QueueItem = std::pair<std::pair<base::Time, size_t>, base::Closure>;
 
   struct Greater {
