@@ -1,12 +1,14 @@
-// Copyright 2015 The Weave Authors. All rights reserved.
+// Copyright 2016 The Weave Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include <algorithm>
+#include <bitset>
 #include <string>
 #include <typeinfo>
 
 #include "examples/daemon/common/daemon.h"
+#include "tests_schema/daemon/testdevice/custom_traits.h"
 #include "tests_schema/daemon/testdevice/standard_traits.h"
 
 #include <weave/device.h>
@@ -38,31 +40,54 @@ class TestDeviceHandler {
   void Register(weave::Device* device) {
     device_ = device;
 
-    device->AddTraitDefinitionsFromJson(standardtraits::kTraits);
+    device->AddTraitDefinitionsFromJson(standard_traits::kTraits);
+    device->AddTraitDefinitionsFromJson(custom_traits::kCustomTraits);
+
     CHECK(device->AddComponent(
-        standardtraits::kComponent,
+        standard_traits::kComponent,
         {"lock", "onOff", "brightness", "colorTemp", "colorXy"}, nullptr));
+    CHECK(device->AddComponent(custom_traits::ledflasher, {"_ledflasher"},
+                               nullptr));
+
     CHECK(device->SetStatePropertiesFromJson(
-        standardtraits::kComponent, standardtraits::kDefaultState, nullptr));
+        standard_traits::kComponent, standard_traits::kDefaultState, nullptr));
+    CHECK(device->SetStatePropertiesFromJson(
+        custom_traits::ledflasher, custom_traits::kLedflasherState, nullptr));
+
+    for (size_t led_index = 0; led_index < led_states_.size(); led_index++) {
+      std::string component_name =
+          custom_traits::kLedComponentPrefix + std::to_string(led_index + 1);
+      CHECK(device->AddComponent(component_name, {"onOff"}, nullptr));
+      device->AddCommandHandler(
+          component_name, "onOff.setConfig",
+          base::Bind(&TestDeviceHandler::LedOnOffSetConfig,
+                     weak_ptr_factory_.GetWeakPtr(), led_index));
+      device->SetStateProperty(
+          component_name, "onOff.state",
+          base::StringValue{led_states_[led_index] ? "on" : "off"}, nullptr);
+    }
 
     UpdateTestDeviceState();
 
-    device->AddCommandHandler(standardtraits::kComponent, "onOff.setConfig",
+    device->AddCommandHandler(standard_traits::kComponent, "onOff.setConfig",
                               base::Bind(&TestDeviceHandler::OnOnOffSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler(standardtraits::kComponent, "lock.setConfig",
+    device->AddCommandHandler(standard_traits::kComponent, "lock.setConfig",
                               base::Bind(&TestDeviceHandler::OnLockSetConfig,
                                          weak_ptr_factory_.GetWeakPtr()));
     device->AddCommandHandler(
-        standardtraits::kComponent, "brightness.setConfig",
+        standard_traits::kComponent, "brightness.setConfig",
         base::Bind(&TestDeviceHandler::OnBrightnessSetConfig,
                    weak_ptr_factory_.GetWeakPtr()));
     device->AddCommandHandler(
-        standardtraits::kComponent, "colorTemp.setConfig",
+        standard_traits::kComponent, "colorTemp.setConfig",
         base::Bind(&TestDeviceHandler::OnColorTempSetConfig,
                    weak_ptr_factory_.GetWeakPtr()));
-    device->AddCommandHandler(standardtraits::kComponent, "colorXy.setConfig",
+    device->AddCommandHandler(standard_traits::kComponent, "colorXy.setConfig",
                               base::Bind(&TestDeviceHandler::OnColorXySetConfig,
+                                         weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandHandler(custom_traits::ledflasher, "_ledflasher.animate",
+                              base::Bind(&TestDeviceHandler::OnAnimate,
                                          weak_ptr_factory_.GetWeakPtr()));
   }
 
@@ -222,9 +247,76 @@ class TestDeviceHandler {
     AbortCommand(cmd);
   }
 
+  void OnAnimate(const std::weak_ptr<weave::Command>& command) {
+    auto cmd = command.lock();
+    if (!cmd)
+      return;
+
+    const auto& params = cmd->GetParameters();
+    double duration = 0.0;
+    std::string type;
+
+    if (params.GetDouble("duration", &duration)) {
+      LOG(INFO) << cmd->GetName() << " animate duration : " << duration;
+
+      if (duration <= 0.0 || duration > 100.0) {
+        // Invalid animate duration value is specified.
+        AbortCommand(cmd);
+        return;
+      }
+
+      if (params.GetString("type", &type)) {
+        LOG(INFO) << " Animation type value is : " << type;
+        if (type != "marquee_left" && type != "marquee_right" &&
+            type != "blink" && type != "none") {
+          // Invalid animation state is specified.
+          AbortCommand(cmd);
+          return;
+        }
+      }
+
+      cmd->Complete({}, nullptr);
+      return;
+    }
+
+    AbortCommand(cmd);
+  }
+
+  void LedOnOffSetConfig(size_t led_index,
+                         const std::weak_ptr<weave::Command>& command) {
+    auto cmd = command.lock();
+    if (!cmd)
+      return;
+    LOG(INFO) << "received command: " << cmd->GetName();
+    const auto& params = cmd->GetParameters();
+    std::string state;
+    if (params.GetString("state", &state)) {
+      LOG(INFO) << cmd->GetName() << " led: " << led_index
+                << " state: " << state;
+
+      std::string temp_state = state;
+      if (temp_state != "on" && temp_state != "off") {
+        // Invalid OnOff state is specified.
+        AbortCommand(cmd);
+        return;
+      }
+
+      int current_state = led_states_[led_index];
+      int new_state = (state == "on") ? 1 : 0;
+      led_states_[led_index] = new_state;
+      if (new_state != current_state) {
+        device_->SetStateProperty(cmd->GetComponent(), "onOff.state",
+                                  base::StringValue{state}, nullptr);
+      }
+      cmd->Complete({}, nullptr);
+      return;
+    }
+    AbortCommand(cmd);
+  }
+
   void UpdateTestDeviceState() {
     std::string updated_state = weave::EnumToString(lock_state_);
-    device_->SetStateProperty(standardtraits::kComponent, "lock.lockedState",
+    device_->SetStateProperty(standard_traits::kComponent, "lock.lockedState",
                               base::StringValue{updated_state}, nullptr);
     base::DictionaryValue state;
     state.SetString("onOff.state", light_status_ ? "on" : "off");
@@ -238,7 +330,7 @@ class TestDeviceHandler {
     colorXy->SetDouble("colorY", color_Y_);
     state.Set("colorXy.colorSetting", std::move(colorXy));
 
-    device_->SetStateProperties(standardtraits::kComponent, state, nullptr);
+    device_->SetStateProperties(standard_traits::kComponent, state, nullptr);
   }
 
   void AbortCommand(std::shared_ptr<weave::Command>& cmd) {
@@ -259,6 +351,8 @@ class TestDeviceHandler {
   int32_t color_temp_max_value_{1};
   double color_X_{0.0};
   double color_Y_{0.0};
+  double duration{0.1};
+  std::bitset<custom_traits::kLedCount> led_states_{0};
   base::WeakPtrFactory<TestDeviceHandler> weak_ptr_factory_{this};
 };
 
