@@ -43,6 +43,7 @@ bool FileConfigStore::LoadDefaults(Settings* settings) {
   uname(&uname_data);
 
   settings->firmware_version = uname_data.sysname;
+  settings->serial_number = "";
   settings->oem_name = "Unknown";
   settings->model_name = "Unknown";
   settings->model_id = model_id_;

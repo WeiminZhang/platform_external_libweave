@@ -11,8 +11,6 @@
 
 namespace weave {
 
-namespace {}  // namespace
-
 MemoryStream::MemoryStream(const std::vector<uint8_t>& data,
                            provider::TaskRunner* task_runner)
     : data_{data}, task_runner_{task_runner} {}

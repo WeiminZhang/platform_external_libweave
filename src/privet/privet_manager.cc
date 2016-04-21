@@ -114,9 +114,9 @@ std::string Manager::GetCurrentlyConnectedSsid() const {
 }
 
 void Manager::AddOnPairingChangedCallbacks(
-    const SecurityManager::PairingStartListener& on_start,
-    const SecurityManager::PairingEndListener& on_end) {
-  security_->RegisterPairingListeners(on_start, on_end);
+    const Device::PairingBeginCallback& begin_callback,
+    const Device::PairingEndCallback& end_callback) {
+  security_->RegisterPairingListeners(begin_callback, end_callback);
 }
 
 void Manager::OnDeviceInfoChanged(const weave::Settings&) {

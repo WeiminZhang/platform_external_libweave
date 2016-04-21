@@ -30,6 +30,7 @@ enum class PairingType {
 struct Settings {
   // Model specific information. Must be set by ConfigStore::LoadDefaults.
   std::string firmware_version;
+  std::string serial_number;
   std::string oem_name;
   std::string model_name;
   std::string model_id;
@@ -47,10 +48,8 @@ struct Settings {
   // Options mirrored into "base" state.
   // Maximum role for local anonymous user.
   AuthScope local_anonymous_access_role{AuthScope::kViewer};
-  // If true, allows local discovery using DNS-SD.
-  bool local_discovery_enabled{true};
-  // If true, allows local pairing using Privet API.
-  bool local_pairing_enabled{true};
+  // If true, allows local pairing using Privet API, including mDNS.
+  bool local_access_enabled{true};
 
   // Set of pairing modes supported by device.
   std::set<PairingType> pairing_modes;
