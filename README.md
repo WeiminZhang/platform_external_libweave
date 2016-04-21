@@ -58,14 +58,13 @@ sudo apt-get install \
   autoconf \
   automake \
   binutils \
+  cmake \
   g++ \
   hostapd \
   libavahi-client-dev \
   libcurl4-openssl-dev \
   libevent-dev \
   libexpat1-dev \
-  libnl-3-dev \
-  libnl-route-3-dev \
   libssl-dev \
   libtool
 ```
@@ -94,7 +93,6 @@ sudo apt-get install \
   - libcurl4-openssl-dev
   - libevhtp (included; see third_party/libevhtp/)
   - libevent-dev
-
 
 # Compiling
 

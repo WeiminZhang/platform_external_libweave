@@ -251,7 +251,7 @@ bool SecurityManager::IsValidPairingCode(
       return true;
     }
   }
-  LOG(ERROR) << "Attempt to authenticate with invalide code.";
+  LOG(ERROR) << "Attempt to authenticate with invalid code.";
   return false;
 }
 
@@ -438,7 +438,7 @@ bool SecurityManager::IsAnonymousAuthSupported() const {
 }
 
 bool SecurityManager::IsPairingAuthSupported() const {
-  return GetSettings().local_pairing_enabled;
+  return GetSettings().local_access_enabled;
 }
 
 bool SecurityManager::IsLocalAuthSupported() const {

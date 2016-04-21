@@ -13,115 +13,116 @@
 namespace weave {
 
 namespace {
-const char kBaseComponent[] = "base";
-const char kBaseTrait[] = "base";
-const char kBaseStateFirmwareVersion[] = "base.firmwareVersion";
-const char kBaseStateAnonymousAccessRole[] = "base.localAnonymousAccessMaxRole";
-const char kBaseStateDiscoveryEnabled[] = "base.localDiscoveryEnabled";
-const char kBaseStatePairingEnabled[] = "base.localPairingEnabled";
+const char kDeviceComponent[] = "device";
+const char kDeviceTrait[] = "device";
+const char kPrivetTrait[] = "privet";
 }  // namespace
 
 BaseApiHandler::BaseApiHandler(DeviceRegistrationInfo* device_info,
                                Device* device)
     : device_info_{device_info}, device_{device} {
   device_->AddTraitDefinitionsFromJson(R"({
-    "base": {
+    "device": {
       "commands": {
-        "updateBaseConfiguration": {
-          "minimalRole": "manager",
+        "setConfig": {
+          "minimalRole": "user",
           "parameters": {
-            "localAnonymousAccessMaxRole": {
-              "enum": [ "none", "viewer", "user" ],
+            "name": {
               "type": "string"
             },
-            "localDiscoveryEnabled": {
-              "type": "boolean"
-            },
-            "localPairingEnabled": {
-              "type": "boolean"
-            }
-          }
-        },
-        "updateDeviceInfo": {
-          "minimalRole": "manager",
-          "parameters": {
             "description": {
               "type": "string"
             },
             "location": {
               "type": "string"
-            },
-            "name": {
-              "type": "string"
             }
           }
-        },
-        "reboot": {
-          "minimalRole": "user",
-          "parameters": {},
-          "errors": ["notEnoughBattery"]
-        },
-        "identify": {
-          "minimalRole": "user",
-          "parameters": {}
         }
       },
       "state": {
-        "firmwareVersion": {
-          "type": "string",
-          "isRequired": true
-        },
-        "localDiscoveryEnabled": {
-          "type": "boolean",
-          "isRequired": true
-        },
-        "localAnonymousAccessMaxRole": {
-          "type": "string",
-          "enum": [ "none", "viewer", "user" ],
-        "isRequired": true
-        },
-        "localPairingEnabled": {
-          "type": "boolean",
-          "isRequired": true
-        },
-        "connectionStatus": {
+        "name": {
+          "isRequired": true,
           "type": "string"
         },
-        "network": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "name": { "type": "string" }
+        "description": {
+          "isRequired": true,
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "hardwareId": {
+          "isRequired": true,
+          "type": "string"
+        },
+        "serialNumber": {
+          "isRequired": true,
+          "type": "string"
+        },
+        "firmwareVersion": {
+          "isRequired": true,
+          "type": "string"
+        }
+      }
+    },
+    "privet": {
+      "commands": {
+        "setConfig": {
+          "minimalRole": "manager",
+          "parameters": {
+            "isLocalAccessEnabled": {
+              "type": "boolean"
+            },
+            "maxRoleForAnonymousAccess": {
+              "type": "string",
+              "enum": [ "none", "viewer", "user", "manager" ]
+            }
           }
+        }
+      },
+      "state": {
+        "apiVersion": {
+          "isRequired": true,
+          "type": "string"
+        },
+        "isLocalAccessEnabled": {
+          "isRequired": true,
+          "type": "boolean"
+        },
+        "maxRoleForAnonymousAccess": {
+          "isRequired": true,
+          "type": "string",
+          "enum": [ "none", "viewer", "user", "manager" ]
         }
       }
     }
   })");
-  CHECK(device_->AddComponent(kBaseComponent, {kBaseTrait}, nullptr));
+  CHECK(device_->AddComponent(kDeviceComponent, {kDeviceTrait, kPrivetTrait},
+                              nullptr));
   OnConfigChanged(device_->GetSettings());
 
   const auto& settings = device_info_->GetSettings();
   base::DictionaryValue state;
-  state.SetString(kBaseStateFirmwareVersion, settings.firmware_version);
-  CHECK(device_->SetStateProperty(kBaseComponent, kBaseStateFirmwareVersion,
-                                  base::StringValue{settings.firmware_version},
-                                  nullptr));
+  state.SetString("device.firmwareVersion", settings.firmware_version);
+  state.SetString("device.hardwareId", settings.device_id);
+  state.SetString("device.serialNumber", settings.serial_number);
+  state.SetString("privet.apiVersion", "3");  // Presently Privet v3.
+  CHECK(device_->SetStateProperties(kDeviceComponent, state, nullptr));
 
   device_->AddCommandHandler(
-      kBaseComponent, "base.updateBaseConfiguration",
-      base::Bind(&BaseApiHandler::UpdateBaseConfiguration,
+      kDeviceComponent, "device.setConfig",
+      base::Bind(&BaseApiHandler::DeviceSetConfig,
                  weak_ptr_factory_.GetWeakPtr()));
 
-  device_->AddCommandHandler(kBaseComponent, "base.updateDeviceInfo",
-                             base::Bind(&BaseApiHandler::UpdateDeviceInfo,
+  device_->AddCommandHandler(kDeviceComponent, "privet.setConfig",
+                             base::Bind(&BaseApiHandler::PrivetSetConfig,
                                         weak_ptr_factory_.GetWeakPtr()));
 
   device_info_->GetMutableConfig()->AddOnChangedCallback(base::Bind(
       &BaseApiHandler::OnConfigChanged, weak_ptr_factory_.GetWeakPtr()));
 }
 
-void BaseApiHandler::UpdateBaseConfiguration(
-    const std::weak_ptr<Command>& cmd) {
+void BaseApiHandler::PrivetSetConfig(const std::weak_ptr<Command>& cmd) {
   auto command = cmd.lock();
   if (!command)
     return;
@@ -132,41 +133,40 @@ void BaseApiHandler::UpdateBaseConfiguration(
   const auto& settings = device_info_->GetSettings();
   std::string anonymous_access_role{
       EnumToString(settings.local_anonymous_access_role)};
-  bool discovery_enabled{settings.local_discovery_enabled};
-  bool pairing_enabled{settings.local_pairing_enabled};
+  bool local_access_enabled{settings.local_access_enabled};
 
   const auto& parameters = command->GetParameters();
-  parameters.GetString("localAnonymousAccessMaxRole", &anonymous_access_role);
-  parameters.GetBoolean("localDiscoveryEnabled", &discovery_enabled);
-  parameters.GetBoolean("localPairingEnabled", &pairing_enabled);
+  parameters.GetString("maxRoleForAnonymousAccess", &anonymous_access_role);
+  parameters.GetBoolean("isLocalAccessEnabled", &local_access_enabled);
 
   AuthScope auth_scope{AuthScope::kNone};
   if (!StringToEnum(anonymous_access_role, &auth_scope)) {
     ErrorPtr error;
     Error::AddToPrintf(&error, FROM_HERE, errors::commands::kInvalidPropValue,
-                       "Invalid localAnonymousAccessMaxRole value '%s'",
+                       "Invalid maxRoleForAnonymousAccess value '%s'",
                        anonymous_access_role.c_str());
     command->Abort(error.get(), nullptr);
     return;
   }
 
-  device_info_->UpdateBaseConfig(auth_scope, discovery_enabled,
-                                 pairing_enabled);
+  device_info_->UpdatePrivetConfig(auth_scope, local_access_enabled);
 
   command->Complete({}, nullptr);
 }
 
 void BaseApiHandler::OnConfigChanged(const Settings& settings) {
   base::DictionaryValue state;
-  state.SetString(kBaseStateAnonymousAccessRole,
+  state.SetString("privet.maxRoleForAnonymousAccess",
                   EnumToString(settings.local_anonymous_access_role));
-  state.SetBoolean(kBaseStateDiscoveryEnabled,
-                   settings.local_discovery_enabled);
-  state.SetBoolean(kBaseStatePairingEnabled, settings.local_pairing_enabled);
-  device_->SetStateProperties(kBaseComponent, state, nullptr);
+  state.SetBoolean("privet.isLocalAccessEnabled",
+                   settings.local_access_enabled);
+  state.SetString("device.name", settings.name);
+  state.SetString("device.location", settings.location);
+  state.SetString("device.description", settings.description);
+  device_->SetStateProperties(kDeviceComponent, state, nullptr);
 }
 
-void BaseApiHandler::UpdateDeviceInfo(const std::weak_ptr<Command>& cmd) {
+void BaseApiHandler::DeviceSetConfig(const std::weak_ptr<Command>& cmd) {
   auto command = cmd.lock();
   if (!command)
     return;

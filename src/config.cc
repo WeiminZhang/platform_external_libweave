@@ -40,8 +40,7 @@ const char kName[] = "name";
 const char kDescription[] = "description";
 const char kLocation[] = "location";
 const char kLocalAnonymousAccessRole[] = "local_anonymous_access_role";
-const char kLocalDiscoveryEnabled[] = "local_discovery_enabled";
-const char kLocalPairingEnabled[] = "local_pairing_enabled";
+const char kLocalAccessEnabled[] = "local_access_enabled";
 const char kRefreshToken[] = "refresh_token";
 const char kCloudId[] = "cloud_id";
 const char kDeviceId[] = "device_id";
@@ -58,15 +57,26 @@ const char kXmppEndpoint[] = "talk.google.com:5223";
 
 namespace {
 
-const int kCurrentConfigVersion = 1;
+const int kCurrentConfigVersion = 2;
 
 void MigrateFromV0(base::DictionaryValue* dict) {
   std::string cloud_id;
   if (dict->GetString(config_keys::kCloudId, &cloud_id) && !cloud_id.empty())
     return;
-  scoped_ptr<base::Value> tmp;
+  std::unique_ptr<base::Value> tmp;
   if (dict->Remove(config_keys::kDeviceId, &tmp))
     dict->Set(config_keys::kCloudId, std::move(tmp));
+}
+
+void MigrateFromV1(base::DictionaryValue* dict) {
+  // "local_discovery_enabled" and "local_pairing_enabled" are merged into one
+  // setting: "local_access_enabled".
+  std::unique_ptr<base::Value> bool_val;
+  // Use the value of "local_discovery_enabled" for "local_access_enabled" and
+  // remove "local_pairing_enabled".
+  if (dict->Remove("local_discovery_enabled", &bool_val))
+    dict->Set(config_keys::kLocalAccessEnabled, std::move(bool_val));
+  dict->Remove("local_pairing_enabled", nullptr);
 }
 
 Config::Settings CreateDefaultSettings(provider::ConfigStore* config_store) {
@@ -171,8 +181,13 @@ void Config::Transaction::LoadState() {
     save_ = true;
   }
 
-  if (loaded_version == 0) {
-    MigrateFromV0(dict);
+  switch (loaded_version) {
+    case 0:
+      MigrateFromV0(dict);
+      break;
+    case 1:
+      MigrateFromV1(dict);
+      break;
   }
 
   std::string tmp;
@@ -215,11 +230,8 @@ void Config::Transaction::LoadState() {
     set_local_anonymous_access_role(scope);
   }
 
-  if (dict->GetBoolean(config_keys::kLocalDiscoveryEnabled, &tmp_bool))
-    set_local_discovery_enabled(tmp_bool);
-
-  if (dict->GetBoolean(config_keys::kLocalPairingEnabled, &tmp_bool))
-    set_local_pairing_enabled(tmp_bool);
+  if (dict->GetBoolean(config_keys::kLocalAccessEnabled, &tmp_bool))
+    set_local_access_enabled(tmp_bool);
 
   if (dict->GetString(config_keys::kCloudId, &tmp))
     set_cloud_id(tmp);
@@ -274,10 +286,8 @@ void Config::Save() {
   dict.SetString(config_keys::kLocation, settings_.location);
   dict.SetString(config_keys::kLocalAnonymousAccessRole,
                  EnumToString(settings_.local_anonymous_access_role));
-  dict.SetBoolean(config_keys::kLocalDiscoveryEnabled,
-                  settings_.local_discovery_enabled);
-  dict.SetBoolean(config_keys::kLocalPairingEnabled,
-                  settings_.local_pairing_enabled);
+  dict.SetBoolean(config_keys::kLocalAccessEnabled,
+                  settings_.local_access_enabled);
 
   std::string json_string;
   base::JSONWriter::WriteWithOptions(
