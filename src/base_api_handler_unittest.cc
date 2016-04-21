@@ -49,8 +49,8 @@ class BaseApiHandlerTest : public ::testing::Test {
         }));
 
     EXPECT_CALL(device_,
-                AddCommandHandler(_, AnyOf("base.updateBaseConfiguration",
-                                           "base.updateDeviceInfo"),
+                AddCommandHandler(_,
+                                  AnyOf("device.setConfig", "privet.setConfig"),
                                   _))
         .WillRepeatedly(
             Invoke(&component_manager_, &ComponentManager::AddCommandHandler));
@@ -76,14 +76,28 @@ class BaseApiHandlerTest : public ::testing::Test {
               component_manager_.FindCommand(id)->GetState());
   }
 
-  std::unique_ptr<base::DictionaryValue> GetBaseState() {
+  std::unique_ptr<base::DictionaryValue> GetDeviceState() {
     std::unique_ptr<base::DictionaryValue> state;
-    std::string path = component_manager_.FindComponentWithTrait("base");
+    std::string path = component_manager_.FindComponentWithTrait("device");
     EXPECT_FALSE(path.empty());
     const auto* component = component_manager_.FindComponent(path, nullptr);
     CHECK(component);
     const base::DictionaryValue* base_state = nullptr;
-    if (component->GetDictionary("state.base", &base_state))
+    if (component->GetDictionary("state.device", &base_state))
+      state = base_state->CreateDeepCopy();
+    else
+      state.reset(new base::DictionaryValue);
+    return state;
+  }
+
+  std::unique_ptr<base::DictionaryValue> GetPrivetState() {
+    std::unique_ptr<base::DictionaryValue> state;
+    std::string path = component_manager_.FindComponentWithTrait("privet");
+    EXPECT_FALSE(path.empty());
+    const auto* component = component_manager_.FindComponent(path, nullptr);
+    CHECK(component);
+    const base::DictionaryValue* base_state = nullptr;
+    if (component->GetDictionary("state.privet", &base_state))
       state = base_state->CreateDeepCopy();
     else
       state.reset(new base::DictionaryValue);
@@ -102,143 +116,143 @@ class BaseApiHandlerTest : public ::testing::Test {
 
 TEST_F(BaseApiHandlerTest, Initialization) {
   const base::DictionaryValue* trait = nullptr;
-  ASSERT_TRUE(component_manager_.GetTraits().GetDictionary("base", &trait));
+  ASSERT_TRUE(component_manager_.GetTraits().GetDictionary("device", &trait));
 
-  auto expected = R"({
+  auto expected1 = R"({
     "commands": {
-      "updateBaseConfiguration": {
-        "minimalRole": "manager",
+      "setConfig": {
+        "minimalRole": "user",
         "parameters": {
-          "localAnonymousAccessMaxRole": {
-            "enum": [ "none", "viewer", "user" ],
+          "name": {
             "type": "string"
           },
-          "localDiscoveryEnabled": {
-            "type": "boolean"
-          },
-          "localPairingEnabled": {
-            "type": "boolean"
-          }
-        }
-      },
-      "updateDeviceInfo": {
-        "minimalRole": "manager",
-        "parameters": {
           "description": {
             "type": "string"
           },
           "location": {
             "type": "string"
-          },
-          "name": {
-            "type": "string"
           }
         }
-      },
-      "reboot": {
-        "minimalRole": "user",
-        "parameters": {},
-        "errors": ["notEnoughBattery"]
-      },
-      "identify": {
-        "minimalRole": "user",
-        "parameters": {}
       }
     },
     "state": {
-      "firmwareVersion": {
-        "type": "string",
-        "isRequired": true
-      },
-      "localDiscoveryEnabled": {
-        "type": "boolean",
-        "isRequired": true
-      },
-      "localAnonymousAccessMaxRole": {
-        "type": "string",
-        "enum": [ "none", "viewer", "user" ],
-        "isRequired": true
-      },
-      "localPairingEnabled": {
-        "type": "boolean",
-        "isRequired": true
-      },
-      "connectionStatus": {
+      "name": {
+        "isRequired": true,
         "type": "string"
       },
-      "network": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "name": { "type": "string" }
-        }
+      "description": {
+        "isRequired": true,
+        "type": "string"
+      },
+      "location": {
+        "type": "string"
+      },
+      "hardwareId": {
+        "isRequired": true,
+        "type": "string"
+      },
+      "serialNumber": {
+        "isRequired": true,
+        "type": "string"
+      },
+      "firmwareVersion": {
+        "isRequired": true,
+        "type": "string"
       }
     }
   })";
-  EXPECT_JSON_EQ(expected, *trait);
+  EXPECT_JSON_EQ(expected1, *trait);
+
+  ASSERT_TRUE(component_manager_.GetTraits().GetDictionary("privet", &trait));
+
+  auto expected2 = R"({
+    "commands": {
+      "setConfig": {
+        "minimalRole": "manager",
+        "parameters": {
+          "isLocalAccessEnabled": {
+            "type": "boolean"
+          },
+          "maxRoleForAnonymousAccess": {
+            "type": "string",
+            "enum": [ "none", "viewer", "user", "manager" ]
+          }
+        }
+      }
+    },
+    "state": {
+      "apiVersion": {
+        "isRequired": true,
+        "type": "string"
+      },
+      "isLocalAccessEnabled": {
+        "isRequired": true,
+        "type": "boolean"
+      },
+      "maxRoleForAnonymousAccess": {
+        "isRequired": true,
+        "type": "string",
+        "enum": [ "none", "viewer", "user", "manager" ]
+      }
+    }
+  })";
+  EXPECT_JSON_EQ(expected2, *trait);
 }
 
-TEST_F(BaseApiHandlerTest, UpdateBaseConfiguration) {
+TEST_F(BaseApiHandlerTest, PrivetSetConfig) {
   const Settings& settings = dev_reg_->GetSettings();
 
   AddCommand(R"({
-    'name' : 'base.updateBaseConfiguration',
-    'component': 'base',
+    'name' : 'privet.setConfig',
+    'component': 'device',
     'parameters': {
-      'localDiscoveryEnabled': false,
-      'localAnonymousAccessMaxRole': 'none',
-      'localPairingEnabled': false
+      'isLocalAccessEnabled': false,
+      'maxRoleForAnonymousAccess': 'none'
     }
   })");
   EXPECT_EQ(AuthScope::kNone, settings.local_anonymous_access_role);
-  EXPECT_FALSE(settings.local_discovery_enabled);
-  EXPECT_FALSE(settings.local_pairing_enabled);
+  EXPECT_FALSE(settings.local_access_enabled);
 
   auto expected = R"({
-    'firmwareVersion': 'TEST_FIRMWARE',
-    'localAnonymousAccessMaxRole': 'none',
-    'localDiscoveryEnabled': false,
-    'localPairingEnabled': false
+    'apiVersion': '3',
+    'maxRoleForAnonymousAccess': 'none',
+    'isLocalAccessEnabled': false
   })";
-  EXPECT_JSON_EQ(expected, *GetBaseState());
+  EXPECT_JSON_EQ(expected, *GetPrivetState());
 
   AddCommand(R"({
-    'name' : 'base.updateBaseConfiguration',
-    'component': 'base',
+    'name' : 'privet.setConfig',
+    'component': 'device',
     'parameters': {
-      'localDiscoveryEnabled': true,
-      'localAnonymousAccessMaxRole': 'user',
-      'localPairingEnabled': true
+      'maxRoleForAnonymousAccess': 'user',
+      'isLocalAccessEnabled': true
     }
   })");
   EXPECT_EQ(AuthScope::kUser, settings.local_anonymous_access_role);
-  EXPECT_TRUE(settings.local_discovery_enabled);
-  EXPECT_TRUE(settings.local_pairing_enabled);
+  EXPECT_TRUE(settings.local_access_enabled);
   expected = R"({
-    'firmwareVersion': 'TEST_FIRMWARE',
-    'localAnonymousAccessMaxRole': 'user',
-    'localDiscoveryEnabled': true,
-    'localPairingEnabled': true
+    'apiVersion': '3',
+    'maxRoleForAnonymousAccess': 'user',
+    'isLocalAccessEnabled': true
   })";
-  EXPECT_JSON_EQ(expected, *GetBaseState());
+  EXPECT_JSON_EQ(expected, *GetPrivetState());
 
   {
     Config::Transaction change{dev_reg_->GetMutableConfig()};
     change.set_local_anonymous_access_role(AuthScope::kViewer);
   }
   expected = R"({
-    'firmwareVersion': 'TEST_FIRMWARE',
-    'localAnonymousAccessMaxRole': 'viewer',
-    'localDiscoveryEnabled': true,
-    'localPairingEnabled': true
+    'apiVersion': '3',
+    'maxRoleForAnonymousAccess': 'viewer',
+    'isLocalAccessEnabled': true
   })";
-  EXPECT_JSON_EQ(expected, *GetBaseState());
+  EXPECT_JSON_EQ(expected, *GetPrivetState());
 }
 
-TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
+TEST_F(BaseApiHandlerTest, DeviceSetConfig) {
   AddCommand(R"({
-    'name' : 'base.updateDeviceInfo',
-    'component': 'base',
+    'name' : 'device.setConfig',
+    'component': 'device',
     'parameters': {
       'name': 'testName',
       'description': 'testDescription',
@@ -250,10 +264,19 @@ TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
   EXPECT_EQ("testName", config.name);
   EXPECT_EQ("testDescription", config.description);
   EXPECT_EQ("testLocation", config.location);
+  auto expected = R"({
+    'name': 'testName',
+    'description': 'testDescription',
+    'location': 'testLocation',
+    'hardwareId': 'TEST_DEVICE_ID',
+    'serialNumber': 'TEST_SERIAL_NUMBER',
+    'firmwareVersion': 'TEST_FIRMWARE'
+  })";
+  EXPECT_JSON_EQ(expected, *GetDeviceState());
 
   AddCommand(R"({
-    'name' : 'base.updateDeviceInfo',
-    'component': 'base',
+    'name' : 'device.setConfig',
+    'component': 'device',
     'parameters': {
       'location': 'newLocation'
     }
@@ -262,6 +285,16 @@ TEST_F(BaseApiHandlerTest, UpdateDeviceInfo) {
   EXPECT_EQ("testName", config.name);
   EXPECT_EQ("testDescription", config.description);
   EXPECT_EQ("newLocation", config.location);
+
+  expected = R"({
+    'name': 'testName',
+    'description': 'testDescription',
+    'location': 'newLocation',
+    'hardwareId': 'TEST_DEVICE_ID',
+    'serialNumber': 'TEST_SERIAL_NUMBER',
+    'firmwareVersion': 'TEST_FIRMWARE'
+  })";
+  EXPECT_JSON_EQ(expected, *GetDeviceState());
 }
 
 }  // namespace weave

@@ -47,8 +47,8 @@ class SecurityDelegate {
   // Returns Root Client Authorization Token.
   virtual std::string ClaimRootClientAuthToken(ErrorPtr* error) = 0;
 
-  // Confirms pending pending token claim or checks that token is valid for the
-  // active secret.
+  // Confirms pending token claim or checks that token is valid for the active
+  // secret.
   virtual bool ConfirmClientAuthToken(const std::string& token,
                                       ErrorPtr* error) = 0;
 

@@ -489,11 +489,6 @@ DeviceRegistrationInfo::BuildDeviceResource() const {
   std::unique_ptr<base::DictionaryValue> resource{new base::DictionaryValue};
   if (!GetSettings().cloud_id.empty())
     resource->SetString("id", GetSettings().cloud_id);
-  resource->SetString("name", GetSettings().name);
-  if (!GetSettings().description.empty())
-    resource->SetString("description", GetSettings().description);
-  if (!GetSettings().location.empty())
-    resource->SetString("location", GetSettings().location);
   resource->SetString("modelManifestId", GetSettings().model_id);
   std::unique_ptr<base::DictionaryValue> channel{new base::DictionaryValue};
   if (current_notification_channel_) {
@@ -877,19 +872,14 @@ void DeviceRegistrationInfo::UpdateDeviceInfo(const std::string& name,
   change.set_description(description);
   change.set_location(location);
   change.Commit();
-
-  if (HaveRegistrationCredentials()) {
-    UpdateDeviceResource(base::Bind(&IgnoreCloudError));
-  }
 }
 
-void DeviceRegistrationInfo::UpdateBaseConfig(AuthScope anonymous_access_role,
-                                              bool local_discovery_enabled,
-                                              bool local_pairing_enabled) {
+void DeviceRegistrationInfo::UpdatePrivetConfig(AuthScope anonymous_access_role,
+                                              bool local_access_enabled) {
   Config::Transaction change(config_);
   change.set_local_anonymous_access_role(anonymous_access_role);
-  change.set_local_discovery_enabled(local_discovery_enabled);
-  change.set_local_pairing_enabled(local_pairing_enabled);
+  change.set_local_access_enabled(local_access_enabled);
+  change.Commit();
 }
 
 void DeviceRegistrationInfo::UpdateCommand(
@@ -1330,9 +1320,7 @@ void DeviceRegistrationInfo::OnCommandCreated(
 
   VLOG(1) << "Command notification received: " << command;
 
-  // If the command was too big to be delivered over a notification channel,
-  // or OnCommandCreated() was initiated from the Pull notification,
-  // perform a manual command fetch from the server here.
+  // Manually fetch the command queue whenever a new command is received.
   FetchAndPublishCommands(fetch_reason::kNewCommand);
 }
 

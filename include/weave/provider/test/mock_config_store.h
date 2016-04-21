@@ -28,6 +28,7 @@ class MockConfigStore : public ConfigStore {
     EXPECT_CALL(*this, LoadDefaults(_))
         .WillRepeatedly(testing::Invoke([](Settings* settings) {
           settings->firmware_version = "TEST_FIRMWARE";
+          settings->serial_number = "TEST_SERIAL_NUMBER";
           settings->oem_name = "TEST_OEM";
           settings->model_name = "TEST_MODEL";
           settings->model_id = "ABCDE";
@@ -39,7 +40,7 @@ class MockConfigStore : public ConfigStore {
         }));
     EXPECT_CALL(*this, LoadSettings())
         .WillRepeatedly(Return(R"({
-          "version": 1,
+          "version": 2,
           "device_id": "TEST_DEVICE_ID"
         })"));
     EXPECT_CALL(*this, LoadSettings(_)).WillRepeatedly(Return(""));
