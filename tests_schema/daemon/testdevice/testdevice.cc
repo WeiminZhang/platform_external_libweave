@@ -164,7 +164,7 @@ class TestDeviceHandler {
     if (params.GetInteger("volume", &volume_value)) {
       LOG(INFO) << cmd->GetName() << " volume: " << volume_value;
 
-      if (volume_value < 0 || volume_value > 1.0) {
+      if (volume_value < 0 || volume_value > 100) {
         // Invalid volume range value is specified.
         AbortCommand(cmd);
         return;
