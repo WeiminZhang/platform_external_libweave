@@ -4,8 +4,11 @@
 
 #include "src/access_revocation_manager_impl.h"
 
+#include <memory>
+
 #include <base/json/json_reader.h>
 #include <base/json/json_writer.h>
+#include <base/memory/ptr_util.h>
 #include <base/values.h>
 
 #include "src/commands/schema_constants.h"
@@ -70,7 +73,8 @@ void AccessRevocationManagerImpl::Save(const DoneCallback& callback) {
 
   base::ListValue list;
   for (const auto& e : entries_) {
-    scoped_ptr<base::DictionaryValue> entry{new base::DictionaryValue};
+    std::unique_ptr<base::DictionaryValue> entry =
+        base::MakeUnique<base::DictionaryValue>();
     entry->SetString(kUser, Base64Encode(e.user_id));
     entry->SetString(kApp, Base64Encode(e.app_id));
     entry->SetInteger(kRevocation, ToJ2000Time(e.revocation));
