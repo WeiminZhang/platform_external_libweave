@@ -6,6 +6,7 @@
 #define LIBWEAVE_SRC_PRIVET_PRIVET_TYPES_H_
 
 #include <string>
+#include <vector>
 
 #include <base/logging.h>
 #include <weave/error.h>
