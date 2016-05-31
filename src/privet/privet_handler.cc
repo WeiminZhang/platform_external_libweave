@@ -711,7 +711,8 @@ void PrivetHandler::HandleAuth(const base::DictionaryValue& input,
     return ReturnError(*error, callback);
   }
 
-  CHECK_LE(access_token_scope, desired_scope);
+  CHECK_LE(static_cast<int32_t>(access_token_scope),
+           static_cast<int32_t>(desired_scope));
 
   if (access_token_scope < acceptable_scope) {
     Error::AddToPrintf(&error, FROM_HERE, errors::kAccessDenied,
