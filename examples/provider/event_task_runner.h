@@ -6,7 +6,6 @@
 #define LIBWEAVE_EXAMPLES_PROVIDER_EVENT_TASK_RUNNER_H_
 
 #include <queue>
-#include <map>
 #include <utility>
 #include <vector>
 
