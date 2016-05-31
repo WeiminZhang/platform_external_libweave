@@ -6,6 +6,7 @@
 #define LIBWEAVE_EXAMPLES_PROVIDER_AVAHI_CLIENT_H_
 
 #include <map>
+#include <memory>
 #include <string>
 
 #include <avahi-client/client.h>

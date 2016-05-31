@@ -13,7 +13,7 @@
 namespace weave {
 
 // Scopes in order of increasing privileges.
-enum class AuthScope {
+enum class AuthScope : int32_t {
   kNone,
   kViewer,
   kUser,

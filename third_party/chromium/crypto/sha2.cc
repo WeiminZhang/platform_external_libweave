@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <openssl/sha.h>
 
-#include <base/memory/scoped_ptr.h>
-
 namespace crypto {
 
 void SHA256HashString(const std::string& str, uint8_t* output, size_t len) {

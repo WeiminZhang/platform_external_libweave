@@ -12,6 +12,7 @@
 #include <base/macros.h>
 #include <base/memory/weak_ptr.h>
 #include <base/time/default_clock.h>
+#include <weave/settings.h>
 
 #include "src/privet/cloud_delegate.h"
 
