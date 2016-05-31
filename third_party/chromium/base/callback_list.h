@@ -6,12 +6,13 @@
 #define BASE_CALLBACK_LIST_H_
 
 #include <list>
-#include <memory>
 
 #include "base/callback.h"
+#include "base/callback_internal.h"
 #include "base/compiler_specific.h"
 #include "base/logging.h"
 #include "base/macros.h"
+#include "base/memory/scoped_ptr.h"
 
 // OVERVIEW:
 //
@@ -28,7 +29,7 @@
 //
 //   typedef base::Callback<void(const Foo&)> OnFooCallback;
 //
-//   std::unique_ptr<base::CallbackList<void(const Foo&)>::Subscription>
+//   scoped_ptr<base::CallbackList<void(const Foo&)>::Subscription>
 //   RegisterCallback(const OnFooCallback& cb) {
 //     return callback_list_.Add(cb);
 //   }
@@ -61,7 +62,7 @@
 //     // Do something.
 //   }
 //
-//   std::unique_ptr<base::CallbackList<void(const Foo&)>::Subscription>
+//   scoped_ptr<base::CallbackList<void(const Foo&)>::Subscription>
 //       foo_subscription_;
 //
 //   DISALLOW_COPY_AND_ASSIGN(MyWidgetListener);
@@ -102,9 +103,9 @@ class CallbackListBase {
   // Add a callback to the list. The callback will remain registered until the
   // returned Subscription is destroyed, which must occur before the
   // CallbackList is destroyed.
-  std::unique_ptr<Subscription> Add(const CallbackType& cb) WARN_UNUSED_RESULT {
+  scoped_ptr<Subscription> Add(const CallbackType& cb) WARN_UNUSED_RESULT {
     DCHECK(!cb.is_null());
-    return std::unique_ptr<Subscription>(
+    return scoped_ptr<Subscription>(
         new Subscription(this, callbacks_.insert(callbacks_.end(), cb)));
   }
 
@@ -210,8 +211,8 @@ class CallbackList<void(Args...)>
 
   CallbackList() {}
 
-  template <typename... RunArgs>
-  void Notify(RunArgs&&... args) {
+  void Notify(
+      typename internal::CallbackParamTraits<Args>::ForwardType... args) {
     typename internal::CallbackListBase<CallbackType>::Iterator it =
         this->GetIterator();
     CallbackType* cb;
