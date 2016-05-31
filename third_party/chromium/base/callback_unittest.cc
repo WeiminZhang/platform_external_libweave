@@ -5,11 +5,11 @@
 #include "base/callback.h"
 
 #include <gtest/gtest.h>
-#include <memory>
 
 #include "base/bind.h"
 #include "base/callback_internal.h"
 #include "base/memory/ref_counted.h"
+#include "base/memory/scoped_ptr.h"
 
 namespace base {
 

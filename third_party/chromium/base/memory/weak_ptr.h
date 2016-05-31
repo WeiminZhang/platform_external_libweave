@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 // Weak pointers are pointers to an object that do not affect its lifetime,
-// and which may be invalidated (i.e. reset to nullptr) by the object, or its
+// and which may be invalidated (i.e. reset to NULL) by the object, or its
 // owner, at any time, most commonly when the object is about to be deleted.
 
 // Weak pointers are useful when an object needs to be accessed safely by one
@@ -70,7 +70,6 @@
 #ifndef BASE_MEMORY_WEAK_PTR_H_
 #define BASE_MEMORY_WEAK_PTR_H_
 
-#include <cstddef>
 #include <type_traits>
 
 #include "base/base_export.h"
@@ -198,9 +197,8 @@ template <typename T> class WeakPtrFactory;
 template <typename T>
 class WeakPtr : public internal::WeakPtrBase {
  public:
-  WeakPtr() : ptr_(nullptr) {}
-
-  WeakPtr(std::nullptr_t) : ptr_(nullptr) {}
+  WeakPtr() : ptr_(NULL) {
+  }
 
   // Allow conversion from U to T provided U "is a" T. Note that this
   // is separate from the (implicit) copy constructor.
@@ -208,20 +206,20 @@ class WeakPtr : public internal::WeakPtrBase {
   WeakPtr(const WeakPtr<U>& other) : WeakPtrBase(other), ptr_(other.ptr_) {
   }
 
-  T* get() const { return ref_.is_valid() ? ptr_ : nullptr; }
+  T* get() const { return ref_.is_valid() ? ptr_ : NULL; }
 
   T& operator*() const {
-    DCHECK(get() != nullptr);
+    DCHECK(get() != NULL);
     return *get();
   }
   T* operator->() const {
-    DCHECK(get() != nullptr);
+    DCHECK(get() != NULL);
     return get();
   }
 
   void reset() {
     ref_ = internal::WeakReference();
-    ptr_ = nullptr;
+    ptr_ = NULL;
   }
 
   // Implement "Safe Bool Idiom"
@@ -246,7 +244,7 @@ class WeakPtr : public internal::WeakPtrBase {
   typedef T* WeakPtr::*Testable;
 
  public:
-  operator Testable() const { return get() ? &WeakPtr::ptr_ : nullptr; }
+  operator Testable() const { return get() ? &WeakPtr::ptr_ : NULL; }
 
  private:
   // Explicitly declare comparison operators as required by the "Safe Bool
@@ -265,7 +263,7 @@ class WeakPtr : public internal::WeakPtrBase {
   }
 
   // This pointer is only valid when ref_.is_valid() is true.  Otherwise, its
-  // value is undefined (as opposed to nullptr).
+  // value is undefined (as opposed to NULL).
   T* ptr_;
 };
 
@@ -280,7 +278,9 @@ class WeakPtrFactory {
   explicit WeakPtrFactory(T* ptr) : ptr_(ptr) {
   }
 
-  ~WeakPtrFactory() { ptr_ = nullptr; }
+  ~WeakPtrFactory() {
+    ptr_ = NULL;
+  }
 
   WeakPtr<T> GetWeakPtr() {
     DCHECK(ptr_);
