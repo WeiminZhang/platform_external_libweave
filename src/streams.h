@@ -5,8 +5,6 @@
 #ifndef LIBWEAVE_SRC_STREAMS_H_
 #define LIBWEAVE_SRC_STREAMS_H_
 
-#include <vector>
-
 #include <base/memory/weak_ptr.h>
 #include <weave/stream.h>
 

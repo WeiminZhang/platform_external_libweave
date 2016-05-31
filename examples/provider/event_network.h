@@ -5,8 +5,6 @@
 #ifndef LIBWEAVE_EXAMPLES_UBUNTU_EVENT_NETWORK_H_
 #define LIBWEAVE_EXAMPLES_UBUNTU_EVENT_NETWORK_H_
 
-#include <vector>
-
 #include <weave/provider/network.h>
 
 #include <base/memory/weak_ptr.h>
