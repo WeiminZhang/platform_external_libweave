@@ -21,9 +21,7 @@ EXAMPLES_DAEMON_SRC_FILES := \
 	examples/daemon/ledflasher/ledflasher.cc \
 	examples/daemon/light/light.cc \
 	examples/daemon/lock/lock.cc \
-	examples/daemon/oven/oven.cc \
-	examples/daemon/sample/sample.cc \
-	examples/daemon/speaker/speaker.cc
+	examples/daemon/sample/sample.cc
 
 examples_daemon_obj_files := $(EXAMPLES_DAEMON_SRC_FILES:%.cc=out/$(BUILD_MODE)/%.o)
 
@@ -62,16 +60,10 @@ out/$(BUILD_MODE)/weave_daemon_light : out/$(BUILD_MODE)/examples/daemon/light/l
 out/$(BUILD_MODE)/weave_daemon_lock : out/$(BUILD_MODE)/examples/daemon/lock/lock.o $(example_daemon_deps)
 	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
 
-out/$(BUILD_MODE)/weave_daemon_oven : out/$(BUILD_MODE)/examples/daemon/oven/oven.o $(example_daemon_deps)
-	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
-
 out/$(BUILD_MODE)/weave_daemon_sample : out/$(BUILD_MODE)/examples/daemon/sample/sample.o $(example_daemon_deps)
 	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
 
-out/$(BUILD_MODE)/weave_daemon_speaker : out/$(BUILD_MODE)/examples/daemon/speaker/speaker.o $(example_daemon_deps)
-	$(CXX) -o $@ $^ $(CFLAGS) $(example_daemon_common_flags)
-
-all-examples : out/$(BUILD_MODE)/weave_daemon_ledflasher out/$(BUILD_MODE)/weave_daemon_light out/$(BUILD_MODE)/weave_daemon_lock out/$(BUILD_MODE)/weave_daemon_oven out/$(BUILD_MODE)/weave_daemon_sample out/$(BUILD_MODE)/weave_daemon_speaker
+all-examples : out/$(BUILD_MODE)/weave_daemon_ledflasher out/$(BUILD_MODE)/weave_daemon_light out/$(BUILD_MODE)/weave_daemon_lock out/$(BUILD_MODE)/weave_daemon_sample
 
 .PHONY : all-examples
 

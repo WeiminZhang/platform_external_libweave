@@ -196,6 +196,35 @@ const char kTraits[] = R"({
         }
       }
     }
+  },
+  "volume": {
+    "commands": {
+      "setConfig": {
+        "minimalRole": "user",
+        "parameters": {
+          "volume": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "isMuted": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "state": {
+      "volume": {
+        "isRequired": true,
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100
+      },
+      "isMuted": {
+        "isRequired": true,
+        "type": "boolean"
+      }
+    }
   }
 })";
 
@@ -203,6 +232,7 @@ const char kDefaultState[] = R"({
   "lock":{"isLockingSupported": true},
   "onOff":{"state": "on"},
   "brightness":{"brightness": 0.0},
+  "volume":{"isMuted": true},
   "colorTemp":{"colorTemp": 0},
     "colorXy": {
     "colorSetting": {"colorX": 0.0, "colorY": 0.0},
