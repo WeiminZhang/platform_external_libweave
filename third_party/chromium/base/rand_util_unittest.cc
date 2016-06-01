@@ -9,11 +9,11 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 
 #include <gtest/gtest.h>
 
 #include "base/logging.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/time/time.h"
 
 namespace {
