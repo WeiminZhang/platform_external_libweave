@@ -5,6 +5,7 @@
 #include "examples/provider/avahi_client.h"
 
 #include <cstdlib>
+#include <memory>
 #include <vector>
 
 #include <avahi-common/error.h>
