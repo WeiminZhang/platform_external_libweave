@@ -45,7 +45,8 @@ class TestDeviceHandler {
 
     CHECK(device->AddComponent(
         standard_traits::kComponent,
-        {"lock", "onOff", "brightness", "colorTemp", "colorXy"}, nullptr));
+        {"lock", "onOff", "brightness", "volume", "colorTemp", "colorXy"},
+        nullptr));
     CHECK(device->AddComponent(custom_traits::ledflasher, {"_ledflasher"},
                                nullptr));
 
@@ -79,6 +80,9 @@ class TestDeviceHandler {
         standard_traits::kComponent, "brightness.setConfig",
         base::Bind(&TestDeviceHandler::OnBrightnessSetConfig,
                    weak_ptr_factory_.GetWeakPtr()));
+    device->AddCommandHandler(standard_traits::kComponent, "volume.setConfig",
+                              base::Bind(&TestDeviceHandler::OnVolumeSetConfig,
+                                         weak_ptr_factory_.GetWeakPtr()));
     device->AddCommandHandler(
         standard_traits::kComponent, "colorTemp.setConfig",
         base::Bind(&TestDeviceHandler::OnColorTempSetConfig,
@@ -148,6 +152,50 @@ class TestDeviceHandler {
     AbortCommand(cmd);
   }
 
+  void OnVolumeSetConfig(const std::weak_ptr<weave::Command>& command) {
+    auto cmd = command.lock();
+    if (!cmd)
+      return;
+    LOG(INFO) << "received command: " << cmd->GetName();
+    const auto& params = cmd->GetParameters();
+    // Handle volume parameter
+    bool updateState = false;
+    int32_t volume_value = 0;
+    if (params.GetInteger("volume", &volume_value)) {
+      LOG(INFO) << cmd->GetName() << " volume: " << volume_value;
+
+      if (volume_value < 0 || volume_value > 100) {
+        // Invalid volume range value is specified.
+        AbortCommand(cmd);
+        return;
+      }
+
+      if (volume_value_ != volume_value) {
+        volume_value_ = volume_value;
+        updateState = true;
+      }
+    }
+
+    // Handle isMuted parameter
+    bool isMuted_status = false;
+    if (params.GetBoolean("isMuted", &isMuted_status)) {
+      LOG(INFO) << cmd->GetName() << " is "
+                << (isMuted_status ? "muted" : "not muted");
+
+      if (isMuted_status_ != isMuted_status) {
+        isMuted_status_ = isMuted_status;
+        LOG(INFO) << "Speaker is now: "
+                  << (isMuted_status ? "muted" : "not muted");
+        updateState = true;
+      }
+    }
+
+    if (updateState) {
+      UpdateTestDeviceState();
+    }
+    cmd->Complete({}, nullptr);
+  }
+
   void OnOnOffSetConfig(const std::weak_ptr<weave::Command>& command) {
     auto cmd = command.lock();
     if (!cmd)
@@ -159,18 +207,16 @@ class TestDeviceHandler {
       LOG(INFO) << cmd->GetName() << " state: " << requested_state;
 
       std::string temp_state = requested_state;
-      std::transform(temp_state.begin(), temp_state.end(), temp_state.begin(),
-                     ::toupper);
-      if (temp_state != "ON" && temp_state != "OFF") {
+      if (temp_state != "on" && temp_state != "off") {
         // Invalid OnOff state is specified.
         AbortCommand(cmd);
         return;
       }
 
-      bool new_light_status = requested_state == "on";
-      if (new_light_status != light_status_) {
-        light_status_ = new_light_status;
-        LOG(INFO) << "Light is now: " << (light_status_ ? "ON" : "OFF");
+      bool new_device_status = requested_state == "on";
+      if (new_device_status != device_status_) {
+        device_status_ = new_device_status;
+        LOG(INFO) << "Device is now: " << (device_status_ ? "ON" : "OFF");
         UpdateTestDeviceState();
       }
       cmd->Complete({}, nullptr);
@@ -319,8 +365,11 @@ class TestDeviceHandler {
     device_->SetStateProperty(standard_traits::kComponent, "lock.lockedState",
                               base::StringValue{updated_state}, nullptr);
     base::DictionaryValue state;
-    state.SetString("onOff.state", light_status_ ? "on" : "off");
+    state.SetString("onOff.state", device_status_ ? "on" : "off");
     state.SetDouble("brightness.brightness", brightness_state_);
+    // state.SetString("onOff.state", speaker_status_ ? "on" : "off");
+    state.SetBoolean("volume.isMuted", isMuted_status_);
+    state.SetInteger("volume.volume", volume_value_);
     state.SetInteger("colorTemp.minColorTemp", color_temp_min_value_);
     state.SetInteger("colorTemp.maxColorTemp", color_temp_max_value_);
     state.SetInteger("colorTemp.colorTemp", color_temp_);
@@ -344,8 +393,10 @@ class TestDeviceHandler {
 
   // Simulate the state of the testdevice.
   weave::lockstate::LockState lock_state_{weave::lockstate::LockState::kLocked};
-  bool light_status_{false};
+  bool device_status_{false};
   double brightness_state_{0.0};
+  bool isMuted_status_{false};
+  int32_t volume_value_{0};
   int32_t color_temp_{0};
   int32_t color_temp_min_value_{0};
   int32_t color_temp_max_value_{1};
