@@ -6,10 +6,11 @@
 
 #include <stddef.h>
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "base/json/json_reader.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/values.h"
 
 namespace base {
@@ -35,7 +36,7 @@ class JSONParserTest : public testing::Test {
 
 TEST_F(JSONParserTest, NextChar) {
   std::string input("Hello world");
-  scoped_ptr<JSONParser> parser(NewTestParser(input));
+  std::unique_ptr<JSONParser> parser(NewTestParser(input));
 
   EXPECT_EQ('H', *parser->pos_);
   for (size_t i = 1; i < input.length(); ++i) {
@@ -46,8 +47,8 @@ TEST_F(JSONParserTest, NextChar) {
 
 TEST_F(JSONParserTest, ConsumeString) {
   std::string input("\"test\",|");
-  scoped_ptr<JSONParser> parser(NewTestParser(input));
-  scoped_ptr<Value> value(parser->ConsumeString());
+  std::unique_ptr<JSONParser> parser(NewTestParser(input));
+  std::unique_ptr<Value> value(parser->ConsumeString());
   EXPECT_EQ('"', *parser->pos_);
 
   TestLastThree(parser.get());
@@ -60,8 +61,8 @@ TEST_F(JSONParserTest, ConsumeString) {
 
 TEST_F(JSONParserTest, ConsumeList) {
   std::string input("[true, false],|");
-  scoped_ptr<JSONParser> parser(NewTestParser(input));
-  scoped_ptr<Value> value(parser->ConsumeList());
+  std::unique_ptr<JSONParser> parser(NewTestParser(input));
+  std::unique_ptr<Value> value(parser->ConsumeList());
   EXPECT_EQ(']', *parser->pos_);
 
   TestLastThree(parser.get());
@@ -74,8 +75,8 @@ TEST_F(JSONParserTest, ConsumeList) {
 
 TEST_F(JSONParserTest, ConsumeDictionary) {
   std::string input("{\"abc\":\"def\"},|");
-  scoped_ptr<JSONParser> parser(NewTestParser(input));
-  scoped_ptr<Value> value(parser->ConsumeDictionary());
+  std::unique_ptr<JSONParser> parser(NewTestParser(input));
+  std::unique_ptr<Value> value(parser->ConsumeDictionary());
   EXPECT_EQ('}', *parser->pos_);
 
   TestLastThree(parser.get());
@@ -91,8 +92,8 @@ TEST_F(JSONParserTest, ConsumeDictionary) {
 TEST_F(JSONParserTest, ConsumeLiterals) {
   // Literal |true|.
   std::string input("true,|");
-  scoped_ptr<JSONParser> parser(NewTestParser(input));
-  scoped_ptr<Value> value(parser->ConsumeLiteral());
+  std::unique_ptr<JSONParser> parser(NewTestParser(input));
+  std::unique_ptr<Value> value(parser->ConsumeLiteral());
   EXPECT_EQ('e', *parser->pos_);
 
   TestLastThree(parser.get());
@@ -129,8 +130,8 @@ TEST_F(JSONParserTest, ConsumeLiterals) {
 TEST_F(JSONParserTest, ConsumeNumbers) {
   // Integer.
   std::string input("1234,|");
-  scoped_ptr<JSONParser> parser(NewTestParser(input));
-  scoped_ptr<Value> value(parser->ConsumeNumber());
+  std::unique_ptr<JSONParser> parser(NewTestParser(input));
+  std::unique_ptr<Value> value(parser->ConsumeNumber());
   EXPECT_EQ('4', *parser->pos_);
 
   TestLastThree(parser.get());
@@ -206,7 +207,7 @@ TEST_F(JSONParserTest, ErrorMessages) {
   // Error strings should not be modified in case of success.
   std::string error_message;
   int error_code = 0;
-  scoped_ptr<Value> root = JSONReader::ReadAndReturnError(
+  std::unique_ptr<Value> root = JSONReader::ReadAndReturnError(
       "[42]", JSON_PARSE_RFC, &error_code, &error_message);
   EXPECT_TRUE(error_message.empty());
   EXPECT_EQ(0, error_code);
@@ -310,7 +311,7 @@ TEST_F(JSONParserTest, Decode4ByteUtf8Char) {
       "[\"😇\",[],[],[],{\"google:suggesttype\":[]}]";
   std::string error_message;
   int error_code = 0;
-  scoped_ptr<Value> root = JSONReader::ReadAndReturnError(
+  std::unique_ptr<Value> root = JSONReader::ReadAndReturnError(
       kUtf8Data, JSON_PARSE_RFC, &error_code, &error_message);
   EXPECT_TRUE(root.get()) << error_message;
 }
