@@ -159,12 +159,13 @@ TEST_F(IqStanzaHandlerTest, OutOfOrderResponses) {
 
 TEST_F(IqStanzaHandlerTest, RequestTimeout) {
   bool called = false;
-  auto on_timeout = [&called]() { called = true; };
+  auto on_timeout = [](bool* called) { *called = true; };
 
   EXPECT_CALL(mock_xmpp_channel_, SendMessage(_)).Times(1);
   EXPECT_FALSE(called);
-  iq_stanza_handler_.SendRequest("set", "", "", "<body/>", {},
-                                 base::Bind(on_timeout));
+  iq_stanza_handler_.SendRequest(
+      "set", "", "", "<body/>", {},
+      base::Bind(on_timeout, base::Unretained(&called)));
   task_runner_.Run();
   EXPECT_TRUE(called);
 }

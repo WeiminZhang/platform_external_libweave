@@ -1115,7 +1115,7 @@ void DeviceRegistrationInfo::ProcessInitialCommandList(
     ErrorPtr error) {
   if (error)
     return;
-  for (const base::Value* command : commands) {
+  for (const auto& command : commands) {
     const base::DictionaryValue* command_dict{nullptr};
     if (!command->GetAsDictionary(&command_dict)) {
       LOG(WARNING) << "Not a command dictionary: " << *command;
@@ -1152,7 +1152,7 @@ void DeviceRegistrationInfo::PublishCommands(const base::ListValue& commands,
                                              ErrorPtr error) {
   if (error)
     return;
-  for (const base::Value* command : commands) {
+  for (const auto& command : commands) {
     const base::DictionaryValue* command_dict{nullptr};
     if (!command->GetAsDictionary(&command_dict)) {
       LOG(WARNING) << "Not a command dictionary: " << *command;
