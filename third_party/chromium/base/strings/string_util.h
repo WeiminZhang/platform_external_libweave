@@ -173,6 +173,13 @@ TrimPositions TrimWhitespaceASCII(const std::string& input,
 bool IsStringUTF8(const StringPiece& str);
 bool IsStringASCII(const StringPiece& str);
 
+template <typename Char>
+inline bool IsHexDigit(Char c) {
+  return (c >= '0' && c <= '9') ||
+         (c >= 'A' && c <= 'F') ||
+         (c >= 'a' && c <= 'f');
+}
+
 // Reserves enough memory in |str| to accommodate |length_with_null| characters,
 // sets the size of |str| to |length_with_null - 1| characters, and returns a
 // pointer to the underlying contiguous array of characters.  This is typically

@@ -897,7 +897,7 @@ void PrivetHandler::HandleComponents(const base::DictionaryValue& input,
   input.GetString(kPathKey, &path);
   const base::ListValue* filter_items = nullptr;
   if (input.GetList(kFilterKey, &filter_items)) {
-    for (const base::Value* value : *filter_items) {
+    for (const auto& value : *filter_items) {
       std::string filter_item;
       if (value->GetAsString(&filter_item))
         filter.insert(filter_item);
