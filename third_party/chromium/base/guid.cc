@@ -4,12 +4,41 @@
 
 #include "base/guid.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "base/rand_util.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 
 namespace base {
+
+namespace {
+
+bool IsLowerHexDigit(char c) {
+  return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+}
+
+bool IsValidGUIDInternal(const base::StringPiece& guid, bool strict) {
+  const size_t kGUIDLength = 36U;
+  if (guid.length() != kGUIDLength)
+    return false;
+
+  for (size_t i = 0; i < guid.length(); ++i) {
+    char current = guid[i];
+    if (i == 8 || i == 13 || i == 18 || i == 23) {
+      if (current != '-')
+        return false;
+    } else {
+      if ((strict && !IsLowerHexDigit(current)) || !IsHexDigit(current))
+        return false;
+    }
+  }
+
+  return true;
+}
+
+}  // namespace
 
 std::string GenerateGUID() {
   uint64_t sixteen_bytes[2] = {base::RandUint64(), base::RandUint64()};
@@ -30,8 +59,14 @@ std::string GenerateGUID() {
   return RandomDataToGUIDString(sixteen_bytes);
 }
 
-// TODO(cmasone): Once we're comfortable this works, migrate Windows code to
-// use this as well.
+bool IsValidGUID(const base::StringPiece& guid) {
+  return IsValidGUIDInternal(guid, false /* strict */);
+}
+
+bool IsValidGUIDOutputString(const base::StringPiece& guid) {
+  return IsValidGUIDInternal(guid, true /* strict */);
+}
+
 std::string RandomDataToGUIDString(const uint64_t bytes[2]) {
   return StringPrintf("%08X-%04X-%04X-%04X-%012llX",
                       static_cast<unsigned int>(bytes[0] >> 32),

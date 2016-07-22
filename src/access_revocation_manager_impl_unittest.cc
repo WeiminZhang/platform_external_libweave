@@ -75,7 +75,8 @@ TEST_F(AccessRevocationManagerImplTest, Init) {
 TEST_F(AccessRevocationManagerImplTest, Block) {
   bool callback_called = false;
   manager_->AddEntryAddedCallback(
-      base::Bind([&callback_called]() { callback_called = true; }));
+      base::Bind([](bool* callback_called) { *callback_called = true; },
+                 base::Unretained(&callback_called)));
   EXPECT_CALL(config_store_, SaveSettings("black_list", _, _))
       .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
           [](const std::string& json, const DoneCallback& callback) {
@@ -132,10 +133,10 @@ TEST_F(AccessRevocationManagerImplTest, BlockListOverflow) {
                      {8, 8, 8},
                      base::Time::FromTimeT(1419970000 + i),
                      base::Time::FromTimeT(1419990000)},
-                    base::Bind([&callback_called](ErrorPtr error) {
-                      callback_called = true;
+                    base::Bind([](bool* callback_called, ErrorPtr error) {
+                      *callback_called = true;
                       EXPECT_FALSE(error);
-                    }));
+                    }, base::Unretained(&callback_called)));
     EXPECT_TRUE(callback_called);
   }
   EXPECT_EQ(manager_->GetCapacity(), manager_->GetSize());

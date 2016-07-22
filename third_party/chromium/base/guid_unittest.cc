@@ -15,35 +15,7 @@
 
 namespace base {
 
-#if defined(OS_POSIX)
-
 namespace {
-
-template <typename Char>
-inline bool IsHexDigit(Char c) {
-  return (c >= '0' && c <= '9') ||
-         (c >= 'A' && c <= 'F') ||
-         (c >= 'a' && c <= 'f');
-}
-
-bool IsValidGUID(const std::string& guid) {
-  const size_t kGUIDLength = 36U;
-  if (guid.length() != kGUIDLength)
-    return false;
-
-  for (size_t i = 0; i < guid.length(); ++i) {
-    char current = guid[i];
-    if (i == 8 || i == 13 || i == 18 || i == 23) {
-      if (current != '-')
-        return false;
-    } else {
-      if (!IsHexDigit(current))
-        return false;
-    }
-  }
-
-  return true;
-}
 
 bool IsGUIDv4(const std::string& guid) {
   // The format of GUID version 4 must be xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx,
@@ -66,7 +38,6 @@ TEST(GUIDTest, GUIDGeneratesCorrectly) {
   std::string clientid = RandomDataToGUIDString(bytes);
   EXPECT_EQ("01234567-89AB-CDEF-FEDC-BA9876543210", clientid);
 }
-#endif
 
 TEST(GUIDTest, GUIDCorrectlyFormatted) {
   const int kIterations = 10;
@@ -84,10 +55,8 @@ TEST(GUIDTest, GUIDBasicUniqueness) {
     EXPECT_EQ(36U, guid1.length());
     EXPECT_EQ(36U, guid2.length());
     EXPECT_NE(guid1, guid2);
-#if defined(OS_POSIX)
     EXPECT_TRUE(IsGUIDv4(guid1));
     EXPECT_TRUE(IsGUIDv4(guid2));
-#endif
   }
 }
 
