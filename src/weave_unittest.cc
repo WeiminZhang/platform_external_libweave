@@ -328,13 +328,15 @@ class WeaveTest : public ::testing::Test {
 
   void NotifyNetworkChanged(provider::Network::State state,
                             base::TimeDelta delay) {
-    auto task = [this, state] {
-      EXPECT_CALL(network_, GetConnectionState()).WillRepeatedly(Return(state));
-      for (const auto& cb : network_callbacks_)
+    auto task = [](decltype(this) test, provider::Network::State state) {
+      EXPECT_CALL(test->network_, GetConnectionState())
+          .WillRepeatedly(Return(state));
+      for (const auto& cb : test->network_callbacks_)
         cb.Run();
     };
 
-    task_runner_.PostDelayedTask(FROM_HERE, base::Bind(task), delay);
+    task_runner_.PostDelayedTask(
+        FROM_HERE, base::Bind(task, base::Unretained(this), state), delay);
   }
 
   std::map<std::string, provider::HttpServer::RequestHandlerCallback>
@@ -428,23 +430,27 @@ TEST_F(WeaveBasicTest, Register) {
 
   bool done = false;
   device_->Register(RegistrationData{"TICKET_ID"},
-                    base::Bind([this, &done](ErrorPtr error) {
-                      EXPECT_FALSE(error);
-                      done = true;
-                      task_runner_.Break();
-                      EXPECT_EQ("CLOUD_ID", device_->GetSettings().cloud_id);
-                    }));
+                    base::Bind(
+                        [](decltype(this) test, bool* done, ErrorPtr error) {
+                          EXPECT_FALSE(error);
+                          *done = true;
+                          test->task_runner_.Break();
+                          EXPECT_EQ("CLOUD_ID",
+                                    test->device_->GetSettings().cloud_id);
+                        },
+                        base::Unretained(this), base::Unretained(&done)));
   task_runner_.Run();
   EXPECT_TRUE(done);
 
   done = false;
-  device_->Register(RegistrationData{"TICKET_ID2"},
-                    base::Bind([this, &done](ErrorPtr error) {
-                      EXPECT_TRUE(error->HasError("already_registered"));
-                      done = true;
-                      task_runner_.Break();
-                      EXPECT_EQ("CLOUD_ID", device_->GetSettings().cloud_id);
-                    }));
+  device_->Register(
+      RegistrationData{"TICKET_ID2"},
+      base::Bind([](decltype(this) test, bool* done, ErrorPtr error) {
+        EXPECT_TRUE(error->HasError("already_registered"));
+        *done = true;
+        test->task_runner_.Break();
+        EXPECT_EQ("CLOUD_ID", test->device_->GetSettings().cloud_id);
+      }, base::Unretained(this), base::Unretained(&done)));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }

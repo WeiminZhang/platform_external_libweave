@@ -133,11 +133,6 @@ std::ostream& operator<<(std::ostream& os, TimeDelta time_delta) {
 // Time -----------------------------------------------------------------------
 
 // static
-Time Time::Max() {
-  return Time(std::numeric_limits<int64_t>::max());
-}
-
-// static
 Time Time::FromTimeT(time_t tt) {
   if (tt == 0)
     return Time();  // Preserve 0 so we can tell it doesn't exist.
@@ -237,6 +232,14 @@ Time Time::LocalMidnight() const {
   exploded.second = 0;
   exploded.millisecond = 0;
   return FromLocalExploded(exploded);
+}
+
+// static
+bool Time::ExplodedMostlyEquals(const Exploded& lhs, const Exploded& rhs) {
+  return lhs.year == rhs.year && lhs.month == rhs.month &&
+         lhs.day_of_month == rhs.day_of_month && lhs.hour == rhs.hour &&
+         lhs.minute == rhs.minute && lhs.second == rhs.second &&
+         lhs.millisecond == rhs.millisecond;
 }
 
 std::ostream& operator<<(std::ostream& os, Time time) {

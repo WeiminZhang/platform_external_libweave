@@ -151,10 +151,13 @@ TEST_F(CommandQueueTest, CleanupMultipleCommands) {
 
   queue_.Add(CreateDummyCommandInstance("base.reboot", id1));
   queue_.Add(CreateDummyCommandInstance("base.reboot", id2));
-  auto remove_task = [this](const std::string& id) { queue_.RemoveLater(id); };
-  remove_task(id1);
-  task_runner_.PostDelayedTask(FROM_HERE, base::Bind(remove_task, id2),
-                               base::TimeDelta::FromSeconds(10));
+  auto remove_task = [](CommandQueue* queue, const std::string& id) {
+    queue->RemoveLater(id);
+  };
+  remove_task(&queue_, id1);
+  task_runner_.PostDelayedTask(
+      FROM_HERE, base::Bind(remove_task, base::Unretained(&queue_), id2),
+      base::TimeDelta::FromSeconds(10));
   EXPECT_EQ(2u, queue_.GetCount());
   ASSERT_EQ(2u, task_runner_.GetTaskQueueSize());
   task_runner_.RunOnce();  // Executes "remove_task(id2) @ T+10s".

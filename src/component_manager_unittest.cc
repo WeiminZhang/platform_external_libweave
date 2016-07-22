@@ -27,7 +27,7 @@ bool HasTrait(const base::DictionaryValue& comp, const std::string& trait) {
   const base::ListValue* list = nullptr;
   if (!comp.GetList("traits", &list))
     return false;
-  for (const base::Value* item : *list) {
+  for (const auto& item : *list) {
     std::string value;
     if (item->GetAsString(&value) && value == trait)
       return true;
@@ -241,8 +241,11 @@ TEST_F(ComponentManagerTest, LoadTraitsDuplicateOverride) {
 TEST_F(ComponentManagerTest, AddTraitDefChangedCallback) {
   int count = 0;
   int count2 = 0;
-  manager_.AddTraitDefChangedCallback(base::Bind([&count]() { count++; }));
-  manager_.AddTraitDefChangedCallback(base::Bind([&count2]() { count2++; }));
+  auto handler = [](int* count) { (*count)++; };
+  manager_.AddTraitDefChangedCallback(
+      base::Bind(handler, base::Unretained(&count)));
+  manager_.AddTraitDefChangedCallback(
+      base::Bind(handler, base::Unretained(&count2)));
   EXPECT_EQ(1, count);
   EXPECT_EQ(1, count2);
   // New definitions.
@@ -626,9 +629,11 @@ TEST_F(ComponentManagerTest, AddComponentDoesNotExist) {
 TEST_F(ComponentManagerTest, AddComponentTreeChangedCallback) {
   int count = 0;
   int count2 = 0;
-  manager_.AddComponentTreeChangedCallback(base::Bind([&count]() { count++; }));
+  auto handler = [](int* count) { (*count)++; };
   manager_.AddComponentTreeChangedCallback(
-      base::Bind([&count2]() { count2++; }));
+      base::Bind(handler, base::Unretained(&count)));
+  manager_.AddComponentTreeChangedCallback(
+      base::Bind(handler, base::Unretained(&count2)));
   EXPECT_EQ(1, count);
   EXPECT_EQ(1, count2);
   EXPECT_TRUE(manager_.AddComponent("", "comp1", {}, nullptr));
@@ -849,18 +854,22 @@ TEST_F(ComponentManagerTest, AddCommandHandler) {
       manager_.AddComponent("", "comp2", {"trait1", "trait2"}, nullptr));
 
   std::string last_tags;
-  auto handler = [&last_tags](int tag, const std::weak_ptr<Command>& command) {
-    if (!last_tags.empty())
-      last_tags += ',';
-    last_tags += std::to_string(tag);
+  auto handler = [](std::string* last_tags, int tag,
+                    const std::weak_ptr<Command>& command) {
+    if (!last_tags->empty())
+      *last_tags += ',';
+    *last_tags += std::to_string(tag);
   };
 
-  manager_.AddCommandHandler("comp1", "trait1.command1",
-                             base::Bind(handler, 1));
-  manager_.AddCommandHandler("comp2", "trait1.command1",
-                             base::Bind(handler, 2));
-  manager_.AddCommandHandler("comp2", "trait2.command2",
-                             base::Bind(handler, 3));
+  manager_.AddCommandHandler(
+      "comp1", "trait1.command1",
+      base::Bind(handler, base::Unretained(&last_tags), 1));
+  manager_.AddCommandHandler(
+      "comp2", "trait1.command1",
+      base::Bind(handler, base::Unretained(&last_tags), 2));
+  manager_.AddCommandHandler(
+      "comp2", "trait2.command2",
+      base::Bind(handler, base::Unretained(&last_tags), 3));
   EXPECT_TRUE(last_tags.empty());
 
   const char kCommand1[] = R"({
@@ -919,11 +928,11 @@ TEST_F(ComponentManagerTest, AddDefaultCommandHandler) {
   ASSERT_TRUE(manager_.AddComponent("", "comp", {"trait1", "trait2"}, nullptr));
 
   int count = 0;
-  auto handler = [&count](int tag, const std::weak_ptr<Command>& command) {
-    count++;
-  };
+  auto handler = [](int* count, int tag,
+                    const std::weak_ptr<Command>& command) { (*count)++; };
 
-  manager_.AddCommandHandler("", "", base::Bind(handler, 1));
+  manager_.AddCommandHandler("", "",
+                             base::Bind(handler, base::Unretained(&count), 1));
   EXPECT_EQ(0, count);
 
   const char kCommand1[] = R"({
@@ -1169,8 +1178,11 @@ TEST_F(ComponentManagerTest, AddStateChangedCallback) {
 
   int count = 0;
   int count2 = 0;
-  manager_.AddStateChangedCallback(base::Bind([&count]() { count++; }));
-  manager_.AddStateChangedCallback(base::Bind([&count2]() { count2++; }));
+  auto handler = [](int* count) { (*count)++; };
+  manager_.AddStateChangedCallback(
+      base::Bind(handler, base::Unretained(&count)));
+  manager_.AddStateChangedCallback(
+      base::Bind(handler, base::Unretained(&count2)));
   EXPECT_EQ(1, count);
   EXPECT_EQ(1, count2);
   EXPECT_EQ(0u, manager_.GetLastStateChangeId());
@@ -1216,11 +1228,13 @@ TEST_F(ComponentManagerTest, ComponentStateUpdates) {
       manager_.AddComponent("", "comp2", {"trait1", "trait2"}, nullptr));
 
   std::vector<ComponentManager::UpdateID> updates1;
-  auto callback1 = [&updates1](ComponentManager::UpdateID id) {
-    updates1.push_back(id);
+  auto callback = [](std::vector<ComponentManager::UpdateID>* updates,
+                      ComponentManager::UpdateID id) {
+    updates->push_back(id);
   };
   // State change queue is empty, callback should be called immediately.
-  auto token1 = manager_.AddServerStateUpdatedCallback(base::Bind(callback1));
+  auto token1 = manager_.AddServerStateUpdatedCallback(
+      base::Bind(callback, base::Unretained(&updates1)));
   ASSERT_EQ(1u, updates1.size());
   EXPECT_EQ(manager_.GetLastStateChangeId(), updates1.front());
   updates1.clear();
@@ -1236,11 +1250,9 @@ TEST_F(ComponentManagerTest, ComponentStateUpdates) {
   ASSERT_TRUE(manager_.SetStateProperty("comp1", "trait1.prop2", foo, nullptr));
 
   std::vector<ComponentManager::UpdateID> updates2;
-  auto callback2 = [&updates2](ComponentManager::UpdateID id) {
-    updates2.push_back(id);
-  };
   // State change queue is not empty, so callback will be called later.
-  auto token2 = manager_.AddServerStateUpdatedCallback(base::Bind(callback2));
+  auto token2 = manager_.AddServerStateUpdatedCallback(
+      base::Bind(callback, base::Unretained(&updates2)));
   EXPECT_TRUE(updates2.empty());
 
   base::StringValue bar("bar");
