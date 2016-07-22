@@ -93,7 +93,7 @@ EXAMPLES_PROVIDER_SRC_FILES := \
 THIRD_PARTY_CHROMIUM_BASE_SRC_FILES := \
 	third_party/chromium/base/bind_helpers.cc \
 	third_party/chromium/base/callback_internal.cc \
-	third_party/chromium/base/guid_posix.cc \
+	third_party/chromium/base/guid.cc \
 	third_party/chromium/base/json/json_parser.cc \
 	third_party/chromium/base/json/json_reader.cc \
 	third_party/chromium/base/json/json_writer.cc \

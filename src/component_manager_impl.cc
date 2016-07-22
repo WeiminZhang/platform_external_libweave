@@ -68,7 +68,7 @@ void RemoveInaccessibleState(const ComponentManagerImpl* manager,
       if (sub_component->GetType() == base::Value::TYPE_LIST) {
         base::ListValue* component_array = nullptr;
         CHECK(sub_component->GetAsList(&component_array));
-        for (base::Value* item : *component_array) {
+        for (const auto& item : *component_array) {
           CHECK(item->GetAsDictionary(&component));
           RemoveInaccessibleState(manager, component, role);
         }
@@ -320,7 +320,7 @@ std::unique_ptr<CommandInstance> ComponentManagerImpl::ParseCommandInstance(
   bool trait_supported = false;
   const base::ListValue* supported_traits = nullptr;
   if (component->GetList("traits", &supported_traits)) {
-    for (const base::Value* value : *supported_traits) {
+    for (const auto& value : *supported_traits) {
       std::string trait;
       CHECK(value->GetAsString(&trait));
       if (trait == pair.first) {
@@ -598,7 +598,7 @@ std::string ComponentManagerImpl::FindComponentWithTrait(
     const base::DictionaryValue* component = nullptr;
     CHECK(it.value().GetAsDictionary(&component));
     if (component->GetList("traits", &supported_traits)) {
-      for (const base::Value* value : *supported_traits) {
+      for (const auto& value : *supported_traits) {
         std::string supported_trait;
         CHECK(value->GetAsString(&supported_trait));
         if (trait == supported_trait)
