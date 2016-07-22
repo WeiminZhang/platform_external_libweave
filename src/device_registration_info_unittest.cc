@@ -178,14 +178,15 @@ class DeviceRegistrationInfoTest : public ::testing::Test {
 
   bool RefreshAccessToken(ErrorPtr* error) const {
     bool succeeded = false;
-    auto callback = [&succeeded, &error](ErrorPtr in_error) {
+    auto callback = [](bool* succeeded, ErrorPtr* error, ErrorPtr in_error) {
       if (error) {
         *error = std::move(in_error);
         return;
       }
-      succeeded = true;
+      *succeeded = true;
     };
-    dev_reg_->RefreshAccessToken(base::Bind(callback));
+    dev_reg_->RefreshAccessToken(base::Bind(
+        callback, base::Unretained(&succeeded), base::Unretained(error)));
     return succeeded;
   }
 
@@ -369,15 +370,15 @@ TEST_F(DeviceRegistrationInfoTest, GetDeviceInfo) {
           })));
 
   bool succeeded = false;
-  auto callback = [&succeeded, this](const base::DictionaryValue& info,
-                                     ErrorPtr error) {
+  auto callback = [](bool* succeeded, const base::DictionaryValue& info,
+                     ErrorPtr error) {
     EXPECT_FALSE(error);
     std::string id;
     EXPECT_TRUE(info.GetString("id", &id));
     EXPECT_EQ(test_data::kCloudId, id);
-    succeeded = true;
+    *succeeded = true;
   };
-  dev_reg_->GetDeviceInfo(base::Bind(callback));
+  dev_reg_->GetDeviceInfo(base::Bind(callback, base::Unretained(&succeeded)));
   EXPECT_TRUE(succeeded);
 }
 
@@ -386,20 +387,24 @@ TEST_F(DeviceRegistrationInfoTest, ReRegisterDevice) {
 
   bool done = false;
   dev_reg_->RegisterDevice(RegistrationData{test_data::kClaimTicketId},
-                           base::Bind([this, &done](ErrorPtr error) {
+                           base::Bind([](decltype(this) test, bool* done,
+                                         ErrorPtr error) {
                              EXPECT_TRUE(error->HasError("already_registered"));
-                             done = true;
-                             task_runner_.Break();
-                             EXPECT_EQ(GcdState::kConnecting, GetGcdState());
+                             *done = true;
+                             test->task_runner_.Break();
+                             EXPECT_EQ(GcdState::kConnecting,
+                                       test->GetGcdState());
 
                              // Validate the device info saved to storage...
                              EXPECT_EQ(test_data::kCloudId,
-                                       dev_reg_->GetSettings().cloud_id);
-                             EXPECT_EQ(test_data::kRefreshToken,
-                                       dev_reg_->GetSettings().refresh_token);
-                             EXPECT_EQ(test_data::kRobotAccountEmail,
-                                       dev_reg_->GetSettings().robot_account);
-                           }));
+                                       test->dev_reg_->GetSettings().cloud_id);
+                             EXPECT_EQ(
+                                 test_data::kRefreshToken,
+                                 test->dev_reg_->GetSettings().refresh_token);
+                             EXPECT_EQ(
+                                 test_data::kRobotAccountEmail,
+                                 test->dev_reg_->GetSettings().robot_account);
+                           }, base::Unretained(this), base::Unretained(&done)));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }
@@ -573,29 +578,32 @@ void DeviceRegistrationInfoTest::RegisterDevice(
   bool done = false;
   dev_reg_->RegisterDevice(
       registration_data,
-      base::Bind([this, &done, &expected_data](ErrorPtr error) {
-        done = true;
-        task_runner_.Break();
+      base::Bind([](decltype(this) test, bool* done,
+                    const RegistrationData& expected_data, ErrorPtr error) {
+        *done = true;
+        test->task_runner_.Break();
 
         EXPECT_FALSE(error);
-        EXPECT_EQ(GcdState::kConnecting, GetGcdState());
+        EXPECT_EQ(GcdState::kConnecting, test->GetGcdState());
 
         // Validate the device info saved to storage...
-        EXPECT_EQ(test_data::kCloudId, dev_reg_->GetSettings().cloud_id);
+        EXPECT_EQ(test_data::kCloudId, test->dev_reg_->GetSettings().cloud_id);
         EXPECT_EQ(test_data::kRefreshToken,
-                  dev_reg_->GetSettings().refresh_token);
+                  test->dev_reg_->GetSettings().refresh_token);
         EXPECT_EQ(test_data::kRobotAccountEmail,
-                  dev_reg_->GetSettings().robot_account);
-        EXPECT_EQ(expected_data.oauth_url, dev_reg_->GetSettings().oauth_url);
-        EXPECT_EQ(expected_data.client_id, dev_reg_->GetSettings().client_id);
+                  test->dev_reg_->GetSettings().robot_account);
+        EXPECT_EQ(expected_data.oauth_url,
+                  test->dev_reg_->GetSettings().oauth_url);
+        EXPECT_EQ(expected_data.client_id,
+                  test->dev_reg_->GetSettings().client_id);
         EXPECT_EQ(expected_data.client_secret,
-                  dev_reg_->GetSettings().client_secret);
-        EXPECT_EQ(expected_data.api_key, dev_reg_->GetSettings().api_key);
+                  test->dev_reg_->GetSettings().client_secret);
+        EXPECT_EQ(expected_data.api_key, test->dev_reg_->GetSettings().api_key);
         EXPECT_EQ(expected_data.service_url,
-                  dev_reg_->GetSettings().service_url);
+                  test->dev_reg_->GetSettings().service_url);
         EXPECT_EQ(expected_data.xmpp_endpoint,
-                  dev_reg_->GetSettings().xmpp_endpoint);
-      }));
+                  test->dev_reg_->GetSettings().xmpp_endpoint);
+      }, base::Unretained(this), base::Unretained(&done), expected_data));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }
@@ -640,12 +648,15 @@ TEST_F(DeviceRegistrationInfoTest, RegisterDeviceEndpointsOverrideNotAllowed) {
   registration_data.service_url = "https://test.service/";
 
   bool done = false;
-  dev_reg_->RegisterDevice(registration_data,
-                           base::Bind([this, &done](ErrorPtr error) {
-                             done = true;
-                             task_runner_.Break();
-                             EXPECT_TRUE(error->HasError("invalidParams"));
-                           }));
+  dev_reg_->RegisterDevice(
+      registration_data,
+      base::Bind(
+          [](decltype(this) test, bool* done, ErrorPtr error) {
+            *done = true;
+            test->task_runner_.Break();
+            EXPECT_TRUE(error->HasError("invalidParams"));
+          },
+          base::Unretained(this), base::Unretained(&done)));
   task_runner_.Run();
   EXPECT_TRUE(done);
 }

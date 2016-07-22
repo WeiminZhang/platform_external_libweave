@@ -128,6 +128,10 @@ template std::string* MakeCheckOpString<unsigned int, unsigned long>(
 template std::string* MakeCheckOpString<std::string, std::string>(
     const std::string&, const std::string&, const char* name);
 
+void MakeCheckOpValueString(std::ostream* os, std::nullptr_t p) {
+  (*os) << "nullptr";
+}
+
 LogMessage::LogMessage(const char* file, int line, LogSeverity severity)
     : severity_(severity), file_(file), line_(line) {
   Init(file, line);
