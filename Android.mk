@@ -32,7 +32,6 @@ libweaveCommonCIncludes := \
 	$(LOCAL_PATH)/include \
 	$(LOCAL_PATH)/third_party/modp_b64/modp_b64 \
 	$(LOCAL_PATH)/third_party/libuweave \
-	external/gtest/include \
 
 libweaveSharedLibraries := \
 	libchrome \
@@ -83,7 +82,6 @@ LOCAL_CFLAGS := $(libweaveCommonCFlags)
 LOCAL_CPPFLAGS := $(libweaveCommonCppFlags)
 LOCAL_C_INCLUDES := \
 	$(libweaveCommonCIncludes) \
-	external/gmock/include \
 
 LOCAL_SHARED_LIBRARIES := $(libweaveSharedLibraries)
 LOCAL_STATIC_LIBRARIES := libgtest libgmock
@@ -121,7 +119,6 @@ LOCAL_CFLAGS := $(libweaveCommonCFlags)
 LOCAL_CPPFLAGS := $(libweaveCommonCppFlags)
 LOCAL_C_INCLUDES := \
 	$(libweaveCommonCIncludes) \
-	external/gmock/include \
 
 LOCAL_SHARED_LIBRARIES := \
 	$(libweaveSharedLibraries) \
@@ -130,7 +127,7 @@ LOCAL_STATIC_LIBRARIES := \
 	libweave-common \
 	libweave-external \
 	libweave-test \
-	libgtest libgmock \
+	libgmock \
 	libchrome_test_helpers \
 
 LOCAL_CLANG := true
